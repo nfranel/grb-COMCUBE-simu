@@ -274,6 +274,7 @@ def cosirevan(command):
     sname = makeSimName(args, command)
     if command[0]:
 #!!!# Use the following two lines for polarization sensitivity evaluation
+#!!!# 2 lines because 2 runs if polarization, so a first run is read and suppressed and then then second one
       run("revan -g {0} -c {1} -f {2} -n -a; rm -f {2}".format(args.geometry, args.rcf, subprocess.getoutput("ls -t {}*.sim.gz".format(sname)).split("\n")[0]), __verbose__)
       run("revan -g {0} -c {1} -f {2} -n -a; rm -f {2}".format(args.geometry, args.rcf, subprocess.getoutput("ls -t {}*.sim.gz".format(sname)).split("\n")[0]), __verbose__)
 #!!!# Use the following line for GRB detection rate evaluation
