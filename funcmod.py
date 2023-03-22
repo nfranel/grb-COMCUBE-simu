@@ -11,7 +11,10 @@ def horizonAngle(h, EarthRadius=6371, AtmosphereHeight=40):
   :param AtmosphereHeight: height of the atmosphere (km), default=40
   :returns: horizon angle (deg)
   """
-  return 90 + np.rad2deg(np.arccos((EarthRadius + AtmosphereHeight) / (EarthRadius + h)))  # deg
+  if AtmosphereHeight>=40:
+    return 90 + np.rad2deg(np.arccos((EarthRadius + AtmosphereHeight) / (EarthRadius + h)))  # deg
+  else:
+    return 90
 
 
 def treatCE(s):
