@@ -1,5 +1,5 @@
 import sys
-sys.path.append('/disk/megalib/test-nathan/')
+sys.path.append('/data-nathan/grb-COMCUBE-simu')
 
 from catalog import Catalog
 from gmafw import *
