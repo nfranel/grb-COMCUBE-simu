@@ -535,7 +535,7 @@ class AllSimData(list):
     self.n_sim_det = 0
     if type(cat_data)==list:
       self.source_name = cat_data[0][source_ite]
-      self.source_duration = float(cat_data[0][source_ite])
+      self.source_duration = float(cat_data[1][source_ite])
     else:
       self.source_name = cat_data.name[source_ite]
       self.source_duration = float(cat_data.t90[source_ite])
@@ -596,7 +596,6 @@ class AllSourceData:
 
     #### A CODER AUTREMENT AVEC LECTURE D'UN FICHIER DE PARAMETRE POUR LES BACKGROUNDS
     self.bkg_sim_duration = 3600
-
     opt_items = None
     opt_analysis = None
     corr = False
@@ -784,10 +783,14 @@ class AllSourceData:
     """
     for source_ite, source in enumerate(self.alldata):
       if source is not None:
+        print("source ok")
         for sim in source:
           if sim is not None:
-            sim.analyze(source.source_duration, self.fluence[source_ite], source_with_bkg=self.source_with_bkg, fit_bounds=fit_bounds,
-                        const_analysis=const_analysis)
+            print("sim ok")
+            if self.fluence is None:
+              sim.analyze(source.source_duration, self.fluence, source_with_bkg=self.source_with_bkg, fit_bounds=fit_bounds,const_analysis=const_analysis)
+            else:
+              sim.analyze(source.source_duration, self.fluence[source_ite], source_with_bkg=self.source_with_bkg, fit_bounds=fit_bounds,const_analysis=const_analysis)
 
   def make_const(self, const=None):
     """
@@ -1002,7 +1005,7 @@ class AllSourceData:
 bkg = "./backgrounds/bkg"  # _background_sat0_0000_90.0_0.0.inc1.id1.extracted.tra"
 param = "./test/polGBM.par"
 erg = (100, 460)
-test = AllSourceData(bkg, param, erg)
+#test = AllSourceData(bkg, param, erg)
 
 # class SimulationData(SimData):
 #   """
