@@ -158,9 +158,17 @@ class Polarigram(list):
     p = np.histogram(self, self.bins)[0] / binw
     if unpoldata is not None:
       unpol = np.histogram(unpoldata, self.bins)[0] / binw
-      p /= unpol
-    self.fits.append(Fit(modulation_func, var_x, p, bounds=fit_bounds, comment="modulation"))
-    self.fits.append(Fit(lambda x, a: a * x / x, var_x, p, comment="constant"))
+      if 0. in unpol:
+        print("Unpolarized data do not allow a fit : a bin is empty")
+        self.fits.append(None)
+      else:
+        p /= unpol
+        self.fits.append(Fit(modulation_func, var_x, p, bounds=fit_bounds, comment="modulation"))
+        self.fits.append(Fit(lambda x, a: a * x / x, var_x, p, comment="constant"))
+    else:
+      self.fits.append(Fit(modulation_func, var_x, p, bounds=fit_bounds, comment="modulation"))
+      self.fits.append(Fit(lambda x, a: a * x / x, var_x, p, comment="constant"))
+
 
   def clf(self):
     """
@@ -414,24 +422,25 @@ class FormatedData:
     if self.unpol is not None:
       self.pol.fit(self.unpol, fit_bounds=fit_bounds)
       # self.pol.fit(self.unpol, fit_bounds=([-np.inf, -np.inf, (len(self.pol)-1)/100], [np.inf, np.inf, (len(self.pol)+1)/100]))
-      self.pa, self.mu100, self.fit_cr = self.pol.fits[-2].popt
-      if self.mu100 < 0:
-        self.pa = (self.pa + 90) % 180
-        self.mu100 = - self.mu100
-      else:
-        self.pa = self.pa % 180
-      self.pa_err = np.sqrt(self.pol.fits[-2].pcov[0][0])
-      self.mu100_err = np.sqrt(self.pol.fits[-2].pcov[1][1])
-      self.fit_cr_err = np.sqrt(self.pol.fits[-2].pcov[2][2])
-      self.fit_goodness = self.pol.fits[-2].q2 / (len(self.pol.fits[-2].x) - self.pol.fits[-2].nparam)
+      if self.pol.fits[0] is not None:
+        self.pa, self.mu100, self.fit_cr = self.pol.fits[-2].popt
+        if self.mu100 < 0:
+          self.pa = (self.pa + 90) % 180
+          self.mu100 = - self.mu100
+        else:
+          self.pa = self.pa % 180
+        self.pa_err = np.sqrt(self.pol.fits[-2].pcov[0][0])
+        self.mu100_err = np.sqrt(self.pol.fits[-2].pcov[1][1])
+        self.fit_cr_err = np.sqrt(self.pol.fits[-2].pcov[2][2])
+        self.fit_goodness = self.pol.fits[-2].q2 / (len(self.pol.fits[-2].x) - self.pol.fits[-2].nparam)
 
-      if source_with_bkg:
-        print("MDP calculation may not work if source is simulated with the background")
-        self.mdp = MDP((self.cr - self.b_rate) * source_duration, self.b_rate * source_duration, self.mu100)
-        self.snr = SNR(self.cr * source_duration, self.b_rate * source_duration)
-      else:
-        self.mdp = MDP(self.cr * source_duration, self.b_rate * source_duration, self.mu100)
-        self.snr = SNR((self.cr + self.b_rate) * source_duration, self.b_rate * source_duration)
+        if source_with_bkg:
+          print("MDP calculation may not work if source is simulated with the background")
+          self.mdp = MDP((self.cr - self.b_rate) * source_duration, self.b_rate * source_duration, self.mu100)
+          self.snr = SNR(self.cr * source_duration, self.b_rate * source_duration)
+        else:
+          self.mdp = MDP(self.cr * source_duration, self.b_rate * source_duration, self.mu100)
+          self.snr = SNR((self.cr + self.b_rate) * source_duration, self.b_rate * source_duration)
 
 
 class AllSatData(list):
@@ -557,6 +566,7 @@ class AllSimData(list):
       elif len(flist) == 1:
         if flist[0].startswith("ls: cannot access"):
           temp_list.append(None)
+          print(f"Warning : No file found for source {self.source_name}, simulation {num_sim}")
         else:
           temp_list.append(
             AllSatData(source_prefix, num_sim, pol_analysis, sat_info, sim_duration, options))
@@ -797,10 +807,8 @@ class AllSourceData:
     """
     for source_ite, source in enumerate(self.alldata):
       if source is not None:
-        print("source ok")
         for sim in source:
           if sim is not None:
-            print("sim ok")
             if self.fluence is None:
               sim.analyze(source.source_duration, self.fluence, source_with_bkg=self.source_with_bkg, fit_bounds=fit_bounds,const_analysis=const_analysis)
             else:
