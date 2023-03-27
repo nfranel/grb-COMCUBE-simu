@@ -10,6 +10,8 @@ from inspect import signature
 import matplotlib.pyplot as plt
 import subprocess
 import matplotlib as mpl
+import matplotlib.colors as colors
+
 
 class Fit:
   """
@@ -530,15 +532,19 @@ class AllSimData(list):
   Class containing all the data for 1 GRB (or other source) for a full set of trafiles
   """
 
-  def __init__(self, sim_prefix, source_ite, cat_data, n_sim, sat_info, pol_analysis, sim_duration, options):
+  def __init__(self, sim_prefix, source_ite, cat_data, mode, n_sim, sat_info, pol_analysis, sim_duration, options):
     temp_list = []
     self.n_sim_det = 0
     if type(cat_data)==list:
       self.source_name = cat_data[0][source_ite]
       self.source_duration = float(cat_data[1][source_ite])
+      self.p_flux = None
+      self.best_fit_model = None
     else:
       self.source_name = cat_data.name[source_ite]
       self.source_duration = float(cat_data.t90[source_ite])
+      self.best_fit_model = getattr(cat_data, f"{mode}_best_fitting_model")[source_ite].rstrip()
+      self.p_flux = float(getattr(cat_data, f"{self.best_fit_model}_phtflux")[source_ite])
     self.proba_detec = None
     self.proba_compton_image = None
     source_prefix = f"{sim_prefix}_{self.source_name}"
@@ -690,8 +696,16 @@ class AllSourceData:
       self.fluence = [calc_fluence(cat_data, source_index, erg_cut)*self.sim_duration for source_index in range(self.n_source)]
     self.s_eff = None
     self.alldata = [
-      AllSimData(self.sim_prefix, source_ite, cat_data, self.n_sim, self.sat_info, self.pol_data, self.sim_duration,
+      AllSimData(self.sim_prefix, source_ite, cat_data, self.mode, self.n_sim, self.sat_info, self.pol_data, self.sim_duration,
                  self.options) for source_ite in range(self.n_source)]
+
+    self.cat_duration = 10
+    self.com_duty = 1
+    self.gbm_duty = 0.6
+    ### Implementer une maniere automatique de calculer le fov de comcube
+    self.com_fov = 1
+    self.gbm_fov = (1 - np.cos(np.deg2rad(horizonAngle(565)))) / 2
+    self.weights = 1/self.n_sim/self.cat_duration*self.com_duty/self.gbm_duty*self.com_fov/self.gbm_fov
 
   def get_keys(self):
     print("======================================================================")
@@ -940,72 +954,205 @@ class AllSourceData:
     print(f"La surface efficace moyenne pour la polarisation est de {np.mean(np.mean(detec_sum_pola, axis=1))} cm²")
     print(f"La surface efficace moyenne pour la spectrométrie est de {np.mean(np.mean(detec_sum_spectro, axis=1))} cm²")
 
-  def grb_map_plot():
+  def grb_map_plot(self, mode="no_cm"):
+    """
+    Display the catalog GRBs' position in the sky
+    """
+    if self.cat_file == "None":
+      print("No cat file has been given, the GRBs' position cannot be displayed")
+    else:
+      cat_data = Catalog(self.cat_file, self.sttype)
+    # Extracting dec and ra from catalog and transforms decimal degrees into degrees into the right frame
+    thetap = [np.sum(np.array(dec.split(" ")).astype(np.float)/[1, 60, 3600]) if len(dec.split("+")) == 2 else np.sum(np.array(dec.split(" ")).astype(np.float)/[1, -60, -3600]) for dec in cat_data.dec]
+    thetap = np.deg2rad(np.array(thetap))
+    phip = [np.sum(np.array(ra.split(" ")).astype(np.float)/[1, 60, 3600]) if len(ra.split("+")) == 2 else np.sum(np.array(ra.split(" ")).astype(np.float)/[1, -60, -3600]) for ra in cat_data.ra]
+    phip = np.mod(np.deg2rad(np.array(phip))+np.pi, 2*np.pi)-np.pi
+
+    plt.subplot(111, projection="aitoff")
+    plt.xlabel("RA (°)")
+    plt.ylabel("DEC (°)")
+    plt.grid(True)
+    plt.title("Map of GRB")
+    if mode == "no_cm":
+      plt.scatter(phip, thetap, s=12, marker="*")
+    elif mode == "t90":
+      sc = plt.scatter(phip, thetap, s=12, marker="*", c=cat_data.t90, norm=colors.LogNorm())
+      plt.colorbar(sc)
+    plt.show()
+
+
+  def mdp_histogram(self, mdp_threshold=1, cumul=True, y_scale="log", n_bins=30):
+    """
+    Display and histogram representing the number of grb of a certain mdp per year
+    """
+    if self.cat_file == "longGBM.txt":
+      grb_type = "lGRB"
+    elif self.cat_file == "shortGRB.txt":
+      grb_type = "sGRB"
+    else:
+      grb_type = "undefined source"
+
+    mdp = []
+    for source in self.alldata:
+      if source is not None:
+        for sim in source:
+          if sim is not None:
+            for sat in sim:
+              if sat is not None:
+                mdp.append(sat.mdp)
+    # physical mdp is between 0 and 1, multiplying it by 100 makes it a percentage
+    mdp_reduced = mdp[np.where(mdp < mdp_threshold, True, False)] * 100
+    plt.hist(mdp_reduced.flatten(), bins=n_bins, cumulative=cumul, histtype="step",
+             weights=[self.weights] * len(mdp_reduced.flatten()))
+    if cumul:
+      plt.title(f"Cumulative distribution of the MDP - {grb_type}")
+    else:
+      plt.title(f"Distribution of the MDP - {grb_type}")
+    plt.xlabel("MPD (%)")
+    plt.ylabel("Number of detection per year")
+    plt.grid()
+    plt.yscale(y_scale)
+    plt.show()
+
+  def hits_vs_energy(self, num_grb, num_sim, selected_sat, n_bins=30):
     """
 
     """
-    pass
+    hits_energy = []
+    if self.alldata[num_grb] is not None:
+      if self.alldata[num_grb][num_sim] is not None:
+        if type(selected_sat) == int:
+          hits_energy = self.alldata[num_grb][num_sim][selected_sat]
+        elif selected_sat == "const":
+          hits_energy = self.alldata[num_grb][num_sim].const_data
 
-  def mdp_histogram():
+    distrib, ax1 = plt.subplots(1, 1, figsize=(8, 6))
+    distrib.suptitle("Energy distribution of photons for a GRB")
+    ax1.hist(hits_energy, bins=n_bins, cumulative=0, histtype="step")
+    ax1.set(xlabel="Energy (keV)", ylabel="Number of photon detected", yscale="linear")
+    plt.show()
+
+  def peak_flux_distri(self, selected_sat="const", snr_min=5, n_bins=30, y_scale="log"):
     """
 
     """
-    pass
+    hist_pflux = []
+    for source in self.alldata:
+      if source is not None:
+        for sim in source:
+          if sim is not None:
+            if selected_sat == "const":
+              if sim.const_data.snr > snr_min:
+                hist_pflux.append(source.p_flux)
+            else:
+              if sim[selected_sat].snr > snr_min:
+                hist_pflux.append(source.p_flux)
+    distrib, ax1 = plt.subplots(1, 1, figsize=(8, 6))
+    distrib.suptitle("Peak flux distribution of detected long GRB")
+    ax1.hist(hist_pflux, bins=np.logspace(int(np.log10(min(hist_pflux))) - 1, int(np.log10(max(hist_pflux))), n_bins),
+             cumulative=False, histtype="step", weights=[self.weights] * len(hist_pflux))
+    ax1.set(xlabel="Peak flux (photons/cm2/s)", ylabel="Number of detection per year", xscale='log', yscale=y_scale)
+    ax1.legend()
+    plt.show()
 
-  def hits_vs_energy():
+  def det_proba_vs_flux(self):
     """
 
     """
-    pass
+    distrib, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 6))
+    distrib.suptitle(
+      "Detec proba vs peak flux of detected long GRB - GRB in the whole sky (left) and only in the FoV (right)")
+    ax1.scatter(grb_pflux, det_prob_grb, s=2)
 
+    ax2.scatter(grb_pflux, det_prob_grb_in_FoV, s=2)
 
-  def peak_flux_distri():
+    ax1.set(xlabel="Peak flux (photons/cm2/s)", ylabel="Detection probability", xscale='log', )
+    ax1.legend()
+    ax2.set(xlabel="Peak flux (photons/cm2/s)", ylabel="Detection probability", xscale='log', )
+    ax2.legend()
+    plt.show()
+
+  def compton_im_proba_vs_flux(self):
     """
 
     """
-    pass
+    distrib, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 6))
+    distrib.suptitle(
+      "Compton Image proba vs peak flux of detected long GRB - GRB in the whole sky (left) and only in the FoV (right)")
+    ax1.scatter(grb_pflux, proba_comp_image, s=2)
 
-  def det_proba_vs_flux():
+    ax2.scatter(grb_pflux, proba_comp_image_in_FoV, s=2)
+
+    ax1.set(xlabel="Peak flux (photons/cm2/s)", ylabel="Compton image probability", xscale='log', )
+    ax1.legend()
+    ax2.set(xlabel="Peak flux (photons/cm2/s)", ylabel="Compton image probability", xscale='log', )
+    ax2.legend()
+    plt.show()
+
+  def detec_rate_vs_mu100(self):
     """
 
     """
-    pass
+    mu_index = np.where(np.isnan(data[:, :, 2].flatten()), False, True)
+    mu_list = data[:, :, 1].flatten()[mu_index]
+    distrib, ax1 = plt.subplots(1, 1, figsize=(8, 6))
+    distrib.suptitle("mu100 distribution of detected GRB")
+    ax1.hist(mu_list, bins=n_bins, cumulative=0, histtype="step", weights=[self.weights] * len(mu_list))
+    ax1.set(xlabel="mu100 (dimensionless)", ylabel="Number of detection per year", yscale=y_scale)
+    plt.show()
 
-  def compton_im_proba_vs_flux():
+  def pa_distribution(self):
     """
 
     """
-    pass
+    distrib, ax1 = plt.subplots(1, 1, figsize=(8, 6))
+    distrib.suptitle("Polarization angle distribution of detected GRB")
+    ax1.hist(data[:, :, 2].flatten(), bins=n_bins, cumulative=0, histtype="step",
+             weights=[self.weights] * len(data[:, :, 0].flatten()))
+    ax1.set(xlabel="Polarization angle (°)", ylabel="Number of detection per year", yscale=y_scale)
+    plt.show()
 
-  def detec_rate_vs_mu100():
+  def mdp99_distribution(self):
     """
 
     """
-    pass
+    mdp_cleaned = mdp.flatten()[np.where(mdp.flatten() < 100, True, False)]
 
-  def pa_distribution():
+    distrib, ax1 = plt.subplots(1, 1, figsize=(8, 6))
+    distrib.suptitle("mdp99 distribution of detected GRB")
+    ax1.hist(mdp_cleaned.flatten(), bins=n_bins, cumulative=0, histtype="step",
+             weights=[self.weights] * len(mdp_cleaned.flatten()),
+             label=f'Detected GRB \nRatio of detectable polarization : {len(mdp_cleaned) / len(mdp.flatten())}')
+    ax1.set(xlabel="mdp99 (%)", ylabel="Number of detection per year", yscale=y_scale)
+    ax1.legend()
+    plt.show()
+
+  def mdp99_vs_fluence(self):
     """
 
     """
-    pass
+    flc_list = np.dot(np.array(c.fluence).reshape(len(c.fluence), 1), np.ones(n_simu).reshape(1, n_simu)).flatten()
+    mdp_detec_index = np.where(np.isnan(mdp.flatten()), False, np.where(mdp.flatten() > 100, False, True))
+    no_detec_flc = flc_list[np.logical_not(mdp_detec_index)]
+    detec_flc = flc_list[mdp_detec_index]
+    detec_mdp = mdp.flatten()[mdp_detec_index]
 
-  def mdp99_distribution():
-    """
-
-    """
-    pass
-
-  def mdp99_vs_fluence():
-    """
-
-    """
-    pass
+    distrib, ax1 = plt.subplots(1, 1, figsize=(8, 6))
+    distrib.suptitle("MDP99 as a functin of fluence of detected GRB")
+    for val in np.unique(no_detec_flc):
+      ax1.axvline(val, ymin=0., ymax=0.01, ms=1, c='black')
+    ax1.scatter(detec_flc, detec_mdp, s=3,
+                label=f'Detected GRB \nRatio of detectable polarization : {len(detec_flc) / len(flc_list)}')
+    ax1.set(xlabel="fluence (erg.cm-2)", ylabel="MDP99 (%)", yscale='linear', xscale='log',
+            xlim=(10 ** (int(np.log10(np.min(flc_list))) - 1), 10 ** (int(np.log10(np.max(flc_list))))))
+    ax1.legend()
+    plt.show()
 
 
 bkg = "./backgrounds/bkg"  # _background_sat0_0000_90.0_0.0.inc1.id1.extracted.tra"
 param = "./test/polGBM.par"
 erg = (100, 460)
-#test = AllSourceData(bkg, param, erg)
+test = AllSourceData(bkg, param, erg)
 
 # class SimulationData(SimData):
 #   """
