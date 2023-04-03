@@ -191,7 +191,7 @@ def makeSimName(args, command):
     else: return "{}_{}_{}_{}".format(args.prefix, command[2], command[3], command[4])
   elif args.type == "GRBCatalog":
     #return "{}_{}-sat{}_{}_{}".format(args.prefix, command[2], command[3], command[-2], command[-1])
-    return "{}_{}-sat{}-{:04d}_{}".format(args.prefix, command[2], command[3], command[-4], command[-3])
+    return "{}_{}_sat{}_{:04d}_{}".format(args.prefix, command[2], command[3], command[-4], command[-3])
 
 
 def maketmpsf(command, args, pid):

@@ -162,6 +162,7 @@ class Polarigram(list):
         print("Unpolarized data do not allow a fit : a bin is empty")
         self.fits.append(None)
       else:
+        #p = p / unpol * np.mean(unpol)
         p /= unpol
         self.fits.append(Fit(modulation_func, var_x, p, bounds=fit_bounds, comment="modulation"))
         self.fits.append(Fit(lambda x, a: a * x / x, var_x, p, comment="constant"))
@@ -196,8 +197,10 @@ class Polarigram(list):
     ylabel = "Number of counts (per degree)"
     if unpoldata is not None:
       unpol = np.histogram(unpoldata, self.bins)[0] / binw
+      #p = p / unpol * np.mean(unpol)
       p /= unpol
       ylabel = "Corrected number of count"
+    print(p, unpol)
     if fit:
       self.fit(unpoldata)
     if plot:
@@ -658,7 +661,7 @@ class AllSourceData:
     self.bkg_sim_duration = 3600
     opt_items = None
     opt_analysis = None
-    corr = False
+    corr = True
     self.options = [opt_items, opt_analysis, corr, self.erg_cut]
     self.pol_data = False
     self.sat_info = []
@@ -1245,12 +1248,19 @@ class AllSourceData:
       plt.show()
 
 
+<<<<<<< HEAD
 # bkg = "./backgrounds/bkg"  # _background_sat0_0000_90.0_0.0.inc1.id1.extracted.tra"
 # param = "./test/polGBM.par"
 # erg = (100, 460)
 # test = AllSourceData(bkg, param, erg)
 # test.make_const()
 # test.analyze()
+=======
+#bkg = "./backgrounds/bkg"  # _background_sat0_0000_90.0_0.0.inc1.id1.extracted.tra"
+#param = "./test/polGBM.par"
+#erg = (100, 460)
+#test = AllSourceData(bkg, param, erg)
+>>>>>>> 61cab6bf24034d943c60fc2a50e05d4348b35a7f
 
 # class SimulationData(SimData):
 #   """
