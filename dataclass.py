@@ -455,12 +455,13 @@ class AllSatData(list):
     self.dec_world_frame = None
     self.ra_world_frame = None
     self.pol_analysis = True
+    loading_count = 0
     for num_sat in range(self.n_sat):
       flist = subprocess.getoutput("ls {}_sat{}_{:04d}_*".format(source_prefix, num_sat, num_sim)).split("\n")
       if len(flist) == 2:
-        temp_list.append(
-          FormatedData(flist, sat_info[num_sat], num_sat, sim_duration, *options))
+        temp_list.append(FormatedData(flist, sat_info[num_sat], num_sat, sim_duration, *options))
         self.n_sat_det += 1
+        loading_count += 2
       elif len(flist) == 1:
         if flist[0].startswith("ls: cannot access"):
           temp_list.append(None)
@@ -468,14 +469,16 @@ class AllSatData(list):
           temp_list.append(FormatedData(flist, sat_info[num_sat], sim_duration, num_sat, *options))
           self.n_sat_det += 1
           self.pol_analysis = False
-          raise Warning(
-            f'Polarization analysis is expected but the wrong number of trafile has been found, no polarization data were extracted : {flist}')
+          loading_count += 1
+          raise Warning(f'Polarization analysis is expected but the wrong number of trafile has been found, no polarization data were extracted : {flist}')
         else:
           temp_list.append(FormatedData(flist, sat_info[num_sat], sim_duration, num_sat, *options))
           self.n_sat_det += 1
           self.pol_analysis = False
+          loading_count += 1
       if not flist[0].startswith("ls: cannot access") and self.dec_world_frame is None:
         self.dec_world_frame, self.ra_world_frame = fname2decra(flist[0])
+    print(f"Total of {loading_count} files loaded for simulation {num_sim}")
     list.__init__(self, temp_list)
     self.const_data = None
 
@@ -502,6 +505,8 @@ class AllSatData(list):
         sat.analyze(source_duration, source_fluence, source_with_bkg=source_with_bkg, fit_bounds=fit_bounds)
     if self.const_data is not None and const_analysis:
       self.const_data.analyze(source_duration, source_fluence, source_with_bkg=source_with_bkg, fit_bounds=fit_bounds)
+    else:
+      print("Constellation not set : please use make_const method if you want to analyze the constellation's results")
 
   def make_const(self, options, const=None):
     if const is None:
@@ -544,7 +549,7 @@ class AllSimData(list):
   def __init__(self, sim_prefix, source_ite, cat_data, mode, n_sim, sat_info, pol_analysis, sim_duration, options):
     temp_list = []
     self.n_sim_det = 0
-    if type(cat_data)==list:
+    if type(cat_data) == list:
       self.source_name = cat_data[0][source_ite]
       self.source_duration = float(cat_data[1][source_ite])
       self.p_flux = None
@@ -554,22 +559,30 @@ class AllSimData(list):
       self.source_duration = float(cat_data.t90[source_ite])
       self.best_fit_model = getattr(cat_data, f"{mode}_best_fitting_model")[source_ite].rstrip()
       self.p_flux = float(getattr(cat_data, f"{self.best_fit_model}_phtflux")[source_ite])
-    self.proba_detec = None
-    self.proba_compton_image = None
+    self.proba_detec_fov = None
+    self.proba_compton_image_fov = None
+    self.const_proba_detec_fov = None
+    self.const_proba_compton_image_fov = None
+    self.proba_detec_sky = None
+    self.proba_compton_image_sky = None
+    self.const_proba_detec_sky = None
+    self.const_proba_compton_image_sky = None
     source_prefix = f"{sim_prefix}_{self.source_name}"
+    flist = subprocess.getoutput("ls {}_*".format(source_prefix)).split("\n")
+    if flist[0].startswith("ls: cannot access"):
+      print(f"No file to be loaded for source {self.source_name}")
+    else:
+      print(f"{len(flist)} files to be loaded for source {self.source_name} : ")
     for num_sim in range(n_sim):
       flist = subprocess.getoutput("ls {}_*_{:04d}_*".format(source_prefix, num_sim)).split("\n")
       if len(flist) >= 2:
-        temp_list.append(
-          AllSatData(source_prefix, num_sim, pol_analysis, sat_info, sim_duration, options))
+        temp_list.append(AllSatData(source_prefix, num_sim, pol_analysis, sat_info, sim_duration, options))
         self.n_sim_det += 1
       elif len(flist) == 1:
         if flist[0].startswith("ls: cannot access"):
           temp_list.append(None)
-          print(f"Warning : No file found for source {self.source_name}, simulation {num_sim}")
         else:
-          temp_list.append(
-            AllSatData(source_prefix, num_sim, pol_analysis, sat_info, sim_duration, options))
+          temp_list.append(AllSatData(source_prefix, num_sim, pol_analysis, sat_info, sim_duration, options))
           self.n_sim_det += 1
     list.__init__(self, temp_list)
 
@@ -585,6 +598,37 @@ class AllSimData(list):
     print("======================================================================")
     print("    Methods")
     print("======================================================================")
+
+  def set_probabilities(self, n_sat, snr_min=5, n_image_min=50):
+    """
+    Calculates detection probability and probability of having a correct compton image
+    """
+    temp_proba_detec = np.zeros(n_sat)
+    temp_proba_compton_image = np.zeros(n_sat)
+    temp_const_proba_detec = 0
+    temp_const_proba_compton_image = 0
+    for sim in self:
+      if sim is not None:
+        for sat_ite, sat in enumerate(sim):
+          if sat is not None:
+            if sat.snr >= snr_min:
+              temp_proba_detec[sat_ite] += 1
+            if sat.compton >= n_image_min:
+              temp_proba_compton_image[sat_ite] += 1
+        if sim.const_data.snr >= snr_min:
+          temp_const_proba_detec += 1
+        if sim.const_data.compton >= n_image_min:
+          temp_const_proba_compton_image += 1
+
+    self.proba_detec_fov = temp_proba_detec / self.n_sim_det
+    self.proba_detec_sky = temp_proba_detec / len(self)
+    self.proba_compton_image_fov = temp_proba_compton_image / self.n_sim_det
+    self.proba_compton_image_sky = temp_proba_compton_image / len(self)
+    self.const_proba_detec_fov = temp_const_proba_detec / self.n_sim_det
+    self.const_proba_detec_sky = temp_const_proba_detec / len(self)
+    self.const_proba_compton_image_fov = temp_const_proba_compton_image / self.n_sim_det
+    self.const_proba_compton_image_sky = temp_const_proba_compton_image / len(self)
+
 
 
 class AllSourceData:
@@ -810,9 +854,10 @@ class AllSourceData:
         for sim in source:
           if sim is not None:
             if self.fluence is None:
-              sim.analyze(source.source_duration, self.fluence, source_with_bkg=self.source_with_bkg, fit_bounds=fit_bounds,const_analysis=const_analysis)
+              sim.analyze(source.source_duration, self.fluence, source_with_bkg=self.source_with_bkg, fit_bounds=fit_bounds, const_analysis=const_analysis)
             else:
-              sim.analyze(source.source_duration, self.fluence[source_ite], source_with_bkg=self.source_with_bkg, fit_bounds=fit_bounds,const_analysis=const_analysis)
+              sim.analyze(source.source_duration, self.fluence[source_ite], source_with_bkg=self.source_with_bkg, fit_bounds=fit_bounds, const_analysis=const_analysis)
+        source.set_probabilities(n_sat=self.n_sat, snr_min=5, n_image_min=50)
 
   def make_const(self, const=None):
     """
@@ -861,7 +906,7 @@ class AllSourceData:
         ax[int(graph / 2)][graph % 2].legend()
       plt.show()
 
-  def viewing_angle_study():
+  def viewing_angle_study(self):
     """
 
     """
@@ -970,26 +1015,26 @@ class AllSourceData:
       print("No cat file has been given, the GRBs' position cannot be displayed")
     else:
       cat_data = Catalog(self.cat_file, self.sttype)
-    # Extracting dec and ra from catalog and transforms decimal degrees into degrees into the right frame
-    thetap = [np.sum(np.array(dec.split(" ")).astype(np.float)/[1, 60, 3600]) if len(dec.split("+")) == 2 else np.sum(np.array(dec.split(" ")).astype(np.float)/[1, -60, -3600]) for dec in cat_data.dec]
-    thetap = np.deg2rad(np.array(thetap))
-    phip = [np.sum(np.array(ra.split(" ")).astype(np.float)/[1, 60, 3600]) if len(ra.split("+")) == 2 else np.sum(np.array(ra.split(" ")).astype(np.float)/[1, -60, -3600]) for ra in cat_data.ra]
-    phip = np.mod(np.deg2rad(np.array(phip))+np.pi, 2*np.pi)-np.pi
+      # Extracting dec and ra from catalog and transforms decimal degrees into degrees into the right frame
+      thetap = [np.sum(np.array(dec.split(" ")).astype(np.float)/[1, 60, 3600]) if len(dec.split("+")) == 2 else np.sum(np.array(dec.split(" ")).astype(np.float)/[1, -60, -3600]) for dec in cat_data.dec]
+      thetap = np.deg2rad(np.array(thetap))
+      phip = [np.sum(np.array(ra.split(" ")).astype(np.float)/[1, 60, 3600]) if len(ra.split("+")) == 2 else np.sum(np.array(ra.split(" ")).astype(np.float)/[1, -60, -3600]) for ra in cat_data.ra]
+      phip = np.mod(np.deg2rad(np.array(phip))+np.pi, 2*np.pi)-np.pi
 
-    plt.subplot(111, projection="aitoff")
-    plt.xlabel("RA (°)")
-    plt.ylabel("DEC (°)")
-    plt.grid(True)
-    plt.title("Map of GRB")
-    if mode == "no_cm":
-      plt.scatter(phip, thetap, s=12, marker="*")
-    elif mode == "t90":
-      sc = plt.scatter(phip, thetap, s=12, marker="*", c=cat_data.t90, norm=colors.LogNorm())
-      plt.colorbar(sc)
-    plt.show()
+      plt.subplot(111, projection="aitoff")
+      plt.xlabel("RA (°)")
+      plt.ylabel("DEC (°)")
+      plt.grid(True)
+      plt.title("Map of GRB")
+      if mode == "no_cm":
+        plt.scatter(phip, thetap, s=12, marker="*")
+      elif mode == "t90":
+        sc = plt.scatter(phip, thetap, s=12, marker="*", c=cat_data.t90, norm=colors.LogNorm())
+        plt.colorbar(sc)
+      plt.show()
 
 
-  def mdp_histogram(self, mdp_threshold=1, cumul=True, y_scale="log", n_bins=30):
+  def mdp_histogram(self, selected_sat="const", mdp_threshold=1, cumul=True, n_bins=30, y_scale="log"):
     """
     Display and histogram representing the number of grb of a certain mdp per year
     """
@@ -1000,18 +1045,18 @@ class AllSourceData:
     else:
       grb_type = "undefined source"
 
-    mdp = []
+    mdp_list = []
     for source in self.alldata:
       if source is not None:
         for sim in source:
           if sim is not None:
-            for sat in sim:
-              if sat is not None:
-                mdp.append(sat.mdp)
-    # physical mdp is between 0 and 1, multiplying it by 100 makes it a percentage
-    mdp_reduced = mdp[np.where(mdp < mdp_threshold, True, False)] * 100
-    plt.hist(mdp_reduced.flatten(), bins=n_bins, cumulative=cumul, histtype="step",
-             weights=[self.weights] * len(mdp_reduced.flatten()))
+            if selected_sat == "const":
+              if sim.const_data.mdp <= mdp_threshold:
+                mdp_list.append(sim.const_data.mdp*100)
+            else:
+              if sim[selected_sat].mdp <= mdp_threshold:
+                mdp_list.append(sim[selected_sat].mdp*100)
+    plt.hist(mdp_list, bins=n_bins, cumulative=cumul, histtype="step", weights=[self.weights] * len(mdp_list))
     if cumul:
       plt.title(f"Cumulative distribution of the MDP - {grb_type}")
     else:
@@ -1022,6 +1067,7 @@ class AllSourceData:
     plt.yscale(y_scale)
     plt.show()
 
+
   def hits_vs_energy(self, num_grb, num_sim, selected_sat, n_bins=30):
     """
 
@@ -1030,9 +1076,9 @@ class AllSourceData:
     if self.alldata[num_grb] is not None:
       if self.alldata[num_grb][num_sim] is not None:
         if type(selected_sat) == int:
-          hits_energy = self.alldata[num_grb][num_sim][selected_sat]
+          hits_energy = self.alldata[num_grb][num_sim][selected_sat].CE
         elif selected_sat == "const":
-          hits_energy = self.alldata[num_grb][num_sim].const_data
+          hits_energy = self.alldata[num_grb][num_sim].const_data.CE
 
     distrib, ax1 = plt.subplots(1, 1, figsize=(8, 6))
     distrib.suptitle("Energy distribution of photons for a GRB")
@@ -1063,16 +1109,27 @@ class AllSourceData:
     ax1.legend()
     plt.show()
 
-  def det_proba_vs_flux(self):
+  def det_proba_vs_flux(self, selected_sat="const"):
     """
+    sat contains either the number of the satellite selected or "const"
+    """
+    p_flux_list = []
+    det_prob_fov_list = []
+    det_prob_sky_list = []
+    for source in self.alldata:
+      if source is not None:
+        p_flux_list.append(source.p_flux)
+        if selected_sat == "const":
+          det_prob_fov_list.append(source.const_proba_detec_fov)
+          det_prob_sky_list.append(source.const_proba_detec_sky)
+        else:
+          det_prob_fov_list.append(source.proba_detec_fov[selected_sat])
+          det_prob_sky_list.append(source.proba_detec_sky[selected_sat])
 
-    """
     distrib, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 6))
-    distrib.suptitle(
-      "Detec proba vs peak flux of detected long GRB - GRB in the whole sky (left) and only in the FoV (right)")
-    ax1.scatter(grb_pflux, det_prob_grb, s=2)
-
-    ax2.scatter(grb_pflux, det_prob_grb_in_FoV, s=2)
+    distrib.suptitle("Detection probability vs peak flux of detected long GRB - GRB in the whole sky (left) and only in the FoV (right)")
+    ax1.scatter(p_flux_list, det_prob_sky_list, s=2)
+    ax2.scatter(p_flux_list, det_prob_fov_list, s=2)
 
     ax1.set(xlabel="Peak flux (photons/cm2/s)", ylabel="Detection probability", xscale='log', )
     ax1.legend()
@@ -1080,16 +1137,26 @@ class AllSourceData:
     ax2.legend()
     plt.show()
 
-  def compton_im_proba_vs_flux(self):
+  def compton_im_proba_vs_flux(self, selected_sat="const"):
     """
-
+    sat contains either the number of the satellite selected or "const"
     """
+    p_flux_list = []
+    comp_im_prob_fov_list = []
+    comp_im_prob_sky_list = []
+    for source in self.alldata:
+      if source is not None:
+        p_flux_list.append(source.p_flux)
+        if selected_sat == "const":
+          comp_im_prob_fov_list.append(source.const_proba_compton_image_fov)
+          comp_im_prob_sky_list.append(source.const_proba_compton_image_sky)
+        else:
+          comp_im_prob_fov_list.append(source.proba_compton_image_fov[selected_sat])
+          comp_im_prob_sky_list.append(source.proba_compton_image_sky[selected_sat])
     distrib, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 6))
-    distrib.suptitle(
-      "Compton Image proba vs peak flux of detected long GRB - GRB in the whole sky (left) and only in the FoV (right)")
-    ax1.scatter(grb_pflux, proba_comp_image, s=2)
-
-    ax2.scatter(grb_pflux, proba_comp_image_in_FoV, s=2)
+    distrib.suptitle("Compton Image probability vs peak flux of detected long GRB - GRB in the whole sky (left) and only in the FoV (right)")
+    ax1.scatter(p_flux_list, comp_im_prob_sky_list, s=2)
+    ax2.scatter(p_flux_list, comp_im_prob_fov_list, s=2)
 
     ax1.set(xlabel="Peak flux (photons/cm2/s)", ylabel="Compton image probability", xscale='log', )
     ax1.legend()
@@ -1097,70 +1164,93 @@ class AllSourceData:
     ax2.legend()
     plt.show()
 
-  def detec_rate_vs_mu100(self):
+  def mu100_distri(self, selected_sat="const", n_bins=30, y_scale="log"):
     """
 
     """
-    mu_index = np.where(np.isnan(data[:, :, 2].flatten()), False, True)
-    mu_list = data[:, :, 1].flatten()[mu_index]
+    mu_100_list = []
+    for source in self.alldata:
+      if source is not None:
+        for sim in source:
+          if sim is not None:
+            if selected_sat == "const":
+              if sim.const_data.mu100 is not None:
+                mu_100_list.append(sim.const_data.mu100)
+            else:
+              if sim[selected_sat].mu100 is not None:
+                mu_100_list.append(sim[selected_sat].mu100)
     distrib, ax1 = plt.subplots(1, 1, figsize=(8, 6))
     distrib.suptitle("mu100 distribution of detected GRB")
-    ax1.hist(mu_list, bins=n_bins, cumulative=0, histtype="step", weights=[self.weights] * len(mu_list))
+    ax1.hist(mu_100_list, bins=n_bins, cumulative=0, histtype="step", weights=[self.weights] * len(mu_100_list))
     ax1.set(xlabel="mu100 (dimensionless)", ylabel="Number of detection per year", yscale=y_scale)
     plt.show()
 
-  def pa_distribution(self):
+  def pa_distribution(self, selected_sat="const", n_bins=30, y_scale="log"):
     """
 
     """
+    pa_list = []
+    for source in self.alldata:
+      if source is not None:
+        for sim in source:
+          if sim is not None:
+            if selected_sat == "const":
+              if sim.const_data.pa is not None:
+                pa_list.append(sim.const_data.pa)
+            else:
+              if sim[selected_sat].pa is not None:
+                pa_list.append(sim[selected_sat].pa)
     distrib, ax1 = plt.subplots(1, 1, figsize=(8, 6))
     distrib.suptitle("Polarization angle distribution of detected GRB")
-    ax1.hist(data[:, :, 2].flatten(), bins=n_bins, cumulative=0, histtype="step",
-             weights=[self.weights] * len(data[:, :, 0].flatten()))
+    ax1.hist(pa_list, bins=n_bins, cumulative=0, histtype="step", weights=[self.weights] * len(pa_list))
     ax1.set(xlabel="Polarization angle (°)", ylabel="Number of detection per year", yscale=y_scale)
     plt.show()
 
-  def mdp99_distribution(self):
+
+  def mdp99_vs_fluence(self, selected_sat="const", mdp_threshold=1, n_bins=30, y_scale="log"):
     """
 
     """
-    mdp_cleaned = mdp.flatten()[np.where(mdp.flatten() < 100, True, False)]
+    if self.fluence is not None:
+      mdp_list = []
+      fluence_list = []
+      mdp_count = 0
+      no_detec_fluence = []
+      for source_ite, source in enumerate(self.alldata):
+        if source is not None:
+          for sim in source:
+            if sim is not None:
+              if selected_sat == "const":
+                if sim.const_data.mdp <= mdp_threshold:
+                  mdp_list.append(sim.const_data.mdp * 100)
+                  fluence_list.append(self.fluence[source_ite])
+                else:
+                  no_detec_fluence.append(self.fluence[source_ite])
+              else:
+                if sim[selected_sat].mdp <= mdp_threshold:
+                  mdp_list.append(sim[selected_sat].mdp * 100)
+                  fluence_list.append(self.fluence[source_ite])
+                else:
+                  no_detec_fluence.append(self.fluence[source_ite])
+              mdp_count += 1
 
-    distrib, ax1 = plt.subplots(1, 1, figsize=(8, 6))
-    distrib.suptitle("mdp99 distribution of detected GRB")
-    ax1.hist(mdp_cleaned.flatten(), bins=n_bins, cumulative=0, histtype="step",
-             weights=[self.weights] * len(mdp_cleaned.flatten()),
-             label=f'Detected GRB \nRatio of detectable polarization : {len(mdp_cleaned) / len(mdp.flatten())}')
-    ax1.set(xlabel="mdp99 (%)", ylabel="Number of detection per year", yscale=y_scale)
-    ax1.legend()
-    plt.show()
-
-  def mdp99_vs_fluence(self):
-    """
-
-    """
-    flc_list = np.dot(np.array(c.fluence).reshape(len(c.fluence), 1), np.ones(n_simu).reshape(1, n_simu)).flatten()
-    mdp_detec_index = np.where(np.isnan(mdp.flatten()), False, np.where(mdp.flatten() > 100, False, True))
-    no_detec_flc = flc_list[np.logical_not(mdp_detec_index)]
-    detec_flc = flc_list[mdp_detec_index]
-    detec_mdp = mdp.flatten()[mdp_detec_index]
-
-    distrib, ax1 = plt.subplots(1, 1, figsize=(8, 6))
-    distrib.suptitle("MDP99 as a functin of fluence of detected GRB")
-    for val in np.unique(no_detec_flc):
-      ax1.axvline(val, ymin=0., ymax=0.01, ms=1, c='black')
-    ax1.scatter(detec_flc, detec_mdp, s=3,
-                label=f'Detected GRB \nRatio of detectable polarization : {len(detec_flc) / len(flc_list)}')
-    ax1.set(xlabel="fluence (erg.cm-2)", ylabel="MDP99 (%)", yscale='linear', xscale='log',
-            xlim=(10 ** (int(np.log10(np.min(flc_list))) - 1), 10 ** (int(np.log10(np.max(flc_list))))))
-    ax1.legend()
-    plt.show()
+      distrib, ax1 = plt.subplots(1, 1, figsize=(8, 6))
+      distrib.suptitle("MDP99 as a functin of fluence of detected GRB")
+      for val in np.unique(no_detec_fluence):
+        ax1.axvline(val, ymin=0., ymax=0.01, ms=1, c='black')
+      ax1.scatter(fluence_list, mdp_list, s=3, label=f'Detected GRB \nRatio of detectable polarization : {len(mdp_list) / mdp_count}')
+      ax1.set(xlabel="fluence (erg.cm-2)", ylabel="MDP99 (%)", yscale='linear', xscale='log',
+              xlim=(10 ** (int(np.log10(np.min(fluence_list))) - 1), 10 ** (int(np.log10(np.max(fluence_list))))))
+      ax1.legend()
+      plt.show()
 
 
-bkg = "./backgrounds/bkg"  # _background_sat0_0000_90.0_0.0.inc1.id1.extracted.tra"
-param = "./test/polGBM.par"
-erg = (100, 460)
-test = AllSourceData(bkg, param, erg)
+# bkg = "./backgrounds/bkg"  # _background_sat0_0000_90.0_0.0.inc1.id1.extracted.tra"
+# param = "./test/polGBM.par"
+# erg = (100, 460)
+# test = AllSourceData(bkg, param, erg)
+# test.make_const()
+# test.analyze()
 
 # class SimulationData(SimData):
 #   """

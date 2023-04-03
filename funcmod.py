@@ -154,7 +154,7 @@ def decra2tp(dec, ra, s, unit="deg"):
   :param unit: unit in which are given dec and ra, default="deg"
   :returns: theta_sat, phi_sat in rad
   """
-  if unit=='deg':
+  if unit == 'deg':
     dec, ra = np.deg2rad(dec), np.deg2rad(ra)
   theta = np.arccos( np.product(np.sin(np.array([dec, ra, s[0], s[1]]))) + np.sin(dec)*np.cos(ra)*np.sin(s[0])*np.cos(s[1]) + np.cos(dec)*np.cos(s[0]) )
   source = [np.sin(dec)*np.cos(ra), np.sin(dec)*np.sin(ra), np.cos(dec)]
@@ -189,6 +189,60 @@ def decra2tpPA(dec, ra, s, unit="deg"):
   vecpol = [np.sin(dec_p) * np.cos(ra_p), np.sin(dec_p) * np.sin(ra_p),
             np.cos(dec_p)]  # polarization vector in world coordinates
   return np.rad2deg(theta), np.rad2deg(phi), np.rad2deg(np.arccos(np.dot(vecpol, np.cross(source, yprime))))
+
+
+def decrasat2world(dec, ra, s, unit="deg"):
+  """
+  Converts dec,ra (declination, right ascension) satellite coordinates into world coordinate
+  :param dec: declination (except it is 0 at instrument zenith and 90° at equator)
+  :param ra : Right ascension (0->360°)
+  :param s: satellite from infos['satellites']
+  :param unit: unit in which are given dec and ra, default="deg"
+  :returns: theta_world, phi_world in rad
+  """
+  if unit=='deg':
+    dec, ra = np.deg2rad(dec), np.deg2rad(ra)
+  xworld = [-np.sin(s[1]), -np.cos(s[0])*np.cos(s[1]), np.sin(s[0])*np.cos(s[1])]
+  yworld = [np.cos(s[1]), -np.cos(s[0])*np.sin(s[1]), np.sin(s[0])*np.sin(s[1])]
+  zworld = [0, np.sin(s[0]), np.cos(s[0])]
+  source = [np.sin(dec)*np.cos(ra), np.sin(dec)*np.sin(ra), np.cos(dec)]
+  theta = np.arccos(np.dot(source, zworld))
+  phi = np.mod(np.arctan2(np.dot(source, yworld), np.dot(source, xworld)), 2*np.pi)
+  return theta, phi
+
+
+def orbitalparam2decra(inclination, ohm, omega, unit="deg"):
+  """
+  Calculates the declination and right ascention of an object knowing its orbital parameters
+  Returned results are in rad
+  :param inclination : inclination of the orbit
+  :param ohm : longitude/ra of the ascending node
+  :param omega : argument of periapsis/True anomalie at epoch t0 (both are equivalent there because of circular orbit)
+  :param unit: unit in which are given dec and ra, default="deg"
+  """
+  if unit=='deg':
+    inclination, ohm, omega = np.deg2rad(inclination), np.deg2rad(ohm), np.deg2rad(omega)
+  thetasat = np.arccos(np.sin(inclination)*np.sin(omega)) #rad
+  phisat = np.arctan2((np.cos(omega) * np.sin(ohm) + np.sin(omega) * np.cos(inclination) * np.cos(ohm)), (np.cos(omega) * np.cos(ohm) - np.sin(omega) * np.cos(inclination) * np.sin(ohm))) #rad
+  return thetasat, phisat
+
+
+def decra2orbitalparam(thetasat, phisat, unit="deg"):
+  """
+  Calculates the orbital parameters of an object knowing its dec and ra
+  Only works for a value of omega set to pi/2
+  Returned results are in rad
+  :param inclination : inclination of the orbit
+  :param ohm : longitude/ra of the ascending node
+  :param omega : argument of periapsis/True anomalie at epoch t0 (both are equivalent there because of circular orbit)
+  :param unit: unit in which are given dec and ra, default="deg"
+  """
+  if unit=='deg':
+    thetasat, phisat = np.deg2rad(thetasat), np.deg2rad(phisat)
+  inclination = np.arcsin(np.cos(thetasat)) #rad
+  ohm = np.arctan2(-1, np.tan(phisat)) #rad
+  omega = np.pi/2
+  return inclination, ohm, omega
 
 
 def SNR(S, B, C=0):
