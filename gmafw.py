@@ -279,7 +279,7 @@ class Polarigram(list):
     if type(data) == list:
       list.__init__(self, data)#ergCut not implemented. Nor is corr, PA, etc.
     elif type(data) == str:
-      list.__init__(self, analyzetra(data, self.theta, self.phi, self.PA, ergCut))
+      list.__init__(self, analyzetra(data, self.theta, self.phi, self.PA, ergCut=ergCut))
       if corr:
         self.corr()
       self.behave()
@@ -358,6 +358,7 @@ class Polarigram(list):
       unpol = np.histogram(unpoldata, self.bins)[0] / binw
       p /= unpol
       ylabel = "Corrected number of count"
+    print(p, unpol)
     if fit:
       self.fit(unpoldata)
       #Fit a cosine
