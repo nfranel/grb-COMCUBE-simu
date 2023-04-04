@@ -569,7 +569,6 @@ class AllSatData(list):
       elif item == "CE":
         setattr(self.const_data, item, np.array([[0, 0]]))
         for num_sat in considered_sat:
-          print(getattr(self.const_data, item), getattr(self[num_sat], item))
           setattr(self.const_data, item, np.concatenate((getattr(self.const_data, item), getattr(self[num_sat], item))))
         setattr(self.const_data, item, getattr(self.const_data, item)[1:])
       else:
