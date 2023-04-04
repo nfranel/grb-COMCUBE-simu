@@ -11,7 +11,8 @@ import matplotlib.pyplot as plt
 import subprocess
 import matplotlib as mpl
 import matplotlib.colors as colors
-
+# import numpy as np
+# import gzip
 
 class Fit:
   """
@@ -97,11 +98,14 @@ class Polarigram(list):
     self.phi = phi * np.pi / 180
     self.expected_pa = pa
     self.fits = []
+    self.polar_angles = []
     self.azim_angle_corrected = False
     if type(data) == list:
       list.__init__(self, data)
     elif type(data) == str:
-      list.__init__(self, analyzetra(data, self.theta, self.phi, self.expected_pa, corr=corr, ergcut=ergcut))
+      angle_lists = analyzetra(data, self.theta, self.phi, self.expected_pa, corr=corr, ergcut=ergcut)
+      list.__init__(self, angle_lists[0])
+      self.polar_angles = angle_lists[1]
       self.behave()
       self.azim_angle_corrected = corr
 
@@ -239,6 +243,8 @@ class BkgContainer:
     self.single = 0
     self.compton = 0
     self.CE = 0
+    self.CE_sum = 0
+    self.polar_from_energy = []
     self.cr = 0
 
     self.dec, self.ra = datafile.split("_")[-2:]
@@ -275,7 +281,13 @@ class BkgContainer:
     for item, f in zip(opt_items, opt_analysis):
       if f is not None:
         setattr(self, item, list(map(f, getattr(self, item))))
-    self.compton = np.sum(inwindow(np.array(self.CE), ergcut))
+    if "CE" in opt_items:
+      self.CE = np.array(self.CE)
+      self.CE_sum = np.sum(self.CE, axis=1)
+      # print(1/self.CE[:, 1])
+      # print((1 - m_elec * c_light**2 / charge_elem / 1000 * (1/self.CE[:, 1] - 1/(self.CE_sum))))
+      # print(np.rad2deg(np.arccos(1 - m_elec * c_light**2 / charge_elem / 1000 * (1/self.CE[:, 1] - 1/(self.CE_sum)))))
+    self.compton = np.sum(inwindow(self.CE_sum, ergcut))
     self.cr = self.compton / sim_duration
 
 
@@ -305,6 +317,8 @@ class FormatedData:
     self.single = 0
     self.compton = 0
     self.CE = 0
+    self.CE_sum = 0
+    self.polar_from_energy = []
     self.cr = 0
     self.pol = []
     self.unpol = []
@@ -362,7 +376,13 @@ class FormatedData:
       for item, f in zip(opt_items, opt_analysis):
         if f is not None:
           setattr(self, item, list(map(f, getattr(self, item))))
-      self.compton = np.sum(inwindow(np.array(self.CE), ergcut))
+      if "CE" in opt_items:
+        self.CE = np.array(self.CE)
+        self.CE_sum = np.sum(self.CE, axis=1)
+        # print(1 / self.CE[:, 1])
+        # print((1 - m_elec * c_light ** 2 / charge_elem / 1000 * (1 / self.CE[:, 1] - 1 / (self.CE_sum))))
+        # print(np.rad2deg(np.arccos(1 - m_elec * c_light**2 / charge_elem / 1000 * (1/self.CE[:, 1] - 1/(self.CE_sum)))))
+      self.compton = np.sum(inwindow(self.CE_sum, ergcut))
       self.cr = self.compton / sim_duration
 
       self.dec_world_frame, self.ra_world_frame = fname2decra(data_list[0])
@@ -538,6 +558,16 @@ class AllSatData(list):
         setattr(self.const_data, item, [])
         for num_sat in considered_sat:
           getattr(self.const_data, item).append(getattr(self[num_sat], item))
+      elif item == "CE_sum":
+        setattr(self.const_data, item, np.array([]))
+        for num_sat in considered_sat:
+          setattr(self.const_data, item, np.concatenate((getattr(self.const_data, item), getattr(self[num_sat], item))))
+      elif item == "CE":
+        setattr(self.const_data, item, np.array([[0, 0]]))
+        for num_sat in considered_sat:
+          print(getattr(self.const_data, item), getattr(self[num_sat], item))
+          setattr(self.const_data, item, np.concatenate((getattr(self.const_data, item), getattr(self[num_sat], item))))
+        setattr(self.const_data, item, getattr(self.const_data, item)[1:])
       else:
         if item not in ['s_eff', 'mu100', 'pa', 'fit_cr', 'mdp', 'snr', 'pa_err', 'mu100_err', 'fit_cr_err', 'fit_goodness']:
           for num_sat in considered_sat:
@@ -659,8 +689,10 @@ class AllSourceData:
 
     #### A CODER AUTREMENT AVEC LECTURE D'UN FICHIER DE PARAMETRE POUR LES BACKGROUNDS
     self.bkg_sim_duration = 3600
-    opt_items = None
-    opt_analysis = None
+    opt_items = ["CE", "PE"]
+    opt_analysis = [treatCE, None]
+    # opt_items = None
+    # opt_analysis = None
     corr = True
     self.options = [opt_items, opt_analysis, corr, self.erg_cut]
     self.pol_data = False
@@ -1012,7 +1044,7 @@ class AllSourceData:
 
   def grb_map_plot(self, mode="no_cm"):
     """
-    Display the catalog GRBs' position in the sky
+    Display the catalog GRBs position in the sky
     """
     if self.cat_file == "None":
       print("No cat file has been given, the GRBs' position cannot be displayed")
@@ -1079,9 +1111,15 @@ class AllSourceData:
     if self.alldata[num_grb] is not None:
       if self.alldata[num_grb][num_sim] is not None:
         if type(selected_sat) == int:
+<<<<<<< HEAD
           hits_energy.append(self.alldata[num_grb][num_sim][selected_sat].CE)
         elif selected_sat == "const":
           hits_energy.append(self.alldata[num_grb][num_sim].const_data.CE)
+=======
+          hits_energy = self.alldata[num_grb][num_sim][selected_sat].CE_sum
+        elif selected_sat == "const":
+          hits_energy = self.alldata[num_grb][num_sim].const_data.CE_sum
+>>>>>>> be7795d37bfec3f8f326807bca49e07895f3bffd
 
     distrib, ax1 = plt.subplots(1, 1, figsize=(8, 6))
     distrib.suptitle("Energy distribution of photons for a GRB")
@@ -1248,12 +1286,22 @@ class AllSourceData:
       plt.show()
 
 
+<<<<<<< HEAD
 # bkg = "./backgrounds/bkg"  # _background_sat0_0000_90.0_0.0.inc1.id1.extracted.tra"
 # param = "./test/polGBM.par"
 # erg = (100, 460)
 # test = AllSourceData(bkg, param, erg)
 # test.make_const()
 # test.analyze()
+=======
+bkg = "./backgrounds/bkg"  # _background_sat0_0000_90.0_0.0.inc1.id1.extracted.tra"
+param = "./test/polGBM.par"
+erg = (100, 460)
+test = AllSourceData(bkg, param, erg)
+test.make_const()
+test.analyze()
+
+>>>>>>> be7795d37bfec3f8f326807bca49e07895f3bffd
 #bkg = "./backgrounds/bkg"  # _background_sat0_0000_90.0_0.0.inc1.id1.extracted.tra"
 #param = "./test/polGBM.par"
 #erg = (100, 460)
