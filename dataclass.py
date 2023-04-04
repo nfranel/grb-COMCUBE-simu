@@ -1111,15 +1111,9 @@ class AllSourceData:
     if self.alldata[num_grb] is not None:
       if self.alldata[num_grb][num_sim] is not None:
         if type(selected_sat) == int:
-<<<<<<< HEAD
-          hits_energy.append(self.alldata[num_grb][num_sim][selected_sat].CE)
-        elif selected_sat == "const":
-          hits_energy.append(self.alldata[num_grb][num_sim].const_data.CE)
-=======
           hits_energy = self.alldata[num_grb][num_sim][selected_sat].CE_sum
         elif selected_sat == "const":
           hits_energy = self.alldata[num_grb][num_sim].const_data.CE_sum
->>>>>>> be7795d37bfec3f8f326807bca49e07895f3bffd
 
     distrib, ax1 = plt.subplots(1, 1, figsize=(8, 6))
     distrib.suptitle("Energy distribution of photons for a GRB")
@@ -1286,22 +1280,13 @@ class AllSourceData:
       plt.show()
 
 
-<<<<<<< HEAD
 # bkg = "./backgrounds/bkg"  # _background_sat0_0000_90.0_0.0.inc1.id1.extracted.tra"
 # param = "./test/polGBM.par"
 # erg = (100, 460)
 # test = AllSourceData(bkg, param, erg)
 # test.make_const()
 # test.analyze()
-=======
-bkg = "./backgrounds/bkg"  # _background_sat0_0000_90.0_0.0.inc1.id1.extracted.tra"
-param = "./test/polGBM.par"
-erg = (100, 460)
-test = AllSourceData(bkg, param, erg)
-test.make_const()
-test.analyze()
 
->>>>>>> be7795d37bfec3f8f326807bca49e07895f3bffd
 #bkg = "./backgrounds/bkg"  # _background_sat0_0000_90.0_0.0.inc1.id1.extracted.tra"
 #param = "./test/polGBM.par"
 #erg = (100, 460)
