@@ -241,6 +241,7 @@ class BkgContainer:
     self.dsssd = 0
     self.side = 0
     self.single = 0
+    self.single_cr = 0
     self.compton = 0
     self.CE = 0
     self.CE_sum = 0
@@ -289,6 +290,7 @@ class BkgContainer:
       # print(np.rad2deg(np.arccos(1 - m_elec * c_light**2 / charge_elem / 1000 * (1/self.CE[:, 1] - 1/(self.CE_sum)))))
     self.compton = np.sum(inwindow(self.CE_sum, ergcut))
     self.cr = self.compton / sim_duration
+    self.single_cr = np.sum(inwindow(self.PE, ergcut)) / sim_duration
 
 
 class FormatedData:
@@ -315,6 +317,7 @@ class FormatedData:
     self.dsssd = 0
     self.side = 0
     self.single = 0
+    self.single_cr = 0
     self.compton = 0
     self.CE = 0
     self.CE_sum = 0
@@ -384,6 +387,7 @@ class FormatedData:
         # print(np.rad2deg(np.arccos(1 - m_elec * c_light**2 / charge_elem / 1000 * (1/self.CE[:, 1] - 1/(self.CE_sum)))))
       self.compton = np.sum(inwindow(self.CE_sum, ergcut))
       self.cr = self.compton / sim_duration
+      self.single_cr = np.sum(inwindow(self.PE, ergcut)) / sim_duration
 
       self.dec_world_frame, self.ra_world_frame = fname2decra(data_list[0])
       self.dec_sat_frame, self.ra_sat_frame, self.expected_pa = decra2tpPA(self.dec_world_frame, self.ra_world_frame,
