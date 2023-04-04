@@ -690,7 +690,7 @@ class AllSourceData:
     #### A CODER AUTREMENT AVEC LECTURE D'UN FICHIER DE PARAMETRE POUR LES BACKGROUNDS
     self.bkg_sim_duration = 3600
     opt_items = ["CE", "PE"]
-    opt_analysis = [treatCE, None]
+    opt_analysis = [treatCE, treatPE]
     # opt_items = None
     # opt_analysis = None
     corr = True
