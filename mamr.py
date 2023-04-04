@@ -163,12 +163,13 @@ def genCommands(args):
             theta = np.rad2deg(np.arccos( np.product(np.sin(np.array([dec, ra, s[0], s[1]]))) + np.sin(dec)*np.cos(ra)*np.sin(s[0])*np.cos(s[1]) + np.cos(dec)*np.cos(s[0]) )) #deg
             if theta < s[2]:#source above horizon
               source = [np.sin(dec)*np.cos(ra), np.sin(dec)*np.sin(ra), np.cos(dec)]
+              # xp et yp le plan du detec, yp, zp et z sont dans un même plan (qui contient aussi thetasat)
               yprime = [-np.cos(s[0])*np.cos(s[1]), -np.cos(s[0])*np.sin(s[1]), np.sin(s[0])]
               xprime = [-np.sin(s[1]), np.cos(s[1]), 0]
               phi = np.mod(np.rad2deg(np.arctan2(np.dot(source, yprime), np.dot(source, xprime))), 360)
               # Polarization
               dec_p, ra_p = np.mod(.5*np.pi-dec, np.pi), ra+np.pi #polarization direction in world coordinates (towards north or south pole)
-              vecpol = [np.sin(dec_p)*np.cos(ra_p), np.sin(dec_p)*np.sin(ra_p), np.cos(dec_p)] #polarization vector in world coordinates
+              vecpol = [np.sin(dec_p)*np.cos(ra_p), np.sin(dec_p)*np.sin(ra_p), np.cos(dec_p)] #polarization vector in world coordinates this way vecpol is in the plane defined by z and source direction (then y direction ?)
               thetap = np.arccos( np.product(np.sin(np.array([dec_p, ra_p, s[0], s[1]]))) + np.sin(dec_p)*np.cos(ra_p)*np.sin(s[0])*np.cos(s[1]) + np.cos(dec_p)*np.cos(s[0]) ) #polarization direction in satellite coordinates
               phip = np.arctan2(np.dot(vecpol, yprime), np.dot(vecpol, xprime)) #idem
               polstr = "{} {} {}".format(np.sin(thetap)*np.cos(phip), np.sin(thetap)*np.sin(phip), np.cos(thetap))

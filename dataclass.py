@@ -1079,9 +1079,9 @@ class AllSourceData:
     if self.alldata[num_grb] is not None:
       if self.alldata[num_grb][num_sim] is not None:
         if type(selected_sat) == int:
-          hits_energy = self.alldata[num_grb][num_sim][selected_sat].CE
+          hits_energy.append(self.alldata[num_grb][num_sim][selected_sat].CE)
         elif selected_sat == "const":
-          hits_energy = self.alldata[num_grb][num_sim].const_data.CE
+          hits_energy.append(self.alldata[num_grb][num_sim].const_data.CE)
 
     distrib, ax1 = plt.subplots(1, 1, figsize=(8, 6))
     distrib.suptitle("Energy distribution of photons for a GRB")
@@ -1109,7 +1109,7 @@ class AllSourceData:
     ax1.hist(hist_pflux, bins=np.logspace(int(np.log10(min(hist_pflux))) - 1, int(np.log10(max(hist_pflux))), n_bins),
              cumulative=False, histtype="step", weights=[self.weights] * len(hist_pflux))
     ax1.set(xlabel="Peak flux (photons/cm2/s)", ylabel="Number of detection per year", xscale='log', yscale=y_scale)
-    ax1.legend()
+    #ax1.legend()
     plt.show()
 
   def det_proba_vs_flux(self, selected_sat="const"):
@@ -1248,19 +1248,16 @@ class AllSourceData:
       plt.show()
 
 
-<<<<<<< HEAD
 # bkg = "./backgrounds/bkg"  # _background_sat0_0000_90.0_0.0.inc1.id1.extracted.tra"
 # param = "./test/polGBM.par"
 # erg = (100, 460)
 # test = AllSourceData(bkg, param, erg)
 # test.make_const()
 # test.analyze()
-=======
 #bkg = "./backgrounds/bkg"  # _background_sat0_0000_90.0_0.0.inc1.id1.extracted.tra"
 #param = "./test/polGBM.par"
 #erg = (100, 460)
 #test = AllSourceData(bkg, param, erg)
->>>>>>> 61cab6bf24034d943c60fc2a50e05d4348b35a7f
 
 # class SimulationData(SimData):
 #   """
