@@ -243,8 +243,8 @@ class BkgContainer:
     self.single = 0
     self.single_cr = 0
     self.compton = 0
-    self.CE = 0
-    self.CE_sum = 0
+    self.CE = []
+    self.CE_sum = []
     self.polar_from_energy = []
     self.cr = 0
 
@@ -284,7 +284,10 @@ class BkgContainer:
         setattr(self, item, list(map(f, getattr(self, item))))
     if "CE" in opt_items:
       self.CE = np.array(self.CE)
-      self.CE_sum = np.sum(self.CE, axis=1)
+      if len(self.CE) == 0:
+        self.CE_sum = []
+      else:
+        self.CE_sum = np.sum(self.CE, axis=1)
       # print(1/self.CE[:, 1])
       # print((1 - m_elec * c_light**2 / charge_elem / 1000 * (1/self.CE[:, 1] - 1/(self.CE_sum))))
       # print(np.rad2deg(np.arccos(1 - m_elec * c_light**2 / charge_elem / 1000 * (1/self.CE[:, 1] - 1/(self.CE_sum)))))
@@ -319,8 +322,8 @@ class FormatedData:
     self.single = 0
     self.single_cr = 0
     self.compton = 0
-    self.CE = 0
-    self.CE_sum = 0
+    self.CE = []
+    self.CE_sum = []
     self.polar_from_energy = []
     self.cr = 0
     self.pol = []
@@ -381,7 +384,10 @@ class FormatedData:
           setattr(self, item, list(map(f, getattr(self, item))))
       if "CE" in opt_items:
         self.CE = np.array(self.CE)
-        self.CE_sum = np.sum(self.CE, axis=1)
+        if len(self.CE) == 0:
+          self.CE_sum = []
+        else:
+          self.CE_sum = np.sum(self.CE, axis=1)
         # print(1 / self.CE[:, 1])
         # print((1 - m_elec * c_light ** 2 / charge_elem / 1000 * (1 / self.CE[:, 1] - 1 / (self.CE_sum))))
         # print(np.rad2deg(np.arccos(1 - m_elec * c_light**2 / charge_elem / 1000 * (1/self.CE[:, 1] - 1/(self.CE_sum)))))
@@ -467,9 +473,13 @@ class FormatedData:
         else:
           self.mdp = MDP(self.cr * source_duration, self.b_rate * source_duration, self.mu100)
     if source_with_bkg:
-      self.snr = SNR(self.cr * source_duration, self.b_rate * source_duration)
+      snr_val = SNR(self.cr * source_duration, self.b_rate * source_duration)
     else:
-      self.snr = SNR((self.cr + self.b_rate) * source_duration, self.b_rate * source_duration)
+      snr_val = SNR((self.cr + self.b_rate) * source_duration, self.b_rate * source_duration)
+    if snr_val < 0:
+      self.snr = 0
+    else:
+      self.snr = snr_val
 
 
 
@@ -572,7 +582,8 @@ class AllSatData(list):
       elif item == "CE":
         setattr(self.const_data, item, np.array([[0, 0]]))
         for num_sat in considered_sat:
-          setattr(self.const_data, item, np.concatenate((getattr(self.const_data, item), getattr(self[num_sat], item))))
+          if len(getattr(self[num_sat], item)) != 0:
+            setattr(self.const_data, item, np.concatenate((getattr(self.const_data, item), getattr(self[num_sat], item))))
         setattr(self.const_data, item, getattr(self.const_data, item)[1:])
       else:
         if item not in ['s_eff', 'mu100', 'pa', 'fit_cr', 'mdp', 'snr', 'pa_err', 'mu100_err', 'fit_cr_err', 'fit_goodness']:
@@ -659,15 +670,26 @@ class AllSimData(list):
         if sim.const_data.compton >= n_image_min:
           temp_const_proba_compton_image += 1
 
-    self.proba_detec_fov = temp_proba_detec / self.n_sim_det
-    self.proba_detec_sky = temp_proba_detec / len(self)
-    self.proba_compton_image_fov = temp_proba_compton_image / self.n_sim_det
-    self.proba_compton_image_sky = temp_proba_compton_image / len(self)
-    self.const_proba_detec_fov = temp_const_proba_detec / self.n_sim_det
-    self.const_proba_detec_sky = temp_const_proba_detec / len(self)
-    self.const_proba_compton_image_fov = temp_const_proba_compton_image / self.n_sim_det
-    self.const_proba_compton_image_sky = temp_const_proba_compton_image / len(self)
-
+    if self.n_sim_det != 0:
+      self.proba_detec_fov = temp_proba_detec / self.n_sim_det
+      self.proba_compton_image_fov = temp_proba_compton_image / self.n_sim_det
+      self.const_proba_detec_fov = temp_const_proba_detec / self.n_sim_det
+      self.const_proba_compton_image_fov = temp_const_proba_compton_image / self.n_sim_det
+    else:
+      self.proba_detec_fov = 0
+      self.proba_compton_image_fov = 0
+      self.const_proba_detec_fov = 0
+      self.const_proba_compton_image_fov = 0
+    if len(self) != 0:
+      self.proba_detec_sky = temp_proba_detec / len(self)
+      self.proba_compton_image_sky = temp_proba_compton_image / len(self)
+      self.const_proba_detec_sky = temp_const_proba_detec / len(self)
+      self.const_proba_compton_image_sky = temp_const_proba_compton_image / len(self)
+    else:
+      self.proba_detec_sky = 0
+      self.proba_compton_image_sky = 0
+      self.const_proba_detec_sky = 0
+      self.const_proba_compton_image_sky = 0
 
 
 class AllSourceData:
@@ -1131,7 +1153,7 @@ class AllSourceData:
               snr_list.append(sim[selected_sat].snr)
     plt.hist(snr_list, bins=n_bins, cumulative=cumul, histtype="step", weights=[self.weights] * len(snr_list))
     plt.title(f"Inverse cumulative distribution of the SNR - {grb_type}")
-    plt.xlabel("MPD (%)")
+    plt.xlabel("SNR (dimensionless)")
     plt.ylabel("Number of detection per year")
     plt.grid()
     plt.yscale(y_scale)
