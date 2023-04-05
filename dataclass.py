@@ -464,10 +464,13 @@ class FormatedData:
         if source_with_bkg:
           print("MDP calculation may not work if source is simulated with the background")
           self.mdp = MDP((self.cr - self.b_rate) * source_duration, self.b_rate * source_duration, self.mu100)
-          self.snr = SNR(self.cr * source_duration, self.b_rate * source_duration)
         else:
           self.mdp = MDP(self.cr * source_duration, self.b_rate * source_duration, self.mu100)
-          self.snr = SNR((self.cr + self.b_rate) * source_duration, self.b_rate * source_duration)
+    if source_with_bkg:
+      self.snr = SNR(self.cr * source_duration, self.b_rate * source_duration)
+    else:
+      self.snr = SNR((self.cr + self.b_rate) * source_duration, self.b_rate * source_duration)
+
 
 
 class AllSatData(list):
