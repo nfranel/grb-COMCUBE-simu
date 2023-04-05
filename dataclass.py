@@ -1109,6 +1109,35 @@ class AllSourceData:
     plt.show()
 
 
+  def snr_histogram(self, selected_sat="const", cumul=-1, n_bins=30, y_scale="log"):
+    """
+    Display and histogram representing the number of grb that have at least a certain snr per year
+    """
+    if self.cat_file == "longGBM.txt":
+      grb_type = "lGRB"
+    elif self.cat_file == "shortGRB.txt":
+      grb_type = "sGRB"
+    else:
+      grb_type = "undefined source"
+
+    snr_list = []
+    for source in self.alldata:
+      if source is not None:
+        for sim in source:
+          if sim is not None:
+            if selected_sat == "const":
+              snr_list.append(sim.const_data.snr)
+            else:
+              snr_list.append(sim[selected_sat].snr)
+    plt.hist(snr_list, bins=n_bins, cumulative=cumul, histtype="step", weights=[self.weights] * len(snr_list))
+    plt.title(f"Inverse cumulative distribution of the SNR - {grb_type}")
+    plt.xlabel("MPD (%)")
+    plt.ylabel("Number of detection per year")
+    plt.grid()
+    plt.yscale(y_scale)
+    plt.show()
+
+
   def hits_vs_energy(self, num_grb, num_sim, selected_sat, n_bins=30):
     """
 
