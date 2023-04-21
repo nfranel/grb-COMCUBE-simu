@@ -74,7 +74,10 @@ def readevt(fname, ergcut=None):
         for line in evt.split("\n"):
           if line.startswith("CD"):
             dat = list(map(float, line.replace("   ", " ").split(" ")[1:]))
-            ret.append((dat[6] - dat[0], dat[7] - dat[1], dat[8] - dat[2]))
+            # Seems that events may be in an opposite order in the file, first second event the the first
+            # So coordinates with low index minus coordinates with high index
+            # ret.append((dat[6] - dat[0], dat[7] - dat[1], dat[8] - dat[2]))
+            ret.append((dat[0] - dat[6], dat[1] - dat[7], dat[2] - dat[8]))
   else:
     for evt in data:
       if "ET CO" in evt:
@@ -84,7 +87,10 @@ def readevt(fname, ergcut=None):
             E = [float(e) for e in line.replace("   ", " ").split(" ")[1:]]
             if inwindow(E[0] + E[2], ergcut):
               dat = list(map(float, lines[i + 1].replace("   ", " ").split(" ")[1:]))
-              ret.append((dat[6] - dat[0], dat[7] - dat[1], dat[8] - dat[2]))
+              # Seems that events may be in an opposite order in the file, first second event the the first
+              # So coordinates with low index minus coordinates with high index
+              # ret.append((dat[6] - dat[0], dat[7] - dat[1], dat[8] - dat[2]))
+              ret.append((dat[0] - dat[6], dat[1] - dat[7], dat[2] - dat[8]))
   return ret
 
 

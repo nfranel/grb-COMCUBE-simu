@@ -10,6 +10,7 @@ from inspect import signature
 import matplotlib.pyplot as plt
 import subprocess
 import matplotlib as mpl
+mpl.use('Qt5Agg')
 import matplotlib.colors as colors
 # import numpy as np
 # import gzip
@@ -288,9 +289,10 @@ class BkgContainer:
         self.CE_sum = []
       else:
         self.CE_sum = np.sum(self.CE, axis=1)
-      # print(1/self.CE[:, 1])
-      # print((1 - m_elec * c_light**2 / charge_elem / 1000 * (1/self.CE[:, 1] - 1/(self.CE_sum))))
-      # print(np.rad2deg(np.arccos(1 - m_elec * c_light**2 / charge_elem / 1000 * (1/self.CE[:, 1] - 1/(self.CE_sum)))))
+      # print("====================================\n1/CE\n====================================\n", 1/self.CE[:, 1])
+      # print("====================================\ncos theta\n====================================\n", (1 - m_elec * c_light**2 / charge_elem / 1000 * (1/self.CE[:, 1] - 1/(self.CE_sum))))
+      # print("====================================\ntheta\n====================================\n", np.rad2deg(np.arccos(1 - m_elec * c_light**2 / charge_elem / 1000 * (1/self.CE[:, 1] - 1/(self.CE_sum)))))
+      # self.polar_from_energy = "en cours"
     self.compton = np.sum(inwindow(self.CE_sum, ergcut))
     self.cr = self.compton / sim_duration
     self.single_cr = np.sum(inwindow(self.PE, ergcut)) / sim_duration
@@ -329,6 +331,7 @@ class FormatedData:
     self.pol = []
     self.unpol = []
     self.n_sat_detect = 1
+    self.arm = None
     self.s_eff = None
     self.mu100 = None
     self.pa = None
@@ -388,9 +391,8 @@ class FormatedData:
           self.CE_sum = []
         else:
           self.CE_sum = np.sum(self.CE, axis=1)
-        # print(1 / self.CE[:, 1])
-        # print((1 - m_elec * c_light ** 2 / charge_elem / 1000 * (1 / self.CE[:, 1] - 1 / (self.CE_sum))))
-        # print(np.rad2deg(np.arccos(1 - m_elec * c_light**2 / charge_elem / 1000 * (1/self.CE[:, 1] - 1/(self.CE_sum)))))
+        # Warning : the first value of self.CE is the second hit in the detector
+        self.polar_from_energy = np.rad2deg(np.arccos(1 - m_elec * c_light ** 2 / charge_elem / 1000 * (1 / self.CE[:, 0] - 1 / (self.CE_sum))))
       self.compton = np.sum(inwindow(self.CE_sum, ergcut))
       self.cr = self.compton / sim_duration
       self.single_cr = np.sum(inwindow(self.PE, ergcut)) / sim_duration
@@ -480,6 +482,7 @@ class FormatedData:
       self.snr = 0
     else:
       self.snr = snr_val
+    self.arm = np.abs(self.polar_from_energy - self.pol.polar_angles)
 
 
 
@@ -563,6 +566,8 @@ class AllSatData(list):
         for num_sat in considered_sat:
           temp_list = temp_list + getattr(self[num_sat], item)
         setattr(self.const_data, item, Polarigram(temp_list, 0, 0, 0, corr=options[2], ergcut=options[3]))
+        for num_sat in considered_sat:
+          getattr(self.const_data, item).polar_angles = getattr(self.const_data, item).polar_angles + getattr(self[num_sat], item).polar_angles
       elif item == "unpol":
         if self.pol_analysis:
           temp_list = []
@@ -575,7 +580,7 @@ class AllSatData(list):
         setattr(self.const_data, item, [])
         for num_sat in considered_sat:
           getattr(self.const_data, item).append(getattr(self[num_sat], item))
-      elif item == "CE_sum":
+      elif item == "CE_sum" or item == "polar_from_energy":
         setattr(self.const_data, item, np.array([]))
         for num_sat in considered_sat:
           setattr(self.const_data, item, np.concatenate((getattr(self.const_data, item), getattr(self[num_sat], item))))
@@ -586,7 +591,7 @@ class AllSatData(list):
             setattr(self.const_data, item, np.concatenate((getattr(self.const_data, item), getattr(self[num_sat], item))))
         setattr(self.const_data, item, getattr(self.const_data, item)[1:])
       else:
-        if item not in ['s_eff', 'mu100', 'pa', 'fit_cr', 'mdp', 'snr', 'pa_err', 'mu100_err', 'fit_cr_err', 'fit_goodness']:
+        if item not in ['arm', 's_eff', 'mu100', 'pa', 'fit_cr', 'mdp', 'snr', 'pa_err', 'mu100_err', 'fit_cr_err', 'fit_goodness']:
           for num_sat in considered_sat:
             setattr(self.const_data, item, getattr(self.const_data, item) + getattr(self[num_sat], item))
 
@@ -1337,23 +1342,19 @@ class AllSourceData:
       plt.show()
 
 
+bkg = "./backgrounds/bkg"  # _background_sat0_0000_90.0_0.0.inc1.id1.extracted.tra"
+param = "./wobkg/polGBM.par"
+erg = (100, 460)
+test = AllSourceData(bkg, param, erg)
+test.make_const()
+test.analyze()
+# for iteration in range(len(test.alldata[0][2][0].polar_from_energy)):
+#   print("========== comp energy and cinetic==========")
+#   print(abs(test.alldata[0][2][0].polar_from_energy[iteration] - test.alldata[0][2][0].pol.polar_angles[iteration]))
+arm = abs(test.alldata[0][2][0].polar_from_energy - test.alldata[0][2][0].pol.polar_angles)
+plt.hist(arm, cumulative=True)
+plt.show()
 # bkg = "./backgrounds/bkg"  # _background_sat0_0000_90.0_0.0.inc1.id1.extracted.tra"
 # param = "./test/polGBM.par"
 # erg = (100, 460)
 # test = AllSourceData(bkg, param, erg)
-# test.make_const()
-# test.analyze()
-
-#bkg = "./backgrounds/bkg"  # _background_sat0_0000_90.0_0.0.inc1.id1.extracted.tra"
-#param = "./test/polGBM.par"
-#erg = (100, 460)
-#test = AllSourceData(bkg, param, erg)
-
-# class SimulationData(SimData):
-#   """
-#   Class extracting and containing the data from the .tra files
-#   """
-#
-#   def __init__(self, source_prefix, bkg_prefix, param_file, erg_cut, duration):
-#     super.__init__()
-#     pass
