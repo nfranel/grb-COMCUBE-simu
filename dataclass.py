@@ -1173,15 +1173,56 @@ class AllSourceData:
     if self.alldata[num_grb] is not None:
       if self.alldata[num_grb][num_sim] is not None:
         if type(selected_sat) == int:
-          hits_energy = self.alldata[num_grb][num_sim][selected_sat].CE_sum
+          if self.alldata[num_grb][num_sim][selected_sat] is not None:
+            hits_energy = self.alldata[num_grb][num_sim][selected_sat].CE_sum
+          else:
+            print(f"No detection for the simulation {num_sim} for the source {self.namelist[num_grb]} on the selected sat : {selected_sat}, no histogram drawn")
         elif selected_sat == "const":
           hits_energy = self.alldata[num_grb][num_sim].const_data.CE_sum
+      else:
+        print(f"No detection for the simulation {num_sim} for the source {self.namelist[num_grb]}, no histogram drawn")
+    else:
+      print(f"No detection for this source : {self.namelist[num_grb]}, no histogram drawn")
 
     distrib, ax1 = plt.subplots(1, 1, figsize=(8, 6))
     distrib.suptitle("Energy distribution of photons for a GRB")
     ax1.hist(hits_energy, bins=n_bins, cumulative=0, histtype="step")
     ax1.set(xlabel="Energy (keV)", ylabel="Number of photon detected", yscale="linear")
     plt.show()
+
+
+  def arm_histogram(self, num_grb, num_sim, selected_sat="const", n_bins=30, arm_lim=0.8):
+    """
+
+    """
+    arm_values = []
+    if self.alldata[num_grb] is not None:
+      if self.alldata[num_grb][num_sim] is not None:
+        if type(selected_sat) == int:
+          if self.alldata[num_grb][num_sim][selected_sat] is not None:
+            arm_values = self.alldata[num_grb][num_sim][selected_sat].arm
+          else:
+            print(f"No detection for the simulation {num_sim} for the source {self.namelist[num_grb]} on the selected sat : {selected_sat}, no histogram drawn")
+            return
+        elif selected_sat == "const":
+          arm_values = self.alldata[num_grb][num_sim].const_data.arm
+      else:
+        print(f"No detection for the simulation {num_sim} for the source {self.namelist[num_grb]}, no histogram drawn")
+        return
+    else:
+      print(f"No detection for this source : {self.namelist[num_grb]}, no histogram drawn")
+      return
+
+    arm_threshold = np.sort(arm_values)[int(len(arm_values)*arm_lim-1)]
+
+    distrib, ax1 = plt.subplots(1, 1, figsize=(8, 6))
+    distrib.suptitle("ARM of photons for an event")
+    ax1.hist(arm_values, bins=n_bins, cumulative=0, histtype="step")
+    ax1.axvline(arm_threshold, color="black", label=f"{arm_lim*100}% values limit = {arm_threshold}")
+    ax1.set(xlabel="Angular Resolution Measurement (°)", ylabel="Number of photon detected", yscale="linear")
+    ax1.legend()
+    plt.show()
+
 
   def peak_flux_distri(self, selected_sat="const", snr_min=5, n_bins=30, y_scale="log"):
     """
@@ -1351,9 +1392,14 @@ test.analyze()
 # for iteration in range(len(test.alldata[0][2][0].polar_from_energy)):
 #   print("========== comp energy and cinetic==========")
 #   print(abs(test.alldata[0][2][0].polar_from_energy[iteration] - test.alldata[0][2][0].pol.polar_angles[iteration]))
-arm = abs(test.alldata[0][2][0].polar_from_energy - test.alldata[0][2][0].pol.polar_angles)
-plt.hist(arm, cumulative=True)
-plt.show()
+# arm = abs(test.alldata[0][2][0].polar_from_energy - test.alldata[0][2][0].pol.polar_angles)
+# plt.hist(arm, cumulative=True)
+# plt.show()
+test.arm_histogram(0, 2)
+for percent in np.linspace(0.1, 1, 10):
+  print(f" Number of photons with ARM below {np.sort(test.alldata[0][2].const_data.arm)[int(len(test.alldata[0][2].const_data.arm)*percent-1)]}° : ", np.sum(np.where(test.alldata[0][2].const_data.arm <= np.sort(test.alldata[0][2].const_data.arm)[int(len(test.alldata[0][2].const_data.arm)*percent-1)], 1, 0)))
+# print(np.sum(np.where(test.alldata[0][2].const_data.arm < 60.8, 1, 0)))
+print(f"total number of photons for the selected file : {len(test.alldata[0][2].const_data.arm)}")
 # bkg = "./backgrounds/bkg"  # _background_sat0_0000_90.0_0.0.inc1.id1.extracted.tra"
 # param = "./test/polGBM.par"
 # erg = (100, 460)
