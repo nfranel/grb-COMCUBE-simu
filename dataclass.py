@@ -14,6 +14,7 @@ mpl.use('Qt5Agg')
 import matplotlib.colors as colors
 # import numpy as np
 # import gzip
+import multiprocessing as mp
 
 class Fit:
   """
@@ -1413,18 +1414,18 @@ class AllSourceData:
       plt.show()
 
 
-bkg = "./backgrounds/bkg"  # _background_sat0_0000_90.0_0.0.inc1.id1.extracted.tra"
-param = "./wobkg/polGBM.par"
-erg = (100, 460)
-arm = 150
-test = AllSourceData(bkg, param, erg, arm)
-test.make_const()
-test.analyze()
-
-set_bin = np.linspace(-180, 180, 21)
-set_trafile = test.alldata[0][3][0]
-test_values = set_trafile.arm
-set_trafile.pol.show(set_trafile.unpol)
+# bkg = "./backgrounds/bkg"  # _background_sat0_0000_90.0_0.0.inc1.id1.extracted.tra"
+# param = "./wobkg/polGBM.par"
+# erg = (100, 460)
+# arm = 150
+# test = AllSourceData(bkg, param, erg, arm)
+# test.make_const()
+# test.analyze()
+#
+# set_bin = np.linspace(-180, 180, 21)
+# set_trafile = test.alldata[0][3][0]
+# test_values = set_trafile.arm
+# set_trafile.pol.show(set_trafile.unpol)
 # test_values = test.alldata[0][4][0].arm
 # for percent in np.linspace(0.1, 1, 10):
 #   print(f" Number of photons with ARM below {np.sort(test_values)[int(len(test_values)*percent-1)]}° : ", np.sum(np.where(test_values <= np.sort(test_values)[int(len(test_values)*percent-1)], 1, 0)))
@@ -1453,3 +1454,23 @@ from scipy.stats import ttest_ind
 # print("cov : ", set_trafile.pol.fits[-2].pcov)
 # print("PA, mu, S : ", set_trafile.pol.fits[-2].popt)
 # print(set_trafile.pol.polarigram_error)
+
+from time import sleep
+# def functest(timeval):
+#   # sleep(timeval)
+#   print(timeval)
+#   return
+#
+# list = []
+# timeval = np.random.random(10)
+# with mp.Pool(10) as pool:
+#   pool.map(functest, timeval)
+#
+from multiprocessing import Pool
+
+def f(x):
+    return x*x
+
+if __name__ == '__main__':
+    with Pool(5) as p:
+        print(p.map(f, [1, 2, 3]))
