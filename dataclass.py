@@ -28,7 +28,7 @@ class Fit:
   :field nparam:  int,      number of parameters of the function
   """
 
-  def __init__(self, f, x, y, bounds=None, comment=""):
+  def __init__(self, f, x, y, yerr=None, bounds=None, comment=""):
     """
     Instanciates a Fit
     :param f:       function, function fitted to data
@@ -41,9 +41,9 @@ class Fit:
     self.x = x
     self.y = y
     if bounds is None:
-      self.popt, self.pcov = curve_fit(f, x, y)[:2]
+      self.popt, self.pcov = curve_fit(f, x, y, sigma=yerr)[:2]
     else:
-      self.popt, self.pcov = curve_fit(f, x, y, bounds=bounds)[:2]
+      self.popt, self.pcov = curve_fit(f, x, y, sigma=yerr, bounds=bounds)[:2]
     self.comment = comment
     yf = f(x, *self.popt)
     self.q2 = np.sum((y - yf) ** 2)
@@ -82,7 +82,7 @@ class Polarigram(list):
   :field fits:  list,     list of Fit instances applied to the Polarigram
   """
 
-  def __init__(self, data, theta, phi, pa, bins=np.arange(-180, 181, 18), corr=False, ergcut=None):
+  def __init__(self, data, theta, phi, pa, armcut=180, bins=np.arange(-180, 181, 18), corr=False, ergcut=None):
     """
     Correctly instanciates a Polarigram, filled with data
     :param data:  list or str, list of angles in deg or name of .tra file
@@ -100,13 +100,39 @@ class Polarigram(list):
     self.expected_pa = pa
     self.fits = []
     self.polar_angles = []
+    self.polar_from_energy = []
     self.azim_angle_corrected = False
+    self.polarigram_error = None
+
     if type(data) == list:
       list.__init__(self, data)
     elif type(data) == str:
+      if data.endswith(".tra"):
+        with open(data) as f:
+          lines = f.read().split("\n")
+      elif data.endswith(".tra.gz"):
+        with gzip.open(data, "rt") as f:
+          lines = [e[:-1] for e in f]
+      else:
+        raise TypeError(f"{data} has unknown extension (known: .tra ou .tra.gz)")
+
+      CE = []
+      for i, line in enumerate(lines):
+        if line.startswith("CE"):
+          CE.append(treatCE(line.split(" ")[1:]))
+      CE = np.array(CE)
+      if len(CE) == 0:
+        CE_sum = []
+      else:
+        CE_sum = np.sum(CE, axis=1)
+
+      self.polar_from_energy = np.rad2deg(np.arccos(1 - m_elec * c_light ** 2 / charge_elem / 1000 * (1 / CE[:, 0] - 1 / (CE_sum))))
+
       angle_lists = analyzetra(data, self.theta, self.phi, self.expected_pa, corr=corr, ergcut=ergcut)
-      list.__init__(self, angle_lists[0])
       self.polar_angles = angle_lists[1]
+      clean_list = list(np.array(angle_lists[0])[np.where(np.abs(self.polar_from_energy - self.polar_angles) <= armcut, True, False)])
+      # list.__init__(self, angle_lists[0])
+      list.__init__(self, clean_list)
       self.behave()
       self.azim_angle_corrected = corr
 
@@ -167,10 +193,11 @@ class Polarigram(list):
         print("Unpolarized data do not allow a fit : a bin is empty")
         self.fits.append(None)
       else:
-        #p = p / unpol * np.mean(unpol)
-        p /= unpol
-        self.fits.append(Fit(modulation_func, var_x, p, bounds=fit_bounds, comment="modulation"))
-        self.fits.append(Fit(lambda x, a: a * x / x, var_x, p, comment="constant"))
+        self.polarigram_error = err_calculation(np.histogram(self, self.bins)[0], np.histogram(unpoldata, self.bins)[0], binw)
+        p = p / unpol * np.mean(unpol)
+        # p /= unpol
+        self.fits.append(Fit(modulation_func, var_x, p, yerr=self.polarigram_error, bounds=fit_bounds, comment="modulation"))
+        self.fits.append(Fit(lambda x, a: a * x / x, var_x, p, yerr=self.polarigram_error, comment="constant"))
     else:
       self.fits.append(Fit(modulation_func, var_x, p, bounds=fit_bounds, comment="modulation"))
       self.fits.append(Fit(lambda x, a: a * x / x, var_x, p, comment="constant"))
@@ -202,14 +229,15 @@ class Polarigram(list):
     ylabel = "Number of counts (per degree)"
     if unpoldata is not None:
       unpol = np.histogram(unpoldata, self.bins)[0] / binw
-      #p = p / unpol * np.mean(unpol)
-      p /= unpol
+      p = p / unpol * np.mean(unpol)
+      # p /= unpol
       ylabel = "Corrected number of count"
-    print(p, unpol)
+    # print(p, unpol)
     if fit:
       self.fit(unpoldata)
     if plot:
       plt.step(x, p, "g", where="mid")
+      plt.errorbar(x, p, yerr=self.polarigram_error, fmt = 'none')
       if plotfit is not None:
         xfit = np.arange(self.bins[0] - binw[0], self.bins[-1] + binw[-1], 1)
         for i in plotfit:
@@ -218,6 +246,7 @@ class Polarigram(list):
           plt.plot(xfit, self.fits[i].f(xfit, *self.fits[i].popt), "r--")
       plt.xlabel("Azimuthal scatter angle (degree)")
       plt.ylabel(ylabel)
+      plt.xlim(-180, 180)
       if show:
         plt.show()
     if ret:
@@ -246,7 +275,7 @@ class BkgContainer:
     self.compton = 0
     self.CE = []
     self.CE_sum = []
-    self.polar_from_energy = []
+    # self.polar_from_energy = []
     self.cr = 0
 
     self.dec, self.ra = datafile.split("_")[-2:]
@@ -303,7 +332,7 @@ class FormatedData:
   Class containing the data for 1 GRB, for 1 sim, and 1 satellite
   """
 
-  def __init__(self, data_list, sat_info, num_sat, sim_duration, opt_items=None, opt_analysis=None, corr=False,
+  def __init__(self, data_list, sat_info, num_sat, sim_duration, opt_items=None, opt_analysis=None, armcut=180, corr=False,
                ergcut=None):
     """
     -data_list : list of 1 or 2 files (pol or pol+unpol) from which extract the data
@@ -402,12 +431,12 @@ class FormatedData:
                                                                            sat_info[:3])
       if len(data_list) == 2:
         # Polarization analysis
-        self.pol = Polarigram(data_list[0], self.dec_sat_frame, self.ra_sat_frame, self.expected_pa, corr=corr,
+        self.pol = Polarigram(data_list[0], self.dec_sat_frame, self.ra_sat_frame, self.expected_pa, armcut=armcut, corr=corr,
                               ergcut=ergcut)
-        self.unpol = Polarigram(data_list[1], self.dec_sat_frame, self.ra_sat_frame, self.expected_pa, corr=corr,
+        self.unpol = Polarigram(data_list[1], self.dec_sat_frame, self.ra_sat_frame, self.expected_pa, armcut=armcut, corr=corr,
                                 ergcut=ergcut)
       elif len(data_list) == 1:
-        self.pol = Polarigram(data_list[0], self.dec_sat_frame, self.ra_sat_frame, self.expected_pa, corr=corr,
+        self.pol = Polarigram(data_list[0], self.dec_sat_frame, self.ra_sat_frame, self.expected_pa, armcut=armcut, corr=corr,
                               ergcut=ergcut)
         self.unpol = None
 
@@ -702,7 +731,7 @@ class AllSourceData:
   Class containing all the data for a full set of trafiles
   """
 
-  def __init__(self, bkg_prefix, param_file, erg_cut=(100, 460)):
+  def __init__(self, bkg_prefix, param_file, erg_cut=(100, 460), armcut=180):
     """
     Initiate the class AllData using
     - bkg_prefix : str, the prefix for background files
@@ -719,6 +748,7 @@ class AllSourceData:
     self.bkg_prefix = bkg_prefix
     self.param_file = param_file
     self.erg_cut = erg_cut
+    self.armcut = armcut
 
     #### A CODER AUTREMENT AVEC LECTURE D'UN FICHIER DE PARAMETRE POUR LES BACKGROUNDS
     self.bkg_sim_duration = 3600
@@ -726,8 +756,8 @@ class AllSourceData:
     opt_analysis = [treatCE, treatPE]
     # opt_items = None
     # opt_analysis = None
-    corr = True
-    self.options = [opt_items, opt_analysis, corr, self.erg_cut]
+    corr = False
+    self.options = [opt_items, opt_analysis, self.armcut, corr, self.erg_cut]
     self.pol_data = False
     self.sat_info = []
     with open(self.param_file) as f:
@@ -806,7 +836,7 @@ class AllSourceData:
     for sat_ite in range(len(self.sat_info)):
       self.sat_info[sat_ite].append(closest_bkg_rate(self.sat_info[sat_ite][0], self.bkgdata))
 
-    if self.cat_file=="None":
+    if self.cat_file == "None":
       cat_data = self.extract_sources(self.sim_prefix)
       self.namelist = cat_data[0]
       self.n_source = len(self.namelist)
@@ -1386,21 +1416,40 @@ class AllSourceData:
 bkg = "./backgrounds/bkg"  # _background_sat0_0000_90.0_0.0.inc1.id1.extracted.tra"
 param = "./wobkg/polGBM.par"
 erg = (100, 460)
-test = AllSourceData(bkg, param, erg)
+arm = 150
+test = AllSourceData(bkg, param, erg, arm)
 test.make_const()
 test.analyze()
-# for iteration in range(len(test.alldata[0][2][0].polar_from_energy)):
-#   print("========== comp energy and cinetic==========")
-#   print(abs(test.alldata[0][2][0].polar_from_energy[iteration] - test.alldata[0][2][0].pol.polar_angles[iteration]))
-# arm = abs(test.alldata[0][2][0].polar_from_energy - test.alldata[0][2][0].pol.polar_angles)
-# plt.hist(arm, cumulative=True)
+
+set_bin = np.linspace(-180, 180, 21)
+set_trafile = test.alldata[0][3][0]
+test_values = set_trafile.arm
+set_trafile.pol.show(set_trafile.unpol)
+# test_values = test.alldata[0][4][0].arm
+# for percent in np.linspace(0.1, 1, 10):
+#   print(f" Number of photons with ARM below {np.sort(test_values)[int(len(test_values)*percent-1)]}° : ", np.sum(np.where(test_values <= np.sort(test_values)[int(len(test_values)*percent-1)], 1, 0)))
+#   # print(f" Number of photons with ARM below {np.sort(test_values)[int(len(test_values) * percent - 1)]}° : ", np.sum(np.where(test_values < 180, 1, 0)))
+# # print(np.sum(np.where(test.alldata[0][2].const_data.arm < 60.8, 1, 0)))
+# print(f"total number of photons for the selected file : {len(test_values)}")
+
+from scipy.stats import ttest_ind
+
+# fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(15, 5))
+# binw = set_bin[1:]-set_bin[:-1]
+# binpos = 0.5 * (set_bin[1:] + set_bin[:-1])
+# ax1.hist(set_trafile.pol, bins=set_bin)
+# ax2.hist(set_trafile.unpol, bins=set_bin)
+# pol = np.histogram(set_trafile.pol, set_bin)[0] / binw
+# unpol = np.histogram(set_trafile.unpol, set_bin)[0] / binw
+# ax3.scatter(binpos, pol / unpol * np.mean(unpol))
+# xvar = np.linspace(-180, 180, 1000)
+# yvar = 0.57911 - 0.231988*np.cos((2*(xvar-17.0009))*np.pi/180)
+# ax3.plot(xvar, yvar, color="orange")
+# ax3.scatter(binpos, modulation_func(binpos, *set_trafile.pol.fits[-2].popt))
+# ax3.errorbar(binpos, pol / unpol * np.mean(unpol), yerr=set_trafile.pol.polarigram_error, fmt = 'none')
+# print(f"Modulation:           {set_trafile.mu100}+-{set_trafile.mu100_err}")
+# print(f"Polarization angle:   {set_trafile.pa}+-{set_trafile.pa_err}")
 # plt.show()
-test.arm_histogram(0, 2)
-for percent in np.linspace(0.1, 1, 10):
-  print(f" Number of photons with ARM below {np.sort(test.alldata[0][2].const_data.arm)[int(len(test.alldata[0][2].const_data.arm)*percent-1)]}° : ", np.sum(np.where(test.alldata[0][2].const_data.arm <= np.sort(test.alldata[0][2].const_data.arm)[int(len(test.alldata[0][2].const_data.arm)*percent-1)], 1, 0)))
-# print(np.sum(np.where(test.alldata[0][2].const_data.arm < 60.8, 1, 0)))
-print(f"total number of photons for the selected file : {len(test.alldata[0][2].const_data.arm)}")
-# bkg = "./backgrounds/bkg"  # _background_sat0_0000_90.0_0.0.inc1.id1.extracted.tra"
-# param = "./test/polGBM.par"
-# erg = (100, 460)
-# test = AllSourceData(bkg, param, erg)
+# print("cov : ", set_trafile.pol.fits[-2].pcov)
+# print("PA, mu, S : ", set_trafile.pol.fits[-2].popt)
+# print(set_trafile.pol.polarigram_error)

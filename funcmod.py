@@ -1,6 +1,7 @@
 import numpy as np
 import gzip
 from scipy.integrate import quad
+from time import time
 
 m_elec = 9.1094e-31
 c_light = 2.99792458e+8
@@ -163,6 +164,23 @@ def modulation_func(x, pa, mu, S):
   """
   return (S / (2 * np.pi)) * (1 - mu * np.cos(np.pi * (x - pa) / 90))
 
+def err_calculation(pol, unpol, binwidth):
+  """
+  Calculation of the errorbar of the corrected polarigram according to megalib's way
+  :param pol:      list,             bins for the polarized polarigram
+  :param unpol:    list,             bins for the unpolarized polarigram
+  :param binwidth: list,             bin widths
+  """
+  uncertainty = []
+  error = []
+  nbins = len(pol)
+  mean_unpol = np.mean(unpol)
+
+  uncertainty = (pol/unpol**2*mean_unpol*np.sqrt(unpol))**2 + (mean_unpol/unpol*np.sqrt(pol))**2
+  for ite_j in range(nbins):
+    uncertainty += (pol / unpol / nbins * np.sqrt(unpol[ite_j])) ** 2
+  error = np.sqrt(uncertainty)
+  return error/binwidth
 
 def fname2decra(fname, polmark="inc1"):
   """
@@ -214,10 +232,10 @@ def decra2tpPA(dec, ra, s, unit="deg"):
   xprime = [-np.sin(s[1]), np.cos(s[1]), 0]
   phi = np.mod(np.arctan2(np.dot(source, yprime), np.dot(source, xprime)), 2 * np.pi)
   # Polarization
-  dec_p, ra_p = np.mod(.5 * np.pi - dec,
-                       np.pi), ra + np.pi  # polarization direction in world coordinates (towards north or south pole)
-  vecpol = [np.sin(dec_p) * np.cos(ra_p), np.sin(dec_p) * np.sin(ra_p),
-            np.cos(dec_p)]  # polarization vector in world coordinates
+  dec_p, ra_p = np.mod(.5 * np.pi - dec, np.pi), ra + np.pi  # polarization direction in world coordinates (towards north or south pole)
+  vecpol = [np.sin(dec_p) * np.cos(ra_p), np.sin(dec_p) * np.sin(ra_p), np.cos(dec_p)]  # polarization vector in world coordinates
+  # print(f"Pour dec : {np.rad2deg(dec)}, ra : {np.rad2deg(ra)} on a PA : {np.rad2deg(np.arctan2(np.dot(vecpol, yprime), np.dot(vecpol, xprime)))}")
+  # print(f"Pour dec : {np.rad2deg(dec)}, ra : {np.rad2deg(ra)} on a avec le calcul bizarre PA : {np.rad2deg(np.arccos(np.dot(vecpol, np.cross(source, yprime))))}")
   return np.rad2deg(theta), np.rad2deg(phi), np.rad2deg(np.arccos(np.dot(vecpol, np.cross(source, yprime))))
 
 
