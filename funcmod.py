@@ -35,6 +35,16 @@ def treatPE(s):
   # return float(s[0]) + float(s[4])
   return float(s)
 
+def calculate_polar_angle(CE, CE_sum):
+  cos_value = [1 - m_elec * c_light ** 2 / charge_elem / 1000 * (1 / CE[ite] - 1 / CE_sum[ite]) if abs(1 - m_elec * c_light ** 2 / charge_elem / 1000 * (1 / CE[ite] - 1 / CE_sum[ite])) <=1 else 1 for ite in range(len(CE))]
+  ## Tester ces 2 versions
+  cos_value = np.ones(len(CE))
+  for ite in range(len(CE)):
+    cos_value[ite] = 1 - m_elec * c_light ** 2 / charge_elem / 1000 * (1 / CE[ite] - 1 / CE_sum[ite])
+    if abs(cos_value[ite]) > 1:
+      cos_value[ite] = 1
+
+  return np.rad2deg(np.arccos(cos_value))
 
 def inwindow(E, ergcut):
   """

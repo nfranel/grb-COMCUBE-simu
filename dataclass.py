@@ -15,6 +15,8 @@ import matplotlib.colors as colors
 # import numpy as np
 # import gzip
 import multiprocessing as mp
+from itertools import repeat
+from time import time
 
 class Fit:
   """
@@ -126,8 +128,18 @@ class Polarigram(list):
         CE_sum = []
       else:
         CE_sum = np.sum(CE, axis=1)
-
+      
+#      if abs(1 - m_elec * c_light ** 2 / charge_elem / 1000 * (1 / CE[:, 0] - 1 / (CE_sum))) > 1:
+#        print(abs(1 - m_elec * c_light ** 2 / charge_elem / 1000 * (1 / CE[:, 0] - 1 / (CE_sum))))
       self.polar_from_energy = np.rad2deg(np.arccos(1 - m_elec * c_light ** 2 / charge_elem / 1000 * (1 / CE[:, 0] - 1 / (CE_sum))))
+      print(self.polar_from_energy)
+#      print(len(CE[:, 0]), len(CE_sum))
+      self.polar_from_energy = calculate_polar_angle(CE[:, 0], CE_sum)
+      print(self.polar_from_energy)
+      stop
+      for value in self.polar_from_energy:
+        if np.isnan(value):
+          print(1 - m_elec * c_light ** 2 / charge_elem / 1000 * (1 / CE[:, 0] - 1 / (CE_sum)))
 
       angle_lists = analyzetra(data, self.theta, self.phi, self.expected_pa, corr=corr, ergcut=ergcut)
       self.polar_angles = angle_lists[1]
@@ -319,10 +331,6 @@ class BkgContainer:
         self.CE_sum = []
       else:
         self.CE_sum = np.sum(self.CE, axis=1)
-      # print("====================================\n1/CE\n====================================\n", 1/self.CE[:, 1])
-      # print("====================================\ncos theta\n====================================\n", (1 - m_elec * c_light**2 / charge_elem / 1000 * (1/self.CE[:, 1] - 1/(self.CE_sum))))
-      # print("====================================\ntheta\n====================================\n", np.rad2deg(np.arccos(1 - m_elec * c_light**2 / charge_elem / 1000 * (1/self.CE[:, 1] - 1/(self.CE_sum)))))
-      # self.polar_from_energy = "en cours"
     self.compton = np.sum(inwindow(self.CE_sum, ergcut))
     self.cr = self.compton / sim_duration
     self.single_cr = np.sum(inwindow(self.PE, ergcut)) / sim_duration
@@ -528,13 +536,13 @@ class AllSatData(list):
     self.dec_world_frame = None
     self.ra_world_frame = None
     self.pol_analysis = True
-    loading_count = 0
+    self.loading_count = 0
     for num_sat in range(self.n_sat):
       flist = subprocess.getoutput("ls {}_sat{}_{:04d}_*".format(source_prefix, num_sat, num_sim)).split("\n")
       if len(flist) == 2:
         temp_list.append(FormatedData(flist, sat_info[num_sat], num_sat, sim_duration, *options))
         self.n_sat_det += 1
-        loading_count += 2
+        self.loading_count += 2
       elif len(flist) == 1:
         if flist[0].startswith("ls: cannot access"):
           temp_list.append(None)
@@ -542,16 +550,15 @@ class AllSatData(list):
           temp_list.append(FormatedData(flist, sat_info[num_sat], sim_duration, num_sat, *options))
           self.n_sat_det += 1
           self.pol_analysis = False
-          loading_count += 1
+          self.loading_count += 1
           raise Warning(f'Polarization analysis is expected but the wrong number of trafile has been found, no polarization data were extracted : {flist}')
         else:
           temp_list.append(FormatedData(flist, sat_info[num_sat], sim_duration, num_sat, *options))
           self.n_sat_det += 1
           self.pol_analysis = False
-          loading_count += 1
+          self.loading_count += 1
       if not flist[0].startswith("ls: cannot access") and self.dec_world_frame is None:
         self.dec_world_frame, self.ra_world_frame = fname2decra(flist[0])
-    print(f"Total of {loading_count} files loaded for simulation {num_sim}")
     list.__init__(self, temp_list)
     self.const_data = None
 
@@ -652,12 +659,13 @@ class AllSimData(list):
     self.proba_compton_image_sky = None
     self.const_proba_detec_sky = None
     self.const_proba_compton_image_sky = None
+    output_message = None
     source_prefix = f"{sim_prefix}_{self.source_name}"
     flist = subprocess.getoutput("ls {}_*".format(source_prefix)).split("\n")
     if flist[0].startswith("ls: cannot access"):
       print(f"No file to be loaded for source {self.source_name}")
     else:
-      print(f"{len(flist)} files to be loaded for source {self.source_name} : ")
+      output_message = f"{len(flist)} files to be loaded for source {self.source_name} : "
     for num_sim in range(n_sim):
       flist = subprocess.getoutput("ls {}_*_{:04d}_*".format(source_prefix, num_sim)).split("\n")
       if len(flist) >= 2:
@@ -670,6 +678,11 @@ class AllSimData(list):
           temp_list.append(AllSatData(source_prefix, num_sim, pol_analysis, sat_info, sim_duration, options))
           self.n_sim_det += 1
     list.__init__(self, temp_list)
+    for sim_ite, sim in enumerate(self):
+      if sim is not None:
+        if output_message is not None:
+          output_message += f"\n  Total of {sim.loading_count} files loaded for simulation {sim_ite}"
+    print(output_message)
 
   def get_keys(self):
     print("======================================================================")
@@ -732,7 +745,7 @@ class AllSourceData:
   Class containing all the data for a full set of trafiles
   """
 
-  def __init__(self, bkg_prefix, param_file, erg_cut=(100, 460), armcut=180):
+  def __init__(self, bkg_prefix, param_file, erg_cut=(100, 460), armcut=180, parallel=False):
     """
     Initiate the class AllData using
     - bkg_prefix : str, the prefix for background files
@@ -848,9 +861,15 @@ class AllSourceData:
       self.n_source = len(self.namelist)
       self.fluence = [calc_fluence(cat_data, source_index, erg_cut)*self.sim_duration for source_index in range(self.n_source)]
     self.s_eff = None
-    self.alldata = [
-      AllSimData(self.sim_prefix, source_ite, cat_data, self.mode, self.n_sim, self.sat_info, self.pol_data, self.sim_duration,
-                 self.options) for source_ite in range(self.n_source)]
+    
+#    init_time = time()
+    if parallel:
+      print("Parallel extraction of the data")
+      with mp.Pool() as pool:
+        self.alldata = pool.starmap(AllSimData, zip(repeat(self.sim_prefix), range(self.n_source), repeat(cat_data), repeat(self.mode), repeat(self.n_sim), repeat(self.sat_info), repeat(self.pol_data), repeat(self.sim_duration), repeat(self.options)))
+    else:
+      self.alldata = [AllSimData(self.sim_prefix, source_ite, cat_data, self.mode, self.n_sim, self.sat_info, self.pol_data, self.sim_duration, self.options) for source_ite in range(self.n_source)]
+#    print("temps d'extraction des données", time()-init_time)
 
     self.cat_duration = 10
     self.com_duty = 1
@@ -1455,22 +1474,28 @@ from scipy.stats import ttest_ind
 # print("PA, mu, S : ", set_trafile.pol.fits[-2].popt)
 # print(set_trafile.pol.polarigram_error)
 
-from time import sleep
-# def functest(timeval):
-#   # sleep(timeval)
-#   print(timeval)
-#   return
-#
-# list = []
-# timeval = np.random.random(10)
-# with mp.Pool(10) as pool:
-#   pool.map(functest, timeval)
-#
-from multiprocessing import Pool
+#from time import sleep
+#from itertools import repeat
+#def functest(intro, timeval, message1, message2):
+#  sleep(timeval)
+#  liste.append(timeval)
+  #return [timeval, message]
+#  return f"{intro} {timeval}{message1}{message2}"
+#intro = "il faut attendre un peu, environ"
+#message1 = "secondes. "
+#message2 = "On peut fermer le programme maintenant"
+#message = ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j"]
+#timeval = np.random.random(10)
+#functest(timeval[0], message[0])
+#init_time = time()
+#valtest = list(map(functest, intro, timeval, message1, message2))
+#print(valtest)
+#print(time()-init_time)
+#init_time = time()
+#with mp.Pool() as pool:
+#  val = pool.starmap(functest, zip(repeat(intro), timeval, repeat(message1), repeat(message2)))
 
-def f(x):
-    return x*x
-
-if __name__ == '__main__':
-    with Pool(5) as p:
-        print(p.map(f, [1, 2, 3]))
+#print(val)
+#print(time()-init_time)
+#print(list(zip([1], [2], [3],[1, 1, 1, 1, 1, 1, 1])))
+#pool.starmap(AllSimData, zip(repeat(self.sim_prefix), range(self.n_source), repeat(cat_data), repeat(self.mode), repeat(self.n_sim), repeat(self.sat_info), repeat(self.pol_data), repeat(self.sim_duration), repeat(self.options))
