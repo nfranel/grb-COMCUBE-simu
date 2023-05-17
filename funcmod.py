@@ -36,14 +36,12 @@ def treatPE(s):
   return float(s)
 
 def calculate_polar_angle(CE, CE_sum):
-  cos_value = [1 - m_elec * c_light ** 2 / charge_elem / 1000 * (1 / CE[ite] - 1 / CE_sum[ite]) if abs(1 - m_elec * c_light ** 2 / charge_elem / 1000 * (1 / CE[ite] - 1 / CE_sum[ite])) <=1 else 1 for ite in range(len(CE))]
-  ## Tester ces 2 versions
-  cos_value = np.ones(len(CE))
-  for ite in range(len(CE)):
-    cos_value[ite] = 1 - m_elec * c_light ** 2 / charge_elem / 1000 * (1 / CE[ite] - 1 / CE_sum[ite])
-    if abs(cos_value[ite]) > 1:
-      cos_value[ite] = 1
-
+  """
+  Function to calculate the polar angle using the energy deposits
+  This function is made so that the cos of the angle is >=-1 as it's not possible to take the arccos of a number <-1.
+  By construction of cos_value, the value cannot exceed 1.
+  """
+  cos_value = [1 - m_elec * c_light ** 2 / charge_elem / 1000 * (1 / CE[ite] - 1 / CE_sum[ite]) if 1 - m_elec * c_light ** 2 / charge_elem / 1000 * (1 / CE[ite] - 1 / CE_sum[ite]) >= -1 else -1 for ite in range(len(CE))]
   return np.rad2deg(np.arccos(cos_value))
 
 def inwindow(E, ergcut):

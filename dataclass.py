@@ -129,17 +129,11 @@ class Polarigram(list):
       else:
         CE_sum = np.sum(CE, axis=1)
       
-#      if abs(1 - m_elec * c_light ** 2 / charge_elem / 1000 * (1 / CE[:, 0] - 1 / (CE_sum))) > 1:
-#        print(abs(1 - m_elec * c_light ** 2 / charge_elem / 1000 * (1 / CE[:, 0] - 1 / (CE_sum))))
-      self.polar_from_energy = np.rad2deg(np.arccos(1 - m_elec * c_light ** 2 / charge_elem / 1000 * (1 / CE[:, 0] - 1 / (CE_sum))))
-      print(self.polar_from_energy)
-#      print(len(CE[:, 0]), len(CE_sum))
       self.polar_from_energy = calculate_polar_angle(CE[:, 0], CE_sum)
-      print(self.polar_from_energy)
-      stop
-      for value in self.polar_from_energy:
-        if np.isnan(value):
-          print(1 - m_elec * c_light ** 2 / charge_elem / 1000 * (1 / CE[:, 0] - 1 / (CE_sum)))
+      #for value in self.polar_from_energy:
+      #  if np.isnan(value):
+      #    print("======================================")
+      #    print(self.polar_from_energy)
 
       angle_lists = analyzetra(data, self.theta, self.phi, self.expected_pa, corr=corr, ergcut=ergcut)
       self.polar_angles = angle_lists[1]
