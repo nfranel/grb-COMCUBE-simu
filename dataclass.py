@@ -1426,28 +1426,23 @@ class AllSourceData:
       ax1.legend()
       plt.show()
 
-
+# init_time = time()
 # bkg = "./backgrounds/bkg"  # _background_sat0_0000_90.0_0.0.inc1.id1.extracted.tra"
 # param = "./wobkg/polGBM.par"
 # erg = (100, 460)
-# arm = 150
-# test = AllSourceData(bkg, param, erg, arm)
+# arm = 180
+# test = AllSourceData(bkg, param, erg, arm, parallel=True)
 # test.make_const()
 # test.analyze()
+# print("=======================================")
+# print("processing time : ", time()-init_time, "seconds")
+# print("=======================================")
 #
 # set_bin = np.linspace(-180, 180, 21)
 # set_trafile = test.alldata[0][3][0]
 # test_values = set_trafile.arm
 # set_trafile.pol.show(set_trafile.unpol)
-# test_values = test.alldata[0][4][0].arm
-# for percent in np.linspace(0.1, 1, 10):
-#   print(f" Number of photons with ARM below {np.sort(test_values)[int(len(test_values)*percent-1)]}° : ", np.sum(np.where(test_values <= np.sort(test_values)[int(len(test_values)*percent-1)], 1, 0)))
-#   # print(f" Number of photons with ARM below {np.sort(test_values)[int(len(test_values) * percent - 1)]}° : ", np.sum(np.where(test_values < 180, 1, 0)))
-# # print(np.sum(np.where(test.alldata[0][2].const_data.arm < 60.8, 1, 0)))
-# print(f"total number of photons for the selected file : {len(test_values)}")
-
-from scipy.stats import ttest_ind
-
+#
 # fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(15, 5))
 # binw = set_bin[1:]-set_bin[:-1]
 # binpos = 0.5 * (set_bin[1:] + set_bin[:-1])
