@@ -128,6 +128,8 @@ class Polarigram(list):
         CE_sum = []
       else:
         CE_sum = np.sum(CE, axis=1)
+        CE = CE[inwindow(CE_sum, ergcut)]
+        CE_sum = CE_sum[inwindow(CE_sum, ergcut)]
       
       self.polar_from_energy = calculate_polar_angle(CE[:, 0], CE_sum)
       #for value in self.polar_from_energy:
@@ -137,7 +139,26 @@ class Polarigram(list):
 
       angle_lists = analyzetra(data, self.theta, self.phi, self.expected_pa, corr=corr, ergcut=ergcut)
       self.polar_angles = angle_lists[1]
+      #try:
       clean_list = list(np.array(angle_lists[0])[np.where(np.abs(self.polar_from_energy - self.polar_angles) <= armcut, True, False)])
+      #except ValueError:
+      #  print("angle list : ", np.array(angle_lists[0]))
+      #  print("===============================")
+      #  print("len of angle list : ", len(angle_lists[0]))
+      #  print("===============================")
+      #  print("len of polar : ", len(self.polar_angles))
+      #  print("===============================")
+      #  print("len of polar from energ: ", len(self.polar_from_energy))
+      #  print("===============================")
+      #  print("===============================")
+      #  print("len of  : CE", len(CE), "len of  CE_sum: ", len(CE_sum), "data opened  : ", data)
+      #  print("===============================")
+      #  print("===============================")
+      #  print("polar : ", self.polar_angles)
+      #  print("===============================")
+      #  print("polar from energ: ", self.polar_from_energy)
+
+
       # list.__init__(self, angle_lists[0])
       list.__init__(self, clean_list)
       self.behave()
@@ -325,6 +346,8 @@ class BkgContainer:
         self.CE_sum = []
       else:
         self.CE_sum = np.sum(self.CE, axis=1)
+        self.CE = self.CE[inwindow(self.CE_sum, ergcut)]
+        self.CE_sum = self.CE_sum[inwindow(self.CE_sum, ergcut)]
     self.compton = np.sum(inwindow(self.CE_sum, ergcut))
     self.cr = self.compton / sim_duration
     self.single_cr = np.sum(inwindow(self.PE, ergcut)) / sim_duration
@@ -423,6 +446,8 @@ class FormatedData:
           self.CE_sum = []
         else:
           self.CE_sum = np.sum(self.CE, axis=1)
+          self.CE = self.CE[inwindow(self.CE_sum, ergcut)]
+          self.CE_sum = self.CE_sum[inwindow(self.CE_sum, ergcut)]
         # Warning : the first value of self.CE is the second hit in the detector
         self.polar_from_energy = np.rad2deg(np.arccos(1 - m_elec * c_light ** 2 / charge_elem / 1000 * (1 / self.CE[:, 0] - 1 / (self.CE_sum))))
       self.compton = np.sum(inwindow(self.CE_sum, ergcut))
@@ -1162,12 +1187,16 @@ class AllSourceData:
       if source is not None:
         for sim in source:
           if sim is not None:
-            if selected_sat == "const":
-              if sim.const_data.mdp <= mdp_threshold:
-                mdp_list.append(sim.const_data.mdp*100)
-            else:
-              if sim[selected_sat].mdp <= mdp_threshold:
-                mdp_list.append(sim[selected_sat].mdp*100)
+            if type(selected_sat) == int:
+              if sim[selected_sat] is not None:
+                if sim[selected_sat].mdp is not None:
+                  if sim[selected_sat].mdp <= mdp_threshold:
+                    mdp_list.append(sim[selected_sat].mdp*100)
+            elif selected_sat == "const":
+              if sim.const_data is not None:
+                if sim.const_data.mdp is not None:
+                  if sim.const_data.mdp <= mdp_threshold:
+                    mdp_list.append(sim.const_data.mdp*100)
     plt.hist(mdp_list, bins=n_bins, cumulative=cumul, histtype="step", weights=[self.weights] * len(mdp_list))
     if cumul:
       plt.title(f"Cumulative distribution of the MDP - {grb_type}")
