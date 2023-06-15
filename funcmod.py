@@ -490,40 +490,82 @@ def calc_fluence(catalog, index, ergCut):
   return quad(func, ergCut[0], ergCut[1])[0]
 
 
-def eff_area_pola_func(theta, angle_lim, func_type="cos"):
+def duty_calc(inclination):
+  print("inc value : ", inclination)
+  precise = False
+  if precise:
+    if inclination <= 5:
+      return 1.
+    elif inclination <= 10:
+      return 0.95
+    elif inclination <= 15:
+      return 0.90
+    elif inclination <= 20:
+      return 0.84
+    elif inclination <= 25:
+      return 0.75
+    elif inclination <= 30:
+      return 0.7
+    else:
+      return 0.65
+  else:
+    if inclination == 5:
+      return 1.
+    elif inclination == 45:
+      return 0.67
+    elif inclination == 90:
+      return 0.5
+
+
+def eff_area_pola_func(theta, angle_lim, func_type="cos", duty=1.):
+  """
+  Returns a value of the effective area for polarisation based on a cos function to account for the reception angle relative to the instrument's zenith
+  This is an approximation as the cos function does not perfectly fit the data
+  If func_type "FoV" computes instead the number of satellites viewing that part of the sky (no sensitivity considered)
+  """
+  if duty < 0 or duty > 1:
+    print("Error estimating the duty time, incorrect value")
+    return 0
   if func_type == "cos":
     if theta < np.deg2rad(angle_lim):
       ampl = 5.5
       ang_freq = 0.222
       phi0 = 0.76
       y_off_set = 2.5
-      return np.absolute((ampl) * np.cos(theta * 2 * np.pi * ang_freq - phi0)) + y_off_set
+      return (np.absolute((ampl) * np.cos(theta * 2 * np.pi * ang_freq - phi0)) + y_off_set) * duty
     else:
       return 0
   elif func_type == "FoV":
     if theta < np.deg2rad(angle_lim):
-      return 1
+      return 1 * duty
     else:
       return 0
 
 
-def eff_area_spectro_func(theta, angle_lim, func_type="data"):
+def eff_area_spectro_func(theta, angle_lim, func_type="data", duty=True):
+  """
+  Returns a value of the effective area for spectrometry based on interpolation from values obtained from different reception angle relative to the instrument's zenith
+  This is an approximation as the values used are obtained for monoenergetic simulations - grbs are not and sensitivity of the instrument depends on energy
+  If func_type "FoV" computes instead the number of satellites viewing that part of the sky (no sensitivity considered)
+  """
+  if duty < 0 or duty > 1:
+    print("Error estimating the duty time, incorrect value")    
+    return 0
   if func_type == "data":
     if theta < np.deg2rad(angle_lim):
       angles = np.deg2rad(np.array([0, 10, 20, 30, 40, 50, 60, 70, 80, 89, 91, 100, 110]))
       eff_area = np.array([137.4, 148.5, 158.4, 161.9, 157.4, 150.4, 133.5, 112.8, 87.5, 63.6, 64.7, 71.8, 77.3])
       interpo_ite = 1
       if theta > angles[-1]:
-        return eff_area[-2] + (eff_area[-1] - eff_area[-2]) / (angles[-1] - angles[-2]) * (theta - angles[-2])
+        return (eff_area[-2] + (eff_area[-1] - eff_area[-2]) / (angles[-1] - angles[-2]) * (theta - angles[-2])) * duty
       else:
         while theta > angles[interpo_ite]:
           interpo_ite += 1
-        return eff_area[interpo_ite - 1] + (eff_area[interpo_ite] - eff_area[interpo_ite - 1]) / (
-                  angles[interpo_ite] - angles[interpo_ite - 1]) * (theta - angles[interpo_ite - 1])
+        return (eff_area[interpo_ite - 1] + (eff_area[interpo_ite] - eff_area[interpo_ite - 1]) / (angles[interpo_ite] - angles[interpo_ite - 1]) * (theta - angles[interpo_ite - 1])) * duty
     else:
       return 0
   elif func_type == "FoV":
     if theta < np.deg2rad(angle_lim):
-      return 1
+      return 1 * duty
     else:
       return 0
