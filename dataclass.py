@@ -132,34 +132,10 @@ class Polarigram(list):
         CE_sum = CE_sum[inwindow(CE_sum, ergcut)]
       
       self.polar_from_energy = calculate_polar_angle(CE[:, 0], CE_sum)
-      #for value in self.polar_from_energy:
-      #  if np.isnan(value):
-      #    print("======================================")
-      #    print(self.polar_from_energy)
 
       angle_lists = analyzetra(data, self.theta, self.phi, self.expected_pa, corr=corr, ergcut=ergcut)
       self.polar_angles = angle_lists[1]
-      #try:
       clean_list = list(np.array(angle_lists[0])[np.where(np.abs(self.polar_from_energy - self.polar_angles) <= armcut, True, False)])
-      #except ValueError:
-      #  print("angle list : ", np.array(angle_lists[0]))
-      #  print("===============================")
-      #  print("len of angle list : ", len(angle_lists[0]))
-      #  print("===============================")
-      #  print("len of polar : ", len(self.polar_angles))
-      #  print("===============================")
-      #  print("len of polar from energ: ", len(self.polar_from_energy))
-      #  print("===============================")
-      #  print("===============================")
-      #  print("len of  : CE", len(CE), "len of  CE_sum: ", len(CE_sum), "data opened  : ", data)
-      #  print("===============================")
-      #  print("===============================")
-      #  print("polar : ", self.polar_angles)
-      #  print("===============================")
-      #  print("polar from energ: ", self.polar_from_energy)
-
-
-      # list.__init__(self, angle_lists[0])
       list.__init__(self, clean_list)
       self.behave()
       self.azim_angle_corrected = corr
@@ -302,6 +278,7 @@ class BkgContainer:
     self.single_cr = 0
     self.compton = 0
     self.CE = []
+    self.PE = []
     self.CE_sum = []
     # self.polar_from_energy = []
     self.cr = 0
@@ -324,7 +301,7 @@ class BkgContainer:
     for i, line in enumerate(lines):
       if line.startswith("  Number of triggered events:"):
         self.triggers = int(line.split(" ")[-1])
-      elif line.startswith("      TCeBr3Det:"):
+      elif line.startswith("      TUCDscintDet:"):
         self.calor = int(line.split(" ")[-1])
       elif line.startswith("      TSiSDDet:"):
         self.dsssd = int(line.split(" ")[-1])
@@ -380,6 +357,7 @@ class FormatedData:
     self.single_cr = 0
     self.compton = 0
     self.CE = []
+    self.PE = []
     self.CE_sum = []
     self.polar_from_energy = []
     self.cr = 0
@@ -424,7 +402,7 @@ class FormatedData:
       for i, line in enumerate(lines):
         if line.startswith("  Number of triggered events:"):
           self.triggers = int(line.split(" ")[-1])
-        elif line.startswith("      TCeBr3Det:"):
+        elif line.startswith("      TUCDscintDet:"):
           self.calor = int(line.split(" ")[-1])
         elif line.startswith("      TSiSDDet:"):
           self.dsssd = int(line.split(" ")[-1])
@@ -540,7 +518,6 @@ class FormatedData:
     else:
       self.snr = snr_val
     self.arm = np.abs(self.polar_from_energy - self.pol.polar_angles)
-
 
 
 class AllSatData(list):
@@ -1166,8 +1143,10 @@ class AllSourceData:
       if mode == "no_cm":
         plt.scatter(phip, thetap, s=12, marker="*")
       elif mode == "t90":
+        cat_data.tofloat("t90")
         sc = plt.scatter(phip, thetap, s=12, marker="*", c=cat_data.t90, norm=colors.LogNorm())
-        plt.colorbar(sc)
+        cbar = plt.colorbar(sc)
+        cbar.set_label("GRB Duration - T90 (s)", rotation=270, labelpad=20)
       plt.show()
 
 
@@ -1197,15 +1176,17 @@ class AllSourceData:
                 if sim.const_data.mdp is not None:
                   if sim.const_data.mdp <= mdp_threshold:
                     mdp_list.append(sim.const_data.mdp*100)
-    plt.hist(mdp_list, bins=n_bins, cumulative=cumul, histtype="step", weights=[self.weights] * len(mdp_list))
+    fig, ax = plt.subplots(1, 1)
+    ax.hist(mdp_list, bins=n_bins, cumulative=cumul, histtype="step", weights=[self.weights] * len(mdp_list),
+            label=f"Number of GRBs with MDP < {mdp_threshold*100}% : {len(mdp_list)}")
     if cumul:
-      plt.title(f"Cumulative distribution of the MDP - {grb_type}")
+      ax.set(xlabel="MPD (%)", ylabel="Number of detection per year", yscale=y_scale,
+             title=f"Cumulative distribution of the MDP - {grb_type}")
     else:
-      plt.title(f"Distribution of the MDP - {grb_type}")
-    plt.xlabel("MPD (%)")
-    plt.ylabel("Number of detection per year")
-    plt.grid()
-    plt.yscale(y_scale)
+      ax.set(xlabel="MPD (%)", ylabel="Number of detection per year", yscale=y_scale,
+             title=f"Distribution of the MDP - {grb_type}")
+    ax.legend(loc='upper left')
+    ax.grid(axis='both')
     plt.show()
 
 
@@ -1229,16 +1210,17 @@ class AllSourceData:
               snr_list.append(sim.const_data.snr)
             else:
               snr_list.append(sim[selected_sat].snr)
-    plt.hist(snr_list, bins=n_bins, cumulative=cumul, histtype="step", weights=[self.weights] * len(snr_list))
-    plt.title(f"Inverse cumulative distribution of the SNR - {grb_type}")
-    plt.xlabel("SNR (dimensionless)")
-    plt.ylabel("Number of detection per year")
-    plt.grid()
-    plt.yscale(y_scale)
+    fig, ax = plt.subplots(1, 1)
+    ax.hist(snr_list, bins=n_bins, cumulative=cumul, histtype="step", weights=[self.weights] * len(snr_list))
+    if cumul:
+      ax.set(xlabel="SNR (dimensionless)", ylabel="Number of detection per year", yscale=y_scale,
+             title=f"Inverse cumulative distribution of the SNR - {grb_type}")
+    # ax.legend(loc='upper left')
+    ax.grid(axis='both')
     plt.show()
 
 
-  def hits_vs_energy(self, num_grb, num_sim, selected_sat, n_bins=30):
+  def hits_vs_energy(self, num_grb, num_sim, selected_sat="const", n_bins=30):
     """
 
     """
@@ -1314,8 +1296,8 @@ class AllSourceData:
                 hist_pflux.append(source.p_flux)
     distrib, ax1 = plt.subplots(1, 1, figsize=(8, 6))
     distrib.suptitle("Peak flux distribution of detected long GRB")
-    ax1.hist(hist_pflux, bins=np.logspace(int(np.log10(min(hist_pflux))) - 1, int(np.log10(max(hist_pflux))), n_bins),
-             cumulative=False, histtype="step", weights=[self.weights] * len(hist_pflux))
+    hist_bins = np.logspace(int(np.log10(min(hist_pflux))), int(np.log10(max(hist_pflux)))+1, n_bins)
+    ax1.hist(hist_pflux, bins=hist_bins, cumulative=False, histtype="step", weights=[self.weights] * len(hist_pflux))
     ax1.set(xlabel="Peak flux (photons/cm2/s)", ylabel="Number of detection per year", xscale='log', yscale=y_scale)
     #ax1.legend()
     plt.show()
@@ -1447,11 +1429,16 @@ class AllSourceData:
 
       distrib, ax1 = plt.subplots(1, 1, figsize=(8, 6))
       distrib.suptitle("MDP99 as a functin of fluence of detected GRB")
-      for val in np.unique(no_detec_fluence):
-        ax1.axvline(val, ymin=0., ymax=0.01, ms=1, c='black')
-      ax1.scatter(fluence_list, mdp_list, s=3, label=f'Detected GRB \nRatio of detectable polarization : {len(mdp_list) / mdp_count}')
+      for ite_val, val in enumerate(np.unique(no_detec_fluence)):
+        if ite_val == 0:
+          ax1.axvline(val, ymin=0., ymax=0.01, ms=1, c='black', label="Markers for rejected GRB")
+        else:
+          ax1.axvline(val, ymin=0., ymax=0.01, ms=1, c='black')
+      ax1.scatter(fluence_list, mdp_list, s=3, label=f'Detected GRB polarization \nRatio of detectable polarization : {len(mdp_list) / mdp_count}')
       ax1.set(xlabel="fluence (erg.cm-2)", ylabel="MDP99 (%)", yscale='linear', xscale='log',
-              xlim=(10 ** (int(np.log10(np.min(fluence_list))) - 1), 10 ** (int(np.log10(np.max(fluence_list))))))
+              xlim=(10 ** (int(np.log10(np.min(fluence_list)))), 10 ** (int(np.log10(np.max(fluence_list))) + 1)))
+      print((10 ** (int(np.log10(np.min(fluence_list)))), 10 ** (int(np.log10(np.max(fluence_list))) + 1)))
+      print(fluence_list, mdp_list)
       ax1.legend()
       plt.show()
 
