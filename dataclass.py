@@ -10,13 +10,14 @@ from inspect import signature
 import matplotlib.pyplot as plt
 import subprocess
 import matplotlib as mpl
+
 mpl.use('Qt5Agg')
 import matplotlib.colors as colors
 # import numpy as np
 # import gzip
 import multiprocessing as mp
 from itertools import repeat
-from time import time
+
 
 class Fit:
   """
@@ -130,12 +131,13 @@ class Polarigram(list):
         CE_sum = np.sum(CE, axis=1)
         CE = CE[inwindow(CE_sum, ergcut)]
         CE_sum = CE_sum[inwindow(CE_sum, ergcut)]
-      
+
       self.polar_from_energy = calculate_polar_angle(CE[:, 0], CE_sum)
 
       angle_lists = analyzetra(data, self.theta, self.phi, self.expected_pa, corr=corr, ergcut=ergcut)
       self.polar_angles = angle_lists[1]
-      clean_list = list(np.array(angle_lists[0])[np.where(np.abs(self.polar_from_energy - self.polar_angles) <= armcut, True, False)])
+      clean_list = list(
+        np.array(angle_lists[0])[np.where(np.abs(self.polar_from_energy - self.polar_angles) <= armcut, True, False)])
       list.__init__(self, clean_list)
       self.behave()
       self.azim_angle_corrected = corr
@@ -197,15 +199,16 @@ class Polarigram(list):
         print("Unpolarized data do not allow a fit : a bin is empty")
         self.fits.append(None)
       else:
-        self.polarigram_error = err_calculation(np.histogram(self, self.bins)[0], np.histogram(unpoldata, self.bins)[0], binw)
+        self.polarigram_error = err_calculation(np.histogram(self, self.bins)[0], np.histogram(unpoldata, self.bins)[0],
+                                                binw)
         p = p / unpol * np.mean(unpol)
         # p /= unpol
-        self.fits.append(Fit(modulation_func, var_x, p, yerr=self.polarigram_error, bounds=fit_bounds, comment="modulation"))
+        self.fits.append(
+          Fit(modulation_func, var_x, p, yerr=self.polarigram_error, bounds=fit_bounds, comment="modulation"))
         self.fits.append(Fit(lambda x, a: a * x / x, var_x, p, yerr=self.polarigram_error, comment="constant"))
     else:
       self.fits.append(Fit(modulation_func, var_x, p, bounds=fit_bounds, comment="modulation"))
       self.fits.append(Fit(lambda x, a: a * x / x, var_x, p, comment="constant"))
-
 
   def clf(self):
     """
@@ -241,7 +244,7 @@ class Polarigram(list):
       self.fit(unpoldata)
     if plot:
       plt.step(x, p, "g", where="mid")
-      plt.errorbar(x, p, yerr=self.polarigram_error, fmt = 'none')
+      plt.errorbar(x, p, yerr=self.polarigram_error, fmt='none')
       if plotfit is not None:
         xfit = np.arange(self.bins[0] - binw[0], self.bins[-1] + binw[-1], 1)
         for i in plotfit:
@@ -335,7 +338,8 @@ class FormatedData:
   Class containing the data for 1 GRB, for 1 sim, and 1 satellite
   """
 
-  def __init__(self, data_list, sat_info, num_sat, sim_duration, opt_items=None, opt_analysis=None, armcut=180, corr=False,
+  def __init__(self, data_list, sat_info, num_sat, sim_duration, opt_items=None, opt_analysis=None, armcut=180,
+               corr=False,
                ergcut=None):
     """
     -data_list : list of 1 or 2 files (pol or pol+unpol) from which extract the data
@@ -427,7 +431,8 @@ class FormatedData:
           self.CE = self.CE[inwindow(self.CE_sum, ergcut)]
           self.CE_sum = self.CE_sum[inwindow(self.CE_sum, ergcut)]
         # Warning : the first value of self.CE is the second hit in the detector
-        self.polar_from_energy = np.rad2deg(np.arccos(1 - m_elec * c_light ** 2 / charge_elem / 1000 * (1 / self.CE[:, 0] - 1 / (self.CE_sum))))
+        self.polar_from_energy = np.rad2deg(
+          np.arccos(1 - m_elec * c_light ** 2 / charge_elem / 1000 * (1 / self.CE[:, 0] - 1 / (self.CE_sum))))
       self.compton = np.sum(inwindow(self.CE_sum, ergcut))
       self.cr = self.compton / sim_duration
       self.single_cr = np.sum(inwindow(self.PE, ergcut)) / sim_duration
@@ -437,12 +442,15 @@ class FormatedData:
                                                                            sat_info[:3])
       if len(data_list) == 2:
         # Polarization analysis
-        self.pol = Polarigram(data_list[0], self.dec_sat_frame, self.ra_sat_frame, self.expected_pa, armcut=armcut, corr=corr,
+        self.pol = Polarigram(data_list[0], self.dec_sat_frame, self.ra_sat_frame, self.expected_pa, armcut=armcut,
+                              corr=corr,
                               ergcut=ergcut)
-        self.unpol = Polarigram(data_list[1], self.dec_sat_frame, self.ra_sat_frame, self.expected_pa, armcut=armcut, corr=corr,
+        self.unpol = Polarigram(data_list[1], self.dec_sat_frame, self.ra_sat_frame, self.expected_pa, armcut=armcut,
+                                corr=corr,
                                 ergcut=ergcut)
       elif len(data_list) == 1:
-        self.pol = Polarigram(data_list[0], self.dec_sat_frame, self.ra_sat_frame, self.expected_pa, armcut=armcut, corr=corr,
+        self.pol = Polarigram(data_list[0], self.dec_sat_frame, self.ra_sat_frame, self.expected_pa, armcut=armcut,
+                              corr=corr,
                               ergcut=ergcut)
         self.unpol = None
 
@@ -547,7 +555,8 @@ class AllSatData(list):
           self.n_sat_det += 1
           self.pol_analysis = False
           self.loading_count += 1
-          raise Warning(f'Polarization analysis is expected but the wrong number of trafile has been found, no polarization data were extracted : {flist}')
+          raise Warning(
+            f'Polarization analysis is expected but the wrong number of trafile has been found, no polarization data were extracted : {flist}')
         else:
           temp_list.append(FormatedData(flist, sat_info[num_sat], sim_duration, num_sat, *options))
           self.n_sat_det += 1
@@ -600,7 +609,8 @@ class AllSatData(list):
           temp_list = temp_list + getattr(self[num_sat], item)
         setattr(self.const_data, item, Polarigram(temp_list, 0, 0, 0, corr=options[2], ergcut=options[3]))
         for num_sat in considered_sat:
-          getattr(self.const_data, item).polar_angles = getattr(self.const_data, item).polar_angles + getattr(self[num_sat], item).polar_angles
+          getattr(self.const_data, item).polar_angles = getattr(self.const_data, item).polar_angles + getattr(
+            self[num_sat], item).polar_angles
       elif item == "unpol":
         if self.pol_analysis:
           temp_list = []
@@ -621,10 +631,12 @@ class AllSatData(list):
         setattr(self.const_data, item, np.array([[0, 0]]))
         for num_sat in considered_sat:
           if len(getattr(self[num_sat], item)) != 0:
-            setattr(self.const_data, item, np.concatenate((getattr(self.const_data, item), getattr(self[num_sat], item))))
+            setattr(self.const_data, item,
+                    np.concatenate((getattr(self.const_data, item), getattr(self[num_sat], item))))
         setattr(self.const_data, item, getattr(self.const_data, item)[1:])
       else:
-        if item not in ['arm', 's_eff', 'mu100', 'pa', 'fit_cr', 'mdp', 'snr', 'pa_err', 'mu100_err', 'fit_cr_err', 'fit_goodness']:
+        if item not in ['arm', 's_eff', 'mu100', 'pa', 'fit_cr', 'mdp', 'snr', 'pa_err', 'mu100_err', 'fit_cr_err',
+                        'fit_goodness']:
           for num_sat in considered_sat:
             setattr(self.const_data, item, getattr(self.const_data, item) + getattr(self[num_sat], item))
 
@@ -855,17 +867,23 @@ class AllSourceData:
       cat_data = Catalog(self.cat_file, self.sttype)
       self.namelist = cat_data.name
       self.n_source = len(self.namelist)
-      self.fluence = [calc_fluence(cat_data, source_index, erg_cut)*self.sim_duration for source_index in range(self.n_source)]
+      self.fluence = [calc_fluence(cat_data, source_index, erg_cut) * self.sim_duration for source_index in
+                      range(self.n_source)]
     self.s_eff = None
-    
-#    init_time = time()
+
+    #    init_time = time()
     if parallel:
       print("Parallel extraction of the data")
       with mp.Pool() as pool:
-        self.alldata = pool.starmap(AllSimData, zip(repeat(self.sim_prefix), range(self.n_source), repeat(cat_data), repeat(self.mode), repeat(self.n_sim), repeat(self.sat_info), repeat(self.pol_data), repeat(self.sim_duration), repeat(self.options)))
+        self.alldata = pool.starmap(AllSimData, zip(repeat(self.sim_prefix), range(self.n_source), repeat(cat_data),
+                                                    repeat(self.mode), repeat(self.n_sim), repeat(self.sat_info),
+                                                    repeat(self.pol_data), repeat(self.sim_duration),
+                                                    repeat(self.options)))
     else:
-      self.alldata = [AllSimData(self.sim_prefix, source_ite, cat_data, self.mode, self.n_sim, self.sat_info, self.pol_data, self.sim_duration, self.options) for source_ite in range(self.n_source)]
-#    print("temps d'extraction des données", time()-init_time)
+      self.alldata = [
+        AllSimData(self.sim_prefix, source_ite, cat_data, self.mode, self.n_sim, self.sat_info, self.pol_data,
+                   self.sim_duration, self.options) for source_ite in range(self.n_source)]
+    #    print("temps d'extraction des données", time()-init_time)
 
     self.cat_duration = 10
     self.com_duty = 1
@@ -873,7 +891,7 @@ class AllSourceData:
     ### Implementer une maniere automatique de calculer le fov de comcube
     self.com_fov = 1
     self.gbm_fov = (1 - np.cos(np.deg2rad(horizonAngle(565)))) / 2
-    self.weights = 1/self.n_sim/self.cat_duration*self.com_duty/self.gbm_duty*self.com_fov/self.gbm_fov
+    self.weights = 1 / self.n_sim / self.cat_duration * self.com_duty / self.gbm_duty * self.com_fov / self.gbm_fov
 
   def get_keys(self):
     print("======================================================================")
@@ -929,7 +947,7 @@ class AllSourceData:
       for file in flist:
         temp_list.append(file.split("_")[1])
       source_names = list(set(temp_list))
-    return [source_names, [duration]*len(source_names)]
+    return [source_names, [duration] * len(source_names)]
 
   def azi_angle_corr(self):
     """
@@ -968,9 +986,11 @@ class AllSourceData:
         for sim in source:
           if sim is not None:
             if self.fluence is None:
-              sim.analyze(source.source_duration, self.fluence, source_with_bkg=self.source_with_bkg, fit_bounds=fit_bounds, const_analysis=const_analysis)
+              sim.analyze(source.source_duration, self.fluence, source_with_bkg=self.source_with_bkg,
+                          fit_bounds=fit_bounds, const_analysis=const_analysis)
             else:
-              sim.analyze(source.source_duration, self.fluence[source_ite], source_with_bkg=self.source_with_bkg, fit_bounds=fit_bounds, const_analysis=const_analysis)
+              sim.analyze(source.source_duration, self.fluence[source_ite], source_with_bkg=self.source_with_bkg,
+                          fit_bounds=fit_bounds, const_analysis=const_analysis)
         source.set_probabilities(n_sat=self.n_sat, snr_min=5, n_image_min=50)
 
   def make_const(self, const=None):
@@ -991,7 +1011,8 @@ class AllSourceData:
     The results obtained with this method are meaningful only is there is no background simulated
     """
     if self.source_with_bkg:
-      raise Warning("The source has been simulated with a background, the calculation has not been done as this would lead to biased results")
+      raise Warning(
+        "The source has been simulated with a background, the calculation has not been done as this would lead to biased results")
     else:
       list_dec = []
       list_s_eff = []
@@ -1002,7 +1023,8 @@ class AllSourceData:
           for num_sim, sim in enumerate(source):
             if sim is not None:
               if sim[sat] is None:
-                print(f"The satellite {sat} selected didn't detect the source '{source.source_name}' for the simulation number {num_sim}.")
+                print(
+                  f"The satellite {sat} selected didn't detect the source '{source.source_name}' for the simulation number {num_sim}.")
               else:
                 temp_dec.append(sim[sat].dec_sat_frame)
                 temp_s_eff.append(sim[sat].s_eff)
@@ -1042,11 +1064,12 @@ class AllSourceData:
     for ite in range(self.n_sat):
       # detection[ite] = np.array([[eff_area_func(trafile.decra2tp(theta, phi, sat_info[ite], unit="rad")[0], sat_info[ite][2], func_type="FoV") for phi in phi_world] for theta in theta_world])
       detection_pola[ite] = np.array([[eff_area_pola_func(decra2tp(theta, phi, self.sat_info[ite], unit="rad")[0],
-                                                          self.sat_info[ite][2], func_type="cos") for phi in phi_world] for
+                                                          self.sat_info[ite][2], func_type="cos") for phi in phi_world]
+                                      for
                                       theta in theta_world])
       detection_spectro[ite] = np.array([[eff_area_spectro_func(
         decra2tp(theta, phi, self.sat_info[ite], unit="rad")[0], self.sat_info[ite][2], func_type="data") for phi in
-                                          phi_world] for theta in theta_world])
+        phi_world] for theta in theta_world])
 
     detec_sum_pola = np.sum(detection_pola, axis=0)
     detec_sum_spectro = np.sum(detection_spectro, axis=0)
@@ -1130,10 +1153,13 @@ class AllSourceData:
     else:
       cat_data = Catalog(self.cat_file, self.sttype)
       # Extracting dec and ra from catalog and transforms decimal degrees into degrees into the right frame
-      thetap = [np.sum(np.array(dec.split(" ")).astype(np.float)/[1, 60, 3600]) if len(dec.split("+")) == 2 else np.sum(np.array(dec.split(" ")).astype(np.float)/[1, -60, -3600]) for dec in cat_data.dec]
+      thetap = [
+        np.sum(np.array(dec.split(" ")).astype(np.float) / [1, 60, 3600]) if len(dec.split("+")) == 2 else np.sum(
+          np.array(dec.split(" ")).astype(np.float) / [1, -60, -3600]) for dec in cat_data.dec]
       thetap = np.deg2rad(np.array(thetap))
-      phip = [np.sum(np.array(ra.split(" ")).astype(np.float)/[1, 60, 3600]) if len(ra.split("+")) == 2 else np.sum(np.array(ra.split(" ")).astype(np.float)/[1, -60, -3600]) for ra in cat_data.ra]
-      phip = np.mod(np.deg2rad(np.array(phip))+np.pi, 2*np.pi)-np.pi
+      phip = [np.sum(np.array(ra.split(" ")).astype(np.float) / [1, 60, 3600]) if len(ra.split("+")) == 2 else np.sum(
+        np.array(ra.split(" ")).astype(np.float) / [1, -60, -3600]) for ra in cat_data.ra]
+      phip = np.mod(np.deg2rad(np.array(phip)) + np.pi, 2 * np.pi) - np.pi
 
       plt.subplot(111, projection="aitoff")
       plt.xlabel("RA (°)")
@@ -1148,7 +1174,6 @@ class AllSourceData:
         cbar = plt.colorbar(sc)
         cbar.set_label("GRB Duration - T90 (s)", rotation=270, labelpad=20)
       plt.show()
-
 
   def mdp_histogram(self, selected_sat="const", mdp_threshold=1, cumul=True, n_bins=30, y_scale="log"):
     """
@@ -1170,15 +1195,15 @@ class AllSourceData:
               if sim[selected_sat] is not None:
                 if sim[selected_sat].mdp is not None:
                   if sim[selected_sat].mdp <= mdp_threshold:
-                    mdp_list.append(sim[selected_sat].mdp*100)
+                    mdp_list.append(sim[selected_sat].mdp * 100)
             elif selected_sat == "const":
               if sim.const_data is not None:
                 if sim.const_data.mdp is not None:
                   if sim.const_data.mdp <= mdp_threshold:
-                    mdp_list.append(sim.const_data.mdp*100)
+                    mdp_list.append(sim.const_data.mdp * 100)
     fig, ax = plt.subplots(1, 1)
     ax.hist(mdp_list, bins=n_bins, cumulative=cumul, histtype="step", weights=[self.weights] * len(mdp_list),
-            label=f"Number of GRBs with MDP < {mdp_threshold*100}% : {len(mdp_list)}")
+            label=f"Number of GRBs with MDP < {mdp_threshold * 100}% : {len(mdp_list)}")
     if cumul:
       ax.set(xlabel="MPD (%)", ylabel="Number of detection per year", yscale=y_scale,
              title=f"Cumulative distribution of the MDP - {grb_type}")
@@ -1188,7 +1213,6 @@ class AllSourceData:
     ax.legend(loc='upper left')
     ax.grid(axis='both')
     plt.show()
-
 
   def snr_histogram(self, selected_sat="const", cumul=-1, n_bins=30, y_scale="log"):
     """
@@ -1219,7 +1243,6 @@ class AllSourceData:
     ax.grid(axis='both')
     plt.show()
 
-
   def hits_vs_energy(self, num_grb, num_sim, selected_sat="const", n_bins=30):
     """
 
@@ -1231,7 +1254,8 @@ class AllSourceData:
           if self.alldata[num_grb][num_sim][selected_sat] is not None:
             hits_energy = self.alldata[num_grb][num_sim][selected_sat].CE_sum
           else:
-            print(f"No detection for the simulation {num_sim} for the source {self.namelist[num_grb]} on the selected sat : {selected_sat}, no histogram drawn")
+            print(
+              f"No detection for the simulation {num_sim} for the source {self.namelist[num_grb]} on the selected sat : {selected_sat}, no histogram drawn")
         elif selected_sat == "const":
           hits_energy = self.alldata[num_grb][num_sim].const_data.CE_sum
       else:
@@ -1245,7 +1269,6 @@ class AllSourceData:
     ax1.set(xlabel="Energy (keV)", ylabel="Number of photon detected", yscale="linear")
     plt.show()
 
-
   def arm_histogram(self, num_grb, num_sim, selected_sat="const", n_bins=30, arm_lim=0.8):
     """
 
@@ -1257,7 +1280,8 @@ class AllSourceData:
           if self.alldata[num_grb][num_sim][selected_sat] is not None:
             arm_values = self.alldata[num_grb][num_sim][selected_sat].arm
           else:
-            print(f"No detection for the simulation {num_sim} for the source {self.namelist[num_grb]} on the selected sat : {selected_sat}, no histogram drawn")
+            print(
+              f"No detection for the simulation {num_sim} for the source {self.namelist[num_grb]} on the selected sat : {selected_sat}, no histogram drawn")
             return
         elif selected_sat == "const":
           arm_values = self.alldata[num_grb][num_sim].const_data.arm
@@ -1268,16 +1292,15 @@ class AllSourceData:
       print(f"No detection for this source : {self.namelist[num_grb]}, no histogram drawn")
       return
 
-    arm_threshold = np.sort(arm_values)[int(len(arm_values)*arm_lim-1)]
+    arm_threshold = np.sort(arm_values)[int(len(arm_values) * arm_lim - 1)]
 
     distrib, ax1 = plt.subplots(1, 1, figsize=(8, 6))
     distrib.suptitle("ARM of photons for an event")
     ax1.hist(arm_values, bins=n_bins, cumulative=0, histtype="step")
-    ax1.axvline(arm_threshold, color="black", label=f"{arm_lim*100}% values limit = {arm_threshold}")
+    ax1.axvline(arm_threshold, color="black", label=f"{arm_lim * 100}% values limit = {arm_threshold}")
     ax1.set(xlabel="Angular Resolution Measurement (°)", ylabel="Number of photon detected", yscale="linear")
     ax1.legend()
     plt.show()
-
 
   def peak_flux_distri(self, selected_sat="const", snr_min=5, n_bins=30, y_scale="log"):
     """
@@ -1296,10 +1319,10 @@ class AllSourceData:
                 hist_pflux.append(source.p_flux)
     distrib, ax1 = plt.subplots(1, 1, figsize=(8, 6))
     distrib.suptitle("Peak flux distribution of detected long GRB")
-    hist_bins = np.logspace(int(np.log10(min(hist_pflux))), int(np.log10(max(hist_pflux)))+1, n_bins)
+    hist_bins = np.logspace(int(np.log10(min(hist_pflux))), int(np.log10(max(hist_pflux))) + 1, n_bins)
     ax1.hist(hist_pflux, bins=hist_bins, cumulative=False, histtype="step", weights=[self.weights] * len(hist_pflux))
     ax1.set(xlabel="Peak flux (photons/cm2/s)", ylabel="Number of detection per year", xscale='log', yscale=y_scale)
-    #ax1.legend()
+    # ax1.legend()
     plt.show()
 
   def det_proba_vs_flux(self, selected_sat="const"):
@@ -1320,7 +1343,8 @@ class AllSourceData:
           det_prob_sky_list.append(source.proba_detec_sky[selected_sat])
 
     distrib, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 6))
-    distrib.suptitle("Detection probability vs peak flux of detected long GRB - GRB in the whole sky (left) and only in the FoV (right)")
+    distrib.suptitle(
+      "Detection probability vs peak flux of detected long GRB - GRB in the whole sky (left) and only in the FoV (right)")
     ax1.scatter(p_flux_list, det_prob_sky_list, s=2)
     ax2.scatter(p_flux_list, det_prob_fov_list, s=2)
 
@@ -1347,7 +1371,8 @@ class AllSourceData:
           comp_im_prob_fov_list.append(source.proba_compton_image_fov[selected_sat])
           comp_im_prob_sky_list.append(source.proba_compton_image_sky[selected_sat])
     distrib, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 6))
-    distrib.suptitle("Compton Image probability vs peak flux of detected long GRB - GRB in the whole sky (left) and only in the FoV (right)")
+    distrib.suptitle(
+      "Compton Image probability vs peak flux of detected long GRB - GRB in the whole sky (left) and only in the FoV (right)")
     ax1.scatter(p_flux_list, comp_im_prob_sky_list, s=2)
     ax2.scatter(p_flux_list, comp_im_prob_fov_list, s=2)
 
@@ -1399,8 +1424,7 @@ class AllSourceData:
     ax1.set(xlabel="Polarization angle (°)", ylabel="Number of detection per year", yscale=y_scale)
     plt.show()
 
-
-  def mdp99_vs_fluence(self, selected_sat="const", mdp_threshold=1, n_bins=30, y_scale="log"):
+  def mdp_vs_fluence(self, selected_sat="const", mdp_threshold=1, y_scale="log"):
     """
 
     """
@@ -1419,28 +1443,224 @@ class AllSourceData:
                   fluence_list.append(self.fluence[source_ite])
                 else:
                   no_detec_fluence.append(self.fluence[source_ite])
+                mdp_count += 1
               else:
-                if sim[selected_sat].mdp <= mdp_threshold:
-                  mdp_list.append(sim[selected_sat].mdp * 100)
-                  fluence_list.append(self.fluence[source_ite])
-                else:
-                  no_detec_fluence.append(self.fluence[source_ite])
-              mdp_count += 1
+                if sim[selected_sat].mdp is not None:
+                  if sim[selected_sat].mdp <= mdp_threshold:
+                    mdp_list.append(sim[selected_sat].mdp * 100)
+                    fluence_list.append(self.fluence[source_ite])
+                  else:
+                    no_detec_fluence.append(self.fluence[source_ite])
+                  mdp_count += 1
 
       distrib, ax1 = plt.subplots(1, 1, figsize=(8, 6))
-      distrib.suptitle("MDP99 as a functin of fluence of detected GRB")
+      distrib.suptitle("MDP as a function of fluence of detected GRB")
       for ite_val, val in enumerate(np.unique(no_detec_fluence)):
         if ite_val == 0:
           ax1.axvline(val, ymin=0., ymax=0.01, ms=1, c='black', label="Markers for rejected GRB")
         else:
           ax1.axvline(val, ymin=0., ymax=0.01, ms=1, c='black')
-      ax1.scatter(fluence_list, mdp_list, s=3, label=f'Detected GRB polarization \nRatio of detectable polarization : {len(mdp_list) / mdp_count}')
-      ax1.set(xlabel="fluence (erg.cm-2)", ylabel="MDP99 (%)", yscale='linear', xscale='log',
+      ax1.scatter(fluence_list, mdp_list, s=3,
+                  label=f'Detected GRB polarization \nRatio of detectable polarization : {len(mdp_list) / mdp_count}')
+      ax1.set(xlabel="fluence (erg.cm-2)", ylabel="MDP (%)", yscale='linear', xscale='log',
               xlim=(10 ** (int(np.log10(np.min(fluence_list)))), 10 ** (int(np.log10(np.max(fluence_list))) + 1)))
-      print((10 ** (int(np.log10(np.min(fluence_list)))), 10 ** (int(np.log10(np.max(fluence_list))) + 1)))
-      print(fluence_list, mdp_list)
       ax1.legend()
       plt.show()
+
+  def mdp_vs_pflux(self, selected_sat="const", mdp_threshold=1, y_scale="log"):
+    """
+
+    """
+    mdp_list = []
+    flux_list = []
+    mdp_count = 0
+    no_detec_flux = []
+    for source_ite, source in enumerate(self.alldata):
+      if source is not None:
+        for sim in source:
+          if sim is not None:
+            if selected_sat == "const":
+              if sim.const_data.mdp <= mdp_threshold:
+                mdp_list.append(sim.const_data.mdp * 100)
+                flux_list.append(source.p_flux)
+              else:
+                no_detec_flux.append(source.p_flux)
+              mdp_count += 1
+            else:
+              if sim[selected_sat].mdp is not None:
+                if sim[selected_sat].mdp <= mdp_threshold:
+                  mdp_list.append(sim[selected_sat].mdp * 100)
+                  flux_list.append(source.p_flux)
+                else:
+                  no_detec_flux.append(source.p_flux)
+                mdp_count += 1
+
+    distrib, ax1 = plt.subplots(1, 1, figsize=(8, 6))
+    distrib.suptitle("MDP as a function of peak flux of detected GRB")
+    for ite_val, val in enumerate(np.unique(no_detec_flux)):
+      if ite_val == 0:
+        ax1.axvline(val, ymin=0., ymax=0.01, ms=1, c='black', label="Markers for rejected GRB")
+      else:
+        ax1.axvline(val, ymin=0., ymax=0.01, ms=1, c='black')
+    ax1.scatter(flux_list, mdp_list, s=3,
+                label=f'Detected GRB polarization \nRatio of detectable polarization : {len(mdp_list) / mdp_count}')
+    ax1.set(xlabel="Peak flux (photons/cm2/s)", ylabel="MDP (%)", yscale='linear', xscale='log',
+            xlim=(10 ** (int(np.log10(np.min(flux_list)))), 10 ** (int(np.log10(np.max(flux_list))) + 1)))
+    ax1.legend()
+    plt.show()
+
+  def mdp_vs_detection_angle(self, selected_sat=0, mdp_threshold=1, y_scale="log"):
+    """
+
+    """
+    mdp_list = []
+    angle_list = []
+    mdp_count = 0
+    no_detec_angle = []
+    for source_ite, source in enumerate(self.alldata):
+      if source is not None:
+        for sim in source:
+          if sim is not None:
+            if sim[selected_sat] is not None and sim[selected_sat].mdp is not None:
+              if sim[selected_sat].mdp <= mdp_threshold:
+                mdp_list.append(sim[selected_sat].mdp * 100)
+                angle_list.append(sim[selected_sat].dec_sat_frame)
+              else:
+                no_detec_angle.append(sim[selected_sat].dec_sat_frame)
+              mdp_count += 1
+
+    distrib, ax1 = plt.subplots(1, 1, figsize=(8, 6))
+    distrib.suptitle("MDP as a function of detection angle of detected GRB")
+    for ite_val, val in enumerate(np.unique(no_detec_angle)):
+      if ite_val == 0:
+        ax1.axvline(val, ymin=0., ymax=0.01, ms=1, c='black', label="Markers for rejected GRB")
+      else:
+        ax1.axvline(val, ymin=0., ymax=0.01, ms=1, c='black')
+    ax1.scatter(angle_list, mdp_list, s=3,
+                label=f'Detected GRB polarization \nRatio of detectable polarization : {len(mdp_list) / mdp_count}')
+    ax1.set(xlabel="Angle (°)", ylabel="MDP (%)", yscale='linear', xscale='log',
+            xlim=(10 ** (int(np.log10(np.min(angle_list)))), 10 ** (int(np.log10(np.max(angle_list))) + 1)))
+    ax1.legend()
+    plt.show()
+
+  def snr_vs_fluence(self, selected_sat="const", snr_threshold=5, y_scale="log"):
+    """
+
+    """
+    if self.fluence is not None:
+      snr_list = []
+      fluence_list = []
+      snr_count = 0
+      no_detec_fluence = []
+      for source_ite, source in enumerate(self.alldata):
+        if source is not None:
+          for sim in source:
+            if sim is not None:
+              if selected_sat == "const":
+                if sim.const_data.snr >= snr_threshold:
+                  snr_list.append(sim.const_data.snr)
+                  fluence_list.append(self.fluence[source_ite])
+                else:
+                  no_detec_fluence.append(self.fluence[source_ite])
+                snr_count += 1
+              else:
+                if sim[selected_sat].snr is not None:
+                  if sim[selected_sat].snr >= snr_threshold:
+                    snr_list.append(sim[selected_sat].snr)
+                    fluence_list.append(self.fluence[source_ite])
+                  else:
+                    no_detec_fluence.append(self.fluence[source_ite])
+                  snr_count += 1
+
+      distrib, ax1 = plt.subplots(1, 1, figsize=(8, 6))
+      distrib.suptitle("SNR as a function of fluence of detected GRB")
+      for ite_val, val in enumerate(np.unique(no_detec_fluence)):
+        if ite_val == 0:
+          ax1.axvline(val, ymin=0., ymax=0.01, ms=1, c='black', label="Markers for rejected GRB")
+        else:
+          ax1.axvline(val, ymin=0., ymax=0.01, ms=1, c='black')
+      ax1.scatter(fluence_list, snr_list, s=3,
+                  label=f'Detected GRB SNR \nRatio of detectable GRB : {len(snr_list) / snr_count}')
+      ax1.set(xlabel="Fluence (erg.cm-2)", ylabel="SNR (dimensionless)", yscale='linear', xscale='log',
+              xlim=(10 ** (int(np.log10(np.min(fluence_list)))), 10 ** (int(np.log10(np.max(fluence_list))) + 1)))
+      ax1.legend()
+      plt.show()
+
+  def snr_vs_pflux(self, selected_sat="const", snr_threshold=5, y_scale="log"):
+    """
+
+    """
+    snr_list = []
+    flux_list = []
+    snr_count = 0
+    no_detec_flux = []
+    for source_ite, source in enumerate(self.alldata):
+      if source is not None:
+        for sim in source:
+          if sim is not None:
+            if selected_sat == "const":
+              if sim.const_data.snr >= snr_threshold:
+                snr_list.append(sim.const_data.snr)
+                flux_list.append(self.alldata[source_ite].p_flux)
+              else:
+                no_detec_flux.append(self.alldata[source_ite].p_flux)
+              snr_count += 1
+            else:
+              if sim[selected_sat].snr is not None :
+                if sim[selected_sat].snr >= snr_threshold:
+                  snr_list.append(sim[selected_sat].snr)
+                  flux_list.append(self.alldata[source_ite].p_flux)
+                else:
+                  no_detec_flux.append(self.alldata[source_ite].p_flux)
+                snr_count += 1
+
+    distrib, ax1 = plt.subplots(1, 1, figsize=(8, 6))
+    distrib.suptitle("SNR as a function of peak flux of detected GRB")
+    for ite_val, val in enumerate(np.unique(no_detec_flux)):
+      if ite_val == 0:
+        ax1.axvline(val, ymin=0., ymax=0.01, ms=1, c='black', label="Markers for rejected GRB")
+      else:
+        ax1.axvline(val, ymin=0., ymax=0.01, ms=1, c='black')
+    ax1.scatter(flux_list, snr_list, s=3,
+                label=f'Detected GRB SNR \nRatio of detectable GRB : {len(snr_list) / snr_count}')
+    ax1.set(xlabel="Peak flux (photons/cm2/s)", ylabel="SNR (dimensionless)", yscale='linear', xscale='log',
+            xlim=(10 ** (int(np.log10(np.min(flux_list)))), 10 ** (int(np.log10(np.max(flux_list))) + 1)))
+    ax1.legend()
+    plt.show()
+
+  def snr_vs_detection_angle(self, selected_sat=0, snr_threshold=5, y_scale="log"):
+    """
+
+    """
+    snr_list = []
+    angle_list = []
+    snr_count = 0
+    no_detec_angle = []
+    for source_ite, source in enumerate(self.alldata):
+      if source is not None:
+        for sim in source:
+          if sim is not None:
+            if sim[selected_sat] is not None and sim[selected_sat].snr is not None:
+              if sim[selected_sat].snr >= snr_threshold:
+                snr_list.append(sim[selected_sat].snr)
+                angle_list.append(sim[selected_sat].dec_sat_frame)
+              else:
+                no_detec_angle.append(sim[selected_sat].dec_sat_frame)
+              snr_count += 1
+
+    distrib, ax1 = plt.subplots(1, 1, figsize=(8, 6))
+    distrib.suptitle("SNR as a function of detection angle of detected GRB")
+    for ite_val, val in enumerate(np.unique(no_detec_angle)):
+      if ite_val == 0:
+        ax1.axvline(val, ymin=0., ymax=0.01, ms=1, c='black', label="Markers for rejected GRB")
+      else:
+        ax1.axvline(val, ymin=0., ymax=0.01, ms=1, c='black')
+    ax1.scatter(angle_list, snr_list, s=3,
+                label=f'Detected GRB SNR \nRatio of detectable GRB : {len(snr_list) / snr_count}')
+    ax1.set(xlabel="Detection angle (°)", ylabel="SNR (dimensionless)", yscale='linear', xscale='log',
+            xlim=(10 ** (int(np.log10(np.min(angle_list)))), 10 ** (int(np.log10(np.max(angle_list))) + 1)))
+    ax1.legend()
+    plt.show()
 
 # init_time = time()
 # bkg = "./backgrounds/bkg"  # _background_sat0_0000_90.0_0.0.inc1.id1.extracted.tra"
@@ -1479,28 +1699,28 @@ class AllSourceData:
 # print("PA, mu, S : ", set_trafile.pol.fits[-2].popt)
 # print(set_trafile.pol.polarigram_error)
 
-#from time import sleep
-#from itertools import repeat
-#def functest(intro, timeval, message1, message2):
+# from time import sleep
+# from itertools import repeat
+# def functest(intro, timeval, message1, message2):
 #  sleep(timeval)
 #  liste.append(timeval)
-  #return [timeval, message]
+# return [timeval, message]
 #  return f"{intro} {timeval}{message1}{message2}"
-#intro = "il faut attendre un peu, environ"
-#message1 = "secondes. "
-#message2 = "On peut fermer le programme maintenant"
-#message = ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j"]
-#timeval = np.random.random(10)
-#functest(timeval[0], message[0])
-#init_time = time()
-#valtest = list(map(functest, intro, timeval, message1, message2))
-#print(valtest)
-#print(time()-init_time)
-#init_time = time()
-#with mp.Pool() as pool:
+# intro = "il faut attendre un peu, environ"
+# message1 = "secondes. "
+# message2 = "On peut fermer le programme maintenant"
+# message = ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j"]
+# timeval = np.random.random(10)
+# functest(timeval[0], message[0])
+# init_time = time()
+# valtest = list(map(functest, intro, timeval, message1, message2))
+# print(valtest)
+# print(time()-init_time)
+# init_time = time()
+# with mp.Pool() as pool:
 #  val = pool.starmap(functest, zip(repeat(intro), timeval, repeat(message1), repeat(message2)))
 
-#print(val)
-#print(time()-init_time)
-#print(list(zip([1], [2], [3],[1, 1, 1, 1, 1, 1, 1])))
-#pool.starmap(AllSimData, zip(repeat(self.sim_prefix), range(self.n_source), repeat(cat_data), repeat(self.mode), repeat(self.n_sim), repeat(self.sat_info), repeat(self.pol_data), repeat(self.sim_duration), repeat(self.options))
+# print(val)
+# print(time()-init_time)
+# print(list(zip([1], [2], [3],[1, 1, 1, 1, 1, 1, 1])))
+# pool.starmap(AllSimData, zip(repeat(self.sim_prefix), range(self.n_source), repeat(cat_data), repeat(self.mode), repeat(self.n_sim), repeat(self.sat_info), repeat(self.pol_data), repeat(self.sim_duration), repeat(self.options))
