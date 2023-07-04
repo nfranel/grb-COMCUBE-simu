@@ -547,6 +547,9 @@ class AllSatData(list):
     self.loading_count = 0
     for num_sat in range(self.n_sat):
       flist = subprocess.getoutput("ls {}_sat{}_{:04d}_*".format(source_prefix, num_sat, num_sim)).split("\n")
+      if self.source_name == 'GRB170412988':
+        if num_sim == 4:
+          print(f"Début de l'extraction des fichiers : {flist}")
       # print("Liste à utiliser : ", flist, "\n")
       if len(flist) == 2:
         temp_list.append(FormatedData(flist, sat_info[num_sat], num_sat, sim_duration, *options))
@@ -567,6 +570,9 @@ class AllSatData(list):
           self.n_sat_det += 1
           self.pol_analysis = False
           self.loading_count += 1
+      if self.source_name == 'GRB170412988':
+        if num_sim == 4:
+          print(f"          Extraction des fichiers terminée : {flist}")
       if not flist[0].startswith("ls: cannot access") and self.dec_world_frame is None:
         self.dec_world_frame, self.ra_world_frame = fname2decra(flist[0])
     list.__init__(self, temp_list)
@@ -676,8 +682,6 @@ class AllSimData(list):
     source_prefix = f"{sim_prefix}_{self.source_name}"
     flist = subprocess.getoutput("ls {}_*".format(source_prefix)).split("\n")
 
-    if self.source_name == 'GRB170412988':
-      print("Source à extraire : ", self.source_name)
     if flist[0].startswith("ls: cannot access"):
       print(f"No file to be loaded for source {self.source_name}")
     else:
@@ -695,8 +699,6 @@ class AllSimData(list):
         else:
           temp_list.append(AllSatData(source_prefix, num_sim, pol_analysis, sat_info, sim_duration, options))
           self.n_sim_det += 1
-      if self.source_name == 'GRB170412988':
-        print(f"Extraction terminée pour les fichiers : {flist}\n")
     list.__init__(self, temp_list)
     for sim_ite, sim in enumerate(self):
       if sim is not None:
