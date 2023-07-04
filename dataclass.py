@@ -675,6 +675,8 @@ class AllSimData(list):
     output_message = None
     source_prefix = f"{sim_prefix}_{self.source_name}"
     flist = subprocess.getoutput("ls {}_*".format(source_prefix)).split("\n")
+
+    print("f list à load : ", flist)
     if flist[0].startswith("ls: cannot access"):
       print(f"No file to be loaded for source {self.source_name}")
     else:
