@@ -431,8 +431,13 @@ class FormatedData:
           self.CE = self.CE[inwindow(self.CE_sum, ergcut)]
           self.CE_sum = self.CE_sum[inwindow(self.CE_sum, ergcut)]
         # Warning : the first value of self.CE is the second hit in the detector
-        self.polar_from_energy = np.rad2deg(
-          np.arccos(1 - m_elec * c_light ** 2 / charge_elem / 1000 * (1 / self.CE[:, 0] - 1 / (self.CE_sum))))
+        try:
+          self.polar_from_energy = np.rad2deg(np.arccos(1 - m_elec * c_light ** 2 / charge_elem / 1000 * (1 / self.CE[:, 0] - 1 / (self.CE_sum))))
+        except IndexError:
+          print("files : ", data_list)
+          print("CE :", self.CE[:, 0])
+          print("CE_sum :", self.CE_sum)
+
       self.compton = np.sum(inwindow(self.CE_sum, ergcut))
       self.cr = self.compton / sim_duration
       self.single_cr = np.sum(inwindow(self.PE, ergcut)) / sim_duration
