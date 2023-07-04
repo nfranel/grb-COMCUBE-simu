@@ -547,7 +547,7 @@ class AllSatData(list):
     self.loading_count = 0
     for num_sat in range(self.n_sat):
       flist = subprocess.getoutput("ls {}_sat{}_{:04d}_*".format(source_prefix, num_sat, num_sim)).split("\n")
-      if self.source_name == 'GRB170412988':
+      if source_prefix == './sim-wobk--i-0--sat-3--sim-5--repart-30--grb-longfull/sim/long_GRB170412988':
         if num_sim == 4:
           print(f"Début de l'extraction des fichiers : {flist}")
       # print("Liste à utiliser : ", flist, "\n")
@@ -570,7 +570,7 @@ class AllSatData(list):
           self.n_sat_det += 1
           self.pol_analysis = False
           self.loading_count += 1
-      if self.source_name == 'GRB170412988':
+      if source_prefix == './sim-wobk--i-0--sat-3--sim-5--repart-30--grb-longfull/sim/long_GRB170412988':
         if num_sim == 4:
           print(f"          Extraction des fichiers terminée : {flist}")
       if not flist[0].startswith("ls: cannot access") and self.dec_world_frame is None:
