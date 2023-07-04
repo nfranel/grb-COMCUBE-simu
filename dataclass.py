@@ -698,7 +698,7 @@ class AllSimData(list):
         if output_message is not None:
           output_message += f"\n  Total of {sim.loading_count} files loaded for simulation {sim_ite}"
     print(output_message)
-    print(f"{f.source_name} fini d'extraire \n")
+    print(f"{source_name} fini d'extraire \n")
 
   def get_keys(self):
     print("======================================================================")
