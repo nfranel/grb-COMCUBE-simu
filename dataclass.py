@@ -676,7 +676,7 @@ class AllSimData(list):
     source_prefix = f"{sim_prefix}_{self.source_name}"
     flist = subprocess.getoutput("ls {}_*".format(source_prefix)).split("\n")
 
-    print("f list à load : ", flist)
+    print("Source à extraire : ", self.source_name)
     if flist[0].startswith("ls: cannot access"):
       print(f"No file to be loaded for source {self.source_name}")
     else:
@@ -698,6 +698,7 @@ class AllSimData(list):
         if output_message is not None:
           output_message += f"\n  Total of {sim.loading_count} files loaded for simulation {sim_ite}"
     print(output_message)
+    print(f"{f.source_name} fini d'extraire \n")
 
   def get_keys(self):
     print("======================================================================")
