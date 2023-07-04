@@ -385,9 +385,9 @@ class FormatedData:
     self.ra_sat_frame = None
     self.expected_pa = None
 
-    print("files : ", data_list)
-    print("CE :", self.CE)
-    print("CE_sum :", self.CE_sum)
+    # print("files : ", data_list)
+    # print("CE :", self.CE)
+    # print("CE_sum :", self.CE_sum)
 
     if len(data_list) == 0:
       for item in opt_items:
@@ -436,7 +436,6 @@ class FormatedData:
           self.CE_sum = self.CE_sum[inwindow(self.CE_sum, ergcut)]
         # Warning : the first value of self.CE is the second hit in the detector
         self.polar_from_energy = np.rad2deg(np.arccos(1 - m_elec * c_light ** 2 / charge_elem / 1000 * (1 / self.CE[:, 0] - 1 / (self.CE_sum))))
-        print("Calculation done \n")
 
       self.compton = np.sum(inwindow(self.CE_sum, ergcut))
       self.cr = self.compton / sim_duration
@@ -548,6 +547,7 @@ class AllSatData(list):
     self.loading_count = 0
     for num_sat in range(self.n_sat):
       flist = subprocess.getoutput("ls {}_sat{}_{:04d}_*".format(source_prefix, num_sat, num_sim)).split("\n")
+      print("Liste à utiliser : ", flist, "\n")
       if len(flist) == 2:
         temp_list.append(FormatedData(flist, sat_info[num_sat], num_sat, sim_duration, *options))
         self.n_sat_det += 1
@@ -676,7 +676,7 @@ class AllSimData(list):
     source_prefix = f"{sim_prefix}_{self.source_name}"
     flist = subprocess.getoutput("ls {}_*".format(source_prefix)).split("\n")
 
-    print("f list à load : ", flist)
+    # print("f list à load : ", flist)
     if flist[0].startswith("ls: cannot access"):
       print(f"No file to be loaded for source {self.source_name}")
     else:
