@@ -684,6 +684,8 @@ class AllSimData(list):
       output_message = f"{len(flist)} files to be loaded for source {self.source_name} : "
     for num_sim in range(n_sim):
       flist = subprocess.getoutput("ls {}_*_{:04d}_*".format(source_prefix, num_sim)).split("\n")
+      if self.source_name == 'GRB170412988':
+        print("Debut de l'extraction des fichiers : {flist}")
       if len(flist) >= 2:
         temp_list.append(AllSatData(source_prefix, num_sim, pol_analysis, sat_info, sim_duration, options))
         self.n_sim_det += 1
@@ -693,6 +695,8 @@ class AllSimData(list):
         else:
           temp_list.append(AllSatData(source_prefix, num_sim, pol_analysis, sat_info, sim_duration, options))
           self.n_sim_det += 1
+      if self.source_name == 'GRB170412988':
+        print("Extraction terminée pour les fichiers : {flist}\n")
     list.__init__(self, temp_list)
     for sim_ite, sim in enumerate(self):
       if sim is not None:
