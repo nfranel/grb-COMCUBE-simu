@@ -385,7 +385,7 @@ class FormatedData:
     self.ra_sat_frame = None
     self.expected_pa = None
 
-    # print("files : ", data_list)
+    print("DEBUT D'EXTRACTION : ", data_list)
     # print("CE :", self.CE)
     # print("CE_sum :", self.CE_sum)
 
@@ -431,27 +431,27 @@ class FormatedData:
         if len(self.CE) == 0:
           self.CE_sum = []
         else:
-          if './sim-wobk--i-0--sat-3--sim-5--repart-30--grb-longfull/sim/long_GRB170412988_sat0_0004_132.6_263.9.inc2.id1.extracted.tra' in data_list or './sim-wobk--i-0--sat-3--sim-5--repart-30--grb-longfull/sim/long_GRB170412988_sat0_0004_132.6_263.9.inc1.id1.extracted.tra' in data_list:
-            print(
-              f"\n\nC'est ce qu'il faut verifier AVANT CE_SUM : \nValeur de CE : {self.CE}\nShape de CE : {np.shape(self.CE)}\nValeur de CE_sum : {self.CE_sum}\nShape de CE : {np.shape(self.CE_sum)}")
+          # if './sim-wobk--i-0--sat-3--sim-5--repart-30--grb-longfull/sim/long_GRB170412988_sat0_0004_132.6_263.9.inc2.id1.extracted.tra' in data_list or './sim-wobk--i-0--sat-3--sim-5--repart-30--grb-longfull/sim/long_GRB170412988_sat0_0004_132.6_263.9.inc1.id1.extracted.tra' in data_list:
+          #   print(
+          #     f"\n\nC'est ce qu'il faut verifier AVANT CE_SUM : \nValeur de CE : {self.CE}\nShape de CE : {np.shape(self.CE)}\nValeur de CE_sum : {self.CE_sum}\nShape de CE : {np.shape(self.CE_sum)}")
 
           self.CE_sum = np.sum(self.CE, axis=1)
-          if './sim-wobk--i-0--sat-3--sim-5--repart-30--grb-longfull/sim/long_GRB170412988_sat0_0004_132.6_263.9.inc2.id1.extracted.tra' in data_list or './sim-wobk--i-0--sat-3--sim-5--repart-30--grb-longfull/sim/long_GRB170412988_sat0_0004_132.6_263.9.inc1.id1.extracted.tra' in data_list:
-            print(
-              f"\n\nC'est ce qu'il faut verifier JUSTE APRES CE SUM : \nValeur de CE : {self.CE}\nShape de CE : {np.shape(self.CE)}\nValeur de CE_sum : {self.CE_sum}\nShape de CE : {np.shape(self.CE_sum)}")
+          # if './sim-wobk--i-0--sat-3--sim-5--repart-30--grb-longfull/sim/long_GRB170412988_sat0_0004_132.6_263.9.inc2.id1.extracted.tra' in data_list or './sim-wobk--i-0--sat-3--sim-5--repart-30--grb-longfull/sim/long_GRB170412988_sat0_0004_132.6_263.9.inc1.id1.extracted.tra' in data_list:
+          #   print(
+          #     f"\n\nC'est ce qu'il faut verifier JUSTE APRES CE SUM : \nValeur de CE : {self.CE}\nShape de CE : {np.shape(self.CE)}\nValeur de CE_sum : {self.CE_sum}\nShape de CE : {np.shape(self.CE_sum)}")
 
           self.CE = self.CE[inwindow(self.CE_sum, ergcut)]
-          if './sim-wobk--i-0--sat-3--sim-5--repart-30--grb-longfull/sim/long_GRB170412988_sat0_0004_132.6_263.9.inc2.id1.extracted.tra' in data_list or './sim-wobk--i-0--sat-3--sim-5--repart-30--grb-longfull/sim/long_GRB170412988_sat0_0004_132.6_263.9.inc1.id1.extracted.tra' in data_list:
-            print(
-              f"\n\nC'est ce qu'il faut verifier APRES LE IN WINDOW : \nValeur de CE : {self.CE}\nShape de CE : {np.shape(self.CE)}\nValeur de CE_sum : {self.CE_sum}\nShape de CE : {np.shape(self.CE_sum)}")
+          # if './sim-wobk--i-0--sat-3--sim-5--repart-30--grb-longfull/sim/long_GRB170412988_sat0_0004_132.6_263.9.inc2.id1.extracted.tra' in data_list or './sim-wobk--i-0--sat-3--sim-5--repart-30--grb-longfull/sim/long_GRB170412988_sat0_0004_132.6_263.9.inc1.id1.extracted.tra' in data_list:
+          #   print(
+          #     f"\n\nC'est ce qu'il faut verifier APRES LE IN WINDOW : \nValeur de CE : {self.CE}\nShape de CE : {np.shape(self.CE)}\nValeur de CE_sum : {self.CE_sum}\nShape de CE : {np.shape(self.CE_sum)}")
 
           self.CE_sum = self.CE_sum[inwindow(self.CE_sum, ergcut)]
-        if './sim-wobk--i-0--sat-3--sim-5--repart-30--grb-longfull/sim/long_GRB170412988_sat0_0004_132.6_263.9.inc2.id1.extracted.tra' in data_list or './sim-wobk--i-0--sat-3--sim-5--repart-30--grb-longfull/sim/long_GRB170412988_sat0_0004_132.6_263.9.inc1.id1.extracted.tra' in data_list:
-          print(f"\n\nC'est ce qu'il faut verifier APRES LE IN WINDOW SUR CE SUM : \nValeur de CE : {self.CE}\nShape de CE : {np.shape(self.CE)}\nValeur de CE_sum : {self.CE_sum}\nShape de CE : {np.shape(self.CE_sum)}")
+        # if './sim-wobk--i-0--sat-3--sim-5--repart-30--grb-longfull/sim/long_GRB170412988_sat0_0004_132.6_263.9.inc2.id1.extracted.tra' in data_list or './sim-wobk--i-0--sat-3--sim-5--repart-30--grb-longfull/sim/long_GRB170412988_sat0_0004_132.6_263.9.inc1.id1.extracted.tra' in data_list:
+        #   print(f"\n\nC'est ce qu'il faut verifier APRES LE IN WINDOW SUR CE SUM : \nValeur de CE : {self.CE}\nShape de CE : {np.shape(self.CE)}\nValeur de CE_sum : {self.CE_sum}\nShape de CE : {np.shape(self.CE_sum)}")
         # Warning : the first value of self.CE is the second hit in the detector
         self.polar_from_energy = np.rad2deg(np.arccos(1 - m_elec * c_light ** 2 / charge_elem / 1000 * (1 / self.CE[:, 0] - 1 / (self.CE_sum))))
-        if './sim-wobk--i-0--sat-3--sim-5--repart-30--grb-longfull/sim/long_GRB170412988_sat0_0004_132.6_263.9.inc2.id1.extracted.tra' in data_list or './sim-wobk--i-0--sat-3--sim-5--repart-30--grb-longfull/sim/long_GRB170412988_sat0_0004_132.6_263.9.inc1.id1.extracted.tra' in data_list:
-          print(f"\n\nEST CE QUE CA A REUSSI ????????")
+        # if './sim-wobk--i-0--sat-3--sim-5--repart-30--grb-longfull/sim/long_GRB170412988_sat0_0004_132.6_263.9.inc2.id1.extracted.tra' in data_list or './sim-wobk--i-0--sat-3--sim-5--repart-30--grb-longfull/sim/long_GRB170412988_sat0_0004_132.6_263.9.inc1.id1.extracted.tra' in data_list:
+        #   print(f"\n\nEST CE QUE CA A REUSSI ????????")
 
 
       self.compton = np.sum(inwindow(self.CE_sum, ergcut))
@@ -474,6 +474,7 @@ class FormatedData:
                               corr=corr,
                               ergcut=ergcut)
         self.unpol = None
+    print("FIN D'EXTRACTION !!!!!!!!!!!!!!!!!!!!! : ", data_list, "\n")
 
   def get_keys(self):
     print("======================================================================")
