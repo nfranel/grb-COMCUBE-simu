@@ -451,7 +451,7 @@ class FormatedData:
         # Warning : the first value of self.CE is the second hit in the detector
         self.polar_from_energy = np.rad2deg(np.arccos(1 - m_elec * c_light ** 2 / charge_elem / 1000 * (1 / self.CE[:, 0] - 1 / (self.CE_sum))))
         if './sim-wobk--i-0--sat-3--sim-5--repart-30--grb-longfull/sim/long_GRB170412988_sat0_0004_132.6_263.9.inc2.id1.extracted.tra' in data_list or './sim-wobk--i-0--sat-3--sim-5--repart-30--grb-longfull/sim/long_GRB170412988_sat0_0004_132.6_263.9.inc1.id1.extracted.tra' in data_list:
-          print(f"\n\nEST CE QUE CA A REUSSI ????????)}")
+          print(f"\n\nEST CE QUE CA A REUSSI ????????")
 
 
       self.compton = np.sum(inwindow(self.CE_sum, ergcut))
