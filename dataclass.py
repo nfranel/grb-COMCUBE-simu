@@ -562,7 +562,7 @@ class AllSatData(list):
       flist = subprocess.getoutput("ls {}_sat{}_{:04d}_*".format(source_prefix, num_sat, num_sim)).split("\n")
       if source_prefix == './sim-wobk--i-0--sat-3--sim-5--repart-30--grb-longfull/sim/long_GRB170412988':
         if num_sim == 4:
-          print(f"Encore ... Début de l'extraction des fichiers : {flist}")
+          # print(f"Encore ... Début de l'extraction des fichiers : {flist}")
       # print("Liste à utiliser : ", flist, "\n")
       if len(flist) == 2:
         temp_list.append(FormatedData(flist, sat_info[num_sat], num_sat, sim_duration, *options))
@@ -701,8 +701,8 @@ class AllSimData(list):
       output_message = f"{len(flist)} files to be loaded for source {self.source_name} : "
     for num_sim in range(n_sim):
       flist = subprocess.getoutput("ls {}_*_{:04d}_*".format(source_prefix, num_sim)).split("\n")
-      if self.source_name == 'GRB170412988':
-        print(f"Debut de l'extraction des fichiers : {flist}")
+      # if self.source_name == 'GRB170412988':
+        # print(f"Debut de l'extraction des fichiers : {flist}")
       if len(flist) >= 2:
         temp_list.append(AllSatData(source_prefix, num_sim, pol_analysis, sat_info, sim_duration, options))
         self.n_sim_det += 1
