@@ -34,7 +34,8 @@ def treatPE(s):
   Function to sum the 2 energy deposits given by trafiles for a compton event
   """
   # return float(s[0]) + float(s[4])
-  print("exception photo : ", s)
+  if type(s) == list:
+    print("Probably error in data file, with data : ", s)
   return float(s)
 
 def calculate_polar_angle(CE, CE_sum):
