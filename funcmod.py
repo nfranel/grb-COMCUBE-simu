@@ -26,8 +26,10 @@ def treatCE(s):
   Function to sum the 2 energy deposits given by trafiles for a compton event
   """
   # return float(s[0]) + float(s[4])
-  print(s)
-  return np.array([float(s[0]), float(s[4])])
+  try:
+    return np.array([float(s[0]), float(s[4])])
+  except ValueError:
+    print("exception ", s)
 
 def treatPE(s):
   """
