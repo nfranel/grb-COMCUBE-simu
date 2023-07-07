@@ -385,7 +385,8 @@ class FormatedData:
     self.ra_sat_frame = None
     self.expected_pa = None
 
-    # print("DEBUT D'EXTRACTION : ", data_list)
+    if 'GRB140929667' in data_list[0]:
+      print("DEBUT D'EXTRACTION : ", data_list)
     # print("CE :", self.CE)
     # print("CE_sum :", self.CE_sum)
 
@@ -469,7 +470,8 @@ class FormatedData:
                               corr=corr,
                               ergcut=ergcut)
         self.unpol = None
-    # print("FIN D'EXTRACTION !!!!!!!!!!!!!!!!!!!!! : ", data_list, "\n")
+    if 'GRB140929667' in data_list[0]:
+      print("FIN D'EXTRACTION !!!!!!!!!!!!!!!!!!!!! : ", data_list, "\n")
 
   def get_keys(self):
     print("======================================================================")
