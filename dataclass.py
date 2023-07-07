@@ -127,17 +127,19 @@ class Polarigram(list):
       CE = np.array(CE)
       if len(CE) == 0:
         CE_sum = []
+        self.polar_from_energy = []
       else:
         CE_sum = np.sum(CE, axis=1)
         CE = CE[inwindow(CE_sum, ergcut)]
         CE_sum = CE_sum[inwindow(CE_sum, ergcut)]
-
-      self.polar_from_energy = calculate_polar_angle(CE[:, 0], CE_sum)
+        self.polar_from_energy = calculate_polar_angle(CE[:, 0], CE_sum)
 
       angle_lists = analyzetra(data, self.theta, self.phi, self.expected_pa, corr=corr, ergcut=ergcut)
       self.polar_angles = angle_lists[1]
-      clean_list = list(
-        np.array(angle_lists[0])[np.where(np.abs(self.polar_from_energy - self.polar_angles) <= armcut, True, False)])
+      if len(CE) == 0:
+        clean_list = []
+      else:
+        clean_list = list(np.array(angle_lists[0])[np.where(np.abs(self.polar_from_energy - self.polar_angles) <= armcut, True, False)])
       list.__init__(self, clean_list)
       self.behave()
       self.azim_angle_corrected = corr
@@ -283,7 +285,6 @@ class BkgContainer:
     self.CE = []
     self.PE = []
     self.CE_sum = []
-    # self.polar_from_energy = []
     self.cr = 0
 
     self.dec, self.ra = datafile.split("_")[-2:]
@@ -431,6 +432,7 @@ class FormatedData:
         self.CE = np.array(self.CE)
         if len(self.CE) == 0:
           self.CE_sum = []
+          self.polar_from_energy = []
         else:
           # if 'GRB140929667' in data_list[0]:
           print(
@@ -444,10 +446,11 @@ class FormatedData:
           print(
             f"\n\nC'est ce qu'il faut verifier APRES LE IN WINDOW : \nValeur de CE : {self.CE}\nShape de CE : {np.shape(self.CE)}\nValeur de CE_sum : {self.CE_sum}\nShape de CE : {np.shape(self.CE_sum)}")
           self.CE_sum = self.CE_sum[inwindow(self.CE_sum, ergcut)]
-        # if 'GRB140929667' in data_list[0]:
-        print(f"\n\nC'est ce qu'il faut verifier APRES LE IN WINDOW SUR CE SUM : \nValeur de CE : {self.CE}\nShape de CE : {np.shape(self.CE)}\nValeur de CE_sum : {self.CE_sum}\nShape de CE : {np.shape(self.CE_sum)}")
-        # Warning : the first value of self.CE is the second hit in the detector
-        self.polar_from_energy = np.rad2deg(np.arccos(1 - m_elec * c_light ** 2 / charge_elem / 1000 * (1 / self.CE[:, 0] - 1 / (self.CE_sum))))
+          # if 'GRB140929667' in data_list[0]:
+          print(f"\n\nC'est ce qu'il faut verifier APRES LE IN WINDOW SUR CE SUM : \nValeur de CE : {self.CE}\nShape de CE : {np.shape(self.CE)}\nValeur de CE_sum : {self.CE_sum}\nShape de CE : {np.shape(self.CE_sum)}")
+          # Warning : the first value of self.CE is the second hit in the detector
+          self.polar_from_energy = calculate_polar_angle(self.CE[:, 0], self.CE_sum)
+          # np.rad2deg(np.arccos(1 - m_elec * c_light ** 2 / charge_elem / 1000 * (1 / self.CE[:, 0] - 1 / (self.CE_sum))))
         # if 'GRB140929667' in data_list[0]:
         print(f"\n\nEST CE QUE CA A REUSSI ????????")
       self.compton = np.sum(inwindow(self.CE_sum, ergcut))
