@@ -28,7 +28,7 @@ def treatCE(s):
   # return float(s[0]) + float(s[4])
   try:
     return np.array([float(s[0]), float(s[4])])
-  except ValueError:
+  except:
     print("exception ", s)
 
 def treatPE(s):
