@@ -26,7 +26,7 @@ def treatCE(s):
   Function to sum the 2 energy deposits given by trafiles for a compton event
   """
   # return float(s[0]) + float(s[4])
-  print("Exception CE : ", s)
+  # print("Exception CE : ", s)
   return np.array([float(s[0]), float(s[4])])
 
 def treatPE(s):
@@ -34,8 +34,8 @@ def treatPE(s):
   Function to sum the 2 energy deposits given by trafiles for a compton event
   """
   # return float(s[0]) + float(s[4])
-  if type(s) == list:
-    print("Probably error in data file, with data : ", s)
+  # if type(s) == list:
+  #   print("Probably error in data file, with data : ", s)
   return float(s)
 
 def calculate_polar_angle(CE, CE_sum):
