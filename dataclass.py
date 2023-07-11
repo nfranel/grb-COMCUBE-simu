@@ -386,7 +386,7 @@ class FormatedData:
     self.ra_sat_frame = None
     self.expected_pa = None
 
-    print("EXTRACTION DES FICHIERS : ", data_list)
+    # print("EXTRACTION DES FICHIERS : ", data_list)
     if len(data_list) == 0:
       for item in opt_items:
         setattr(self, item, [])
@@ -455,7 +455,7 @@ class FormatedData:
                               corr=corr,
                               ergcut=ergcut)
         self.unpol = None
-    print("EXTRACTION DES FICHIERS TERMINEE : ", data_list)
+    # print("EXTRACTION DES FICHIERS TERMINEE : ", data_list)
 
   def get_keys(self):
     print("======================================================================")
