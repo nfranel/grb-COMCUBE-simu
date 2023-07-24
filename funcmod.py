@@ -27,7 +27,6 @@ def treatCE(s):
   """
   # return float(s[0]) + float(s[4])
   # print("Exception CE : ", s)
-  print("CE treated")
   return np.array([float(s[0]), float(s[4])])
 
 def treatPE(s):
@@ -37,7 +36,6 @@ def treatPE(s):
   # return float(s[0]) + float(s[4])
   # if type(s) == list:
   #   print("Probably error in data file, with data : ", s)
-  print("PE treated")
   return float(s)
 
 def calculate_polar_angle(CE, CE_sum):
