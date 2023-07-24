@@ -370,7 +370,8 @@ class FormatedData:
     self.unpol = []
     self.n_sat_detect = 1
     self.arm = None
-    self.s_eff = None
+    self.s_eff_pola = None
+    self.s_eff_spectro = None
     self.mu100 = None
     self.pa = None
     self.fit_cr = None
@@ -498,9 +499,11 @@ class FormatedData:
     mdp has physical significance between 0 and 1
     """
     if source_fluence is None:
-      self.s_eff = None
+      self.s_eff_pola = None
+      self.s_eff_spectro = None
     else:
-      self.s_eff = self.compton / source_fluence
+      self.s_eff_pola = self.compton / source_fluence
+      self.s_eff_spectro = self.single / source_fluence
     if self.unpol is not None:
       self.pol.fit(self.unpol, fit_bounds=fit_bounds)
       # self.pol.fit(self.unpol, fit_bounds=([-np.inf, -np.inf, (len(self.pol)-1)/100], [np.inf, np.inf, (len(self.pol)+1)/100]))
@@ -646,7 +649,7 @@ class AllSatData(list):
                     np.concatenate((getattr(self.const_data, item), getattr(self[num_sat], item))))
         setattr(self.const_data, item, getattr(self.const_data, item)[1:])
       else:
-        if item not in ['arm', 's_eff', 'mu100', 'pa', 'fit_cr', 'mdp', 'snr', 'pa_err', 'mu100_err', 'fit_cr_err',
+        if item not in ['arm', 's_eff_pola', 's_eff_spectro', 'mu100', 'pa', 'fit_cr', 'mdp', 'snr', 'pa_err', 'mu100_err', 'fit_cr_err',
                         'fit_goodness']:
           for num_sat in considered_sat:
             setattr(self.const_data, item, getattr(self.const_data, item) + getattr(self[num_sat], item))
@@ -885,7 +888,8 @@ class AllSourceData:
       self.n_source = len(self.namelist)
       self.fluence = [calc_fluence(cat_data, source_index, erg_cut) * self.sim_duration for source_index in
                       range(self.n_source)]
-    self.s_eff = None
+    self.s_eff_pola = None
+    self.s_eff_spectro = None
 
     #    init_time = time()
     if parallel:
@@ -1031,11 +1035,13 @@ class AllSourceData:
         "The source has been simulated with a background, the calculation has not been done as this would lead to biased results")
     else:
       list_dec = []
-      list_s_eff = []
+      list_s_eff_pola = []
+      list_s_eff_spectro = []
       for source in self.alldata:
         if source is not None:
           temp_dec = []
-          temp_s_eff = []
+          temp_s_eff_pola = []
+          temp_s_eff_spectro = []
           for num_sim, sim in enumerate(source):
             if sim is not None:
               if sim[sat] is None:
@@ -1043,18 +1049,20 @@ class AllSourceData:
                   f"The satellite {sat} selected didn't detect the source '{source.source_name}' for the simulation number {num_sim}.")
               else:
                 temp_dec.append(sim[sat].dec_sat_frame)
-                temp_s_eff.append(sim[sat].s_eff)
+                temp_s_eff_pola.append(sim[sat].s_eff_pola)
+                temp_s_eff_spectro.append(sim[sat].s_eff_spectro)
           list_dec.append(temp_dec)
-          list_s_eff.append(temp_s_eff)
+          list_s_eff_pola.append(temp_s_eff_pola)
+          list_s_eff_spectro.append(temp_s_eff_spectro)
 
       figure, ax = plt.subplots(2, 2, figsize=(16, 12))
       figure.suptitle("Effective area as a function of detection angle")
       for graph in range(4):
         for ite in range(graph * 10, min(graph * 10 + 10, len(list_dec))):
-          ax[int(graph / 2)][graph % 2].scatter(list_dec[ite], list_s_eff[ite],
+          ax[int(graph / 2)][graph % 2].scatter(list_dec[ite], list_s_eff_pola[ite],
                                                 label=f"Fluence : {np.around(self.fluence[ite], decimals=1)} ph/cm²")
         ax[int(graph / 2)][graph % 2].set(xlabel="GRB zenith angle (rad)",
-                                          ylabel="Effective area (cm²)")  # , yscale="linear")
+                                          ylabel="Effective area for polarimetry (cm²)")  # , yscale="linear")
         ax[int(graph / 2)][graph % 2].legend()
       plt.show()
 
@@ -1066,7 +1074,7 @@ class AllSourceData:
 
   def fov_const(self, num_val=500, mode="polarization", show=True, save=False):
     """
-    Plots a map of the sensibility (s_eff) over the sky
+    Plots a map of the sensibility (s_eff_pola) over the sky
     Mode is the mode used to obtain the sensibility :
       Polarization gives the sensibility to polarization
       Spectrometry gives the sensibility to spectrometry (capacity of detection)
@@ -1078,7 +1086,6 @@ class AllSourceData:
     detection_spectro = np.zeros((self.n_sat, num_val, num_val))
 
     for ite in range(self.n_sat):
-      # detection[ite] = np.array([[eff_area_func(trafile.decra2tp(theta, phi, sat_info[ite], unit="rad")[0], sat_info[ite][2], func_type="FoV") for phi in phi_world] for theta in theta_world])
       detection_pola[ite] = np.array([[eff_area_pola_func(decra2tp(theta, phi, self.sat_info[ite], unit="rad")[0],
                                                           self.sat_info[ite][2], func_type="cos") for phi in phi_world]
                                       for
