@@ -27,6 +27,7 @@ def treatCE(s):
   """
   # return float(s[0]) + float(s[4])
   # print("Exception CE : ", s)
+  print("CE treated")
   return np.array([float(s[0]), float(s[4])])
 
 def treatPE(s):
