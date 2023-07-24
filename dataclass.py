@@ -437,7 +437,8 @@ class FormatedData:
           self.polar_from_energy = calculate_polar_angle(self.CE[:, 0], self.CE_sum)
       self.compton = np.sum(inwindow(self.CE_sum, ergcut))
       self.cr = self.compton / sim_duration
-      self.single_cr = np.sum(inwindow(self.PE, ergcut)) / sim_duration
+      self.single = np.sum(inwindow(self.PE, ergcut))
+      self.single_cr = self.single / sim_duration
 
       self.dec_world_frame, self.ra_world_frame = fname2decra(data_list[0])
       self.dec_sat_frame, self.ra_sat_frame, self.expected_pa = decra2tpPA(self.dec_world_frame, self.ra_world_frame,
