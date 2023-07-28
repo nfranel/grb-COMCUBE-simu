@@ -312,6 +312,7 @@ def SNR(S, B, C=0):
   :param C: minimum number of counts in the source to consider the detection
   :returns: SNR (as defined in Sarah Antier's PhD thesis
   """
+  print(S, B)
   return (S - B) / np.sqrt(B + C)
 
 
