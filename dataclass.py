@@ -527,10 +527,10 @@ class FormatedData:
         else:
           self.mdp = MDP(self.cr * source_duration, self.b_rate * source_duration, self.mu100)
     if source_with_bkg:
-      print("source has bkg included")
       snr_val = SNR(self.cr * source_duration, self.b_rate * source_duration)
       snr_single_val = SNR(self.single_cr * source_duration, self.single_b_rate * source_duration)
     else:
+      print("Le calcul est donc fait ici !")
       snr_val = SNR((self.cr + self.b_rate) * source_duration, self.b_rate * source_duration)
       snr_single_val = SNR((self.single_cr + self.single_b_rate) * source_duration, self.b_rate * source_duration)
       # print(f"snr : {snr_val}, snr single : {snr_single_val}, self.single_cr : {self.single_cr}, self.single_b_rate : {self.single_b_rate} source_duration : {source_duration}")
