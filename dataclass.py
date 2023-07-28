@@ -340,8 +340,7 @@ class FormatedData:
   """
 
   def __init__(self, data_list, sat_info, num_sat, sim_duration, opt_items=None, opt_analysis=None, armcut=180,
-               corr=False,
-               ergcut=None):
+               corr=False, ergcut=None):
     """
     -data_list : list of 1 or 2 files (pol or pol+unpol) from which extract the data
     """
@@ -352,8 +351,10 @@ class FormatedData:
     self.num_sat = num_sat
     if sat_info is None:
       self.b_rate = 0
+      self.single_b_rate = 0
     else:
-      self.b_rate = sat_info[-1]
+      self.b_rate = sat_info[-2]
+      self.single_b_rate = sat_info[-1]
     self.triggers = 0
     self.calor = 0
     self.dsssd = 0
@@ -377,6 +378,7 @@ class FormatedData:
     self.fit_cr = None
     self.mdp = None
     self.snr = None
+    self.snr_single = None
     self.pa_err = None
     self.mu100_err = None
     self.fit_cr_err = None
@@ -526,12 +528,16 @@ class FormatedData:
           self.mdp = MDP(self.cr * source_duration, self.b_rate * source_duration, self.mu100)
     if source_with_bkg:
       snr_val = SNR(self.cr * source_duration, self.b_rate * source_duration)
+      snr_single_val = SNR(self.single_cr * source_duration, self.single_b_rate * source_duration)
     else:
       snr_val = SNR((self.cr + self.b_rate) * source_duration, self.b_rate * source_duration)
+      snr_single_val = SNR((self.single_cr + self.single_b_rate) * source_duration, self.b_rate * source_duration)
     if snr_val < 0:
       self.snr = 0
+      self.snr_single = 0
     else:
       self.snr = snr_val
+      self.snr_single = snr_single_val
     self.arm = np.abs(self.polar_from_energy - self.pol.polar_angles)
 
 
@@ -875,7 +881,8 @@ class AllSourceData:
                                        ergcut=self.erg_cut))
 
     for sat_ite in range(len(self.sat_info)):
-      self.sat_info[sat_ite].append(closest_bkg_rate(self.sat_info[sat_ite][0], self.bkgdata))
+      for count_rates in closest_bkg_rate(self.sat_info[sat_ite][0], self.bkgdata):
+        self.sat_info[sat_ite].append(count_rates)
 
     if self.cat_file == "None":
       cat_data = self.extract_sources(self.sim_prefix)

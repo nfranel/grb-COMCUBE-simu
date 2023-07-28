@@ -418,8 +418,7 @@ def closest_bkg_rate(sat_lat, bkg_list):
     return 0.000001
   else:
     latitude_error = np.array([abs(bkg.dec - sat_lat) for bkg in bkg_list])
-    return bkg_list[np.argmin(latitude_error)].cr
-
+    return [bkg_list[np.argmin(latitude_error)].cr, bkg_list[np.argmin(latitude_error)].single_cr]
 
 
 def calc_fluence(catalog, index, ergCut):
