@@ -655,8 +655,8 @@ class AllSatData(list):
                     np.concatenate((getattr(self.const_data, item), getattr(self[num_sat], item))))
         setattr(self.const_data, item, getattr(self.const_data, item)[1:])
       else:
-        if item not in ['arm', 's_eff_pola', 's_eff_spectro', 'mu100', 'pa', 'fit_cr', 'mdp', 'snr', 'pa_err', 'mu100_err', 'fit_cr_err',
-                        'fit_goodness']:
+        if item not in ['arm', 's_eff_pola', 's_eff_spectro', 'mu100', 'pa', 'fit_cr', 'mdp', 'snr', 'snr_single',
+                        'pa_err', 'mu100_err', 'fit_cr_err', 'fit_goodness']:
           for num_sat in considered_sat:
             setattr(self.const_data, item, getattr(self.const_data, item) + getattr(self[num_sat], item))
 
