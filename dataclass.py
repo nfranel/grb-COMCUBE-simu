@@ -538,6 +538,7 @@ class FormatedData:
     else:
       self.snr = snr_val
       self.snr_single = snr_single_val
+    print(f"self.polar_from_energy : {self.polar_from_energy} \nself.pol.polar_angles : {self.pol.polar_angles}\n==============================================================================\n")
     self.arm = np.abs(self.polar_from_energy - self.pol.polar_angles)
 
 
