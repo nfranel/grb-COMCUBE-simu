@@ -527,6 +527,7 @@ class FormatedData:
         else:
           self.mdp = MDP(self.cr * source_duration, self.b_rate * source_duration, self.mu100)
     if source_with_bkg:
+      print("source has bkg included")
       snr_val = SNR(self.cr * source_duration, self.b_rate * source_duration)
       snr_single_val = SNR(self.single_cr * source_duration, self.single_b_rate * source_duration)
     else:
