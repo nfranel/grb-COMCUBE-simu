@@ -310,9 +310,9 @@ def SNR(S, B, C=0):
   :param S: number of counts in the source (background included)
   :param B: expected number of background counts
   :param C: minimum number of counts in the source to consider the detection
-  :returns: SNR (as defined in Sarah Antier's PhD thesis
+  :returns: SNR (as defined in Sarah Antier's PhD thesis)
   """
-  print(S, B)
+  print(f"S : {S}, B : {B}, C :{C}")
   return (S - B) / np.sqrt(B + C)
 
 
