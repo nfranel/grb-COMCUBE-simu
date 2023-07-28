@@ -532,6 +532,8 @@ class FormatedData:
     else:
       snr_val = SNR((self.cr + self.b_rate) * source_duration, self.b_rate * source_duration)
       snr_single_val = SNR((self.single_cr + self.single_b_rate) * source_duration, self.b_rate * source_duration)
+      print(f"snr : {snr_val}")
+      print(f"snr sing : {snr_single_val}")
     if snr_val < 0:
       self.snr = 0
       self.snr_single = 0
