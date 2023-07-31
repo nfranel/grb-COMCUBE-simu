@@ -10,13 +10,13 @@ from inspect import signature
 import matplotlib.pyplot as plt
 import subprocess
 import matplotlib as mpl
-
-mpl.use('Qt5Agg')
 import matplotlib.colors as colors
 # import numpy as np
 # import gzip
 import multiprocessing as mp
 from itertools import repeat
+
+mpl.use('Qt5Agg')
 
 
 class Fit:
@@ -126,7 +126,7 @@ class Polarigram(list):
           CE.append(treatCE(line.split(" ")[1:]))
       CE = np.array(CE)
       if len(CE) == 0:
-        CE_sum = []
+        # CE_sum = []
         self.polar_from_energy = []
       else:
         CE_sum = np.sum(CE, axis=1)
@@ -139,7 +139,8 @@ class Polarigram(list):
       if len(CE) == 0:
         clean_list = []
       else:
-        clean_list = list(np.array(angle_lists[0])[np.where(np.abs(self.polar_from_energy - self.polar_angles) <= armcut, True, False)])
+        clean_list = list(
+          np.array(angle_lists[0])[np.where(np.abs(self.polar_from_energy - self.polar_angles) <= armcut, True, False)])
       list.__init__(self, clean_list)
       self.behave()
       self.azim_angle_corrected = corr
@@ -531,7 +532,8 @@ class FormatedData:
       snr_single_val = SNR(self.single_cr * source_duration, self.single_b_rate * source_duration)
     else:
       snr_val = SNR((self.cr + self.b_rate) * source_duration, self.b_rate * source_duration)
-      snr_single_val = SNR((self.single_cr + self.single_b_rate) * source_duration, self.single_b_rate * source_duration)
+      snr_single_val = SNR((self.single_cr + self.single_b_rate) * source_duration,
+                           self.single_b_rate * source_duration)
     if snr_val < 0:
       self.snr = 0
       self.snr_single = 0
@@ -562,7 +564,7 @@ class AllSatData(list):
       flist = subprocess.getoutput("ls {}_sat{}_{:04d}_*".format(source_prefix, num_sat, num_sim)).split("\n")
       # if source_prefix == './sim-wobk--i-0--sat-3--sim-5--repart-30--grb-longfull/sim/long_GRB170412988':
       #   if num_sim == 4:
-          # print(f"Encore ... Début de l'extraction des fichiers : {flist}")
+      # print(f"Encore ... Début de l'extraction des fichiers : {flist}")
       # print("Liste à utiliser : ", flist, "\n")
       if len(flist) == 2:
         temp_list.append(FormatedData(flist, sat_info[num_sat], num_sat, sim_duration, *options))
@@ -702,7 +704,7 @@ class AllSimData(list):
     for num_sim in range(n_sim):
       flist = subprocess.getoutput("ls {}_*_{:04d}_*".format(source_prefix, num_sim)).split("\n")
       # if self.source_name == 'GRB170412988':
-        # print(f"Debut de l'extraction des fichiers : {flist}")
+      # print(f"Debut de l'extraction des fichiers : {flist}")
       if len(flist) >= 2:
         temp_list.append(AllSatData(source_prefix, num_sim, pol_analysis, sat_info, sim_duration, options))
         self.n_sim_det += 1
@@ -924,7 +926,8 @@ class AllSourceData:
     self.gbm_fov = (1 - np.cos(np.deg2rad(horizonAngle(565)))) / 2
     self.weights = 1 / self.n_sim / self.cat_duration * self.com_duty / self.gbm_duty * self.com_fov / self.gbm_fov
 
-  def get_keys(self):
+  @staticmethod
+  def get_keys():
     print("======================================================================")
     print("    Files and paths")
     print(" background files prefix :            .bkg_prefix")
@@ -1209,7 +1212,7 @@ class AllSourceData:
         cbar.set_label("GRB Duration - T90 (s)", rotation=270, labelpad=20)
       plt.show()
 
-  def mdp_histogram(self, selected_sat="const", mdp_threshold=1, cumul=1, n_bins=30, y_scale="log"):
+  def mdp_histogram(self, selected_sat="const", mdp_threshold=1, cumul=1, n_bins=30, x_scale='linear', y_scale="log"):
     """
     Display and histogram representing the number of grb of a certain mdp per year
     """
@@ -1241,19 +1244,19 @@ class AllSourceData:
     ax.hist(mdp_list, bins=n_bins, cumulative=cumul, histtype="step", weights=[self.weights] * len(mdp_list),
             label=f"Number of GRBs with MDP < {mdp_threshold * 100}% : {len(mdp_list)} over {number_detected} detections")
     if cumul == 1:
-      ax.set(xlabel="MPD (%)", ylabel="Number of detection per year", yscale=y_scale,
+      ax.set(xlabel="MPD (%)", ylabel="Number of detection per year", xscale=x_scale, yscale=y_scale,
              title=f"Cumulative distribution of the MDP - {grb_type}")
-    elif cumul ==0:
-      ax.set(xlabel="MPD (%)", ylabel="Number of detection per year", yscale=y_scale,
+    elif cumul == 0:
+      ax.set(xlabel="MPD (%)", ylabel="Number of detection per year", xscale=x_scale, yscale=y_scale,
              title=f"Distribution of the MDP - {grb_type}")
     elif cumul == -1:
-      ax.set(xlabel="MPD (%)", ylabel="Number of detection per year", yscale=y_scale,
+      ax.set(xlabel="MPD (%)", ylabel="Number of detection per year", xscale=x_scale, yscale=y_scale,
              title=f"Inverse cumulative distribution of the MDP - {grb_type}")
     ax.legend(loc='upper left')
     ax.grid(axis='both')
     plt.show()
 
-  def snr_histogram(self, selected_sat="const", cumul=0, n_bins=30, y_scale="log"):
+  def snr_histogram(self, selected_sat="const", cumul=0, n_bins=30, x_scale="log", y_scale="log"):
     """
     Display and histogram representing the number of grb that have at least a certain snr per year
     """
@@ -1276,18 +1279,19 @@ class AllSourceData:
     fig, ax = plt.subplots(1, 1)
     ax.hist(snr_list, bins=n_bins, cumulative=cumul, histtype="step", weights=[self.weights] * len(snr_list))
     if cumul == 1:
-      ax.set(xlabel="SNR (dimensionless)", ylabel="Number of detection per year", yscale=y_scale,
+      ax.set(xlabel="SNR (dimensionless)", ylabel="Number of detection per year", xscale=x_scale, yscale=y_scale,
              title=f"Cumulative distribution of the SNR - {grb_type}")
-    elif cumul ==0:
-      ax.set(xlabel="SNR (dimensionless)", ylabel="Number of detection per year", yscale=y_scale,
+    elif cumul == 0:
+      ax.set(xlabel="SNR (dimensionless)", ylabel="Number of detection per year", xscale=x_scale, yscale=y_scale,
              title=f"Distribution of the SNR - {grb_type}")
     elif cumul == -1:
-      ax.set(xlabel="SNR (dimensionless)", ylabel="Number of detection per year", yscale=y_scale,
+      ax.set(xlabel="SNR (dimensionless)", ylabel="Number of detection per year", xscale=x_scale, yscale=y_scale,
              title=f"Inverse cumulative distribution of the SNR - {grb_type}")
     ax.grid(axis='both')
     plt.show()
 
-  def hits_energy_histogram(self, num_grb, num_sim, selected_sat="const", n_bins=30):
+  def hits_energy_histogram(self, num_grb, num_sim, selected_sat="const", n_bins=30,
+                            x_scale='log', y_scale='linear'):
     """
 
     """
@@ -1310,10 +1314,11 @@ class AllSourceData:
     distrib, ax1 = plt.subplots(1, 1, figsize=(8, 6))
     distrib.suptitle("Energy distribution of photons for a GRB")
     ax1.hist(hits_energy, bins=n_bins, cumulative=0, histtype="step")
-    ax1.set(xlabel="Energy (keV)", ylabel="Number of photon detected", yscale="linear")
+    ax1.set(xlabel="Energy (keV)", ylabel="Number of photon detected", xscale=x_scale, yscale=y_scale)
     plt.show()
 
-  def arm_histogram(self, num_grb, num_sim, selected_sat="const", n_bins=30, arm_lim=0.8):
+  def arm_histogram(self, num_grb, num_sim, selected_sat="const", n_bins=30, arm_lim=0.8,
+                    x_scale='linear', y_scale='linear'):
     """
 
     """
@@ -1342,11 +1347,12 @@ class AllSourceData:
     distrib.suptitle("ARM of photons for an event")
     ax1.hist(arm_values, bins=n_bins, cumulative=0, histtype="step")
     ax1.axvline(arm_threshold, color="black", label=f"{arm_lim * 100}% values limit = {arm_threshold}")
-    ax1.set(xlabel="Angular Resolution Measurement (°)", ylabel="Number of photon detected", yscale="linear")
+    ax1.set(xlabel="Angular Resolution Measurement (°)", ylabel="Number of photon detected", xscale=x_scale,
+            yscale=y_scale)
     ax1.legend()
     plt.show()
 
-  def peak_flux_distri(self, selected_sat="const", snr_min=5, n_bins=30, y_scale="log"):
+  def peak_flux_distri(self, selected_sat="const", snr_min=5, n_bins=30, x_scale='log', y_scale="log"):
     """
 
     """
@@ -1365,11 +1371,11 @@ class AllSourceData:
     distrib.suptitle("Peak flux distribution of detected long GRB")
     hist_bins = np.logspace(int(np.log10(min(hist_pflux))), int(np.log10(max(hist_pflux))) + 1, n_bins)
     ax1.hist(hist_pflux, bins=hist_bins, cumulative=False, histtype="step", weights=[self.weights] * len(hist_pflux))
-    ax1.set(xlabel="Peak flux (photons/cm2/s)", ylabel="Number of detection per year", xscale='log', yscale=y_scale)
+    ax1.set(xlabel="Peak flux (photons/cm2/s)", ylabel="Number of detection per year", xscale=x_scale, yscale=y_scale)
     # ax1.legend()
     plt.show()
 
-  def det_proba_vs_pflux(self, selected_sat="const"):
+  def det_proba_vs_pflux(self, selected_sat="const", x_scale='log', y_scale='linear'):
     """
     sat contains either the number of the satellite selected or "const"
     """
@@ -1389,16 +1395,16 @@ class AllSourceData:
     distrib, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 6))
     distrib.suptitle(
       "Detection probability vs peak flux of detected long GRB - GRB in the whole sky (left) and only in the FoV (right)")
-    ax1.scatter(p_flux_list, det_prob_sky_list, s=2)
-    ax2.scatter(p_flux_list, det_prob_fov_list, s=2)
+    ax1.scatter(p_flux_list, det_prob_sky_list, s=2, label='Detection probability over the whole sky')
+    ax2.scatter(p_flux_list, det_prob_fov_list, s=2, label='Detection probability over the field of view')
 
-    ax1.set(xlabel="Peak flux (photons/cm2/s)", ylabel="Detection probability", xscale='log', )
+    ax1.set(xlabel="Peak flux (photons/cm2/s)", ylabel="Detection probability", xscale=x_scale, yscale=y_scale)
     ax1.legend()
-    ax2.set(xlabel="Peak flux (photons/cm2/s)", ylabel="Detection probability", xscale='log', )
+    ax2.set(xlabel="Peak flux (photons/cm2/s)", ylabel="Detection probability", xscale=x_scale, yscale=y_scale)
     ax2.legend()
     plt.show()
 
-  def compton_im_proba_vs_pflux(self, selected_sat="const"):
+  def compton_im_proba_vs_pflux(self, selected_sat="const", x_scale='log', y_scale='linear'):
     """
     sat contains either the number of the satellite selected or "const"
     """
@@ -1417,16 +1423,16 @@ class AllSourceData:
     distrib, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 6))
     distrib.suptitle(
       "Compton Image probability vs peak flux of detected long GRB - GRB in the whole sky (left) and only in the FoV (right)")
-    ax1.scatter(p_flux_list, comp_im_prob_sky_list, s=2)
-    ax2.scatter(p_flux_list, comp_im_prob_fov_list, s=2)
+    ax1.scatter(p_flux_list, comp_im_prob_sky_list, s=2, label='Compton image probability over the whole sky')
+    ax2.scatter(p_flux_list, comp_im_prob_fov_list, s=2, label='Compton image probability over the field of view')
 
-    ax1.set(xlabel="Peak flux (photons/cm2/s)", ylabel="Compton image probability", xscale='log', )
+    ax1.set(xlabel="Peak flux (photons/cm2/s)", ylabel="Compton image probability", xscale=x_scale, yscale=y_scale)
     ax1.legend()
-    ax2.set(xlabel="Peak flux (photons/cm2/s)", ylabel="Compton image probability", xscale='log', )
+    ax2.set(xlabel="Peak flux (photons/cm2/s)", ylabel="Compton image probability", xscale=x_scale, yscale=y_scale)
     ax2.legend()
     plt.show()
 
-  def mu100_distri(self, selected_sat="const", n_bins=30, y_scale="log"):
+  def mu100_distri(self, selected_sat="const", n_bins=30, x_scale='linear', y_scale="log"):
     """
 
     """
@@ -1444,10 +1450,10 @@ class AllSourceData:
     distrib, ax1 = plt.subplots(1, 1, figsize=(8, 6))
     distrib.suptitle("mu100 distribution of detected GRB")
     ax1.hist(mu_100_list, bins=n_bins, cumulative=0, histtype="step", weights=[self.weights] * len(mu_100_list))
-    ax1.set(xlabel="mu100 (dimensionless)", ylabel="Number of detection per year", yscale=y_scale)
+    ax1.set(xlabel="mu100 (dimensionless)", ylabel="Number of detection per year", xscale=x_scale, yscale=y_scale)
     plt.show()
 
-  def pa_distribution(self, selected_sat="const", n_bins=30, y_scale="log"):
+  def pa_distribution(self, selected_sat="const", n_bins=30, x_scale='linear', y_scale="log"):
     """
 
     """
@@ -1465,10 +1471,10 @@ class AllSourceData:
     distrib, ax1 = plt.subplots(1, 1, figsize=(8, 6))
     distrib.suptitle("Polarization angle distribution of detected GRB")
     ax1.hist(pa_list, bins=n_bins, cumulative=0, histtype="step", weights=[self.weights] * len(pa_list))
-    ax1.set(xlabel="Polarization angle (°)", ylabel="Number of detection per year", yscale=y_scale)
+    ax1.set(xlabel="Polarization angle (°)", ylabel="Number of detection per year", xscale=x_scale, yscale=y_scale)
     plt.show()
 
-  def mdp_vs_fluence(self, selected_sat="const", mdp_threshold=1):
+  def mdp_vs_fluence(self, selected_sat="const", mdp_threshold=1, x_scale='log', y_scale='linear'):
     """
 
     """
@@ -1507,12 +1513,12 @@ class AllSourceData:
           ax1.axvline(val, ymin=0., ymax=0.01, ms=1, c='black')
       ax1.scatter(fluence_list, mdp_list, s=3,
                   label=f'Detected GRB polarization \nRatio of detectable polarization : {len(mdp_list) / mdp_count}')
-      ax1.set(xlabel="fluence (erg.cm-2)", ylabel="MDP (%)", yscale='linear', xscale='log',
-              xlim=(10 ** (int(np.log10(np.min(fluence_list)))), 10 ** (int(np.log10(np.max(fluence_list))) + 1)))
+      ax1.set(xlabel="fluence (erg.cm-2)", ylabel="MDP (%)", xscale=x_scale, yscale=y_scale,
+              xlim=(10 ** (int(np.log10(np.min(fluence_list))) - 1), 10 ** (int(np.log10(np.max(fluence_list))) + 1)))
       ax1.legend()
       plt.show()
 
-  def mdp_vs_pflux(self, selected_sat="const", mdp_threshold=1):
+  def mdp_vs_pflux(self, selected_sat="const", mdp_threshold=1, x_scale='log', y_scale='linear'):
     """
 
     """
@@ -1550,12 +1556,12 @@ class AllSourceData:
         ax1.axvline(val, ymin=0., ymax=0.01, ms=1, c='black')
     ax1.scatter(flux_list, mdp_list, s=3,
                 label=f'Detected GRB polarization \nRatio of detectable polarization : {len(mdp_list) / mdp_count}')
-    ax1.set(xlabel="Peak flux (photons/cm2/s)", ylabel="MDP (%)", yscale='linear', xscale='log',
-            xlim=(10 ** (int(np.log10(np.min(flux_list)))), 10 ** (int(np.log10(np.max(flux_list))) + 1)))
+    ax1.set(xlabel="Peak flux (photons/cm2/s)", ylabel="MDP (%)", xscale=x_scale, yscale=y_scale,
+            xlim=(10 ** (int(np.log10(np.min(flux_list))) - 1), 10 ** (int(np.log10(np.max(flux_list))) + 1)))
     ax1.legend()
     plt.show()
 
-  def mdp_vs_detection_angle(self, selected_sat=0, mdp_threshold=1):
+  def mdp_vs_detection_angle(self, selected_sat=0, mdp_threshold=1, x_scale='linear', y_scale='linear'):
     """
 
     """
@@ -1584,12 +1590,12 @@ class AllSourceData:
         ax1.axvline(val, ymin=0., ymax=0.01, ms=1, c='black')
     ax1.scatter(angle_list, mdp_list, s=3,
                 label=f'Detected GRB polarization \nRatio of detectable polarization : {len(mdp_list) / mdp_count}')
-    ax1.set(xlabel="Angle (°)", ylabel="MDP (%)", yscale='linear', xscale='log',
-            xlim=(10 ** (int(np.log10(np.min(angle_list)))), 10 ** (int(np.log10(np.max(angle_list))) + 1)))
+    ax1.set(xlabel="Angle (°)", ylabel="MDP (%)", xscale=x_scale, yscale=y_scale,
+            xlim=(0, 180))
     ax1.legend()
     plt.show()
 
-  def snr_vs_fluence(self, selected_sat="const", snr_threshold=5):
+  def snr_vs_fluence(self, selected_sat="const", snr_threshold=5, x_scale='log', y_scale='log'):
     """
 
     """
@@ -1627,12 +1633,12 @@ class AllSourceData:
           ax1.axvline(val, ymin=0., ymax=0.01, ms=1, c='black')
       ax1.scatter(fluence_list, snr_list, s=3,
                   label=f'Detected GRB SNR \nRatio of detectable GRB : {len(snr_list) / snr_count}')
-      ax1.set(xlabel="Fluence (erg.cm-2)", ylabel="SNR (dimensionless)", yscale='linear', xscale='log',
-              xlim=(10 ** (int(np.log10(np.min(fluence_list)))), 10 ** (int(np.log10(np.max(fluence_list))) + 1)))
+      ax1.set(xlabel="Fluence (erg.cm-2)", ylabel="SNR (dimensionless)", xscale=x_scale, yscale=y_scale,
+              xlim=(10 ** (int(np.log10(np.min(fluence_list))) - 1), 10 ** (int(np.log10(np.max(fluence_list))) + 1)))
       ax1.legend()
       plt.show()
 
-  def snr_vs_pflux(self, selected_sat="const", snr_threshold=5):
+  def snr_vs_pflux(self, selected_sat="const", snr_threshold=5, x_scale='log', y_scale='log'):
     """
 
     """
@@ -1652,7 +1658,7 @@ class AllSourceData:
                 no_detec_flux.append(self.alldata[source_ite].p_flux)
               snr_count += 1
             else:
-              if sim[selected_sat].snr is not None :
+              if sim[selected_sat].snr is not None:
                 if sim[selected_sat].snr >= snr_threshold:
                   snr_list.append(sim[selected_sat].snr)
                   flux_list.append(self.alldata[source_ite].p_flux)
@@ -1669,12 +1675,12 @@ class AllSourceData:
         ax1.axvline(val, ymin=0., ymax=0.01, ms=1, c='black')
     ax1.scatter(flux_list, snr_list, s=3,
                 label=f'Detected GRB SNR \nRatio of detectable GRB : {len(snr_list) / snr_count}')
-    ax1.set(xlabel="Peak flux (photons/cm2/s)", ylabel="SNR (dimensionless)", yscale='linear', xscale='log',
-            xlim=(10 ** (int(np.log10(np.min(flux_list)))), 10 ** (int(np.log10(np.max(flux_list))) + 1)))
+    ax1.set(xlabel="Peak flux (photons/cm2/s)", ylabel="SNR (dimensionless)", xscale=x_scale, yscale=y_scale,
+            xlim=(10 ** (int(np.log10(np.min(flux_list))) - 1), 10 ** (int(np.log10(np.max(flux_list))) + 1)))
     ax1.legend()
     plt.show()
 
-  def snr_vs_detection_angle(self, selected_sat=0, snr_threshold=5):
+  def snr_vs_detection_angle(self, selected_sat=0, snr_threshold=5, x_scale='linear', y_scale='log'):
     """
 
     """
@@ -1703,19 +1709,20 @@ class AllSourceData:
         ax1.axvline(val, ymin=0., ymax=0.01, ms=1, c='black')
     ax1.scatter(angle_list, snr_list, s=3,
                 label=f'Detected GRB SNR \nRatio of detectable GRB : {len(snr_list) / snr_count}')
-    ax1.set(xlabel="Detection angle (°)", ylabel="SNR (dimensionless)", yscale='linear', xscale='log',
+    ax1.set(xlabel="Detection angle (°)", ylabel="SNR (dimensionless)", xscale=x_scale, yscale=y_scale,
             xlim=(10 ** (int(np.log10(np.min(angle_list)))), 10 ** (int(np.log10(np.max(angle_list))) + 1)))
     ax1.legend()
     plt.show()
 
-  def mdp_vs_snr(self, selected_sat="const", snr_threshold=5, mdp_threshold=1, print_rejected=False):
+  def mdp_vs_snr(self, selected_sat="const", snr_threshold=5, mdp_threshold=1, print_rejected=False,
+                 x_scale='log', y_scale='linear'):
     """
 
     """
     mdp_list = []
     snr_list = []
     count = 0
-    no_detec = [[],[]]
+    no_detec = [[], []]
     for source_ite, source in enumerate(self.alldata):
       if source is not None:
         for sim in source:
@@ -1744,7 +1751,6 @@ class AllSourceData:
         ax1.scatter(no_detec[0], no_detec[1], label="Markers for rejected GRB")
       ax1.scatter(mdp_list, snr_list, s=3,
                   label=f'Detected GRB (Both with SNR and MDP) \nRatio of detectable GRB : {len(snr_list) / count}')
-      ax1.set(xlabel="Fluence (erg.cm-2)", ylabel="SNR (dimensionless)", yscale='linear', xscale='linear')
-              # xlim=(10 ** (int(np.log10(np.min(fluence_list)))), 10 ** (int(np.log10(np.max(fluence_list))) + 1)))
+      ax1.set(xlabel="Fluence (erg.cm-2)", ylabel="SNR (dimensionless)", xscale=x_scale, yscale=y_scale)
       ax1.legend()
       plt.show()
