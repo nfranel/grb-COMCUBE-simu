@@ -1277,7 +1277,19 @@ class AllSourceData:
             else:
               snr_list.append(sim[selected_sat].snr)
     fig, ax = plt.subplots(1, 1)
-    ax.hist(snr_list, bins=n_bins, cumulative=cumul, histtype="step", weights=[self.weights] * len(snr_list))
+    if x_scale == "log":
+      if min(snr_list) < 1:
+        inf_limit = int(np.log10(min(snr_list))) - 1
+      else:
+        inf_limit = int(np.log10(min(snr_list)))
+      if max(snr_list) > 1:
+        sup_limit = int(np.log10(max(snr_list))) + 1
+      else:
+        sup_limit = int(np.log10(max(snr_list)))
+      hist_bins = np.logspace(inf_limit, sup_limit, n_bins)
+    else:
+      hist_bins = n_bins
+    ax.hist(snr_list, bins=hist_bins, cumulative=cumul, histtype="step", weights=[self.weights] * len(snr_list))
     if cumul == 1:
       ax.set(xlabel="SNR (dimensionless)", ylabel="Number of detection per year", xscale=x_scale, yscale=y_scale,
              title=f"Cumulative distribution of the SNR - {grb_type}")
@@ -1311,9 +1323,21 @@ class AllSourceData:
     else:
       print(f"No detection for this source : {self.namelist[num_grb]}, no histogram drawn")
 
+    if x_scale == "log":
+      if min(hits_energy) < 1:
+        inf_limit = int(np.log10(min(hits_energy))) - 1
+      else:
+        inf_limit = int(np.log10(min(hits_energy)))
+      if max(hits_energy) > 1:
+        sup_limit = int(np.log10(max(hits_energy))) + 1
+      else:
+        sup_limit = int(np.log10(max(hits_energy)))
+      hist_bins = np.logspace(inf_limit, sup_limit, n_bins)
+    else:
+      hist_bins = n_bins
     distrib, ax1 = plt.subplots(1, 1, figsize=(8, 6))
     distrib.suptitle("Energy distribution of photons for a GRB")
-    ax1.hist(hits_energy, bins=n_bins, cumulative=0, histtype="step")
+    ax1.hist(hits_energy, bins=hist_bins, cumulative=0, histtype="step")
     ax1.set(xlabel="Energy (keV)", ylabel="Number of photon detected", xscale=x_scale, yscale=y_scale)
     plt.show()
 
@@ -1367,9 +1391,21 @@ class AllSourceData:
             else:
               if sim[selected_sat].snr > snr_min:
                 hist_pflux.append(source.p_flux)
+
+    if x_scale == "log":
+      if min(hist_pflux) < 1:
+        inf_limit = int(np.log10(min(hist_pflux))) - 1
+      else:
+        inf_limit = int(np.log10(min(hist_pflux)))
+      if max(hist_pflux) > 1:
+        sup_limit = int(np.log10(max(hist_pflux))) + 1
+      else:
+        sup_limit = int(np.log10(max(hist_pflux)))
+      hist_bins = np.logspace(inf_limit, sup_limit, n_bins)
+    else:
+      hist_bins = n_bins
     distrib, ax1 = plt.subplots(1, 1, figsize=(8, 6))
     distrib.suptitle("Peak flux distribution of detected long GRB")
-    hist_bins = np.logspace(int(np.log10(min(hist_pflux))), int(np.log10(max(hist_pflux))) + 1, n_bins)
     ax1.hist(hist_pflux, bins=hist_bins, cumulative=False, histtype="step", weights=[self.weights] * len(hist_pflux))
     ax1.set(xlabel="Peak flux (photons/cm2/s)", ylabel="Number of detection per year", xscale=x_scale, yscale=y_scale)
     # ax1.legend()
