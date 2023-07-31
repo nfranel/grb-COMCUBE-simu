@@ -1209,7 +1209,7 @@ class AllSourceData:
         cbar.set_label("GRB Duration - T90 (s)", rotation=270, labelpad=20)
       plt.show()
 
-  def mdp_histogram(self, selected_sat="const", mdp_threshold=1, cumul=True, n_bins=30, y_scale="log"):
+  def mdp_histogram(self, selected_sat="const", mdp_threshold=1, cumul=1, n_bins=30, y_scale="log"):
     """
     Display and histogram representing the number of grb of a certain mdp per year
     """
@@ -1219,7 +1219,7 @@ class AllSourceData:
       grb_type = "sGRB"
     else:
       grb_type = "undefined source"
-
+    number_detected = 0
     mdp_list = []
     for source in self.alldata:
       if source is not None:
@@ -1227,28 +1227,33 @@ class AllSourceData:
           if sim is not None:
             if type(selected_sat) == int:
               if sim[selected_sat] is not None:
+                number_detected += 1
                 if sim[selected_sat].mdp is not None:
                   if sim[selected_sat].mdp <= mdp_threshold:
                     mdp_list.append(sim[selected_sat].mdp * 100)
             elif selected_sat == "const":
               if sim.const_data is not None:
+                number_detected += 1
                 if sim.const_data.mdp is not None:
                   if sim.const_data.mdp <= mdp_threshold:
                     mdp_list.append(sim.const_data.mdp * 100)
     fig, ax = plt.subplots(1, 1)
     ax.hist(mdp_list, bins=n_bins, cumulative=cumul, histtype="step", weights=[self.weights] * len(mdp_list),
-            label=f"Number of GRBs with MDP < {mdp_threshold * 100}% : {len(mdp_list)}")
-    if cumul:
+            label=f"Number of GRBs with MDP < {mdp_threshold * 100}% : {len(mdp_list)} over {number_detected} detections")
+    if cumul == 1:
       ax.set(xlabel="MPD (%)", ylabel="Number of detection per year", yscale=y_scale,
              title=f"Cumulative distribution of the MDP - {grb_type}")
-    else:
+    elif cumul ==0:
       ax.set(xlabel="MPD (%)", ylabel="Number of detection per year", yscale=y_scale,
              title=f"Distribution of the MDP - {grb_type}")
+    elif cumul == -1:
+      ax.set(xlabel="MPD (%)", ylabel="Number of detection per year", yscale=y_scale,
+             title=f"Inverse cumulative distribution of the MDP - {grb_type}")
     ax.legend(loc='upper left')
     ax.grid(axis='both')
     plt.show()
 
-  def snr_histogram(self, selected_sat="const", cumul=-1, n_bins=30, y_scale="log"):
+  def snr_histogram(self, selected_sat="const", cumul=0, n_bins=30, y_scale="log"):
     """
     Display and histogram representing the number of grb that have at least a certain snr per year
     """
@@ -1270,14 +1275,19 @@ class AllSourceData:
               snr_list.append(sim[selected_sat].snr)
     fig, ax = plt.subplots(1, 1)
     ax.hist(snr_list, bins=n_bins, cumulative=cumul, histtype="step", weights=[self.weights] * len(snr_list))
-    if cumul:
+    if cumul == 1:
+      ax.set(xlabel="SNR (dimensionless)", ylabel="Number of detection per year", yscale=y_scale,
+             title=f"Cumulative distribution of the SNR - {grb_type}")
+    elif cumul ==0:
+      ax.set(xlabel="SNR (dimensionless)", ylabel="Number of detection per year", yscale=y_scale,
+             title=f"Distribution of the SNR - {grb_type}")
+    elif cumul == -1:
       ax.set(xlabel="SNR (dimensionless)", ylabel="Number of detection per year", yscale=y_scale,
              title=f"Inverse cumulative distribution of the SNR - {grb_type}")
-    # ax.legend(loc='upper left')
     ax.grid(axis='both')
     plt.show()
 
-  def hits_vs_energy(self, num_grb, num_sim, selected_sat="const", n_bins=30):
+  def hits_energy_histogram(self, num_grb, num_sim, selected_sat="const", n_bins=30):
     """
 
     """
@@ -1359,7 +1369,7 @@ class AllSourceData:
     # ax1.legend()
     plt.show()
 
-  def det_proba_vs_flux(self, selected_sat="const"):
+  def det_proba_vs_pflux(self, selected_sat="const"):
     """
     sat contains either the number of the satellite selected or "const"
     """
@@ -1388,7 +1398,7 @@ class AllSourceData:
     ax2.legend()
     plt.show()
 
-  def compton_im_proba_vs_flux(self, selected_sat="const"):
+  def compton_im_proba_vs_pflux(self, selected_sat="const"):
     """
     sat contains either the number of the satellite selected or "const"
     """
