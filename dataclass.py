@@ -1482,11 +1482,12 @@ class AllSourceData:
           for sim in source:
             if sim is not None:
               if selected_sat == "const":
-                if sim.const_data.mdp <= mdp_threshold:
-                  mdp_list.append(sim.const_data.mdp * 100)
-                  fluence_list.append(self.fluence[source_ite])
-                else:
-                  no_detec_fluence.append(self.fluence[source_ite])
+                if sim.const_data.mdp is not None:
+                  if sim.const_data.mdp <= mdp_threshold:
+                    mdp_list.append(sim.const_data.mdp * 100)
+                    fluence_list.append(self.fluence[source_ite])
+                  else:
+                    no_detec_fluence.append(self.fluence[source_ite])
                 mdp_count += 1
               else:
                 if sim[selected_sat].mdp is not None:
@@ -1495,7 +1496,7 @@ class AllSourceData:
                     fluence_list.append(self.fluence[source_ite])
                   else:
                     no_detec_fluence.append(self.fluence[source_ite])
-                  mdp_count += 1
+                mdp_count += 1
 
       distrib, ax1 = plt.subplots(1, 1, figsize=(8, 6))
       distrib.suptitle("MDP as a function of fluence of detected GRB")
@@ -1524,11 +1525,12 @@ class AllSourceData:
         for sim in source:
           if sim is not None:
             if selected_sat == "const":
-              if sim.const_data.mdp <= mdp_threshold:
-                mdp_list.append(sim.const_data.mdp * 100)
-                flux_list.append(source.p_flux)
-              else:
-                no_detec_flux.append(source.p_flux)
+              if sim.const_data.mdp is not None:
+                if sim.const_data.mdp <= mdp_threshold:
+                  mdp_list.append(sim.const_data.mdp * 100)
+                  flux_list.append(source.p_flux)
+                else:
+                  no_detec_flux.append(source.p_flux)
               mdp_count += 1
             else:
               if sim[selected_sat].mdp is not None:
@@ -1537,7 +1539,7 @@ class AllSourceData:
                   flux_list.append(source.p_flux)
                 else:
                   no_detec_flux.append(source.p_flux)
-                mdp_count += 1
+              mdp_count += 1
 
     distrib, ax1 = plt.subplots(1, 1, figsize=(8, 6))
     distrib.suptitle("MDP as a function of peak flux of detected GRB")
