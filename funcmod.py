@@ -195,12 +195,14 @@ def err_calculation(pol, unpol, binwidth):
 
 def fname2decra(fname, polmark="inc1"):
   """
-  Infers dec and RA from file name
+  Infers dec and RA from file name with the shape :
+    {prefix}_{sourcename}_sat{num_sat}_{num_sim}_{dec_world_frame}_{ra_world_frame}.inc{1/2}.id1.extracted.tra
   :param fname: *.tra or *.tra.gz filename
   :param polmark: str that identifies polarized files, default='inc1'
-  :returns: dec, RA, polarized
+  :returns: dec, RA
   """
-  data = fname.split("_")
+  data = fname.split("/")[-1] # to get rid of the first part of the prefix (and the potential "_" in it)
+  data = data.split("_")
   return float(data[4]), float(".".join(data[5].split(".")[:2]))  # , polmark in data[3]
 
 
