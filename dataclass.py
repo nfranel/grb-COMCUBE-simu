@@ -1749,7 +1749,7 @@ class AllSourceData:
     ax1.scatter(angle_list, snr_list, s=3,
                 label=f'Detected GRB SNR \nRatio of detectable GRB : {len(snr_list) / snr_count}')
     ax1.set(xlabel="Detection angle (°)", ylabel="SNR (dimensionless)", xscale=x_scale, yscale=y_scale,
-            xlim=(10 ** (int(np.log10(np.min(angle_list)))), 10 ** (int(np.log10(np.max(angle_list))) + 1)))
+            xlim=(0, 180))
     ax1.legend()
     plt.show()
 
