@@ -447,10 +447,6 @@ class FormatedData:
       self.dec_world_frame, self.ra_world_frame = fname2decra(data_list[0])
       self.dec_sat_frame, self.ra_sat_frame, self.expected_pa = decra2tpPA(self.dec_world_frame, self.ra_world_frame,
                                                                            sat_info[:3])
-      print("data_list[0]", data_list[0])
-      print("self.dec_world_frame, self.ra_world_frame, sat_info[:3]", self.dec_world_frame, self.ra_world_frame, sat_info[:3])
-      print("self.dec_world_frame, self.ra_world_frame", self.dec_world_frame, self.ra_world_frame)
-      print("self.dec_sat_frame, self.ra_sat_frame, self.expected_pa", self.dec_sat_frame, self.ra_sat_frame, self.expected_pa)
       if len(data_list) == 2:
         # Polarization analysis
         self.pol = Polarigram(data_list[0], self.dec_sat_frame, self.ra_sat_frame, self.expected_pa, armcut=armcut,
@@ -464,10 +460,10 @@ class FormatedData:
                               corr=corr,
                               ergcut=ergcut)
         self.unpol = None
-    stop
     # print("EXTRACTION DES FICHIERS TERMINEE : ", data_list)
 
-  def get_keys(self):
+  @staticmethod
+  def get_keys():
     print("======================================================================")
     print("    Attributes")
     print(" Number of the satellite (or satellites if constellation):                .num_sat")
@@ -598,19 +594,20 @@ class AllSatData(list):
     list.__init__(self, temp_list)
     self.const_data = None
 
-    def get_keys(self):
-      print("======================================================================")
-      print("    Attributes")
-      print(" Number of satellites detecting the source :           .n_sat_det")
-      print(" Number of satellites in the simulation :              .n_sat")
-      print(" Declination of the source (world frame) :             .dec_world_frame")
-      print(" Right ascention of the source (world frame) :         .ra_world_frame")
-      print(" Whether or not a polarization analysis is possible    .pol_analysis")
-      print(" ===== Attribute that needs to be handled + 2 cases (full FoV or full sky)")
-      print(" Extracted data but for a given set of satellites      .const_data")
-      print("======================================================================")
-      print("    Methods")
-      print("======================================================================")
+  @staticmethod
+  def get_keys():
+    print("======================================================================")
+    print("    Attributes")
+    print(" Number of satellites detecting the source :           .n_sat_det")
+    print(" Number of satellites in the simulation :              .n_sat")
+    print(" Declination of the source (world frame) :             .dec_world_frame")
+    print(" Right ascention of the source (world frame) :         .ra_world_frame")
+    print(" Whether or not a polarization analysis is possible    .pol_analysis")
+    print(" ===== Attribute that needs to be handled + 2 cases (full FoV or full sky)")
+    print(" Extracted data but for a given set of satellites      .const_data")
+    print("======================================================================")
+    print("    Methods")
+    print("======================================================================")
 
   def analyze(self, source_duration, source_fluence, source_with_bkg=True, fit_bounds=None, const_analysis=True):
     """
@@ -728,7 +725,8 @@ class AllSimData(list):
     # if self.source_name == 'GRB170412988':
     #   print(f"{self.source_name} fini d'extraire \n")
 
-  def get_keys(self):
+  @staticmethod
+  def get_keys():
     print("======================================================================")
     print("    Attributes")
     print(" Number of simulations detected by the constellation : .n_sim_det")
