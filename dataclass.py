@@ -447,6 +447,10 @@ class FormatedData:
       self.dec_world_frame, self.ra_world_frame = fname2decra(data_list[0])
       self.dec_sat_frame, self.ra_sat_frame, self.expected_pa = decra2tpPA(self.dec_world_frame, self.ra_world_frame,
                                                                            sat_info[:3])
+      print("data_list[0]", data_list[0])
+      print("self.dec_world_frame, self.ra_world_frame, sat_info[:3]", self.dec_world_frame, self.ra_world_frame, sat_info[:3])
+      print("self.dec_world_frame, self.ra_world_frame", self.dec_world_frame, self.ra_world_frame)
+      print("self.dec_sat_frame, self.ra_sat_frame, self.expected_pa", self.dec_sat_frame, self.ra_sat_frame, self.expected_pa)
       if len(data_list) == 2:
         # Polarization analysis
         self.pol = Polarigram(data_list[0], self.dec_sat_frame, self.ra_sat_frame, self.expected_pa, armcut=armcut,
@@ -460,6 +464,7 @@ class FormatedData:
                               corr=corr,
                               ergcut=ergcut)
         self.unpol = None
+    stop
     # print("EXTRACTION DES FICHIERS TERMINEE : ", data_list)
 
   def get_keys(self):
