@@ -563,10 +563,6 @@ class AllSatData(list):
     self.loading_count = 0
     for num_sat in range(self.n_sat):
       flist = subprocess.getoutput("ls {}_sat{}_{:04d}_*".format(source_prefix, num_sat, num_sim)).split("\n")
-      # if source_prefix == './sim-wobk--i-0--sat-3--sim-5--repart-30--grb-longfull/sim/long_GRB170412988':
-      #   if num_sim == 4:
-      # print(f"Encore ... Début de l'extraction des fichiers : {flist}")
-      # print("Liste à utiliser : ", flist, "\n")
       if len(flist) == 2:
         temp_list.append(FormatedData(flist, sat_info[num_sat], num_sat, sim_duration, *options))
         self.n_sat_det += 1
@@ -586,9 +582,6 @@ class AllSatData(list):
           self.n_sat_det += 1
           self.pol_analysis = False
           self.loading_count += 1
-      # if source_prefix == './sim-wobk--i-0--sat-3--sim-5--repart-30--grb-longfull/sim/long_GRB170412988':
-      #   if num_sim == 4:
-      #     print(f"          Extraction des fichiers terminée : {flist}")
       if not flist[0].startswith("ls: cannot access") and self.dec_world_frame is None:
         self.dec_world_frame, self.ra_world_frame = fname2decra(flist[0])
     list.__init__(self, temp_list)
@@ -908,9 +901,16 @@ class AllSourceData:
     self.s_eff_spectro = None
 
     #    init_time = time()
-    if parallel:
-      print("Parallel extraction of the data")
+    if parallel == 'all':
+      print("Parallel extraction of the data with all threads")
       with mp.Pool() as pool:
+        self.alldata = pool.starmap(AllSimData, zip(repeat(self.sim_prefix), range(self.n_source), repeat(cat_data),
+                                                    repeat(self.mode), repeat(self.n_sim), repeat(self.sat_info),
+                                                    repeat(self.pol_data), repeat(self.sim_duration),
+                                                    repeat(self.options)))
+    elif type(parallel) == int:
+      print(f"Parallel extraction of the data with {parallel} threads")
+      with mp.Pool(parallel) as pool:
         self.alldata = pool.starmap(AllSimData, zip(repeat(self.sim_prefix), range(self.n_source), repeat(cat_data),
                                                     repeat(self.mode), repeat(self.n_sim), repeat(self.sat_info),
                                                     repeat(self.pol_data), repeat(self.sim_duration),
