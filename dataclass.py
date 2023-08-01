@@ -579,8 +579,8 @@ class AllSatData(list):
           self.n_sat_det += 1
           self.pol_analysis = False
           self.loading_count += 1
-          raise Warning(
-            f'Polarization analysis is expected but the wrong number of trafile has been found, no polarization data were extracted : {flist}')
+          print(
+            f'WARNING : Polarization analysis is expected but the wrong number of trafile has been found, no polarization data were extracted : {flist}')
         else:
           temp_list.append(FormatedData(flist, sat_info[num_sat], sim_duration, num_sat, *options))
           self.n_sat_det += 1
@@ -1048,8 +1048,8 @@ class AllSourceData:
     The results obtained with this method are meaningful only is there is no background simulated
     """
     if self.source_with_bkg:
-      raise Warning(
-        "The source has been simulated with a background, the calculation has not been done as this would lead to biased results")
+      print(
+        "WARNING : The source has been simulated with a background, the calculation has not been done as this would lead to biased results")
     else:
       list_dec = []
       list_s_eff_pola = []
