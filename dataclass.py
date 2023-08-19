@@ -17,7 +17,7 @@ import multiprocessing as mp
 from itertools import repeat
 
 mpl.use('Qt5Agg')
-plt.rcParams.update({'font.size': 20})
+# plt.rcParams.update({'font.size': 20})
 
 class Fit:
   """
