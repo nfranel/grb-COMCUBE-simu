@@ -17,7 +17,7 @@ import multiprocessing as mp
 from itertools import repeat
 
 mpl.use('Qt5Agg')
-
+plt.rcParams.update({'font.size': 20})
 
 class Fit:
   """
@@ -1219,9 +1219,9 @@ class AllSourceData:
     """
     Display and histogram representing the number of grb of a certain mdp per year
     """
-    if self.cat_file == "longGBM.txt":
+    if self.cat_file.endswith("longGBM.txt"):
       grb_type = "lGRB"
-    elif self.cat_file == "shortGRB.txt":
+    elif self.cat_file.endswith("shortGRB.txt"):
       grb_type = "sGRB"
     else:
       grb_type = "undefined source"
@@ -1263,9 +1263,9 @@ class AllSourceData:
     """
     Display and histogram representing the number of grb that have at least a certain snr per year
     """
-    if self.cat_file == "longGBM.txt":
+    if self.cat_file.endswith("longGBM.txt"):
       grb_type = "lGRB"
-    elif self.cat_file == "shortGRB.txt":
+    elif self.cat_file.endswith("shortGRB.txt"):
       grb_type = "sGRB"
     else:
       grb_type = "undefined source"
