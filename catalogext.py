@@ -1,5 +1,6 @@
 import numpy as np
 
+# Version 2, Created by Adrien Laviron, updated by Nathan Franel
 
 class Catalog:
 
@@ -69,7 +70,7 @@ class Catalog:
     """
     Fills a Catalog with data
     :param data: string, data file name
-    :param sttype: iterable of len 5: first header event (int), event separator (str), first event (int), item separator (str), last event (int)
+    :param sttype: iterable of len 5: first header event (int), event separator (str), first event (int), item separator (str), last event (int) OR list of the sources wanted (list)
     """
     self.data = data
     self.sttype = sttype
