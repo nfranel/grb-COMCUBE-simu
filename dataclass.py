@@ -261,7 +261,7 @@ class FormatedData:
       # Calculating the polar angle using the energy values and compton azimuthal and polar scattering angles from the kinematics
       # polar and position angle stored in deg
       self.polar_from_energy = calculate_polar_angle(self.compton_second, self.compton_ener)
-      self.pol, self.polar_from_position = angle(self.compton_secpos - self.compton_firstpos, self.dec_sat_frame, self.ra_sat_frame)
+      self.pol, self.polar_from_position = angle(self.compton_secpos - self.compton_firstpos, self.dec_sat_frame, self.ra_sat_frame, source_name, num_sim, num_sat)
 
       # Correcting the angle correction for azimuthal angle according to cosima's polarization definition
       if corr:
@@ -296,7 +296,7 @@ class FormatedData:
         unpol_compton_secpos = np.array(unpol_compton_secpos)
         # Calculating the polar angle using the energy values and compton azimuthal and polar scattering angles from the kinematics
         unpol_polar_from_energy = calculate_polar_angle(unpol_compton_second, unpol_compton_ener)
-        self.unpol, unpol_polar_from_position = angle(unpol_compton_secpos - unpol_compton_firstpos, self.dec_sat_frame, self.ra_sat_frame)
+        self.unpol, unpol_polar_from_position = angle(unpol_compton_secpos - unpol_compton_firstpos, self.dec_sat_frame, self.ra_sat_frame, source_name, num_sim, num_sat)
         # Correcting the angle correction for azimuthal angle according to cosima's polarization definition
         if corr:
           self.unpol += np.rad2deg(np.arctan(np.cos(self.dec_sat_frame) * np.tan(self.ra_sat_frame)) + self.expected_pa)

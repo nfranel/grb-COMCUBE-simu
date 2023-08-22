@@ -120,7 +120,7 @@ def readevt(event, ergcut=None):
     raise TypeError(f"An event has an unidentified type")
 
 
-def angle(c, theta, phi):
+def angle(c, theta, phi, source_name, num_sim, num_sat):
   """
   Calculate the azimuthal Compton angle : Transforms the compton scattered gamma-ray vector (initialy in sat frame) into
   a new referential corresponding to the direction of the source. In that frame c0 and c1 are the coordinates of
@@ -135,7 +135,7 @@ def angle(c, theta, phi):
   :returns:     float,  angle in deg
   """
   if len(c) == 0:
-    print("There is no compton event detected")
+    print(f"There is no compton event detected for source {source_name}, simulation {num_sim} and satellite {num_sat}")
     return np.array([]), np.array([])
   theta, phi = np.deg2rad(theta), np.deg2rad(phi)
   # Pluging in some MEGAlib magic
