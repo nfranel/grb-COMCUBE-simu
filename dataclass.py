@@ -608,14 +608,20 @@ class AllSatData(list):
           setattr(self.const_data, item, temp_array)
         elif item in ["compton_firstpos", "compton_secpos", "single_pos"]:
           if len(considered_sat) == 1:
-            setattr(self.const_data, item, getattr(self[considered_sat[0]], item))
+            if len(getattr(self[considered_sat[0]], item))==0:
+              setattr(self.const_data, item, np.array([]))
+            else:
+              setattr(self.const_data, item, getattr(self[considered_sat[0]], item))
           else:
-            temp_array = getattr(self[considered_sat[0]], item)
-            for ite_num_sat in range(1, len(considered_sat)):
-              # print(item)
+            temp_array = np.array([[0, 0, 0]])
+            for ite_num_sat in range(len(considered_sat)):
               # print(temp_array)
-              temp_array = np.concatenate((temp_array, getattr(self[considered_sat[ite_num_sat]], item)))
-            setattr(self.const_data, item, temp_array)
+              # print(getattr(self[considered_sat[ite_num_sat]], item))
+              if len(getattr(self[considered_sat[ite_num_sat]], item)) == 0:
+                temp_array = np.array([[0, 0, 0]])
+              else:
+                temp_array = np.concatenate((temp_array, getattr(self[considered_sat[ite_num_sat]], item)))
+            setattr(self.const_data, item, temp_array[1:])
         elif item == "unpol":
           if getattr(self[considered_sat[0]], item) is not None:
             temp_array = np.array([])
