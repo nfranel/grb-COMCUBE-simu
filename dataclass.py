@@ -156,8 +156,8 @@ class FormatedData:
 
     ##############################################################
     # Attributes filled with file reading (or to be used from this moment)
-    self.dec_world_frame = None #deg
-    self.ra_world_frame = None #deg
+    dec_world_frame = None #deg
+    ra_world_frame = None #deg
     self.dec_sat_frame = None
     self.ra_sat_frame = None
     self.expected_pa = None
@@ -220,8 +220,9 @@ class FormatedData:
       #   setattr(self, item, [])
       self.n_sat_detect = 0
     else:
-      self.dec_world_frame, self.ra_world_frame = fname2decra(data_list[0])
-      self.dec_sat_frame, self.ra_sat_frame, self.expected_pa = decra2tpPA(self.dec_world_frame, self.ra_world_frame, sat_info[:3])
+      # CHange it so that it's not saved here !
+      dec_world_frame, ra_world_frame, source_name, num_sim, num_sat = fname2decra(data_list[0])
+      self.dec_sat_frame, self.ra_sat_frame, self.expected_pa = decra2tpPA(dec_world_frame, ra_world_frame, sat_info[:3])
       # Extracting the data from first file
       data_pol = readfile(data_list[0])
       for event in data_pol:
@@ -552,7 +553,7 @@ class AllSatData(list):
           self.pol_analysis = False
           self.loading_count += 1
       if not flist[0].startswith("ls: cannot access") and self.dec_world_frame is None:
-        self.dec_world_frame, self.ra_world_frame = fname2decra(flist[0])
+        self.dec_world_frame, self.ra_world_frame = fname2decra(flist[0])[:2]
     list.__init__(self, temp_list)
     self.const_data = None
 

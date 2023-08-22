@@ -134,6 +134,9 @@ def angle(c, theta, phi):
   :param phi:   float,  source azimuthal angle in sky in deg
   :returns:     float,  angle in deg
   """
+  if len(c) == 0:
+    print("There is no compton event detected")
+    return np.array([]), np.array([])
   theta, phi = np.deg2rad(theta), np.deg2rad(phi)
   # Pluging in some MEGAlib magic
   c = c / np.linalg.norm(c)
@@ -204,7 +207,7 @@ def fname2decra(fname):
   """
   data = fname.split("/")[-1] # to get rid of the first part of the prefix (and the potential "_" in it)
   data = data.split("_")
-  return float(data[4]), float(".".join(data[5].split(".")[:2]))
+  return float(data[4]), float(".".join(data[5].split(".")[:2])), data[1], int(data[3]), int(data[2].split("sat")[1])
 
 
 def decra2tp(dec, ra, s):
