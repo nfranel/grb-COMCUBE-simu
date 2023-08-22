@@ -1,10 +1,11 @@
 from dataclass import *
 from time import time
 
+
 init_time = time()
 bkg = "./backgrounds/bkg"  # _background_sat0_0000_90.0_0.0.inc1.id1.extracted.tra"
-param = "./wobkg/polGBM.par"
-erg = (100, 460)
+param = "./test/polGBM.par"
+erg = (10, 1000)
 arm = 180
 test = AllSourceData(bkg, param, erg, arm, parallel=True)
 test.make_const()
@@ -12,7 +13,7 @@ test.analyze()
 print("=======================================")
 print("processing time : ", time()-init_time, "seconds")
 print("=======================================")
-#
+
 # set_bin = np.linspace(-180, 180, 21)
 # set_trafile = test.alldata[0][3][0]
 # test_values = set_trafile.arm

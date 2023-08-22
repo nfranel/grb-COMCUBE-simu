@@ -216,19 +216,18 @@ class FormatedData:
     # self.side = 0
 
     if len(data_list) == 0:
-      # for item in opt_items:
-      #   setattr(self, item, [])
       self.n_sat_detect = 0
     else:
-      # CHange it so that it's not saved here !
+      # Change it so that it's not saved here !
       dec_world_frame, ra_world_frame, source_name, num_sim, num_sat = fname2decra(data_list[0])
       self.dec_sat_frame, self.ra_sat_frame, self.expected_pa = decra2tpPA(dec_world_frame, ra_world_frame, sat_info[:3])
       # Extracting the data from first file
       data_pol = readfile(data_list[0])
+      # print("NEW DATA TO READ\n====================================================\n====================================================\n====================================================\n====================================================\n")
       for event in data_pol:
         reading = readevt(event, ergcut)
-        # print("reading\n", reading)
         if len(reading) == 5:
+          # print("Reading\n")
           self.compton_second.append(reading[0])
           self.compton_ener.append(reading[1])
           self.compton_time.append(reading[2])
@@ -238,7 +237,6 @@ class FormatedData:
           self.single_ener.append(reading[0])
           self.single_time.append(reading[1])
           self.single_pos.append(reading[2])
-
       self.compton_ener = np.array(self.compton_ener)
       self.compton_second = np.array(self.compton_second)
       self.compton_time = np.array(self.compton_time)
@@ -247,16 +245,6 @@ class FormatedData:
       self.single_ener = np.array(self.single_ener)
       self.single_time = np.array(self.single_time)
       self.single_pos = np.array(self.single_pos)
-      # print(self.compton_second)
-      # print("===========")
-      # print(self.compton_ener)
-      # print("===========")
-      # print(self.compton_time)
-      # print("===========")
-      # print(self.compton_firstpos)
-      # print("===========")
-      # print(self.compton_secpos)
-      # print("===========")
 
       # Calculating the polar angle using the energy values and compton azimuthal and polar scattering angles from the kinematics
       # polar and position angle stored in deg
@@ -284,7 +272,6 @@ class FormatedData:
         data_unpol = readfile(data_list[1])
         for event in data_unpol:
           reading = readevt(event, ergcut)
-          # print("reading\n", reading)
           if len(reading) == 5:
             unpol_compton_second.append(reading[0])
             unpol_compton_ener.append(reading[1])
@@ -356,7 +343,7 @@ class FormatedData:
     """
     self.pol = self.pol % width + self.bins[0]
     if self.unpol is not None:
-      self.unpol = self.pol % width + self.bins[0]
+      self.unpol = self.unpol % width + self.bins[0]
 
   def corr(self):
     """

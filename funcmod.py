@@ -72,6 +72,10 @@ def readfile(fname):
       data = "".join(f).split("SE")[1:]
   else:
     raise TypeError("{} has unknown extension (known: .tra ou .tra.gz)".format(fname))
+  # print(data[0])
+  # print(data[-1])
+  # print("===========================================================")
+
   return data
 
 
@@ -85,24 +89,25 @@ def readevt(event, ergcut=None):
   lines = event.split("\n")[1:-1]
   # print(lines)
   if lines[0] == "ET CO":
-    if lines[3] == "SQ 2":
-      second_ener = float(lines[7].split(" ")[1])
-      total_ener = second_ener + float(lines[7].split(" ")[5])
-      if ergcut is None:
+    # print("Extracting")
+    # if lines[3] == "SQ 2":
+    second_ener = float(lines[7].split(" ")[1])
+    total_ener = second_ener + float(lines[7].split(" ")[5])
+    if ergcut is None:
+      time_interaction = float(lines[2].split(" ")[1])
+      first_pos = np.array([float(lines[8].split(" ")[11]), float(lines[8].split(" ")[12]), float(lines[8].split(" ")[13])])
+      second_pos = np.array([float(lines[8].split(" ")[1]), float(lines[8].split(" ")[2]), float(lines[8].split(" ")[3])])
+      return [second_ener, total_ener, time_interaction, first_pos, second_pos]
+    else:
+      if inwindow(total_ener, ergcut):
         time_interaction = float(lines[2].split(" ")[1])
         first_pos = np.array([float(lines[8].split(" ")[11]), float(lines[8].split(" ")[12]), float(lines[8].split(" ")[13])])
         second_pos = np.array([float(lines[8].split(" ")[1]), float(lines[8].split(" ")[2]), float(lines[8].split(" ")[3])])
         return [second_ener, total_ener, time_interaction, first_pos, second_pos]
       else:
-        if inwindow(total_ener, ergcut):
-          time_interaction = float(lines[2].split(" ")[1])
-          first_pos = np.array([float(lines[8].split(" ")[11]), float(lines[8].split(" ")[12]), float(lines[8].split(" ")[13])])
-          second_pos = np.array([float(lines[8].split(" ")[1]), float(lines[8].split(" ")[2]), float(lines[8].split(" ")[3])])
-          return [second_ener, total_ener, time_interaction, first_pos, second_pos]
-        else:
-          return [None]
-    else:
-      return [None]
+        return [None]
+    # else:
+    #   return [None]
   elif lines[0] == "ET PH":
     total_ener = float(lines[3].split(" ")[1])
     if ergcut is None:
