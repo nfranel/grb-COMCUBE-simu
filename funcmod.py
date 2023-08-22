@@ -7,6 +7,7 @@ m_elec = 9.1094e-31
 c_light = 2.99792458e+8
 charge_elem = 1.6021e-19
 
+
 def horizonAngle(h, EarthRadius=6371, AtmosphereHeight=40):
   """
   Calculates the angle between the zenith and the horizon for a LEO satellite
@@ -21,31 +22,29 @@ def horizonAngle(h, EarthRadius=6371, AtmosphereHeight=40):
     return 90
 
 
-def treatCE(s):
+def treatCE(ener):
   """
   Function to sum the 2 energy deposits given by trafiles for a compton event
   """
-  # return float(s[0]) + float(s[4])
-  # print("Exception CE : ", s)
-  return np.array([float(s[0]), float(s[4])])
+  return np.array([float(ener[0]), float(ener[4])])
 
-def treatPE(s):
+
+def treatPE(ener):
   """
   Function to sum the 2 energy deposits given by trafiles for a compton event
   """
-  # return float(s[0]) + float(s[4])
-  # if type(s) == list:
-  #   print("Probably error in data file, with data : ", s)
-  return float(s)
+  return float(ener)
 
-def calculate_polar_angle(CE, CE_sum):
+
+def calculate_polar_angle(CE_second, CE_sum):
   """
   Function to calculate the polar angle using the energy deposits
   This function is made so that the cos of the angle is >=-1 as it's not possible to take the arccos of a number <-1.
   By construction of cos_value, the value cannot exceed 1.
   """
-  cos_value = [1 - m_elec * c_light ** 2 / charge_elem / 1000 * (1 / CE[ite] - 1 / CE_sum[ite]) if 1 - m_elec * c_light ** 2 / charge_elem / 1000 * (1 / CE[ite] - 1 / CE_sum[ite]) >= -1 else -1 for ite in range(len(CE))]
+  cos_value = [1 - m_elec * c_light ** 2 / charge_elem / 1000 * (1 / CE_second[ite] - 1 / CE_sum[ite]) if 1 - m_elec * c_light ** 2 / charge_elem / 1000 * (1 / CE_second[ite] - 1 / CE_sum[ite]) >= -1 else -1 for ite in range(len(CE_second))]
   return np.rad2deg(np.arccos(cos_value))
+
 
 def inwindow(E, ergcut):
   """
@@ -54,18 +53,13 @@ def inwindow(E, ergcut):
   :param ergcut: (Emin, Emax)
   :returns: bool
   """
-  if type(E) == np.ndarray:
-    return np.where(E > ergcut[0], np.where(E < ergcut[1], True, False), False)
-  elif type(E) == list:
-    E = np.array(E)
-    return np.where(E > ergcut[0], np.where(E < ergcut[1], True, False), False)
-  else:
-    return E > ergcut[0] and E < ergcut[1]
+  # print(E)
+  return E > ergcut[0] and E < ergcut[1]
 
 
-def readevt(fname, ergcut=None):
+def readfile(fname):
   """
-  Reads a .tra or .tra.gz file and returns the Compton scattered gamma-ray vector
+  Reads a .tra or .tra.gz file and returns the extracted information if the event is in the energy range
   :param fname: str, name of .tra file
   :param ergcut: couple (Emin, Emax) or None, energy range in which events have to be to be processed, default=None(=no selection)
   :returns:     list of 3-uple of float
@@ -78,32 +72,52 @@ def readevt(fname, ergcut=None):
       data = "".join(f).split("SE")[1:]
   else:
     raise TypeError("{} has unknown extension (known: .tra ou .tra.gz)".format(fname))
+  return data
 
-  ret = []
-  if ergcut is None:
-    for evt in data:
-      if "ET CO" in evt:
-        for line in evt.split("\n"):
-          if line.startswith("CD"):
-            dat = list(map(float, line.replace("   ", " ").split(" ")[1:]))
-            # Seems that events may be in an opposite order in the file, first second event the the first
-            # So coordinates with low index minus coordinates with high index
-            # ret.append((dat[6] - dat[0], dat[7] - dat[1], dat[8] - dat[2]))
-            ret.append((dat[0] - dat[6], dat[1] - dat[7], dat[2] - dat[8]))
+
+def readevt(event, ergcut=None):
+  """
+  Reads an event and returns the information about this event if it's in the energy range
+  :param fname: str, name of .tra file
+  :param ergcut: couple (Emin, Emax) or None, energy range in which events have to be to be processed, default=None(=no selection)
+  :returns:     list of 3-uple of float
+  """
+  lines = event.split("\n")[1:-1]
+  # print(lines)
+  if lines[0] == "ET CO":
+    if lines[3] == "SQ 2":
+      second_ener = float(lines[7].split(" ")[1])
+      total_ener = second_ener + float(lines[7].split(" ")[5])
+      if ergcut is None:
+        time_interaction = float(lines[2].split(" ")[1])
+        first_pos = np.array([float(lines[8].split(" ")[11]), float(lines[8].split(" ")[12]), float(lines[8].split(" ")[13])])
+        second_pos = np.array([float(lines[8].split(" ")[1]), float(lines[8].split(" ")[2]), float(lines[8].split(" ")[3])])
+        return [second_ener, total_ener, time_interaction, first_pos, second_pos]
+      else:
+        if inwindow(total_ener, ergcut):
+          time_interaction = float(lines[2].split(" ")[1])
+          first_pos = np.array([float(lines[8].split(" ")[11]), float(lines[8].split(" ")[12]), float(lines[8].split(" ")[13])])
+          second_pos = np.array([float(lines[8].split(" ")[1]), float(lines[8].split(" ")[2]), float(lines[8].split(" ")[3])])
+          return [second_ener, total_ener, time_interaction, first_pos, second_pos]
+        else:
+          return [None]
+    else:
+      return [None]
+  elif lines[0] == "ET PH":
+    total_ener = float(lines[3].split(" ")[1])
+    if ergcut is None:
+      time_interaction = float(lines[2].split(" ")[1])
+      pos = np.array([float(lines[4].split(" ")[1]), float(lines[4].split(" ")[2]), float(lines[4].split(" ")[3])])
+      return [total_ener, time_interaction, pos]
+    else:
+      if inwindow(total_ener, ergcut):
+        time_interaction = float(lines[2].split(" ")[1])
+        pos = np.array([float(lines[4].split(" ")[1]), float(lines[4].split(" ")[2]), float(lines[4].split(" ")[3])])
+        return [total_ener, time_interaction, pos]
+      else:
+        return [None]
   else:
-    for evt in data:
-      if "ET CO" in evt:
-        lines = evt.split("\n")
-        for i, line in enumerate(lines):
-          if line.startswith("CE"):
-            E = [float(e) for e in line.replace("   ", " ").split(" ")[1:]]
-            if inwindow(E[0] + E[2], ergcut):
-              dat = list(map(float, lines[i + 1].replace("   ", " ").split(" ")[1:]))
-              # Seems that events may be in an opposite order in the file, first second event the the first
-              # So coordinates with low index minus coordinates with high index
-              # ret.append((dat[6] - dat[0], dat[7] - dat[1], dat[8] - dat[2]))
-              ret.append((dat[0] - dat[6], dat[1] - dat[7], dat[2] - dat[8]))
-  return ret
+    raise TypeError(f"An event has an unidentified type")
 
 
 def angle(c, theta, phi):
@@ -116,52 +130,37 @@ def angle(c, theta, phi):
   The way the azimuthal scattering angle is calculated imply that the polarization vector is colinear with x
   Calculates the polar Compton angle
   :param c:     3-uple, Compton scattered gamma-ray vector
-  :param theta: float,  source polar angle in sky in rad
-  :param phi:   float,  source azimuthal angle in sky in rad
+  :param theta: float,  source polar angle in sky in deg
+  :param phi:   float,  source azimuthal angle in sky in deg
   :returns:     float,  angle in deg
   """
+  theta, phi = np.deg2rad(theta), np.deg2rad(phi)
   # Pluging in some MEGAlib magic
   c = c / np.linalg.norm(c)
-  c = (np.cos(-phi) * c[0] - np.sin(-phi) * c[1], np.sin(-phi) * c[0] + np.cos(-phi) * c[1], c[2])
-  c = (np.sin(-theta) * c[2] + np.cos(-theta) * c[0], c[1], np.cos(-theta) * c[2] - np.sin(-theta) * c[0])
+  mat1 = np.array([[np.cos(-phi), - np.sin(-phi), 0],
+                   [np.sin(-phi), np.cos(-phi), 0],
+                   [0, 0, 1]])
+  mat2 = np.array([[np.cos(-theta), 0, np.sin(-theta)],
+                   [0, 1, 0],
+                   [- np.sin(-theta), 0, np.cos(-theta)]])
+  # using matrix products to combine the matrix instead of doing it vector by vector
+  c = np.matmul(c, np.transpose(mat1))
+  c = np.matmul(c, np.transpose(mat2))
+  # c = (np.cos(-phi) * c[0] - np.sin(-phi) * c[1], np.sin(-phi) * c[0] + np.cos(-phi) * c[1], c[2])
+  # c = (np.sin(-theta) * c[2] + np.cos(-theta) * c[0], c[1], np.cos(-theta) * c[2] - np.sin(-theta) * c[0])
+  polar = np.rad2deg(np.arccos(c[:, 2]))
   # Figure out a good arctan
-  polar = np.rad2deg(np.arccos(c[2]))
-  if c[0] > 0:
-    return np.arctan(c[1] / c[0]) * 180 / np.pi, polar
-  elif c[0] == 0:
-    return 90, polar
-  else:
-    if c[1] > 0:
-      return np.arctan(c[1] / c[0]) * 180 / np.pi + 180, polar
-    else:
-      return np.arctan(c[1] / c[0]) * 180 / np.pi - 180, polar
-
-
-def analyzetra(fname, theta=0, phi=0, pa=0, corr=False, ergcut=None):
-  """
-  Reads a .tra file and returns the azimuthal angles used in polarigrams (corrected from the source sky position and from cosima's "RelativeY" polarization definition)
-  :param fname: str,   name of file to read from
-  :param theta: float, polar angle of source in sky in rad, default=0
-  :param phi:   float, azimuthal angle of source in sky in rad, default=0
-  :param pa:    float, polarization angle in source file in rad, default=0
-  :param corr:  bool,  wether to correct for the source sky position and cosima's "RelativeY" polarization definition or not, default=False
-  :param ergcut: couple (Emin,Emax) or None, energy range in which to perform polarization analysis, default=None (no selection)
-  :returns:     list of float, azimuthal angles of Compton scattered gamma-rays
-  """
-  data = readevt(fname, ergcut)
-  azim_angles = []
-  polar_angles = []
-  if corr:
-    for evt in data:
-      ret = angle(evt, theta, phi)
-      azim_angles.append(ret[0] + np.rad2deg(np.arctan(np.cos(theta) * np.tan(phi)) + pa))
-      polar_angles.append(ret[1])
-  else:
-    for evt in data:
-      ret = angle(evt, theta, phi)
-      azim_angles.append(ret[0])
-      polar_angles.append(ret[1])
-  return azim_angles, polar_angles
+  azim = np.where(c[:, 0] > 0, np.rad2deg(np.arctan(c[:, 1] / c[:, 0])), np.where(c[:, 0] == 0, 90, np.where(c[:, 1] > 0, np.rad2deg(np.arctan(c[:, 1] / c[:, 0])) + 180, np.rad2deg(np.arctan(c[:, 1] / c[:, 0])) - 180)))
+  return azim, polar
+  # if c[0] > 0:
+  #   return np.rad2deg(np.arctan(c[1] / c[0])), polar
+  # elif c[0] == 0:
+  #   return 90, polar
+  # else:
+  #   if c[1] > 0:
+  #     return np.rad2deg(np.arctan(c[1] / c[0])) + 180, polar
+  #   else:
+  #     return np.rad2deg(np.arctan(c[1] / c[0])) - 180, polar
 
 
 def modulation_func(x, pa, mu, S):
@@ -174,6 +173,7 @@ def modulation_func(x, pa, mu, S):
   :returns:  float or np.array
   """
   return (S / (2 * np.pi)) * (1 - mu * np.cos(np.pi * (x - pa) / 90))
+
 
 def err_calculation(pol, unpol, binwidth):
   """
@@ -193,7 +193,8 @@ def err_calculation(pol, unpol, binwidth):
   error = np.sqrt(uncertainty)
   return error/binwidth
 
-def fname2decra(fname, polmark="inc1"):
+
+def fname2decra(fname):
   """
   Infers dec and RA from file name with the shape :
     {prefix}_{sourcename}_sat{num_sat}_{num_sim}_{dec_world_frame}_{ra_world_frame}.inc{1/2}.id1.extracted.tra
@@ -203,10 +204,10 @@ def fname2decra(fname, polmark="inc1"):
   """
   data = fname.split("/")[-1] # to get rid of the first part of the prefix (and the potential "_" in it)
   data = data.split("_")
-  return float(data[4]), float(".".join(data[5].split(".")[:2]))  # , polmark in data[3]
+  return float(data[4]), float(".".join(data[5].split(".")[:2]))
 
 
-def decra2tp(dec, ra, s, unit="deg"):
+def decra2tp(dec, ra, s):
   """
   Converts dec,ra (declination, right ascension) world coordinates into satellite coordinate
   :param dec: declination (except it is 0 at north pole, 90° at equator and 180° at south pole)
@@ -215,34 +216,34 @@ def decra2tp(dec, ra, s, unit="deg"):
   :param unit: unit in which are given dec and ra, default="deg"
   :returns: theta_sat, phi_sat in rad
   """
-  if unit == 'deg':
-    dec, ra = np.deg2rad(dec), np.deg2rad(ra)
-  theta = np.arccos( np.product(np.sin(np.array([dec, ra, s[0], s[1]]))) + np.sin(dec)*np.cos(ra)*np.sin(s[0])*np.cos(s[1]) + np.cos(dec)*np.cos(s[0]) )
+  dec, ra = np.deg2rad(dec), np.deg2rad(ra)
+  decsat, rasat = np.deg2rad(s[0]), np.deg2rad(s[1])
+  theta = np.arccos( np.product(np.sin(np.array([dec, ra, decsat, rasat]))) + np.sin(dec)*np.cos(ra)*np.sin(decsat)*np.cos(rasat) + np.cos(dec)*np.cos(decsat) )
   source = [np.sin(dec)*np.cos(ra), np.sin(dec)*np.sin(ra), np.cos(dec)]
-  yprime = [-np.cos(s[0])*np.cos(s[1]), -np.cos(s[0])*np.sin(s[1]), np.sin(s[0])]
-  xprime = [-np.sin(s[1]), np.cos(s[1]), 0]
+  yprime = [-np.cos(decsat)*np.cos(rasat), -np.cos(decsat)*np.sin(rasat), np.sin(decsat)]
+  xprime = [-np.sin(rasat), np.cos(rasat), 0]
   phi = np.mod(np.arctan2(np.dot(source, yprime), np.dot(source, xprime)), 2*np.pi)
-  return theta, phi
+  return np.rad2deg(theta), np.rad2deg(phi)
 
 
-def decra2tpPA(dec, ra, s, unit="deg"):
+def decra2tpPA(dec, ra, s):
   """
   Converts dec,ra (declination, right ascension) world coordinates into satellite attitude parameters
   Polarization angle calculation rely on the fact that the polarization angle in is the plane generated by the direction of the source and the dec=0 direction, as it is the case in mamr.py.
   :param dec: declination (except it is 0 at north pole, 90° at equator and 180° at south pole)
   :param ra : Right ascension (0->360°)
-  :param s: satellite from info_sat : [thetasat, phisat, horizonAngle] of the sat in the world frame [rad, rad, deg]
+  :param s: satellite from info_sat : [thetasat, phisat, horizonAngle] of the sat in the world frame [deg, deg, deg]
   :param unit: unit in which are given dec and ra, default="deg"
   :returns: theta_sat, phi_sat, polarization angle in deg with MEGAlib's RelativeY convention
   """
-  if unit == 'deg':
-    dec, ra = np.deg2rad(dec), np.deg2rad(ra)
+  dec, ra = np.deg2rad(dec), np.deg2rad(ra)
+  decsat, rasat = np.deg2rad(s[0]), np.deg2rad(s[1])
   theta = np.arccos(
-    np.product(np.sin(np.array([dec, ra, s[0], s[1]]))) + np.sin(dec) * np.cos(ra) * np.sin(s[0]) * np.cos(
-      s[1]) + np.cos(dec) * np.cos(s[0]))
+    np.product(np.sin(np.array([dec, ra, decsat, rasat]))) + np.sin(dec) * np.cos(ra) * np.sin(decsat) * np.cos(
+      rasat) + np.cos(dec) * np.cos(decsat))
   source = [np.sin(dec) * np.cos(ra), np.sin(dec) * np.sin(ra), np.cos(dec)]
-  yprime = [-np.cos(s[0]) * np.cos(s[1]), -np.cos(s[0]) * np.sin(s[1]), np.sin(s[0])]
-  xprime = [-np.sin(s[1]), np.cos(s[1]), 0]
+  yprime = [-np.cos(decsat) * np.cos(rasat), -np.cos(decsat) * np.sin(rasat), np.sin(decsat)]
+  xprime = [-np.sin(rasat), np.cos(rasat), 0]
   phi = np.mod(np.arctan2(np.dot(source, yprime), np.dot(source, xprime)), 2 * np.pi)
   # Polarization
   dec_p, ra_p = np.mod(.5 * np.pi - dec, np.pi), ra + np.pi  # polarization direction in world coordinates (towards north or south pole)
@@ -252,7 +253,7 @@ def decra2tpPA(dec, ra, s, unit="deg"):
   return np.rad2deg(theta), np.rad2deg(phi), np.rad2deg(np.arccos(np.dot(vecpol, np.cross(source, yprime))))
 
 
-def decrasat2world(dec, ra, s, unit="deg"):
+def decrasat2world(dec, ra, s):
   """
   Converts dec,ra (declination, right ascension) satellite coordinates into world coordinate
   :param dec: declination (except it is 0 at instrument zenith and 90° at equator)
@@ -261,18 +262,18 @@ def decrasat2world(dec, ra, s, unit="deg"):
   :param unit: unit in which are given dec and ra, default="deg"
   :returns: theta_world, phi_world in rad
   """
-  if unit=='deg':
-    dec, ra = np.deg2rad(dec), np.deg2rad(ra)
-  xworld = [-np.sin(s[1]), -np.cos(s[0])*np.cos(s[1]), np.sin(s[0])*np.cos(s[1])]
-  yworld = [np.cos(s[1]), -np.cos(s[0])*np.sin(s[1]), np.sin(s[0])*np.sin(s[1])]
-  zworld = [0, np.sin(s[0]), np.cos(s[0])]
+  dec, ra = np.deg2rad(dec), np.deg2rad(ra)
+  decsat, rasat = np.deg2rad(s[0]), np.deg2rad(s[1])
+  xworld = [-np.sin(rasat), -np.cos(decsat)*np.cos(rasat), np.sin(decsat)*np.cos(rasat)]
+  yworld = [np.cos(rasat), -np.cos(decsat)*np.sin(rasat), np.sin(decsat)*np.sin(rasat)]
+  zworld = [0, np.sin(decsat), np.cos(decsat)]
   source = [np.sin(dec)*np.cos(ra), np.sin(dec)*np.sin(ra), np.cos(dec)]
   theta = np.arccos(np.dot(source, zworld))
   phi = np.mod(np.arctan2(np.dot(source, yworld), np.dot(source, xworld)), 2*np.pi)
-  return theta, phi
+  return np.deg2rad(theta), np.deg2rad(phi)
 
 
-def orbitalparam2decra(inclination, ohm, omega, unit="deg"):
+def orbitalparam2decra(inclination, ohm, omega):
   """
   Calculates the declination and right ascention of an object knowing its orbital parameters
   Returned results are in rad and the north direction is at 90°
@@ -281,14 +282,13 @@ def orbitalparam2decra(inclination, ohm, omega, unit="deg"):
   :param omega : argument of periapsis/True anomalie at epoch t0 (both are equivalent there because of circular orbit)
   :param unit: unit in which are given dec and ra, default="deg"
   """
-  if unit=='deg':
-    inclination, ohm, omega = np.deg2rad(inclination), np.deg2rad(ohm), np.deg2rad(omega)
+  inclination, ohm, omega = np.deg2rad(inclination), np.deg2rad(ohm), np.deg2rad(omega)
   thetasat = np.arccos(np.sin(inclination)*np.sin(omega)) #rad
   phisat = np.arctan2((np.cos(omega) * np.sin(ohm) + np.sin(omega) * np.cos(inclination) * np.cos(ohm)), (np.cos(omega) * np.cos(ohm) - np.sin(omega) * np.cos(inclination) * np.sin(ohm))) #rad
-  return thetasat, phisat
+  return np.deg2rad(thetasat), np.deg2rad(phisat)
 
 
-def decra2orbitalparam(thetasat, phisat, unit="deg"):
+def decra2orbitalparam(thetasat, phisat):
   """
   Calculates the orbital parameters of an object knowing its dec and ra
   Only works for a value of omega set to pi/2
@@ -298,12 +298,11 @@ def decra2orbitalparam(thetasat, phisat, unit="deg"):
   :param omega : argument of periapsis/True anomalie at epoch t0 (both are equivalent there because of circular orbit)
   :param unit: unit in which are given dec and ra, default="deg"
   """
-  if unit=='deg':
-    thetasat, phisat = np.deg2rad(thetasat), np.deg2rad(phisat)
+  thetasat, phisat = np.deg2rad(thetasat), np.deg2rad(phisat)
   inclination = np.arcsin(np.cos(thetasat)) #rad
   ohm = np.arctan2(-1, np.tan(phisat)) #rad
   omega = np.pi/2
-  return inclination, ohm, omega
+  return np.deg2rad(inclination), np.deg2rad(ohm), np.deg2rad(omega)
 
 
 def SNR(S, B, C=0):
@@ -415,12 +414,11 @@ def closest_bkg_rate(sat_lat, bkg_list):
   Find the closest bkg file for a satellite (in terms of latitude)
   Returns the count rate of this bkg file
   """
-  sat_lat = np.rad2deg(sat_lat)
   if len(bkg_list) == 0:
     return 0.000001
   else:
     latitude_error = np.array([abs(bkg.dec - sat_lat) for bkg in bkg_list])
-    return [bkg_list[np.argmin(latitude_error)].cr, bkg_list[np.argmin(latitude_error)].single_cr]
+    return [bkg_list[np.argmin(latitude_error)].compton_cr, bkg_list[np.argmin(latitude_error)].single_cr]
 
 
 def calc_fluence(catalog, index, ergCut):
@@ -521,17 +519,18 @@ def duty_calc(inclination):
       return 0.5
 
 
-def eff_area_pola_func(theta, angle_lim, func_type="cos", duty=1.):
+def eff_area_compton_func(theta, angle_lim, func_type="cos", duty=1.):
   """
   Returns a value of the effective area for polarisation based on a cos function to account for the reception angle relative to the instrument's zenith
   This is an approximation as the cos function does not perfectly fit the data
   If func_type "FoV" computes instead the number of satellites viewing that part of the sky (no sensitivity considered)
   """
+  theta, angle_lim = np.deg2rad(theta), np.deg2rad(angle_lim)
   if duty < 0 or duty > 1:
     print("Error estimating the duty time, incorrect value")
     return 0
   if func_type == "cos":
-    if theta < np.deg2rad(angle_lim):
+    if theta < angle_lim:
       ampl = 5.5
       ang_freq = 0.222
       phi0 = 0.76
@@ -540,13 +539,13 @@ def eff_area_pola_func(theta, angle_lim, func_type="cos", duty=1.):
     else:
       return 0
   elif func_type == "FoV":
-    if theta < np.deg2rad(angle_lim):
+    if theta < angle_lim:
       return 1 * duty
     else:
       return 0
 
 
-def eff_area_spectro_func(theta, angle_lim, func_type="data", duty=True):
+def eff_area_sinlge_func(theta, angle_lim, func_type="data", duty=True):
   """
   Returns a value of the effective area for spectrometry based on interpolation from values obtained from different reception angle relative to the instrument's zenith
   This is an approximation as the values used are obtained for monoenergetic simulations - grbs are not and sensitivity of the instrument depends on energy
@@ -556,8 +555,8 @@ def eff_area_spectro_func(theta, angle_lim, func_type="data", duty=True):
     print("Error estimating the duty time, incorrect value")    
     return 0
   if func_type == "data":
-    if theta < np.deg2rad(angle_lim):
-      angles = np.deg2rad(np.array([0, 10, 20, 30, 40, 50, 60, 70, 80, 89, 91, 100, 110]))
+    if theta < angle_lim:
+      angles = np.array([0, 10, 20, 30, 40, 50, 60, 70, 80, 89, 91, 100, 110])
       eff_area = np.array([137.4, 148.5, 158.4, 161.9, 157.4, 150.4, 133.5, 112.8, 87.5, 63.6, 64.7, 71.8, 77.3])
       interpo_ite = 1
       if theta > angles[-1]:
@@ -569,7 +568,7 @@ def eff_area_spectro_func(theta, angle_lim, func_type="data", duty=True):
     else:
       return 0
   elif func_type == "FoV":
-    if theta < np.deg2rad(angle_lim):
+    if theta < angle_lim:
       return 1 * duty
     else:
       return 0
