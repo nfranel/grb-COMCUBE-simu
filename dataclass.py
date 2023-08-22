@@ -110,7 +110,7 @@ class BkgContainer:
     data_pol = readfile(datafile)
     for event in data_pol:
       reading = readevt(event, ergcut)
-      print("reading\n", reading)
+      # print("reading\n", reading)
       if len(reading) == 5:
         self.compton_second.append(reading[0])
         self.compton_ener.append(reading[1])
@@ -118,9 +118,9 @@ class BkgContainer:
         self.compton_firstpos.append(reading[3])
         self.compton_secpos.append(reading[4])
       elif len(reading) == 3:
-        self.single_ener.append(reading[1])
-        self.single_time.append(reading[2])
-        self.single_pos.append(reading[3])
+        self.single_ener.append(reading[0])
+        self.single_time.append(reading[1])
+        self.single_pos.append(reading[2])
     self.compton_ener = np.array(self.compton_ener)
     self.compton_second = np.array(self.compton_second)
     self.compton_time = np.array(self.compton_time)
@@ -226,7 +226,7 @@ class FormatedData:
       data_pol = readfile(data_list[0])
       for event in data_pol:
         reading = readevt(event, ergcut)
-        print("reading\n", reading)
+        # print("reading\n", reading)
         if len(reading) == 5:
           self.compton_second.append(reading[0])
           self.compton_ener.append(reading[1])
@@ -234,9 +234,9 @@ class FormatedData:
           self.compton_firstpos.append(reading[3])
           self.compton_secpos.append(reading[4])
         elif len(reading) == 3:
-          self.single_ener.append(reading[1])
-          self.single_time.append(reading[2])
-          self.single_pos.append(reading[3])
+          self.single_ener.append(reading[0])
+          self.single_time.append(reading[1])
+          self.single_pos.append(reading[2])
 
       self.compton_ener = np.array(self.compton_ener)
       self.compton_second = np.array(self.compton_second)
@@ -283,7 +283,7 @@ class FormatedData:
         data_unpol = readfile(data_list[1])
         for event in data_unpol:
           reading = readevt(event, ergcut)
-          print("reading\n", reading)
+          # print("reading\n", reading)
           if len(reading) == 5:
             unpol_compton_second.append(reading[0])
             unpol_compton_ener.append(reading[1])
