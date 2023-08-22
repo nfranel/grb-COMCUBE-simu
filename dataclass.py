@@ -110,6 +110,7 @@ class BkgContainer:
     data_pol = readfile(datafile)
     for event in data_pol:
       reading = readevt(event, ergcut)
+      print("reading\n", reading)
       if len(reading) == 5:
         self.compton_second.append(reading[0])
         self.compton_ener.append(reading[1])
@@ -225,6 +226,7 @@ class FormatedData:
       data_pol = readfile(data_list[0])
       for event in data_pol:
         reading = readevt(event, ergcut)
+        print("reading\n", reading)
         if len(reading) == 5:
           self.compton_second.append(reading[0])
           self.compton_ener.append(reading[1])
@@ -281,6 +283,7 @@ class FormatedData:
         data_unpol = readfile(data_list[1])
         for event in data_unpol:
           reading = readevt(event, ergcut)
+          print("reading\n", reading)
           if len(reading) == 5:
             unpol_compton_second.append(reading[0])
             unpol_compton_ener.append(reading[1])
