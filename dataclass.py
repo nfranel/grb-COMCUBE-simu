@@ -91,11 +91,11 @@ class BkgContainer:
     # Attributes filled with file reading (or to be used from this moment)
     self.compton_ener = []
     self.compton_second = []
-    # self.compton_time = []
+    self.compton_time = []
     self.compton_firstpos = []
     self.compton_secpos = []
     self.single_ener = []
-    # self.single_time = []
+    self.single_time = []
     self.single_pos = []
     self.single = 0
     self.single_cr = 0
@@ -114,20 +114,20 @@ class BkgContainer:
       if len(reading) == 5:
         self.compton_second.append(reading[0])
         self.compton_ener.append(reading[1])
-        # self.compton_time.append(reading[2])
+        self.compton_time.append(reading[2])
         self.compton_firstpos.append(reading[3])
         self.compton_secpos.append(reading[4])
       elif len(reading) == 3:
         self.single_ener.append(reading[0])
-        # self.single_time.append(reading[1])
+        self.single_time.append(reading[1])
         self.single_pos.append(reading[2])
     self.compton_ener = np.array(self.compton_ener)
     self.compton_second = np.array(self.compton_second)
-    # self.compton_time = np.array(self.compton_time)
+    self.compton_time = np.array(self.compton_time)
     self.compton_firstpos = np.array(self.compton_firstpos)
     self.compton_secpos = np.array(self.compton_secpos)
     self.single_ener = np.array(self.single_ener)
-    # self.single_time = np.array(self.single_time)
+    self.single_time = np.array(self.single_time)
     self.single_pos = np.array(self.single_pos)
 
     self.single = len(self.single_ener)
@@ -163,7 +163,7 @@ class FormatedData:
     self.expected_pa = None
     self.compton_ener = []
     self.compton_second = []
-    # self.compton_time = []
+    self.compton_time = []
     self.compton_firstpos = []
     self.compton_secpos = []
     unpol_compton_second = []
@@ -171,7 +171,7 @@ class FormatedData:
     unpol_compton_firstpos = []
     unpol_compton_secpos = []
     self.single_ener = []
-    # self.single_time = []
+    self.single_time = []
     self.single_pos = []
     self.pol = None
     self.unpol = None
@@ -230,20 +230,20 @@ class FormatedData:
           # print("Reading\n")
           self.compton_second.append(reading[0])
           self.compton_ener.append(reading[1])
-          # self.compton_time.append(reading[2])
+          self.compton_time.append(reading[2])
           self.compton_firstpos.append(reading[3])
           self.compton_secpos.append(reading[4])
         elif len(reading) == 3:
           self.single_ener.append(reading[0])
-          # self.single_time.append(reading[1])
+          self.single_time.append(reading[1])
           self.single_pos.append(reading[2])
       self.compton_ener = np.array(self.compton_ener)
       self.compton_second = np.array(self.compton_second)
-      # self.compton_time = np.array(self.compton_time)
+      self.compton_time = np.array(self.compton_time)
       self.compton_firstpos = np.array(self.compton_firstpos)
       self.compton_secpos = np.array(self.compton_secpos)
       self.single_ener = np.array(self.single_ener)
-      # self.single_time = np.array(self.single_time)
+      self.single_time = np.array(self.single_time)
       self.single_pos = np.array(self.single_pos)
 
       # Calculating the polar angle using the energy values and compton azimuthal and polar scattering angles from the kinematics
@@ -261,7 +261,7 @@ class FormatedData:
       # Restriction of the values according to arm cut
       self.compton_ener = self.compton_ener[accepted_arm_pol]
       self.compton_second = self.compton_second[accepted_arm_pol]
-      # self.compton_time = self.compton_time[accepted_arm_pol]
+      self.compton_time = self.compton_time[accepted_arm_pol]
       self.compton_firstpos = self.compton_firstpos[accepted_arm_pol]
       self.compton_secpos = self.compton_secpos[accepted_arm_pol]
       self.polar_from_energy = self.polar_from_energy[accepted_arm_pol]
