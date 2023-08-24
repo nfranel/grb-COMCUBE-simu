@@ -302,7 +302,10 @@ class FormatedData:
       self.azim_angle_corrected = corr
       # Putting the azimuthal scattering angle between the correct bins for creating histograms
       self.behave()
-
+      self.single = len(self.single_ener)
+      self.single_cr = self.single / sim_duration
+      self.compton = len(self.compton_ener)
+      self.compton_cr = self.compton / sim_duration
 
   def fit(self, fit_bounds=None):
     """
@@ -459,10 +462,6 @@ class FormatedData:
     Proceeds to the data analysis to get mu100, pa, compton cr, mdp and snr
     mdp has physical significance between 0 and 1
     """
-    self.single = len(self.single_ener)
-    self.single_cr = self.single / source_duration
-    self.compton = len(self.compton_ener)
-    self.compton_cr = self.compton / source_duration
     if source_fluence is None:
       self.s_eff_compton = None
       self.s_eff_single = None
@@ -745,7 +744,6 @@ class AllSimData(list):
       self.const_proba_compton_image_sky = 0
 
 
-
 class AllSourceData:
   """
   Class containing all the data for a full set of trafiles
@@ -869,8 +867,6 @@ class AllSourceData:
       self.n_source = len(self.namelist)
       self.fluence = [calc_fluence(cat_data, source_index, erg_cut) * self.sim_duration for source_index in
                       range(self.n_source)]
-    # self.s_eff_compton = None
-    # self.s_eff_single = None
 
     # Extracting the informations from the simulation files
     if parallel == 'all':
@@ -968,9 +964,7 @@ class AllSourceData:
           if sim is not None:
             for sat in sim:
               if sat is not None:
-                sat.pol.corr()
-                if sat.unpol is not None:
-                  sat.unpol.corr()
+                sat.corr()
 
   def azi_angle_anticorr(self):
     """
@@ -982,9 +976,7 @@ class AllSourceData:
           if sim is not None:
             for sat in sim:
               if sat is not None:
-                sat.pol.anticorr()
-                if sat.unpol is not None:
-                  sat.unpol.anticorr()
+                sat.anticorr()
 
   def analyze(self, fit_bounds=None, const_analysis=True):
     """
@@ -1022,13 +1014,13 @@ class AllSourceData:
         "WARNING : The source has been simulated with a background, the calculation has not been done as this would lead to biased results")
     else:
       list_dec = []
-      list_s_eff_pola = []
-      list_s_eff_spectro = []
+      list_s_eff_compton = []
+      list_s_eff_single = []
       for source in self.alldata:
         if source is not None:
           temp_dec = []
-          temp_s_eff_pola = []
-          temp_s_eff_spectro = []
+          temp_s_eff_compton = []
+          temp_s_eff_single = []
           for num_sim, sim in enumerate(source):
             if sim is not None:
               if sim[sat] is None:
@@ -1036,17 +1028,17 @@ class AllSourceData:
                   f"The satellite {sat} selected didn't detect the source '{source.source_name}' for the simulation number {num_sim}.")
               else:
                 temp_dec.append(sim[sat].dec_sat_frame)
-                temp_s_eff_pola.append(sim[sat].s_eff_pola)
-                temp_s_eff_spectro.append(sim[sat].s_eff_spectro)
+                temp_s_eff_compton.append(sim[sat].s_eff_compton)
+                temp_s_eff_single.append(sim[sat].s_eff_single)
           list_dec.append(temp_dec)
-          list_s_eff_pola.append(temp_s_eff_pola)
-          list_s_eff_spectro.append(temp_s_eff_spectro)
+          list_s_eff_compton.append(temp_s_eff_compton)
+          list_s_eff_single.append(temp_s_eff_single)
 
       figure, ax = plt.subplots(2, 2, figsize=(16, 12))
       figure.suptitle("Effective area as a function of detection angle")
       for graph in range(4):
         for ite in range(graph * 10, min(graph * 10 + 10, len(list_dec))):
-          ax[int(graph / 2)][graph % 2].scatter(list_dec[ite], list_s_eff_pola[ite],
+          ax[int(graph / 2)][graph % 2].scatter(list_dec[ite], list_s_eff_compton[ite],
                                                 label=f"Fluence : {np.around(self.fluence[ite], decimals=1)} ph/cm²")
         ax[int(graph / 2)][graph % 2].set(xlabel="GRB zenith angle (rad)",
                                           ylabel="Effective area for polarimetry (cm²)")  # , yscale="linear")
@@ -1061,7 +1053,7 @@ class AllSourceData:
 
   def fov_const(self, num_val=500, mode="polarization", show=True, save=False):
     """
-    Plots a map of the sensibility (s_eff_pola) over the sky
+    Plots a map of the sensibility (s_eff_compton) over the sky
     Mode is the mode used to obtain the sensibility :
       Polarization gives the sensibility to polarization
       Spectrometry gives the sensibility to spectrometry (capacity of detection)
