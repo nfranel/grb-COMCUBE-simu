@@ -36,14 +36,15 @@ def treatPE(ener):
   return float(ener)
 
 
-def calculate_polar_angle(CE_second, CE_sum):
+def calculate_polar_angle(ener_sec, ener_tot):
   """
   Function to calculate the polar angle using the energy deposits
   This function is made so that the cos of the angle is >=-1 as it's not possible to take the arccos of a number <-1.
   By construction of cos_value, the value cannot exceed 1.
   """
-  cos_value = [1 - m_elec * c_light ** 2 / charge_elem / 1000 * (1 / CE_second[ite] - 1 / CE_sum[ite]) if 1 - m_elec * c_light ** 2 / charge_elem / 1000 * (1 / CE_second[ite] - 1 / CE_sum[ite]) >= -1 else -1 for ite in range(len(CE_second))]
-  return np.rad2deg(np.arccos(cos_value))
+  cos_value = 1 - m_elec * c_light ** 2 / charge_elem / 1000 * (1 / ener_sec - 1 / ener_tot)
+  cos_value_filtered = np.where(cos_value < -1, -1, np.where(cos_value > 1, 1, cos_value))
+  return np.rad2deg(np.arccos(cos_value_filtered))
 
 
 def inwindow(E, ergcut):
@@ -72,10 +73,6 @@ def readfile(fname):
       data = "".join(f).split("SE")[1:]
   else:
     raise TypeError("{} has unknown extension (known: .tra ou .tra.gz)".format(fname))
-  # print(data[0])
-  # print(data[-1])
-  # print("===========================================================")
-
   return data
 
 
@@ -144,7 +141,7 @@ def angle(c, theta, phi, source_name, num_sim, num_sat):
     return np.array([]), np.array([])
   theta, phi = np.deg2rad(theta), np.deg2rad(phi)
   # Pluging in some MEGAlib magic
-  c = c / np.linalg.norm(c)
+  c = c / np.reshape(np.linalg.norm(c, axis=1), (len(c), 1))
   mat1 = np.array([[np.cos(-phi), - np.sin(-phi), 0],
                    [np.sin(-phi), np.cos(-phi), 0],
                    [0, 0, 1]])
