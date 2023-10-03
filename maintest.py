@@ -1,3 +1,5 @@
+import numpy as np
+
 from dataclass import *
 from time import time
 
@@ -13,13 +15,54 @@ test.analyze()
 print("=======================================")
 print("processing time : ", time()-init_time, "seconds")
 print("=======================================")
-sim = test.alldata[0][0][0]
-print(sim.mdp)
-print(sim.dec_sat_frame)
-print(sim.ra_sat_frame)
-print(len(sim.pol))
-print(len(sim.unpol))
-sim.show()
+sim = test.alldata[0][0]
+sim0 = test.alldata[0][0][0]
+sim1 = test.alldata[0][0][1]
+sim2 = test.alldata[0][0][2]
+simcons = sim.const_data
+print(sim0.mdp)
+print(sim0.dec_sat_frame)
+print(sim0.ra_sat_frame)
+print(len(sim0.pol))
+print(len(sim0.unpol))
+sim0.show()
+
+fig, (ax1, ax2, ax3, ax4) = plt.subplots(1, 4, figsize=(20, 5))
+colors = ["blue", "green", "red"]
+bins = sim[0].bins
+var_x = .5 * (bins[1:] + bins[:-1])
+binw = bins[1:] - bins[:-1]
+ylabel = "Number of counts (per degree)"
+for i in range(3):
+  histtemp = np.histogram(sim[i].pol, bins)[0] / binw
+  histtempnp = np.histogram(sim[i].unpol, bins)[0] / binw
+  histcorrtemp = histtemp / histtempnp * np.mean(histtempnp)
+  ax1.step(var_x, histcorrtemp, color=colors[i], where="mid")
+  ax1.set(xlabel="Azimuthal scatter angle (degree)", ylabel=ylabel, xlim=(-180, 180))
+
+polsum = np.concatenate((sim0.pol, sim1.pol, sim2.pol))
+unpolsum = np.concatenate((sim0.unpol, sim1.unpol, sim2.unpol))
+histtot = np.histogram(polsum, bins)[0] / binw
+histtotnp = np.histogram(unpolsum, bins)[0] / binw
+histtotcorr = histtot / histtotnp * np.mean(histtotnp)
+ax2.step(var_x, histtotcorr, color='black', where="mid")
+ax2.set(xlabel="Azimuthal scatter angle (degree)", ylabel=ylabel, xlim=(-180, 180))
+
+histsum = np.histogram(sim0.pol, bins)[0] / binw + np.histogram(sim1.pol, bins)[0] / binw + np.histogram(sim2.pol, bins)[0] / binw
+histsumnp = np.histogram(sim0.unpol, bins)[0] / binw + np.histogram(sim1.unpol, bins)[0] / binw + np.histogram(sim2.unpol, bins)[0] / binw
+histsumcorr = histsum / histsumnp * np.mean(histsumnp)
+ax3.step(var_x, histsumcorr, color='black', where="mid")
+ax3.set(xlabel="Azimuthal scatter angle (degree)", ylabel=ylabel, xlim=(-180, 180))
+
+histcons = np.histogram(sim.const_data.pol, bins)[0] / binw
+histconsnp = np.histogram(sim.const_data.unpol, bins)[0] / binw
+histconscorr = histcons / histconsnp * np.mean(histconsnp)
+ax4.step(var_x, histconscorr, color='black', where="mid")
+ax4.set(xlabel="Azimuthal scatter angle (degree)", ylabel=ylabel, xlim=(-180, 180))
+
+plt.show()
+
+
 
 # set_bin = np.linspace(-180, 180, 21)
 # set_trafile = test.alldata[0][3][0]

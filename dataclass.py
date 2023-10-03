@@ -80,7 +80,7 @@ class BkgContainer:
   Class containing the information for 1 background file
   """
 
-  def __init__(self, datafile, sim_duration, opt_items, opt_analysis, ergcut):
+  def __init__(self, datafile, sim_duration, save_pos, save_time, ergcut):
     """
     -data_list : 1 background tra file (unpol) from which extract the data
     """
@@ -91,12 +91,18 @@ class BkgContainer:
     # Attributes filled with file reading (or to be used from this moment)
     self.compton_ener = []
     self.compton_second = []
-    self.compton_time = []
-    self.compton_firstpos = []
-    self.compton_secpos = []
     self.single_ener = []
-    self.single_time = []
-    self.single_pos = []
+    if save_pos:
+      self.compton_firstpos = []
+      self.compton_secpos = []
+      self.single_pos = []
+    else:
+      compton_firstpos = []
+      compton_secpos = []
+      single_pos = []
+    if save_time:
+      self.compton_time = []
+      self.single_time = []
     self.single = 0
     self.single_cr = 0
     self.compton = 0
@@ -114,22 +120,37 @@ class BkgContainer:
       if len(reading) == 5:
         self.compton_second.append(reading[0])
         self.compton_ener.append(reading[1])
-        self.compton_time.append(reading[2])
-        self.compton_firstpos.append(reading[3])
-        self.compton_secpos.append(reading[4])
+        if save_time:
+          self.compton_time.append(reading[2])
+        if save_pos:
+          self.compton_firstpos.append(reading[3])
+          self.compton_secpos.append(reading[4])
+        else:
+          compton_firstpos.append(reading[3])
+          compton_secpos.append(reading[4])
       elif len(reading) == 3:
         self.single_ener.append(reading[0])
-        self.single_time.append(reading[1])
-        self.single_pos.append(reading[2])
+        if save_time:
+          self.single_time.append(reading[1])
+        if save_pos:
+          self.single_pos.append(reading[2])
+        else:
+          single_pos.append(reading[2])
     self.compton_ener = np.array(self.compton_ener)
     self.compton_second = np.array(self.compton_second)
-    self.compton_time = np.array(self.compton_time)
-    self.compton_firstpos = np.array(self.compton_firstpos)
-    self.compton_secpos = np.array(self.compton_secpos)
     self.single_ener = np.array(self.single_ener)
-    self.single_time = np.array(self.single_time)
-    self.single_pos = np.array(self.single_pos)
+    if save_pos:
+      self.compton_firstpos = np.array(self.compton_firstpos)
+      self.compton_secpos = np.array(self.compton_secpos)
+      self.single_pos = np.array(self.single_pos)
+    else:
+      compton_firstpos = np.array(compton_firstpos)
+      compton_secpos = np.array(compton_secpos)
+      single_pos = np.array(single_pos)
 
+    if save_time:
+      self.compton_time = np.array(self.compton_time)
+      self.single_time = np.array(self.single_time)
     self.single = len(self.single_ener)
     self.single_cr = self.single / sim_duration
     self.compton = len(self.compton_ener)
@@ -141,7 +162,7 @@ class FormatedData:
   Class containing the data for 1 GRB, for 1 sim, and 1 satellite
   """
 
-  def __init__(self, data_list, sat_info, num_sat, sim_duration, opt_items, opt_analysis,
+  def __init__(self, data_list, sat_info, num_sat, sim_duration, save_pos, save_time,
                polarigram_bins, armcut, corr, ergcut):
     """
     -data_list : list of 1 or 2 files (pol or pol+unpol) from which extract the data
@@ -163,16 +184,23 @@ class FormatedData:
     self.expected_pa = None
     self.compton_ener = []
     self.compton_second = []
-    self.compton_time = []
-    self.compton_firstpos = []
-    self.compton_secpos = []
+    self.single_ener = []
+    if save_pos:
+      self.compton_firstpos = []
+      self.compton_secpos = []
+      self.single_pos = []
+    else:
+      compton_firstpos = []
+      compton_secpos = []
+      single_pos = []
     unpol_compton_second = []
     unpol_compton_ener = []
     unpol_compton_firstpos = []
     unpol_compton_secpos = []
-    self.single_ener = []
-    self.single_time = []
-    self.single_pos = []
+
+    if save_time:
+      self.compton_time = []
+      self.single_time = []
     self.pol = None
     self.unpol = None
     self.polar_from_position = None
@@ -210,7 +238,6 @@ class FormatedData:
     # Attributes that are used while making const
     self.n_sat_detect = 1
     # Attributes that are used while determining the deterctor where the interaction occured
-    # self.triggers = 0
     # self.calor = 0
     # self.dsssd = 0
     # self.side = 0
@@ -223,37 +250,51 @@ class FormatedData:
       self.dec_sat_frame, self.ra_sat_frame, self.expected_pa = decra2tpPA(dec_world_frame, ra_world_frame, sat_info[:3])
       # Extracting the data from first file
       data_pol = readfile(data_list[0])
-      # print("NEW DATA TO READ\n====================================================\n====================================================\n====================================================\n====================================================\n")
       for event in data_pol:
         reading = readevt(event, ergcut)
         if len(reading) == 5:
           # print("Reading\n")
           self.compton_second.append(reading[0])
           self.compton_ener.append(reading[1])
-          self.compton_time.append(reading[2])
-          self.compton_firstpos.append(reading[3])
-          self.compton_secpos.append(reading[4])
+          if save_time:
+            self.compton_time.append(reading[2])
+          if save_pos:
+            self.compton_firstpos.append(reading[3])
+            self.compton_secpos.append(reading[4])
+          else:
+            compton_firstpos.append(reading[3])
+            compton_secpos.append(reading[4])
         elif len(reading) == 3:
           self.single_ener.append(reading[0])
-          self.single_time.append(reading[1])
-          self.single_pos.append(reading[2])
+          if save_time:
+            self.single_time.append(reading[1])
+          if save_pos:
+            self.single_pos.append(reading[2])
+          else:
+            single_pos.append(reading[2])
       self.compton_ener = np.array(self.compton_ener)
       self.compton_second = np.array(self.compton_second)
-      self.compton_time = np.array(self.compton_time)
-      self.compton_firstpos = np.array(self.compton_firstpos)
-      self.compton_secpos = np.array(self.compton_secpos)
       self.single_ener = np.array(self.single_ener)
-      self.single_time = np.array(self.single_time)
-      self.single_pos = np.array(self.single_pos)
+      if save_pos:
+        self.compton_firstpos = np.array(self.compton_firstpos)
+        self.compton_secpos = np.array(self.compton_secpos)
+        self.single_pos = np.array(self.single_pos)
+      else:
+        compton_firstpos = np.array(compton_firstpos)
+        compton_secpos = np.array(compton_secpos)
+        single_pos = np.array(single_pos)
+      if save_time:
+        self.compton_time = np.array(self.compton_time)
+        self.single_time = np.array(self.single_time)
 
       # Calculating the polar angle using the energy values and compton azimuthal and polar scattering angles from the kinematics
       # polar and position angle stored in deg
       self.polar_from_energy = calculate_polar_angle(self.compton_second, self.compton_ener)
-      self.pol, self.polar_from_position = angle(self.compton_secpos - self.compton_firstpos, self.dec_sat_frame, self.ra_sat_frame, source_name, num_sim, num_sat)
+      if save_pos:
+        self.pol, self.polar_from_position = angle(self.compton_secpos - self.compton_firstpos, self.dec_sat_frame, self.ra_sat_frame, source_name, num_sim, num_sat)
+      else:
+        self.pol, self.polar_from_position = angle(compton_secpos - compton_firstpos, self.dec_sat_frame, self.ra_sat_frame, source_name, num_sim, num_sat)
 
-      # Correcting the angle correction for azimuthal angle according to cosima's polarization definition
-      if corr:
-        self.pol += np.rad2deg(np.arctan(np.cos(self.dec_sat_frame) * np.tan(self.ra_sat_frame)) + self.expected_pa)
       # Calculating the arm and extracting the indexes of correct arm events
       # arm in deg
       self.arm_pol = np.abs(self.polar_from_energy - self.polar_from_position)
@@ -261,12 +302,15 @@ class FormatedData:
       # Restriction of the values according to arm cut
       self.compton_ener = self.compton_ener[accepted_arm_pol]
       self.compton_second = self.compton_second[accepted_arm_pol]
-      self.compton_time = self.compton_time[accepted_arm_pol]
-      self.compton_firstpos = self.compton_firstpos[accepted_arm_pol]
-      self.compton_secpos = self.compton_secpos[accepted_arm_pol]
+      if save_pos:
+        self.compton_firstpos = self.compton_firstpos[accepted_arm_pol]
+        self.compton_secpos = self.compton_secpos[accepted_arm_pol]
+      if save_time:
+        self.compton_time = self.compton_time[accepted_arm_pol]
       self.polar_from_energy = self.polar_from_energy[accepted_arm_pol]
       self.polar_from_position = self.polar_from_position[accepted_arm_pol]
       self.pol = self.pol[accepted_arm_pol]
+
       # Extracting the data from second file if it exists
       if len(data_list) == 2:
         data_unpol = readfile(data_list[1])
@@ -284,24 +328,19 @@ class FormatedData:
         # Calculating the polar angle using the energy values and compton azimuthal and polar scattering angles from the kinematics
         unpol_polar_from_energy = calculate_polar_angle(unpol_compton_second, unpol_compton_ener)
         self.unpol, unpol_polar_from_position = angle(unpol_compton_secpos - unpol_compton_firstpos, self.dec_sat_frame, self.ra_sat_frame, source_name, num_sim, num_sat)
-        # Correcting the angle correction for azimuthal angle according to cosima's polarization definition
-        if corr:
-          self.unpol += np.rad2deg(np.arctan(np.cos(self.dec_sat_frame) * np.tan(self.ra_sat_frame)) + self.expected_pa)
         # Calculating the arm and extracting the indexes of correct arm events
         arm_unpol = np.abs(unpol_polar_from_energy - unpol_polar_from_position)
         accepted_arm_unpol = np.where(arm_unpol <= armcut, True, False)
         # Restriction of the values according to arm cut
-        # unpol_compton_second = unpol_compton_second
-        # unpol_compton_ener = unpol_compton_ener
-        # unpol_compton_firstpos = unpol_compton_firstpos
-        # unpol_compton_secpos = unpol_compton_secpos
-        # unpol_polar_from_energy = calculate_polar_angle(unpol_compton_second, unpol_compton_ener)
         self.unpol = self.unpol[accepted_arm_unpol]
-      #VERIFIER SI TOUT VA BIEN AVEC UNE LISTE VIDE POUR LES CE
-      # Setting the attribute stating if the correction is applied or not
-      self.azim_angle_corrected = corr
+
+      # Correcting the angle correction for azimuthal angle according to cosima's polarization definition
+      # And setting the attribute stating if the correction is applied or not
+      # Putting the correction before the filtering may cause some issues
+      if corr:
+        self.corr()
+
       # Putting the azimuthal scattering angle between the correct bins for creating histograms
-      self.behave()
       self.single = len(self.single_ener)
       self.single_cr = self.single / sim_duration
       self.compton = len(self.compton_ener)
@@ -333,10 +372,11 @@ class FormatedData:
   def cor(self):
     """
     Calculates the angle to correct for the source sky position and cosima's "RelativeY" polarization definition
-    :returns: float, angle ni deg
+    :returns: float, angle in deg
     Warning : That's actually minus the correction angle (so that the correction uses a + instead of a - ...)
     """
-    return np.arctan(np.cos(self.dec_sat_frame) * np.tan(self.ra_sat_frame)) * 180 / np.pi + self.expected_pa
+    theta, phi = np.deg2rad(self.dec_sat_frame), np.deg2rad(self.ra_sat_frame)
+    return np.rad2deg(np.arctan(np.cos(theta) * np.tan(phi))) + self.expected_pa
 
   def behave(self, width=360):
     """
@@ -768,10 +808,12 @@ class AllSourceData:
     self.armcut = armcut
     self.erg_cut = erg_cut
     self.polarigram_bins = np.arange(-180, 181, 18)
-    opt_items = ["CE", "PE"]
-    opt_analysis = [treatCE, treatPE]
-    corr = False
-    self.options = [opt_items, opt_analysis, self.polarigram_bins, self.armcut, corr, self.erg_cut]
+    # Setup of some options
+    self.save_pos = True
+    self.save_time = True
+    self.init_correction = False
+    self.options = [self.save_pos, self.save_time, self.polarigram_bins, self.armcut, self.init_correction, self.erg_cut]
+
     self.pol_data = False
     self.sat_info = [] # angles in it will be in deg
     #### A CODER AUTREMENT AVEC LECTURE D'UN FICHIER DE PARAMETRE POUR LES BACKGROUNDS
@@ -847,7 +889,7 @@ class AllSourceData:
     self.bkgdata = []
     flist = subprocess.getoutput("ls {}_*".format(bkg_prefix)).split("\n")
     for bkgfile in flist:
-      self.bkgdata.append(BkgContainer(bkgfile, self.bkg_sim_duration, opt_items=opt_items, opt_analysis=opt_analysis,
+      self.bkgdata.append(BkgContainer(bkgfile, self.bkg_sim_duration, save_pos=self.save_pos, save_time=self.save_time,
                                        ergcut=self.erg_cut))
 
     # Setting the background rate detected by each satellite
@@ -920,9 +962,9 @@ class AllSourceData:
     print("    Data analysis options")
     print(" Energy window considered for the analysis :           .erg_cut")
     print(" Data extraction options :                             .options")
-    print("   [opt_items, opt_analysis, corr, erg_cut]")
-    print("    opt_items : to get another fiels from trafiles")
-    print("    opt_analysis : to handle the new field with a specific function")
+    print("   [save_pos, save_time, corr, erg_cut]")
+    print("    save_pos : to get another fiels from trafiles")
+    print("    save_time : to handle the new field with a specific function")
     print("    corr : to correct the polarization angle")
     print(" Whether or not polarized simulations were done :       .pol_data")
     print(" Whether or not bkg simulated with the source :         .source_with_bkg")
@@ -996,12 +1038,17 @@ class AllSourceData:
     """
     This function is used to combine results from different satellites
     Results are then stored in the key const_data
+    The polarigrams have to be corrected to combine the polarigrams
     """
+    if not self.init_correction:
+      self.azi_angle_corr()
     for source in self.alldata:
       if source is not None:
         for sim in source:
           if sim is not None:
             sim.make_const(self.options, const=const)
+    if not self.init_correction:
+      self.azi_angle_anticorr()
 
   def effective_area(self, sat=0):
     """
