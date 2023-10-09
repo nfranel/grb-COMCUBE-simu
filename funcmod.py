@@ -140,32 +140,30 @@ def angle(c, theta, phi, source_name, num_sim, num_sat):
     print(f"There is no compton event detected for source {source_name}, simulation {num_sim} and satellite {num_sat}")
     return np.array([]), np.array([])
   theta, phi = np.deg2rad(theta), np.deg2rad(phi)
+  # Changing the direction of the vector to be in adequation with MEGAlib's functionning
+  MEGAlib_direction = True
+  if MEGAlib_direction:
+    c = -c
   # Pluging in some MEGAlib magic
   c = c / np.reshape(np.linalg.norm(c, axis=1), (len(c), 1))
+  # Rotation matrix around Z with an angle -phi
   mat1 = np.array([[np.cos(-phi), - np.sin(-phi), 0],
                    [np.sin(-phi), np.cos(-phi), 0],
                    [0, 0, 1]])
+  # Rotation matrix around Y with an angle -theta
   mat2 = np.array([[np.cos(-theta), 0, np.sin(-theta)],
                    [0, 1, 0],
                    [- np.sin(-theta), 0, np.cos(-theta)]])
   # using matrix products to combine the matrix instead of doing it vector by vector
   c = np.matmul(c, np.transpose(mat1))
   c = np.matmul(c, np.transpose(mat2))
-  # c = (np.cos(-phi) * c[0] - np.sin(-phi) * c[1], np.sin(-phi) * c[0] + np.cos(-phi) * c[1], c[2])
-  # c = (np.sin(-theta) * c[2] + np.cos(-theta) * c[0], c[1], np.cos(-theta) * c[2] - np.sin(-theta) * c[0])
-  polar = np.rad2deg(np.arccos(c[:, 2]))
+  if MEGAlib_direction:
+    polar = 180 - np.rad2deg(np.arccos(c[:, 2]))
+  else:
+    polar = np.rad2deg(np.arccos(c[:, 2]))
   # Figure out a good arctan
-  azim = np.where(c[:, 0] > 0, np.rad2deg(np.arctan(c[:, 1] / c[:, 0])), np.where(c[:, 0] == 0, 90, np.where(c[:, 1] > 0, np.rad2deg(np.arctan(c[:, 1] / c[:, 0])) + 180, np.rad2deg(np.arctan(c[:, 1] / c[:, 0])) - 180)))
+  azim = np.rad2deg(np.arctan2(c[:, 1], c[:, 0]))
   return azim, polar
-  # if c[0] > 0:
-  #   return np.rad2deg(np.arctan(c[1] / c[0])), polar
-  # elif c[0] == 0:
-  #   return 90, polar
-  # else:
-  #   if c[1] > 0:
-  #     return np.rad2deg(np.arctan(c[1] / c[0])) + 180, polar
-  #   else:
-  #     return np.rad2deg(np.arctan(c[1] / c[0])) - 180, polar
 
 
 def modulation_func(x, pa, mu, S):

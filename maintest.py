@@ -1,3 +1,4 @@
+import matplotlib.pyplot as plt
 import numpy as np
 
 from dataclass import *
@@ -7,7 +8,7 @@ from time import time
 init_time = time()
 bkg = "./backgrounds/bkg"  # _background_sat0_0000_90.0_0.0.inc1.id1.extracted.tra"
 param = "./test/polGBM.par"
-erg = (100, 460)
+erg = (10, 1000)
 arm = 80
 test = AllSourceData(bkg, param, erg, arm, parallel=True)
 test.make_const()
@@ -15,6 +16,7 @@ test.analyze()
 print("=======================================")
 print("processing time : ", time()-init_time, "seconds")
 print("=======================================")
+
 sim = test.alldata[0][0]
 sim0 = test.alldata[0][0][0]
 sim1 = test.alldata[0][0][1]
@@ -26,41 +28,87 @@ print(sim0.ra_sat_frame)
 print(len(sim0.pol))
 print(len(sim0.unpol))
 sim0.show()
+# fig, ax1 = plt.subplots(1, 1, figsize=(20, 5))
+# colors = ["blue", "green", "red"]
+# bins = sim[0].bins
+# var_x = .5 * (bins[1:] + bins[:-1])
+# binw = bins[1:] - bins[:-1]
+# ylabel = "Number of counts (per degree)"
+# for i in range(1):
+#   histtemp = np.histogram(sim[i].pol, bins)[0] / binw
+#   histtempnp = np.histogram(sim[i].unpol, bins)[0] / binw
+#   histcorrtemp = histtemp / histtempnp * np.mean(histtempnp)
+#   ax1.step(var_x, histcorrtemp, color=colors[i], where="mid")
+#   ax1.set(xlabel="Azimuthal scatter angle (degree)", ylabel=ylabel, xlim=(-180, 180))
 
-fig, (ax1, ax2, ax3, ax4) = plt.subplots(1, 4, figsize=(20, 5))
-colors = ["blue", "green", "red"]
-bins = sim[0].bins
-var_x = .5 * (bins[1:] + bins[:-1])
-binw = bins[1:] - bins[:-1]
-ylabel = "Number of counts (per degree)"
-for i in range(3):
-  histtemp = np.histogram(sim[i].pol, bins)[0] / binw
-  histtempnp = np.histogram(sim[i].unpol, bins)[0] / binw
-  histcorrtemp = histtemp / histtempnp * np.mean(histtempnp)
-  ax1.step(var_x, histcorrtemp, color=colors[i], where="mid")
-  ax1.set(xlabel="Azimuthal scatter angle (degree)", ylabel=ylabel, xlim=(-180, 180))
+mimpol = np.array([2, 2, 2, 2, 3, 1, 4, 2, 3, 3, 4, 3, 3, 1, 5, 1, 4, 1, 6, 3, 5, 9, 3, 5, 4, 5, 2, 2, 3, 4, 3, 6, 4, 5, 5, 7, 1, 4, 2, 6, 2, 2, 1, 4, 6])
+simpol = np.array([4, 2, 3, 4, 0, 3, 5, 2, 3, 4, 2, 0, 6, 3, 3, 2, 2, 2, 3, 0, 4, 3, 1, 2, 1, 0, 2, 1, 0, 2, 0, 3, 3, 3, 4, 1, 2, 2, 4, 0, 4, 4, 3, 8, 3])
+mimunpol = np.array([4, 3, 2, 1, 2, 6, 2, 2, 7, 2, 6, 7, 9, 7, 9, 3, 3, 4, 7, 6, 2, 1, 1, 5, 4, 6, 6, 6, 5, 3, 3, 9, 7, 8, 7, 2, 9, 8, 6, 3, 1, 2, 5, 1, 2])
+simunpol = np.array([3, 2, 4, 3, 5, 3, 2, 4, 7, 5, 4, 6, 2, 4, 9, 1, 2, 0, 3, 2, 1, 1, 1, 5, 1, 0, 2, 2, 2, 2, 3, 4, 2, 6, 9, 8, 5, 3, 1, 3, 3, 4, 3, 3, 0])
 
-polsum = np.concatenate((sim0.pol, sim1.pol, sim2.pol))
-unpolsum = np.concatenate((sim0.unpol, sim1.unpol, sim2.unpol))
-histtot = np.histogram(polsum, bins)[0] / binw
-histtotnp = np.histogram(unpolsum, bins)[0] / binw
-histtotcorr = histtot / histtotnp * np.mean(histtotnp)
-ax2.step(var_x, histtotcorr, color='black', where="mid")
-ax2.set(xlabel="Azimuthal scatter angle (degree)", ylabel=ylabel, xlim=(-180, 180))
-
-histsum = np.histogram(sim0.pol, bins)[0] / binw + np.histogram(sim1.pol, bins)[0] / binw + np.histogram(sim2.pol, bins)[0] / binw
-histsumnp = np.histogram(sim0.unpol, bins)[0] / binw + np.histogram(sim1.unpol, bins)[0] / binw + np.histogram(sim2.unpol, bins)[0] / binw
-histsumcorr = histsum / histsumnp * np.mean(histsumnp)
-ax3.step(var_x, histsumcorr, color='black', where="mid")
-ax3.set(xlabel="Azimuthal scatter angle (degree)", ylabel=ylabel, xlim=(-180, 180))
-
-histcons = np.histogram(sim.const_data.pol, bins)[0] / binw
-histconsnp = np.histogram(sim.const_data.unpol, bins)[0] / binw
-histconscorr = histcons / histconsnp * np.mean(histconsnp)
-ax4.step(var_x, histconscorr, color='black', where="mid")
-ax4.set(xlabel="Azimuthal scatter angle (degree)", ylabel=ylabel, xlim=(-180, 180))
-
+fig = plt.figure()
+plt.hist2d(sim0.polar_from_position, sim0.polar_from_energy, bins=(np.linspace(0, 180, 91), np.linspace(0, 180, 91)))
+plt.xticks([0, 20, 40, 60, 80, 100, 120, 140, 160, 180])
+plt.yticks([0, 20, 40, 60, 80, 100, 120, 140, 160, 180])
+plt.colorbar()
 plt.show()
+
+# fig = plt.figure()
+# plt.hist(sim0.polar_from_energy, bins=np.linspace(0, 180, 91))
+# plt.xticks([0, 20, 40, 60, 80, 100, 120, 140, 160, 180])
+# plt.show()
+#
+# x = np.array([-173.25842696629215, -172.7191011235955, -169.75280898876406, -167.32584269662922, -163.82022471910113, -157.8876404494382, -150.6067415730337, -149.52808988764045, -147.1011235955056, -141.97752808988764, -141.1685393258427, -140.08988764044943, -126.6067415730337, -125.79775280898878, -123.91011235955057, -120.67415730337079, -116.89887640449439, -110.96629213483146, -108.53932584269663, -104.76404494382022, -103.95505617977528, -100.17977528089888, -97.48314606741573, -96.67415730337079, -95.32584269662921, -90.47191011235955, -86.96629213483146, -86.15730337078652, -83.19101123595506, -79.68539325842697, -77.52808988764045, -70.24719101123596, -65.3932584269663, -62.96629213483146, -61.617977528089895, -53.258426966292134, -49.75280898876406, -48.67415730337078, -44.89887640449439, -37.88764044943821, -35.46067415730337, -34.11235955056179, -31.685393258426984, -30.87640449438203, -28.179775280898895, -24.404494382022477, -23.595505617977523, -20.898876404494388, -17.393258426966298, -14.966292134831463, -13.887640449438209, -12.808988764044955, -10.382022471910119, -9.573033707865164, -7.9550561797752835, -5.258426966292149, -4.449438202247194, -3.640449438202239, 0.6741573033707766, 4.179775280898866, 4.988764044943821, 7.685393258426956, 9.033707865168537, 13.887640449438209, 16.314606741573016, 18.74157303370785, 19.550561797752806, 20.35955056179776, 21.438202247191015, 24.943820224719104, 25.75280898876403, 26.831460674157285, 27.64044943820224, 30.606741573033702, 42.74157303370785, 43.550561797752806, 44.35955056179773, 45.438202247191015, 51.10112359550561, 52.179775280898866, 53.25842696629212, 61.61797752808988, 62.96629213483146, 66.47191011235955, 69.16853932584269, 74.29213483146066, 75.37078651685391, 76.17977528089887, 76.98876404494382, 78.06741573033707, 81.03370786516854, 83.46067415730334, 84.5393258426966, 86.96629213483146, 89.66292134831463, 90.47191011235952, 96.40449438202245, 97.75280898876406, 99.10112359550561, 99.91011235955057, 102.60674157303367, 105.03370786516854, 105.84269662921349, 107.46067415730334, 113.39325842696627, 116.89887640449439, 119.3258426966292, 120.13483146067415, 120.9438202247191, 125.25842696629212, 127.95505617977528, 132.80898876404495, 133.61797752808985, 136.31460674157302, 138.47191011235952, 147.1011235955056, 148.17977528089887, 155.46067415730334, 160.04494382022472, 164.8988764044944, 167.3258426966292, 168.40449438202245, 174.33707865168537, 175.68539325842698, 177.03370786516854, 179.19101123595505])
+# y = np.around(np.array([1.0088105726872247, 1.0088105726872247, 1.0088105726872247, 1.0088105726872247, 1.013215859030837, 1.0088105726872247, 1.0088105726872247, 1.0044052863436124, 1.0088105726872247, 1.0044052863436124, 1.0044052863436124, 1.0044052863436124, 1.0088105726872247, 1.0088105726872247, 2, 1.0088105726872247, 1.0088105726872247, 1.0088105726872247, 2.0044052863436126, 1.0088105726872247, 1.0044052863436124, 1.0088105726872247, 1.0044052863436124, 1.0088105726872247, 2, 1.0088105726872247, 1.0088105726872247, 1.0088105726872247, 1.0088105726872247, 1.0088105726872247, 1.0088105726872247, 1.0044052863436124, 2, 1.0088105726872247, 2, 1.0044052863436124, 1.0044052863436124, 2, 1.0088105726872247, 1.0088105726872247, 2.0044052863436126, 1.0044052863436124, 1.0044052863436124, 1.0044052863436124, 1.0044052863436124, 1.0088105726872247, 1.0088105726872247, 1.0088105726872247, 1.0044052863436124, 1.0088105726872247, 2, 1.0088105726872247, 3.0000000000000004, 3.0000000000000004, 1.0088105726872247, 1.0044052863436124, 1.0044052863436124, 1.0044052863436124, 2, 1.0044052863436124, 1.0044052863436124, 1.9955947136563879, 1.0044052863436124, 1.0044052863436124, 1.0044052863436124, 1.0044052863436124, 1.0044052863436124, 1.0044052863436124, 1.0044052863436124, 1.0044052863436124, 1.0044052863436124, 1.0044052863436124, 1.0044052863436124, 1.0088105726872247, 1.0044052863436124, 1.0044052863436124, 1.0044052863436124, 1.0044052863436124, 1.0088105726872247, 3.0000000000000004, 1.0088105726872247, 1.0088105726872247, 1.0044052863436124, 1.0044052863436124, 3.0000000000000004, 1.0044052863436124, 1.0044052863436124, 1.0044052863436124, 1.0044052863436124, 1.0044052863436124, 1.0088105726872247, 1.0044052863436124, 1.0044052863436124, 2, 1.0044052863436124, 1.0088105726872247, 1.0044052863436124, 2.0044052863436126, 1.0088105726872247, 1.0088105726872247, 3.0000000000000004, 1.0044052863436124, 1.0044052863436124, 2, 1.0088105726872247, 1.0044052863436124, 1.0044052863436124, 1.0044052863436124, 1.0044052863436124, 1.0088105726872247, 1.0044052863436124, 1.0044052863436124, 1.0044052863436124, 3.0000000000000004, 1.0044052863436124, 2, 1.0044052863436124, 1.0088105726872247, 1.0088105726872247, 1.0088105726872247, 2.0044052863436126, 1.0088105726872247, 1.0088105726872247, 1.9955947136563879, 1.0088105726872247, 2]), 0)
+#
+# azim_angle_ref = []
+# for iteval, val in enumerate(x):
+#   for ite in range(int(y[iteval])):
+#     azim_angle_ref.append(val)
+#
+# azim_angle_test = np.sort(sim0.pol)
+# azim_angle_ref = np.array(azim_angle_ref)
+#
+# fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(20, 5), sharex="all", sharey="all")
+# ax1.hist(azim_angle_test, bins=np.linspace(-180, 180, 301))
+# ax2.hist(azim_angle_ref, bins=np.linspace(-180, 180, 301))
+# plt.show()
+
+#
+# fig, (ax1, ax2, ax3, ax4) = plt.subplots(1, 4, figsize=(20, 5))
+# colors = ["blue", "green", "red"]
+# bins = sim[0].bins
+# var_x = .5 * (bins[1:] + bins[:-1])
+# binw = bins[1:] - bins[:-1]
+# ylabel = "Number of counts (per degree)"
+# for i in range(3):
+#   histtemp = np.histogram(sim[i].pol, bins)[0] / binw
+#   histtempnp = np.histogram(sim[i].unpol, bins)[0] / binw
+#   histcorrtemp = histtemp / histtempnp * np.mean(histtempnp)
+#   ax1.step(var_x, histcorrtemp, color=colors[i], where="mid")
+#   ax1.set(xlabel="Azimuthal scatter angle (degree)", ylabel=ylabel, xlim=(-180, 180))
+#
+# polsum = np.concatenate((sim0.pol, sim1.pol, sim2.pol))
+# unpolsum = np.concatenate((sim0.unpol, sim1.unpol, sim2.unpol))
+# histtot = np.histogram(polsum, bins)[0] / binw
+# histtotnp = np.histogram(unpolsum, bins)[0] / binw
+# histtotcorr = histtot / histtotnp * np.mean(histtotnp)
+# ax2.step(var_x, histtotcorr, color='black', where="mid")
+# ax2.set(xlabel="Azimuthal scatter angle (degree)", ylabel=ylabel, xlim=(-180, 180))
+#
+# histsum = np.histogram(sim0.pol, bins)[0] / binw + np.histogram(sim1.pol, bins)[0] / binw + np.histogram(sim2.pol, bins)[0] / binw
+# histsumnp = np.histogram(sim0.unpol, bins)[0] / binw + np.histogram(sim1.unpol, bins)[0] / binw + np.histogram(sim2.unpol, bins)[0] / binw
+# histsumcorr = histsum / histsumnp * np.mean(histsumnp)
+# ax3.step(var_x, histsumcorr, color='black', where="mid")
+# ax3.set(xlabel="Azimuthal scatter angle (degree)", ylabel=ylabel, xlim=(-180, 180))
+#
+# histcons = np.histogram(sim.const_data.pol, bins)[0] / binw
+# histconsnp = np.histogram(sim.const_data.unpol, bins)[0] / binw
+# histconscorr = histcons / histconsnp * np.mean(histconsnp)
+# ax4.step(var_x, histconscorr, color='black', where="mid")
+# ax4.set(xlabel="Azimuthal scatter angle (degree)", ylabel=ylabel, xlim=(-180, 180))
+#
+# plt.show()
 
 
 
