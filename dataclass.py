@@ -11,10 +11,10 @@ import matplotlib.pyplot as plt
 import subprocess
 import matplotlib as mpl
 import matplotlib.colors as colors
-# import numpy as np
-# import gzip
 import multiprocessing as mp
 from itertools import repeat
+# import numpy as np
+# import gzip
 
 mpl.use('Qt5Agg')
 # plt.rcParams.update({'font.size': 20})
@@ -963,9 +963,9 @@ class AllSourceData:
     # Setting some informations used for obtaining the GRB count rates
     self.cat_duration = 10
     self.com_duty = 1
-    self.gbm_duty = 0.6
+    self.gbm_duty = 0.85
     ### Implementer une maniere automatique de calculer le fov de comcube
-    self.com_fov = 1
+    self.com_fov = 1 # kept as 1 because GRBs simulated accross all sky and not considered if behind the earth
     self.gbm_fov = (1 - np.cos(np.deg2rad(horizonAngle(565)))) / 2
     self.weights = 1 / self.n_sim / self.cat_duration * self.com_duty / self.gbm_duty * self.com_fov / self.gbm_fov
 
@@ -1124,6 +1124,29 @@ class AllSourceData:
                                           ylabel="Effective area for polarimetry (cm²)")  # , yscale="linear")
         ax[int(graph / 2)][graph % 2].legend()
       plt.show()
+
+  def source_search(self, source_name, verbose=True):
+    """
+    Search among the sources simulated if one has the correct name
+    returns the position of the source(s) in the list and displays other information unless specified if it's there
+    """
+    printv("================================================", verbose)
+    printv("==            Searching the source            ==",verbose)
+    source_position = np.where(np.array(self.namelist) == source_name)[0]
+    if len(source_position) == 0:
+      printv(f"No source corresponding to {source_name}, returning None", verbose)
+      return None
+    elif len(source_position) > 1:
+      printv(f"Several items have been found that matches the source name {source_name}, returning a list of the indices", verbose)
+      return source_position
+    elif len(source_position) == 1:
+      printv(f"The source {source_name} has been found at position {source_position[0]}, returning this position as an integer", verbose)
+      printv("==  Additionnal information about the source  ==", verbose)
+      printv(f" - Source duration : {self.alldata[source_position[0]].source_duration} s", verbose)
+      printv(f" - Source flux at peak : {self.alldata[source_position[0]].p_flux} photons/cm²/s", verbose)
+      printv(f" - Source fluence between {self.erg_cut[0]} keV and {self.erg_cut[1]} keV : {self.alldata[source_position[0]].source_fluence} photons/cm²", verbose)
+      printv(f" - Number of simulation in the constellation's field of view : {len(self.alldata[source_position[0]])}", verbose)
+      return source_position[0]
 
   def viewing_angle_study(self):
     """
@@ -1472,8 +1495,9 @@ class AllSourceData:
               if sim.const_data.snr > snr_min:
                 hist_pflux.append(source.p_flux)
             else:
-              if sim[selected_sat].snr > snr_min:
-                hist_pflux.append(source.p_flux)
+              if sim[selected_sat] is not None:
+                if sim[selected_sat].snr > snr_min:
+                  hist_pflux.append(source.p_flux)
 
     if x_scale == "log":
       if min(hist_pflux) < 1:
@@ -1569,8 +1593,9 @@ class AllSourceData:
               if sim.const_data.mu100 is not None:
                 mu_100_list.append(sim.const_data.mu100)
             else:
-              if sim[selected_sat].mu100 is not None:
-                mu_100_list.append(sim[selected_sat].mu100)
+              if sim[selected_sat] is not None:
+                if sim[selected_sat].mu100 is not None:
+                  mu_100_list.append(sim[selected_sat].mu100)
     distrib, ax1 = plt.subplots(1, 1, figsize=(8, 6))
     distrib.suptitle(title)
     ax1.hist(mu_100_list, bins=n_bins, cumulative=0, histtype="step", weights=[self.weights] * len(mu_100_list))
@@ -1595,8 +1620,9 @@ class AllSourceData:
               if sim.const_data.pa is not None:
                 pa_list.append(sim.const_data.pa)
             else:
-              if sim[selected_sat].pa is not None:
-                pa_list.append(sim[selected_sat].pa)
+              if sim[selected_sat] is not None:
+                if sim[selected_sat].pa is not None:
+                  pa_list.append(sim[selected_sat].pa)
     distrib, ax1 = plt.subplots(1, 1, figsize=(8, 6))
     distrib.suptitle(title)
     ax1.hist(pa_list, bins=n_bins, cumulative=0, histtype="step", weights=[self.weights] * len(pa_list))
@@ -1630,13 +1656,14 @@ class AllSourceData:
                     no_detec_fluence.append(source.source_fluence)
                 mdp_count += 1
               else:
-                if sim[selected_sat].mdp is not None:
-                  if sim[selected_sat].mdp <= mdp_threshold:
-                    mdp_list.append(sim[selected_sat].mdp * 100)
-                    fluence_list.append(source.source_fluence)
-                  else:
-                    no_detec_fluence.append(source.source_fluence)
-                mdp_count += 1
+                if sim[selected_sat] is not None:
+                  if sim[selected_sat].mdp is not None:
+                    if sim[selected_sat].mdp <= mdp_threshold:
+                      mdp_list.append(sim[selected_sat].mdp * 100)
+                      fluence_list.append(source.source_fluence)
+                    else:
+                      no_detec_fluence.append(source.source_fluence)
+                  mdp_count += 1
 
       distrib, ax1 = plt.subplots(1, 1, figsize=(8, 6))
       distrib.suptitle(title)
@@ -1678,13 +1705,14 @@ class AllSourceData:
                   no_detec_flux.append(source.p_flux)
               mdp_count += 1
             else:
-              if sim[selected_sat].mdp is not None:
-                if sim[selected_sat].mdp <= mdp_threshold:
-                  mdp_list.append(sim[selected_sat].mdp * 100)
-                  flux_list.append(source.p_flux)
-                else:
-                  no_detec_flux.append(source.p_flux)
-              mdp_count += 1
+              if sim[selected_sat] is not None:
+                if sim[selected_sat].mdp is not None:
+                  if sim[selected_sat].mdp <= mdp_threshold:
+                    mdp_list.append(sim[selected_sat].mdp * 100)
+                    flux_list.append(source.p_flux)
+                  else:
+                    no_detec_flux.append(source.p_flux)
+                mdp_count += 1
 
     distrib, ax1 = plt.subplots(1, 1, figsize=(8, 6))
     distrib.suptitle(title)
@@ -1717,13 +1745,14 @@ class AllSourceData:
       if source is not None:
         for sim in source:
           if sim is not None:
-            if sim[selected_sat] is not None and sim[selected_sat].mdp is not None:
-              if sim[selected_sat].mdp <= mdp_threshold:
-                mdp_list.append(sim[selected_sat].mdp * 100)
-                angle_list.append(sim[selected_sat].dec_sat_frame)
-              else:
-                no_detec_angle.append(sim[selected_sat].dec_sat_frame)
-              mdp_count += 1
+            if sim[selected_sat] is not None:
+              if sim[selected_sat].mdp is not None:
+                if sim[selected_sat].mdp <= mdp_threshold:
+                  mdp_list.append(sim[selected_sat].mdp * 100)
+                  angle_list.append(sim[selected_sat].dec_sat_frame)
+                else:
+                  no_detec_angle.append(sim[selected_sat].dec_sat_frame)
+                mdp_count += 1
 
     distrib, ax1 = plt.subplots(1, 1, figsize=(8, 6))
     distrib.suptitle(title)
@@ -1780,21 +1809,23 @@ class AllSourceData:
                 snr_count += 1
               else:
                 if snr_type == "compton":
-                  if sim[selected_sat].snr_compton is not None:
-                    if sim[selected_sat].snr_compton >= snr_threshold:
-                      snr_list.append(sim[selected_sat].snr_compton)
-                      fluence_list.append(source.source_fluence)
-                    else:
-                      no_detec_fluence.append(source.source_fluence)
-                    snr_count += 1
+                  if sim[selected_sat] is not None:
+                    if sim[selected_sat].snr_compton is not None:
+                      if sim[selected_sat].snr_compton >= snr_threshold:
+                        snr_list.append(sim[selected_sat].snr_compton)
+                        fluence_list.append(source.source_fluence)
+                      else:
+                        no_detec_fluence.append(source.source_fluence)
+                      snr_count += 1
                 elif snr_type == "single":
-                  if sim[selected_sat].snr_single is not None:
-                    if sim[selected_sat].snr_single >= snr_threshold:
-                      snr_list.append(sim[selected_sat].snr_single)
-                      fluence_list.append(source.source_fluence)
-                    else:
-                      no_detec_fluence.append(source.source_fluence)
-                    snr_count += 1
+                  if sim[selected_sat] is not None:
+                    if sim[selected_sat].snr_single is not None:
+                      if sim[selected_sat].snr_single >= snr_threshold:
+                        snr_list.append(sim[selected_sat].snr_single)
+                        fluence_list.append(source.source_fluence)
+                      else:
+                        no_detec_fluence.append(source.source_fluence)
+                      snr_count += 1
 
       distrib, ax1 = plt.subplots(1, 1, figsize=(8, 6))
       distrib.suptitle(title)
@@ -1850,21 +1881,23 @@ class AllSourceData:
               snr_count += 1
             else:
               if snr_type == "compton":
-                if sim[selected_sat].snr_compton is not None:
-                  if sim[selected_sat].snr_compton >= snr_threshold:
-                    snr_list.append(sim[selected_sat].snr_compton)
-                    flux_list.append(self.alldata[source_ite].p_flux)
-                  else:
-                    no_detec_flux.append(self.alldata[source_ite].p_flux)
-                  snr_count += 1
+                if sim[selected_sat] is not None:
+                  if sim[selected_sat].snr_compton is not None:
+                    if sim[selected_sat].snr_compton >= snr_threshold:
+                      snr_list.append(sim[selected_sat].snr_compton)
+                      flux_list.append(self.alldata[source_ite].p_flux)
+                    else:
+                      no_detec_flux.append(self.alldata[source_ite].p_flux)
+                    snr_count += 1
               elif snr_type == "single":
-                if sim[selected_sat].snr_single is not None:
-                  if sim[selected_sat].snr_single >= snr_threshold:
-                    snr_list.append(sim[selected_sat].snr_single)
-                    flux_list.append(self.alldata[source_ite].p_flux)
-                  else:
-                    no_detec_flux.append(self.alldata[source_ite].p_flux)
-                  snr_count += 1
+                if sim[selected_sat] is not None:
+                  if sim[selected_sat].snr_single is not None:
+                    if sim[selected_sat].snr_single >= snr_threshold:
+                      snr_list.append(sim[selected_sat].snr_single)
+                      flux_list.append(self.alldata[source_ite].p_flux)
+                    else:
+                      no_detec_flux.append(self.alldata[source_ite].p_flux)
+                    snr_count += 1
 
     distrib, ax1 = plt.subplots(1, 1, figsize=(8, 6))
     distrib.suptitle(title)
@@ -1905,21 +1938,23 @@ class AllSourceData:
         for sim in source:
           if sim is not None:
             if snr_type == "compton":
-              if sim[selected_sat] is not None and sim[selected_sat].snr_compton is not None:
-                if sim[selected_sat].snr_compton >= snr_threshold:
-                  snr_list.append(sim[selected_sat].snr_compton)
-                  angle_list.append(sim[selected_sat].dec_sat_frame)
-                else:
-                  no_detec_angle.append(sim[selected_sat].dec_sat_frame)
-                snr_count += 1
+              if sim[selected_sat] is not None:
+                if sim[selected_sat].snr_compton is not None:
+                  if sim[selected_sat].snr_compton >= snr_threshold:
+                    snr_list.append(sim[selected_sat].snr_compton)
+                    angle_list.append(sim[selected_sat].dec_sat_frame)
+                  else:
+                    no_detec_angle.append(sim[selected_sat].dec_sat_frame)
+                  snr_count += 1
             elif snr_type == "single":
-              if sim[selected_sat] is not None and sim[selected_sat].snr_single is not None:
-                if sim[selected_sat].snr_single >= snr_threshold:
-                  snr_list.append(sim[selected_sat].snr_single)
-                  angle_list.append(sim[selected_sat].dec_sat_frame)
-                else:
-                  no_detec_angle.append(sim[selected_sat].dec_sat_frame)
-                snr_count += 1
+              if sim[selected_sat] is not None:
+                if sim[selected_sat].snr_single is not None:
+                  if sim[selected_sat].snr_single >= snr_threshold:
+                    snr_list.append(sim[selected_sat].snr_single)
+                    angle_list.append(sim[selected_sat].dec_sat_frame)
+                  else:
+                    no_detec_angle.append(sim[selected_sat].dec_sat_frame)
+                  snr_count += 1
 
     distrib, ax1 = plt.subplots(1, 1, figsize=(8, 6))
     distrib.suptitle(title)
@@ -1962,14 +1997,15 @@ class AllSourceData:
                 no_detec[1].append(sim.const_data.snr_compton)
               count += 1
             else:
-              if sim[selected_sat].snr_compton is not None:
-                if sim[selected_sat].snr_compton >= snr_threshold and sim[selected_sat].mdp <= mdp_threshold:
-                  mdp_list.append(sim[selected_sat].mdp * 100)
-                  snr_list.append(sim[selected_sat].snr_compton)
-                else:
-                  no_detec[0].append(sim[selected_sat].mdp * 100)
-                  no_detec[1].append(sim[selected_sat].snr_compton)
-                count += 1
+              if sim[selected_sat] is not None:
+                if sim[selected_sat].snr_compton is not None:
+                  if sim[selected_sat].snr_compton >= snr_threshold and sim[selected_sat].mdp <= mdp_threshold:
+                    mdp_list.append(sim[selected_sat].mdp * 100)
+                    snr_list.append(sim[selected_sat].snr_compton)
+                  else:
+                    no_detec[0].append(sim[selected_sat].mdp * 100)
+                    no_detec[1].append(sim[selected_sat].snr_compton)
+                  count += 1
 
       distrib, ax1 = plt.subplots(1, 1, figsize=(8, 6))
       distrib.suptitle(title)

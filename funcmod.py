@@ -7,6 +7,9 @@ m_elec = 9.1094e-31
 c_light = 2.99792458e+8
 charge_elem = 1.6021e-19
 
+def printv(message, verbose):
+  if verbose:
+    print(message)
 
 def horizonAngle(h, EarthRadius=6371, AtmosphereHeight=40):
   """

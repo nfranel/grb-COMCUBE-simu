@@ -53,6 +53,8 @@ plt.yticks([0, 20, 40, 60, 80, 100, 120, 140, 160, 180])
 plt.colorbar()
 plt.show()
 
+print(test.source_search('GRB080714086'))
+
 # fig = plt.figure()
 # plt.hist(sim0.polar_from_energy, bins=np.linspace(0, 180, 91))
 # plt.xticks([0, 20, 40, 60, 80, 100, 120, 140, 160, 180])
