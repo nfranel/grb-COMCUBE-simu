@@ -108,10 +108,11 @@ class BkgContainer:
     self.compton = 0
     self.compton_cr = 0
     # Attributes that are used while determining the deterctor where the interaction occured
-    # self.triggers = 0
     # self.calor = 0
     # self.dsssd = 0
     # self.side = 0
+    # self.compton_trig = []
+    # self.single_trig = []
 
     data_pol = readfile(datafile)
     for event in data_pol:
@@ -167,6 +168,9 @@ class FormatedData:
     """
     -data_list : list of 1 or 2 files (pol or pol+unpol) from which extract the data
     """
+    ##############################################################
+    #                   Attributes declaration                   #
+    ##############################################################
     if sat_info is None:
       self.compton_b_rate = 0
       self.single_b_rate = 0
@@ -222,7 +226,7 @@ class FormatedData:
     self.compton_cr = 0
     # Set with the fit or for the fit
     self.bins = polarigram_bins
-    self.polarigram_error = None
+    self.polarigram_error = []
     self.fits = None
     self.mu100 = None
     self.pa = None
@@ -247,11 +251,13 @@ class FormatedData:
     self.calor = 0
     self.dsssd = 0
     self.side = 0
-    self.compton_detector = []
-    self.sing_detector = []
+    self.compton_trig = 0
+    self.single_trig = 0
 
-
-    if len(data_list) == 0:
+    ##############################################################
+    #                   Reading data from file                   #
+    ##############################################################
+    if len(data_list) == 0: # Empty object for the constellation making
       self.n_sat_detect = 0
     else:
       # Change it so that it's not saved here !
@@ -368,10 +374,10 @@ class FormatedData:
       self.calor = 0
       self.dsssd = 0
       self.side = 0
-      self.compton_detector = []
-      self.sing_detector = []
+      self.compton_trig = 0
+      self.single_trig = 0
 
-  def fit(self, fit_bounds=None):
+  def fit(self, message, fit_bounds=None):
     """
     Fits first a modulation function and then a constant function to the polarigram
     :param unpoldata: Polarigram or None, Polarigram used for geometry correction, default=None
@@ -383,7 +389,7 @@ class FormatedData:
     if self.unpol is not None:
       unpol_hist = np.histogram(self.unpol, self.bins)[0] / binw
       if 0. in unpol_hist:
-        print("Unpolarized data do not allow a fit : a bin is empty")
+        print(f"Unpolarized data do not allow a fit - {message} : a bin is empty")
         self.fits.append(None)
       else:
         self.polarigram_error = err_calculation(np.histogram(self.pol, self.bins)[0], np.histogram(self.unpol, self.bins)[0], binw)
@@ -522,7 +528,7 @@ class FormatedData:
     print("    Methods")
     print("======================================================================")
 
-  def analyze(self, source_duration, source_fluence, source_with_bkg, fit_bounds):
+  def analyze(self, message, source_duration, source_fluence, source_with_bkg, fit_bounds):
     """
     Proceeds to the data analysis to get mu100, pa, compton cr, mdp and snr
     mdp has physical significance between 0 and 1
@@ -534,7 +540,7 @@ class FormatedData:
       self.s_eff_compton = self.compton / source_fluence
       self.s_eff_single = self.single / source_fluence
     if self.unpol is not None:
-      self.fit(fit_bounds=fit_bounds)
+      self.fit(message, fit_bounds=fit_bounds)
       # self.fit(fit_bounds=([-np.inf, -np.inf, (len(self.pol)-1)/100], [np.inf, np.inf, (len(self.pol)+1)/100]))
       if self.fits[0] is not None:
         self.pa, self.mu100, self.fit_compton_cr = self.fits[-2].popt
@@ -623,15 +629,15 @@ class AllSatData(list):
     print("    Methods")
     print("======================================================================")
 
-  def analyze(self, source_duration, source_fluence, source_with_bkg, fit_bounds, const_analysis):
+  def analyze(self, source_message, source_duration, source_fluence, source_with_bkg, fit_bounds, const_analysis):
     """
     Proceed to the analysis of polarigrams for all satellites and constellation (unless specified)
     """
-    for sat in self:
+    for sat_ite, sat in enumerate(self):
       if sat is not None:
-        sat.analyze(source_duration, source_fluence, source_with_bkg, fit_bounds)
+        sat.analyze(f"{source_message}sat {sat_ite}", source_duration, source_fluence, source_with_bkg, fit_bounds)
     if self.const_data is not None and const_analysis:
-      self.const_data.analyze(source_duration, source_fluence, source_with_bkg, fit_bounds)
+      self.const_data.analyze(f"{source_message}const", source_duration, source_fluence, source_with_bkg, fit_bounds)
     else:
       print("Constellation not set : please use make_const method if you want to analyze the constellation's results")
 
@@ -642,21 +648,38 @@ class AllSatData(list):
     self.const_data = FormatedData([], None, None, None, *options)
 
     for item in self.const_data.__dict__.keys():
-      if item not in ["dec_sat_frame", "ra_sat_frame", "expected_pa", "fits", "mu100", "pa", "fit_compton_cr", "pa_err", "mu100_err", "fit_compton_cr_err", "fit_goodness", "mdp", "snr_compton", "snr_single"]:
-        if item in ["dec_world_frame", "ra_world_frame", "bins", "polarigram_error"]:
+      ## Non modified items. They stay as :
+      # ["num_sat", "dec_sat_frame", "ra_sat_frame", "expected_pa"]
+      # [None, None, None, None]
+      ## Or, until analyze() method has been applied, remain the same :
+      # ["fits", "mu100", "pa", "fit_compton_cr", "pa_err", "mu100_err", "fit_compton_cr_err", "fit_goodness", "mdp",
+      # "snr_compton", "snr_single"]
+      # [None, None, None, None, None, None, None, None, None, None, None]
+      if item not in ["num_sat", "dec_sat_frame", "ra_sat_frame", "expected_pa", "fits", "mu100", "pa", "fit_compton_cr", "pa_err",
+                      "mu100_err", "fit_compton_cr_err", "fit_goodness", "mdp", "snr_compton", "snr_single"]:
+        ###############################################################################################################
+        # Values supposed to be the same for all sat and all sims so it doesn't change and is set using 1 sat
+        # Except for polarigram error, its size is the same but the values depend on the fits
+        if item in ["bins", "polarigram_error", "azim_angle_corrected"]:
           setattr(self.const_data, item, getattr(self[considered_sat[0]], item))
-        elif item in ["compton_b_rate", "single_b_rate", "s_eff_compton", "s_eff_single", "single", "single_cr", "compton", "compton_cr", "n_sat_detect"]:
+        ###############################################################################################################
+        # Values summed
+        elif item in ["compton_b_rate", "single_b_rate", "s_eff_compton", "s_eff_single", "single", "single_cr",
+                      "compton", "compton_cr", "n_sat_detect", "calor", "dsssd", "side", "compton_trig", "single_trig"]:
           temp_val = 0
           for num_sat in considered_sat:
             temp_val += getattr(self[num_sat], item)
           setattr(self.const_data, item, temp_val)
-        elif item in ["compton_ener", "compton_second", "compton_time", "single_ener", "single_time", "pol", "polar_from_position", "polar_from_energy", "arm_pol"]:
+        ###############################################################################################################
+        # Values stored in a 1D array that have to be concanated (except unpol that needs another verification)
+        elif item in ["compton_ener", "compton_second", "compton_time", "single_ener", "single_time", "pol",
+                      "polar_from_position", "polar_from_energy", "arm_pol"]:
           temp_array = np.array([])
           for num_sat in considered_sat:
-            # print(item)
-            # print(temp_array)
             temp_array = np.concatenate((temp_array, getattr(self[num_sat], item)))
           setattr(self.const_data, item, temp_array)
+        ###############################################################################################################
+        # Values stored in a 2D array that have to be initiated and treated so that no error occur
         elif item in ["compton_firstpos", "compton_secpos", "single_pos"]:
           if len(considered_sat) == 1:
             if len(getattr(self[considered_sat[0]], item))==0:
@@ -666,19 +689,97 @@ class AllSatData(list):
           else:
             temp_array = np.array([[0, 0, 0]])
             for ite_num_sat in range(len(considered_sat)):
-              # print(temp_array)
-              # print(getattr(self[considered_sat[ite_num_sat]], item))
               if len(getattr(self[considered_sat[ite_num_sat]], item)) == 0:
                 temp_array = np.array([[0, 0, 0]])
               else:
                 temp_array = np.concatenate((temp_array, getattr(self[considered_sat[ite_num_sat]], item)))
             setattr(self.const_data, item, temp_array[1:])
+        ###############################################################################################################
+        # unpol key
         elif item == "unpol":
           if getattr(self[considered_sat[0]], item) is not None:
             temp_array = np.array([])
             for num_sat in considered_sat:
               temp_array = np.concatenate((temp_array, getattr(self[num_sat], item)))
             setattr(self.const_data, item, temp_array)
+
+  def verif_const(self, message="", const=None):
+    """
+    Method to check that the constellation has been done properly
+    """
+    if const is None:
+      const = np.array(range(self.n_sat))
+    considered_sat = const[np.where(np.array(self) == None, False, True)]
+
+    for item in self.const_data.__dict__.keys():
+      ## Non modified items. They stay as :
+      # ["num_sat", "dec_sat_frame", "ra_sat_frame", "expected_pa"]
+      # [None, None, None, None]
+      ## Or, until analyze() method has been applied, remain the same :
+      # ["fits", "mu100", "pa", "fit_compton_cr", "pa_err", "mu100_err", "fit_compton_cr_err", "fit_goodness", "mdp",
+      # "snr_compton", "snr_single"]
+      # [None, None, None, None, None, None, None, None, None, None, None]
+      if item not in ["fits", "mu100", "pa", "fit_compton_cr", "pa_err", "mu100_err", "fit_compton_cr_err",
+                      "fit_goodness", "mdp", "snr_compton", "snr_single"]:
+        ###############################################################################################################
+        # Non modified items set to None
+        if item in ["num_sat", "dec_sat_frame", "ra_sat_frame", "expected_pa"]:
+          if getattr(self.const_data, item) is not None:
+            print(f"The item {item} has not been set correctly by make_const {message}")
+        ###############################################################################################################
+        # Values supposed to be the same for all sat and all sims so it doesn't change and is set using 1 sat
+        # Except for polarigram error, only is size doesn't change, hence this verification
+        elif item in ["bins", "polarigram_error"]:
+          verification_bool = False
+          for num_sat in considered_sat:
+            if len(getattr(self[num_sat], item)) != len(getattr(self.const_data, item)):
+              verification_bool = True
+          if verification_bool:
+            print(f"The item {item} has not been set correctly by make_const {message}")
+        ###############################################################################################################
+        # Values supposed to be true unless the polarigrams haven't been added correctly
+        elif item in ["azim_angle_corrected"]:
+          if not getattr(self.const_data, item):
+            print(f"The item {item} has not been set correctly by make_const {message}")
+        ###############################################################################################################
+        # Values summed
+        elif item in ["compton_b_rate", "single_b_rate", "s_eff_compton", "s_eff_single", "single", "single_cr",
+                      "compton", "compton_cr", "n_sat_detect", "calor", "dsssd", "side", "compton_trig", "single_trig"]:
+          temp_val = 0
+          for num_sat in considered_sat:
+            temp_val += getattr(self[num_sat], item)
+          if temp_val != getattr(self.const_data, item):
+            print(f"The item {item} has not been set correctly by make_const {message}")
+
+        ###############################################################################################################
+        # Values stored in a 1D array that have to be concanated (except unpol that needs another verification)
+        elif item in ["compton_ener", "compton_second", "compton_time", "single_ener", "single_time", "pol",
+                      "polar_from_position", "polar_from_energy", "arm_pol"]:
+          temp_val = 0
+          for num_sat in considered_sat:
+            temp_val += len(getattr(self[num_sat], item))
+          if temp_val != len(getattr(self.const_data, item)):
+            print(f"The item {item} has not been set correctly by make_const {message}")
+        ###############################################################################################################
+        # Values stored in a 2D array that have to be initiated and treated so that no error occur
+        elif item in ["compton_firstpos", "compton_secpos", "single_pos"]:
+          temp_val = 0
+          for num_sat in considered_sat:
+            temp_val += len(getattr(self[num_sat], item))
+          if temp_val != len(getattr(self.const_data, item)):
+            print(f"The item {item} has not been set correctly by make_const {message}")
+        ###############################################################################################################
+        # unpol key
+        elif item == "unpol":
+          if getattr(self[considered_sat[0]], item) is not None:
+            temp_val = 0
+            for num_sat in considered_sat:
+              temp_val += len(getattr(self[num_sat], item))
+            if temp_val != len(getattr(self.const_data, item)):
+              print(f"The item {item} has not been set correctly by make_const {message}")
+          else:
+            if getattr(self.const_data, item) is not None:
+              print(f"The item {item} has not been set correctly by make_const {message}")
 
 
 class AllSimData(list):
@@ -1056,9 +1157,9 @@ class AllSourceData:
     """
     for source_ite, source in enumerate(self.alldata):
       if source is not None:
-        for sim in source:
+        for sim_ite, sim in enumerate(source):
           if sim is not None:
-            sim.analyze(source.source_duration, source.source_fluence, self.source_with_bkg, fit_bounds, const_analysis)
+            sim.analyze(f"source {self.namelist[source_ite]}({source_ite}), sim {sim_ite}, ", source.source_duration, source.source_fluence, self.source_with_bkg, fit_bounds, const_analysis)
             # if source.source_fluence is None:
             #   sim.analyze(source.source_duration, source.source_fluence, self.source_with_bkg, fit_bounds, const_analysis)
             # else:
@@ -1080,6 +1181,13 @@ class AllSourceData:
             sim.make_const(self.options, const=const)
     if not self.init_correction:
       self.azi_angle_anticorr()
+
+  def verif_const(self, const=None):
+    for source_ite, source in enumerate(self.alldata):
+      if source is not None:
+        for sim_ite, sim in enumerate(source):
+          if sim is not None:
+            sim.verif_const(message=f"for source {source_ite} and sim {sim_ite}", const=const)
 
   def effective_area(self, sat=0):
     """
@@ -1131,7 +1239,7 @@ class AllSourceData:
     returns the position of the source(s) in the list and displays other information unless specified if it's there
     """
     printv("================================================", verbose)
-    printv("==            Searching the source            ==",verbose)
+    printv("==            Searching the source            ==", verbose)
     source_position = np.where(np.array(self.namelist) == source_name)[0]
     if len(source_position) == 0:
       printv(f"No source corresponding to {source_name}, returning None", verbose)

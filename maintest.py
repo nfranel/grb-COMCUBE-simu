@@ -12,22 +12,25 @@ erg = (10, 1000)
 arm = 80
 test = AllSourceData(bkg, param, erg, arm, parallel=True)
 test.make_const()
+test.verif_const()
 test.analyze()
+test.verif_const()
+
 print("=======================================")
 print("processing time : ", time()-init_time, "seconds")
 print("=======================================")
 
-sim = test.alldata[0][0]
-sim0 = test.alldata[0][0][0]
-sim1 = test.alldata[0][0][1]
-sim2 = test.alldata[0][0][2]
-simcons = sim.const_data
-print(sim0.mdp)
-print(sim0.dec_sat_frame)
-print(sim0.ra_sat_frame)
-print(len(sim0.pol))
-print(len(sim0.unpol))
-sim0.show()
+# sim = test.alldata[0][0]
+# sim0 = test.alldata[0][0][0]
+# sim1 = test.alldata[0][0][1]
+# sim2 = test.alldata[0][0][2]
+# simcons = sim.const_data
+# print(sim0.mdp)
+# print(sim0.dec_sat_frame)
+# print(sim0.ra_sat_frame)
+# print(len(sim0.pol))
+# print(len(sim0.unpol))
+# sim0.show()
 # fig, ax1 = plt.subplots(1, 1, figsize=(20, 5))
 # colors = ["blue", "green", "red"]
 # bins = sim[0].bins
@@ -41,19 +44,19 @@ sim0.show()
 #   ax1.step(var_x, histcorrtemp, color=colors[i], where="mid")
 #   ax1.set(xlabel="Azimuthal scatter angle (degree)", ylabel=ylabel, xlim=(-180, 180))
 
-mimpol = np.array([2, 2, 2, 2, 3, 1, 4, 2, 3, 3, 4, 3, 3, 1, 5, 1, 4, 1, 6, 3, 5, 9, 3, 5, 4, 5, 2, 2, 3, 4, 3, 6, 4, 5, 5, 7, 1, 4, 2, 6, 2, 2, 1, 4, 6])
-simpol = np.array([4, 2, 3, 4, 0, 3, 5, 2, 3, 4, 2, 0, 6, 3, 3, 2, 2, 2, 3, 0, 4, 3, 1, 2, 1, 0, 2, 1, 0, 2, 0, 3, 3, 3, 4, 1, 2, 2, 4, 0, 4, 4, 3, 8, 3])
-mimunpol = np.array([4, 3, 2, 1, 2, 6, 2, 2, 7, 2, 6, 7, 9, 7, 9, 3, 3, 4, 7, 6, 2, 1, 1, 5, 4, 6, 6, 6, 5, 3, 3, 9, 7, 8, 7, 2, 9, 8, 6, 3, 1, 2, 5, 1, 2])
-simunpol = np.array([3, 2, 4, 3, 5, 3, 2, 4, 7, 5, 4, 6, 2, 4, 9, 1, 2, 0, 3, 2, 1, 1, 1, 5, 1, 0, 2, 2, 2, 2, 3, 4, 2, 6, 9, 8, 5, 3, 1, 3, 3, 4, 3, 3, 0])
-
-fig = plt.figure()
-plt.hist2d(sim0.polar_from_position, sim0.polar_from_energy, bins=(np.linspace(0, 180, 91), np.linspace(0, 180, 91)))
-plt.xticks([0, 20, 40, 60, 80, 100, 120, 140, 160, 180])
-plt.yticks([0, 20, 40, 60, 80, 100, 120, 140, 160, 180])
-plt.colorbar()
-plt.show()
-
-print(test.source_search('GRB080714086'))
+# mimpol = np.array([2, 2, 2, 2, 3, 1, 4, 2, 3, 3, 4, 3, 3, 1, 5, 1, 4, 1, 6, 3, 5, 9, 3, 5, 4, 5, 2, 2, 3, 4, 3, 6, 4, 5, 5, 7, 1, 4, 2, 6, 2, 2, 1, 4, 6])
+# simpol = np.array([4, 2, 3, 4, 0, 3, 5, 2, 3, 4, 2, 0, 6, 3, 3, 2, 2, 2, 3, 0, 4, 3, 1, 2, 1, 0, 2, 1, 0, 2, 0, 3, 3, 3, 4, 1, 2, 2, 4, 0, 4, 4, 3, 8, 3])
+# mimunpol = np.array([4, 3, 2, 1, 2, 6, 2, 2, 7, 2, 6, 7, 9, 7, 9, 3, 3, 4, 7, 6, 2, 1, 1, 5, 4, 6, 6, 6, 5, 3, 3, 9, 7, 8, 7, 2, 9, 8, 6, 3, 1, 2, 5, 1, 2])
+# simunpol = np.array([3, 2, 4, 3, 5, 3, 2, 4, 7, 5, 4, 6, 2, 4, 9, 1, 2, 0, 3, 2, 1, 1, 1, 5, 1, 0, 2, 2, 2, 2, 3, 4, 2, 6, 9, 8, 5, 3, 1, 3, 3, 4, 3, 3, 0])
+#
+# fig = plt.figure()
+# plt.hist2d(sim0.polar_from_position, sim0.polar_from_energy, bins=(np.linspace(0, 180, 91), np.linspace(0, 180, 91)))
+# plt.xticks([0, 20, 40, 60, 80, 100, 120, 140, 160, 180])
+# plt.yticks([0, 20, 40, 60, 80, 100, 120, 140, 160, 180])
+# plt.colorbar()
+# plt.show()
+#
+# print(test.source_search('GRB080714086'))
 
 # fig = plt.figure()
 # plt.hist(sim0.polar_from_energy, bins=np.linspace(0, 180, 91))
