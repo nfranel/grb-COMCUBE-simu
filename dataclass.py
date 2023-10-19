@@ -234,6 +234,10 @@ class FormatedData:
     self.pa_err = None
     self.mu100_err = None
     self.fit_compton_cr_err = None
+    # =0 : fit perfectly
+    # ~1 : fit reasonably
+    # >1 : not a good fit
+    # >>1 : very poor fit
     self.fit_goodness = None
     # Setting of mdp and snr
     self.mdp = None
@@ -549,6 +553,8 @@ class FormatedData:
           self.mu100 = - self.mu100
         else:
           self.pa = self.pa % 180
+        if self.mu100 > 0.8:
+          print(f"Warning : unusual value - {message} may need further verification, mu100 = {self.mu100}")
         self.pa_err = np.sqrt(self.fits[-2].pcov[0][0])
         self.mu100_err = np.sqrt(self.fits[-2].pcov[1][1])
         self.fit_compton_cr_err = np.sqrt(self.fits[-2].pcov[2][2])
@@ -725,7 +731,7 @@ class AllSatData(list):
         # Non modified items set to None
         if item in ["num_sat", "dec_sat_frame", "ra_sat_frame", "expected_pa"]:
           if getattr(self.const_data, item) is not None:
-            print(f"The item {item} has not been set correctly by make_const {message}")
+            print(f"Anomaly detected in the setting of the item {item} by make_const {message}")
         ###############################################################################################################
         # Values supposed to be the same for all sat and all sims so it doesn't change and is set using 1 sat
         # Except for polarigram error, only is size doesn't change, hence this verification
@@ -735,12 +741,12 @@ class AllSatData(list):
             if len(getattr(self[num_sat], item)) != len(getattr(self.const_data, item)):
               verification_bool = True
           if verification_bool:
-            print(f"The item {item} has not been set correctly by make_const {message}")
+            print(f"Anomaly detected in the setting of the item {item} by make_const {message}")
         ###############################################################################################################
         # Values supposed to be true unless the polarigrams haven't been added correctly
         elif item in ["azim_angle_corrected"]:
           if not getattr(self.const_data, item):
-            print(f"The item {item} has not been set correctly by make_const {message}")
+            print(f"Anomaly detected in the setting of the item {item} by make_const {message}")
         ###############################################################################################################
         # Values summed
         elif item in ["compton_b_rate", "single_b_rate", "s_eff_compton", "s_eff_single", "single", "single_cr",
@@ -749,8 +755,8 @@ class AllSatData(list):
           for num_sat in considered_sat:
             temp_val += getattr(self[num_sat], item)
           if temp_val != getattr(self.const_data, item):
-            print(f"The item {item} has not been set correctly by make_const {message}")
-
+            print(f"Anomaly detected in the setting of the item {item} by make_const {message}")
+            print(f"  The compared values from the satelitte and the constellation are : {temp_val} & {getattr(self.const_data, item)}")
         ###############################################################################################################
         # Values stored in a 1D array that have to be concanated (except unpol that needs another verification)
         elif item in ["compton_ener", "compton_second", "compton_time", "single_ener", "single_time", "pol",
@@ -759,7 +765,7 @@ class AllSatData(list):
           for num_sat in considered_sat:
             temp_val += len(getattr(self[num_sat], item))
           if temp_val != len(getattr(self.const_data, item)):
-            print(f"The item {item} has not been set correctly by make_const {message}")
+            print(f"Anomaly detected in the setting of the item {item} by make_const {message}")
         ###############################################################################################################
         # Values stored in a 2D array that have to be initiated and treated so that no error occur
         elif item in ["compton_firstpos", "compton_secpos", "single_pos"]:
@@ -767,7 +773,7 @@ class AllSatData(list):
           for num_sat in considered_sat:
             temp_val += len(getattr(self[num_sat], item))
           if temp_val != len(getattr(self.const_data, item)):
-            print(f"The item {item} has not been set correctly by make_const {message}")
+            print(f"Anomaly detected in the setting of the item {item} by make_const {message}")
         ###############################################################################################################
         # unpol key
         elif item == "unpol":
@@ -776,10 +782,10 @@ class AllSatData(list):
             for num_sat in considered_sat:
               temp_val += len(getattr(self[num_sat], item))
             if temp_val != len(getattr(self.const_data, item)):
-              print(f"The item {item} has not been set correctly by make_const {message}")
+              print(f"Anomaly detected in the setting of the item {item} by make_const {message}")
           else:
             if getattr(self.const_data, item) is not None:
-              print(f"The item {item} has not been set correctly by make_const {message}")
+              print(f"Anomaly detected in the setting of the item {item} by make_const {message}")
 
 
 class AllSimData(list):
