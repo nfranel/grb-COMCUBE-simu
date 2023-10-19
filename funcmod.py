@@ -7,9 +7,11 @@ m_elec = 9.1094e-31
 c_light = 2.99792458e+8
 charge_elem = 1.6021e-19
 
+
 def printv(message, verbose):
   if verbose:
     print(message)
+
 
 def horizonAngle(h, EarthRadius=6371, AtmosphereHeight=40):
   """
@@ -181,6 +183,20 @@ def modulation_func(x, pa, mu, S):
   return (S / (2 * np.pi)) * (1 - mu * np.cos(np.pi * (x - pa) / 90))
 
 
+def set_bins(bin_mode, data):
+  """
+
+  """
+  bins = ""
+  if bin_mode == "fixed":
+    bins = np.linspace(-180, 180, 19)
+  elif bin_mode == "limited":
+    bins = []
+  elif bin_mode == "optimized":
+    bins = []
+  return bins
+
+
 def err_calculation(pol, unpol, binwidth):
   """
   Calculation of the errorbar of the corrected polarigram according to megalib's way
@@ -333,88 +349,6 @@ def MDP(S, B, mu100, nsigma=4.29):
   return nsigma * np.sqrt(S + B) / (mu100 * S)
 
 
-#######################################################################################################
-# Functions to create spectra                                                                         #
-#######################################################################################################
-def plaw(e, A, l, pivot=100):
-  """
-  Power-law spectrum
-  :param e: energy (keV)
-  :param A: amplitude (ph/cm2/keV/s)
-  :param l: spectral index
-  :param pivot: pivot energy (keV), depends only on the instrument, default=100 keV for Fermi/GBM
-  :returns: ph/cm2/keV/s
-  """
-  return A * (e / pivot) ** l
-
-
-def comp(e, A, l, ep, pivot=100):
-  """
-  Comptonized spectrum
-  :param e: energy (keV)
-  :param A: amplitude (ph/cm2/keV/s)
-  :param l: spectral index
-  :param ep: peak energy (keV)
-  :param pivot: pivot energy (keV), depends only on the instrument, default=100 keV for Fermi/GBM
-  :returns: ph/cm2/keV/s
-  """
-  return A * (e / pivot) ** l * np.exp(-(l + 2) * e / ep)
-
-
-def glog(e, A, ec, s):
-  """
-  log10-gaussian spectrum model
-  :param e: energy (keV)
-  :param A: amplitude (ph/cm2/keV/s)
-  :param ec: central energy (keV)
-  :param s: distribution width
-  :returns: ph/cm2/keV/s
-  """
-  return A / np.sqrt(2 * np.pi * s) * np.exp(-.5 * (np.log10(e / ec) / s) ** 2)
-
-
-def band(e, A, alpha, beta, ep, pivot=100):
-  """
-  Band spectrum
-  :param e: energy (keV)
-  :param A: amplitude (ph/cm2/keV/s)
-  :param alpha: low-energy spectral index
-  :param beta: high-energy spectral index
-  :param ep: peak energy (keV)
-  :param pivot: pivot energy (keV), depends only on the instrument, default=100 keV for Fermi/GBM
-  :returns: ph/cm2/keV/s
-  """
-  c = (alpha - beta) * ep / (alpha + 2)
-  if e > c:
-    return A * (e / pivot) ** beta * np.exp(beta - alpha) * (c / pivot) ** (alpha - beta)
-  else:
-    return A * (e / pivot) ** alpha * np.exp(-(alpha + 2) * e / ep)
-
-
-def sbpl_sa(e, A, l1, l2, eb, delta, pivot=100):
-  """
-  Smoothly broken power law spectrum
-  :param e: energy (keV)
-  :param A: amplitude (ph/cm2/keV/s)
-  """
-  b, m = .5 * (l1 + l2), .5 * (l1 - l2)
-  q, qp = np.log10(e / eb / delta), np.log10(pivot / eb / delta)
-  a, ap = m * delta * np.log(np.cosh(q)), m * delta * np.log(np.cosh(qp))
-  return A * (e / pivot) ** b * 10 ** (a / ap)
-
-
-def sbpl(e, A, l1, l2, eb, delta, pivot=100):
-  """
-  Smoothly broken power law spectrum
-  :param e: energy (keV)
-  :param A: amplitude (ph/cm2/keV/s)
-  """
-  b, m = .5 * (l2 + l1), .5 * (l2 - l1)
-  q, qp = np.log10(e / eb) / delta, np.log10(pivot / eb) / delta
-  a, ap = m * delta * np.log(np.cosh(q)), m * delta * np.log(np.cosh(qp))
-  return A * (e / pivot) ** b * 10 ** (a - ap)
-
-
 def closest_bkg_rate(sat_lat, bkg_list):
   """
   Find the closest bkg file for a satellite (in terms of latitude)
@@ -558,7 +492,7 @@ def eff_area_sinlge_func(theta, angle_lim, func_type="data", duty=True):
   If func_type "FoV" computes instead the number of satellites viewing that part of the sky (no sensitivity considered)
   """
   if duty < 0 or duty > 1:
-    print("Error estimating the duty time, incorrect value")    
+    print("Error estimating the duty time, incorrect value")
     return 0
   if func_type == "data":
     if theta < angle_lim:
@@ -578,3 +512,87 @@ def eff_area_sinlge_func(theta, angle_lim, func_type="data", duty=True):
       return 1 * duty
     else:
       return 0
+
+
+#######################################################################################################
+# Functions to create spectra                                                                         #
+#######################################################################################################
+def plaw(e, A, l, pivot=100):
+  """
+  Power-law spectrum
+  :param e: energy (keV)
+  :param A: amplitude (ph/cm2/keV/s)
+  :param l: spectral index
+  :param pivot: pivot energy (keV), depends only on the instrument, default=100 keV for Fermi/GBM
+  :returns: ph/cm2/keV/s
+  """
+  return A * (e / pivot) ** l
+
+
+def comp(e, A, l, ep, pivot=100):
+  """
+  Comptonized spectrum
+  :param e: energy (keV)
+  :param A: amplitude (ph/cm2/keV/s)
+  :param l: spectral index
+  :param ep: peak energy (keV)
+  :param pivot: pivot energy (keV), depends only on the instrument, default=100 keV for Fermi/GBM
+  :returns: ph/cm2/keV/s
+  """
+  return A * (e / pivot) ** l * np.exp(-(l + 2) * e / ep)
+
+
+def glog(e, A, ec, s):
+  """
+  log10-gaussian spectrum model
+  :param e: energy (keV)
+  :param A: amplitude (ph/cm2/keV/s)
+  :param ec: central energy (keV)
+  :param s: distribution width
+  :returns: ph/cm2/keV/s
+  """
+  return A / np.sqrt(2 * np.pi * s) * np.exp(-.5 * (np.log10(e / ec) / s) ** 2)
+
+
+def band(e, A, alpha, beta, ep, pivot=100):
+  """
+  Band spectrum
+  :param e: energy (keV)
+  :param A: amplitude (ph/cm2/keV/s)
+  :param alpha: low-energy spectral index
+  :param beta: high-energy spectral index
+  :param ep: peak energy (keV)
+  :param pivot: pivot energy (keV), depends only on the instrument, default=100 keV for Fermi/GBM
+  :returns: ph/cm2/keV/s
+  """
+  c = (alpha - beta) * ep / (alpha + 2)
+  if e > c:
+    return A * (e / pivot) ** beta * np.exp(beta - alpha) * (c / pivot) ** (alpha - beta)
+  else:
+    return A * (e / pivot) ** alpha * np.exp(-(alpha + 2) * e / ep)
+
+
+def sbpl_sa(e, A, l1, l2, eb, delta, pivot=100):
+  """
+  Smoothly broken power law spectrum
+  :param e: energy (keV)
+  :param A: amplitude (ph/cm2/keV/s)
+  """
+  b, m = .5 * (l1 + l2), .5 * (l1 - l2)
+  q, qp = np.log10(e / eb / delta), np.log10(pivot / eb / delta)
+  a, ap = m * delta * np.log(np.cosh(q)), m * delta * np.log(np.cosh(qp))
+  return A * (e / pivot) ** b * 10 ** (a / ap)
+
+
+def sbpl(e, A, l1, l2, eb, delta, pivot=100):
+  """
+  Smoothly broken power law spectrum
+  :param e: energy (keV)
+  :param A: amplitude (ph/cm2/keV/s)
+  """
+  b, m = .5 * (l2 + l1), .5 * (l2 - l1)
+  q, qp = np.log10(e / eb) / delta, np.log10(pivot / eb) / delta
+  a, ap = m * delta * np.log(np.cosh(q)), m * delta * np.log(np.cosh(qp))
+  return A * (e / pivot) ** b * 10 ** (a - ap)
+
+

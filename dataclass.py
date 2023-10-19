@@ -359,6 +359,8 @@ class FormatedData:
       if corr:
         self.corr()
 
+      self.bins = set_bins(polarigram_bins, self.pol)
+
       # Putting the azimuthal scattering angle between the correct bins for creating histograms
       self.single = len(self.single_ener)
       self.single_cr = self.single / sim_duration
@@ -930,7 +932,7 @@ class AllSourceData:
   Class containing all the data for a full set of trafiles
   """
 
-  def __init__(self, bkg_prefix, param_file, erg_cut=(100, 460), armcut=180, parallel=False):
+  def __init__(self, bkg_prefix, param_file, erg_cut=(100, 460), armcut=180, polarigram_bins="fixed", parallel=False):
     """
     Initiate the class AllData using
     - bkg_prefix : str, the prefix for background files
@@ -949,8 +951,11 @@ class AllSourceData:
     self.armcut = armcut
     self.erg_cut = erg_cut
     # Different kinds of bins can be made :
-    self.polarigram_bins = np.linspace(-180, 180, 21)
-    # self.polarigram_bins = np.linspace(-180, 180, 21)
+    if polarigram_bins in ["fixed", "limited", "optimized"]:
+      self.polarigram_bins = polarigram_bins
+    else:
+      print("Warning : wrong option for the polarigram bins, it should be fixed (default), limited or optimized. Hence the option has been set to default value.")
+      self.polarigram_bins = "fixed"
     # Setup of some options
     self.save_pos = True
     self.save_time = True
