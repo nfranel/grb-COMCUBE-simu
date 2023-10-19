@@ -188,14 +188,14 @@ def err_calculation(pol, unpol, binwidth):
   :param unpol:    list,             bins for the unpolarized polarigram
   :param binwidth: list,             bin widths
   """
-  uncertainty = []
-  error = []
   nbins = len(pol)
   mean_unpol = np.mean(unpol)
 
   uncertainty = (pol/unpol**2*mean_unpol*np.sqrt(unpol))**2 + (mean_unpol/unpol*np.sqrt(pol))**2
+  print(uncertainty)
   for ite_j in range(nbins):
     uncertainty += (pol / unpol / nbins * np.sqrt(unpol[ite_j])) ** 2
+    print(uncertainty)
   error = np.sqrt(uncertainty)
   return error/binwidth
 

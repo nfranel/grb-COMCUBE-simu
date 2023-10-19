@@ -397,9 +397,13 @@ class FormatedData:
         self.fits.append(None)
       else:
         self.polarigram_error = err_calculation(np.histogram(self.pol, self.bins)[0], np.histogram(self.unpol, self.bins)[0], binw)
-        histo = histo / unpol_hist * np.mean(unpol_hist)
-        self.fits.append(Fit(modulation_func, var_x, histo, yerr=self.polarigram_error, bounds=fit_bounds, comment="modulation"))
-        self.fits.append(Fit(lambda x, a: a * x / x, var_x, histo, yerr=self.polarigram_error, comment="constant"))
+        if 0. in self.polarigram_error:
+          print(f"Polarized data do not allow a fit - {message} : a bin is empty leading to uncorrect fit")
+          self.fits.append(None)
+        else:
+          histo = histo / unpol_hist * np.mean(unpol_hist)
+          self.fits.append(Fit(modulation_func, var_x, histo, yerr=self.polarigram_error, bounds=fit_bounds, comment="modulation"))
+          self.fits.append(Fit(lambda x, a: a * x / x, var_x, histo, yerr=self.polarigram_error, comment="constant"))
     else:
       self.fits.append(Fit(modulation_func, var_x, histo, bounds=fit_bounds, comment="modulation"))
       self.fits.append(Fit(lambda x, a: a * x / x, var_x, histo, comment="constant"))
@@ -944,7 +948,9 @@ class AllSourceData:
     self.param_file = param_file
     self.armcut = armcut
     self.erg_cut = erg_cut
+    # Different kinds of bins can be made :
     self.polarigram_bins = np.linspace(-180, 180, 21)
+    # self.polarigram_bins = np.linspace(-180, 180, 21)
     # Setup of some options
     self.save_pos = True
     self.save_time = True
