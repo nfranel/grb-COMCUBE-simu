@@ -107,7 +107,7 @@ class BkgContainer:
     self.single_cr = 0
     self.compton = 0
     self.compton_cr = 0
-    # Attributes that are used while determining the deterctor where the interaction occured
+    # Attributes that are used while determining the detector where the interaction occured
     # self.calor = 0
     # self.dsssd = 0
     # self.side = 0
