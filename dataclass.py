@@ -1607,7 +1607,7 @@ class AllSourceData:
     ax1.legend()
     plt.show()
 
-  def peak_flux_distri(self, selected_sat="const", snr_min=5, n_bins=30, x_scale='log', y_scale="log"):
+  def peak_flux_distri(self, snr_type="compton", selected_sat="const", snr_min=5, n_bins=30, x_scale='log', y_scale="log"):
     """
 
     """
@@ -1617,12 +1617,23 @@ class AllSourceData:
         for sim in source:
           if sim is not None:
             if selected_sat == "const":
-              if sim.const_data.snr > snr_min:
-                hist_pflux.append(source.p_flux)
-            else:
-              if sim[selected_sat] is not None:
-                if sim[selected_sat].snr > snr_min:
+              if snr_type == "compton":
+                if sim.const_data.snr_compton >= snr_min:
                   hist_pflux.append(source.p_flux)
+              elif snr_type == "single":
+                if sim.const_data.snr_single >= snr_min:
+                  hist_pflux.append(source.p_flux)
+            else:
+              if snr_type == "compton":
+                if sim[selected_sat] is not None:
+                  if sim[selected_sat].snr_compton is not None:
+                    if sim[selected_sat].snr_compton >= snr_min:
+                      hist_pflux.append(source.p_flux)
+              elif snr_type == "single":
+                if sim[selected_sat] is not None:
+                  if sim[selected_sat].snr_single is not None:
+                    if sim[selected_sat].snr_single >= snr_min:
+                      hist_pflux.append(source.p_flux)
 
     if x_scale == "log":
       if min(hist_pflux) < 1:
@@ -1638,8 +1649,8 @@ class AllSourceData:
       hist_bins = n_bins
     distrib, ax1 = plt.subplots(1, 1, figsize=(8, 6))
     distrib.suptitle("Peak flux distribution of detected long GRB")
-    ax1.hist(hist_pflux, bins=hist_bins, cumulative=False, histtype="step", weights=[self.weights] * len(hist_pflux))
-    ax1.set(xlabel="Peak flux (photons/cm2/s)", ylabel="Number of detection per year", xscale=x_scale, yscale=y_scale)
+    ax1.hist(hist_pflux, bins=hist_bins, cumulative=False, histtype="step", weights=[self.weights/(4*np.pi)] * len(hist_pflux))
+    ax1.set(xlabel="Peak flux (photons/cm2/s)", ylabel="Number of detection per year per steradian", xscale=x_scale, yscale=y_scale)
     # ax1.legend()
     plt.show()
 
