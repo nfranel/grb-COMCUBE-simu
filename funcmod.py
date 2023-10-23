@@ -189,7 +189,7 @@ def set_bins(bin_mode, data):
   """
   bins = ""
   if bin_mode == "fixed":
-    bins = np.linspace(-180, 180, 19)
+    bins = np.linspace(-180, 180, 21)
   elif bin_mode == "limited":
     bins = []
   elif bin_mode == "optimized":
