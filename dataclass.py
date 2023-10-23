@@ -1727,6 +1727,28 @@ class AllSourceData:
     ax1.set(xlabel="mu100 (dimensionless)", ylabel="Number of detection per year", xscale=x_scale, yscale=y_scale)
     plt.show()
 
+  def mu100_vs_angle(self, selected_sat=0, x_scale='linear', y_scale="linear"):
+    """
+
+    """
+    title = f"mu100 vs detection angle of GRBs detected by the satellite {selected_sat}"
+    ## Faire de façon à ce que tous les satellites détectés soient pris en compte aussi ~ const option
+    mu_100_list = []
+    angle_list = []
+    for source in self.alldata:
+      if source is not None:
+        for sim in source:
+          if sim is not None:
+            if sim[selected_sat] is not None:
+              if sim[selected_sat].mu100 is not None:
+                mu_100_list.append(sim[selected_sat].mu100)
+                angle_list.append(sim[selected_sat].dec_sat_frame)
+    distrib, ax1 = plt.subplots(1, 1, figsize=(8, 6))
+    distrib.suptitle(title)
+    ax1.scatter(mu_100_list, angle_list, s=2)
+    ax1.set(xlabel="mu100 (dimensionless)", ylabel="Detection angle (°)", xlim=(0, 1), ylim=(115, 0), xscale=x_scale, yscale=y_scale)
+    plt.show()
+
   def pa_distribution(self, selected_sat="const", n_bins=30, x_scale='linear', y_scale="log"):
     """
 
