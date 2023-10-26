@@ -111,8 +111,7 @@ class BkgContainer:
     # self.calor = 0
     # self.dsssd = 0
     # self.side = 0
-    # self.compton_trig = []
-    # self.single_trig = []
+    # = []
 
     data_pol = readfile(datafile)
     for event in data_pol:
@@ -245,7 +244,7 @@ class FormatedData:
     self.snr_single = None
     ##############################################################
     # Attributes that are used while making const
-    self.n_sat_detect = 1
+    self.n_sat_receivingect = 1
     # Attributes that are used while determining the deterctor where the interaction occured
     ####
     ####
@@ -255,14 +254,12 @@ class FormatedData:
     self.calor = 0
     self.dsssd = 0
     self.side = 0
-    self.compton_trig = 0
-    self.single_trig = 0
 
     ##############################################################
     #                   Reading data from file                   #
     ##############################################################
     if len(data_list) == 0: # Empty object for the constellation making
-      self.n_sat_detect = 0
+      self.n_sat_receivingect = 0
     else:
       # Change it so that it's not saved here !
       dec_world_frame, ra_world_frame, source_name, num_sim, num_sat = fname2decra(data_list[0])
@@ -380,8 +377,6 @@ class FormatedData:
       self.calor = 0
       self.dsssd = 0
       self.side = 0
-      self.compton_trig = 0
-      self.single_trig = 0
 
   def fit(self, message, fit_bounds=None):
     """
@@ -594,7 +589,8 @@ class AllSatData(list):
 
   def __init__(self, source_prefix, num_sim, pol_analysis, sat_info, sim_duration, options):
     temp_list = []
-    self.n_sat_det = 0
+    # Attributes relative to the simulations without any analysis
+    self.n_sat_receiving = 0
     self.n_sat = len(sat_info)
     self.dec_world_frame = None
     self.ra_world_frame = None
@@ -603,28 +599,34 @@ class AllSatData(list):
     for num_sat in range(self.n_sat):
       flist = subprocess.getoutput("ls {}_sat{}_{:04d}_*".format(source_prefix, num_sat, num_sim)).split("\n")
       if len(flist) == 2:
-        temp_list.append(FormatedData(flist, sat_info[num_sat], num_sat, sim_duration, *options))
-        self.n_sat_det += 1
+        temp_list.append(FormatedData(flist, sat_info[num_sat], num_sat, sim_duration, *options[:-1]))
+        self.n_sat_receiving += 1
         self.loading_count += 2
       elif len(flist) == 1:
         if flist[0].startswith("ls: cannot access"):
           temp_list.append(None)
         elif pol_analysis:
-          temp_list.append(FormatedData(flist, sat_info[num_sat], sim_duration, num_sat, *options))
-          self.n_sat_det += 1
+          temp_list.append(FormatedData(flist, sat_info[num_sat], sim_duration, num_sat, *options[:-1]))
+          self.n_sat_receiving += 1
           self.pol_analysis = False
           self.loading_count += 1
           print(
             f'WARNING : Polarization analysis is expected but the wrong number of trafile has been found, no polarization data were extracted : {flist}')
         else:
-          temp_list.append(FormatedData(flist, sat_info[num_sat], sim_duration, num_sat, *options))
-          self.n_sat_det += 1
+          temp_list.append(FormatedData(flist, sat_info[num_sat], sim_duration, num_sat, *options[:-1]))
+          self.n_sat_receiving += 1
           self.pol_analysis = False
           self.loading_count += 1
       if not flist[0].startswith("ls: cannot access") and self.dec_world_frame is None:
         self.dec_world_frame, self.ra_world_frame = fname2decra(flist[0])[:2]
     list.__init__(self, temp_list)
+    # Attribute meaningful after the creation of the constellation
     self.const_data = None
+    # Attributes meaningful after the analysis : trigger information
+    self.snr_min = options[-1]
+    self.single_trigger_by_const = None
+    self.single_trigger_by_sat = None
+    self.single_trigger_by_comparison = None
 
   @staticmethod
   def get_keys():
@@ -645,6 +647,7 @@ class AllSatData(list):
     """
     Proceed to the analysis of polarigrams for all satellites and constellation (unless specified)
     """
+    # First step of the analyze, to obtain the polarigrams, and values for polarization and snr
     for sat_ite, sat in enumerate(self):
       if sat is not None:
         sat.analyze(f"{source_message}sat {sat_ite}", source_duration, source_fluence, source_with_bkg, fit_bounds)
@@ -652,12 +655,24 @@ class AllSatData(list):
       self.const_data.analyze(f"{source_message}const", source_duration, source_fluence, source_with_bkg, fit_bounds)
     else:
       print("Constellation not set : please use make_const method if you want to analyze the constellation's results")
+    # Second step of the analyze to determine if there is a trigger for single events
+    sat_triggers = 0
+    sat_reduced_triggers = 0
+    for sat in self:
+      if sat is not None:
+        if sat.snr_single >= self.snr_min:
+          sat_triggers += 1
+        if sat.snr_single >= self.snr_min-2:
+          sat_reduced_triggers += 1
+    self.single_trigger_by_const = self.const_data.snr_single >= self.snr_min
+    self.single_trigger_by_sat = sat_triggers >= 1
+    self.single_trigger_by_comparison = sat_reduced_triggers >= 3
 
   def make_const(self, options, const=None):
     if const is None:
       const = np.array(range(self.n_sat))
     considered_sat = const[np.where(np.array(self) == None, False, True)]
-    self.const_data = FormatedData([], None, None, None, *options)
+    self.const_data = FormatedData([], None, None, None, *options[:-1])
 
     for item in self.const_data.__dict__.keys():
       ## Non modified items. They stay as :
@@ -677,7 +692,7 @@ class AllSatData(list):
         ###############################################################################################################
         # Values summed
         elif item in ["compton_b_rate", "single_b_rate", "s_eff_compton", "s_eff_single", "single", "single_cr",
-                      "compton", "compton_cr", "n_sat_detect", "calor", "dsssd", "side", "compton_trig", "single_trig"]:
+                      "compton", "compton_cr", "n_sat_detect", "calor", "dsssd", "side"]:
           temp_val = 0
           for num_sat in considered_sat:
             temp_val += getattr(self[num_sat], item)
@@ -756,7 +771,7 @@ class AllSatData(list):
         ###############################################################################################################
         # Values summed
         elif item in ["compton_b_rate", "single_b_rate", "s_eff_compton", "s_eff_single", "single", "single_cr",
-                      "compton", "compton_cr", "n_sat_detect", "calor", "dsssd", "side", "compton_trig", "single_trig"]:
+                      "compton", "compton_cr", "n_sat_detect", "calor", "dsssd", "side"]:
           temp_val = 0
           for num_sat in considered_sat:
             temp_val += getattr(self[num_sat], item)
@@ -799,7 +814,7 @@ class AllSimData(list):
   Class containing all the data for 1 GRB (or other source) for a full set of trafiles
   """
 
-  def __init__(self, sim_prefix, source_ite, cat_data, mode, n_sim, sat_info, pol_analysis, sim_duration, options):
+  def __init__(self, sim_prefix, source_ite, cat_data, mode, n_sim, sat_info, pol_analysis, polsim_duration, options):
     temp_list = []
     self.n_sim_det = 0
     if type(cat_data) == list:
@@ -815,7 +830,14 @@ class AllSimData(list):
       self.best_fit_model = getattr(cat_data, f"{mode}_best_fitting_model")[source_ite].rstrip()
       self.p_flux = float(getattr(cat_data, f"{self.best_fit_model}_phtflux")[source_ite])
       # Retrieving fluence of the source [photons/cm2]
-      self.source_fluence = calc_fluence(cat_data, source_ite, options[-1]) * self.source_duration
+      self.source_fluence = calc_fluence(cat_data, source_ite, options[-2]) * self.source_duration
+    if polsim_duration.isdigit():
+      sim_duration = float(polsim_duration)
+    elif polsim_duration == "t90":
+      sim_duration = self.source_duration
+    else:
+      sim_duration = None
+      print("Warning : unusual sim duration, please check the parameter file.")
 
     self.proba_single_detec_fov = None
     self.proba_compton_image_fov = None
@@ -882,6 +904,7 @@ class AllSimData(list):
     temp_const_proba_compton_image = 0
     for sim in self:
       if sim is not None:
+
         for sat_ite, sat in enumerate(sim):
           if sat is not None:
             if sat.snr_single >= snr_min:
@@ -960,7 +983,9 @@ class AllSourceData:
     self.save_pos = True
     self.save_time = True
     self.init_correction = False
-    self.options = [self.save_pos, self.save_time, self.polarigram_bins, self.armcut, self.init_correction, self.erg_cut]
+    self.snr_min = 5
+    self.options = [self.save_pos, self.save_time, self.polarigram_bins, self.armcut, self.init_correction,
+                    self.erg_cut, self.snr_min]
 
     self.pol_data = False
     self.sat_info = [] # angles in it will be in deg
@@ -992,6 +1017,10 @@ class AllSourceData:
         self.spectra_path = line.split(" ")[1]
       elif line.startswith("@simulationsperevent"):
         self.n_sim = int(line.split(" ")[1])
+      elif line.startswith("@poltime"):
+        self.polsim_duration = line.split(" ")[1]
+      elif line.startswith("@unpoltime"):
+        self.unpolsim_duration = int(line.split(" ")[1])
       elif line.startswith("@position"):
         self.position_allowed_sim = np.array(line.split(" ")[1:], dtype=float)
       elif line.startswith("@satellite"):
@@ -1012,27 +1041,20 @@ class AllSourceData:
     self.source_with_bkg = False
     if len(lines) > 50:
       self.source_with_bkg = True
-    duration_source = []
     sim_name = ""
     source_name = ""
     for line in lines:
       if line.startswith("Geometry"):
         if line.split("Geometry")[1].strip() != self.geometry:
-          raise Warning("Different geometry files in parfile dans sourcefile")
+          raise Warning("Different geometry files in parfile and sourcefile")
       elif line.startswith("Run"):
         sim_name = line.split(" ")[1]
-      elif line.startswith(f"{sim_name}.Time"):
-        duration_source.append(float(line.split("Time")[1].strip()))
       elif line.startswith(f"{sim_name}.Source"):
         source_name = line.split(" ")[1]
       elif line.startswith(f"{source_name}.Polarization") and not self.pol_data:
         self.pol_data = True
       elif line.startswith(f"{source_name}.Polarization") and self.pol_data:
         raise Warning("Sourcefile contains 2 polarized sources")
-    if (np.array(duration_source) / duration_source[0] != np.ones((len(duration_source)))).all():
-      raise Warning("Simulations in sourcefile seem to have different duration")
-    self.sim_duration = duration_source[0]
-
     # Setting the background files
     self.bkgdata = []
     flist = subprocess.getoutput("ls {}_*".format(bkg_prefix)).split("\n")
@@ -1050,13 +1072,10 @@ class AllSourceData:
       cat_data = self.extract_sources(self.sim_prefix)
       self.namelist = cat_data[0]
       self.n_source = len(self.namelist)
-      # self.fluences = None
     else:
       cat_data = Catalog(self.cat_file, self.sttype)
       self.namelist = cat_data.name
       self.n_source = len(self.namelist)
-      # self.fluences = [calc_fluence(cat_data, source_index, erg_cut) * self.sim_duration for source_index in
-      #                 range(self.n_source)]
 
     # Extracting the informations from the simulation files
     if parallel == 'all':
@@ -1064,19 +1083,19 @@ class AllSourceData:
       with mp.Pool() as pool:
         self.alldata = pool.starmap(AllSimData, zip(repeat(self.sim_prefix), range(self.n_source), repeat(cat_data),
                                                     repeat(self.mode), repeat(self.n_sim), repeat(self.sat_info),
-                                                    repeat(self.pol_data), repeat(self.sim_duration),
+                                                    repeat(self.pol_data), repeat(self.polsim_duration),
                                                     repeat(self.options)))
     elif type(parallel) == int:
       print(f"Parallel extraction of the data with {parallel} threads")
       with mp.Pool(parallel) as pool:
         self.alldata = pool.starmap(AllSimData, zip(repeat(self.sim_prefix), range(self.n_source), repeat(cat_data),
                                                     repeat(self.mode), repeat(self.n_sim), repeat(self.sat_info),
-                                                    repeat(self.pol_data), repeat(self.sim_duration),
+                                                    repeat(self.pol_data), repeat(self.polsim_duration),
                                                     repeat(self.options)))
     else:
       self.alldata = [
         AllSimData(self.sim_prefix, source_ite, cat_data, self.mode, self.n_sim, self.sat_info, self.pol_data,
-                   self.sim_duration, self.options) for source_ite in range(self.n_source)]
+                   self.polsim_duration, self.options) for source_ite in range(self.n_source)]
 
     # Setting some informations used for obtaining the GRB count rates
     self.cat_duration = 10
@@ -1134,14 +1153,24 @@ class AllSourceData:
 
     """
     if duration is None:
-      duration = self.sim_duration
+      if self.polsim_duration.isdigit():
+        duration = float(self.polsim_duration)
+      elif self.polsim_duration == "t90":
+        duration = None
+        print("Warning : impossible to load the t90 as sim duration is no catalog is given.")
+      else:
+        duration = None
+        print("Warning : unusual sim duration, please check the parameter file.")
+
     flist = subprocess.getoutput("ls {}_*".format(prefix)).split("\n")
     source_names = []
     if len(flist) >= 1 and not flist[0].startswith("ls: cannot access"):
-      temp_list = []
+      temp_sourcelist = []
+      temp_durationlist = []
       for file in flist:
-        temp_list.append(file.split("_")[1])
-      source_names = list(set(temp_list))
+        temp_sourcelist.append(file.split("_")[1])
+        temp_durationlist.append()
+      source_names = list(set(temp_sourcelist))
     return [source_names, [duration] * len(source_names)]
 
   def azi_angle_corr(self):
@@ -1181,7 +1210,7 @@ class AllSourceData:
             #   sim.analyze(source.source_duration, source.source_fluence, self.source_with_bkg, fit_bounds, const_analysis)
             # else:
             #   sim.analyze(source.source_duration, source.source_fluence, self.source_with_bkg, fit_bounds, const_analysis)
-        source.set_probabilities(n_sat=self.n_sat, snr_min=5, n_image_min=50)
+        source.set_probabilities(n_sat=self.n_sat, snr_min=self.snr_min, n_image_min=50)
 
   def make_const(self, const=None):
     """
@@ -1405,6 +1434,32 @@ class AllSourceData:
         cbar.set_label("GRB Duration - T90 (s)", rotation=270, labelpad=20)
       plt.show()
 
+
+  def count_triggers(self):
+    """
+
+    """
+    total_in_view = 0
+    single_trigger_by_const = 0
+    single_trigger_by_sat = 0
+    single_trigger_by_comparison = 0
+    for source in self.alldata:
+      if source is not None:
+        for sim in source:
+          if sim is not None:
+            total_in_view += 1
+            if sim.single_trigger_by_const:
+              single_trigger_by_const += 1
+            if sim.single_trigger_by_sat:
+              single_trigger_by_sat += 1
+            if sim.single_trigger_by_comparison:
+              single_trigger_by_comparison += 1
+    print("The number of trigger for single events for the different technics are the following :")
+    print(f"   For a {self.snr_min} sigma trigger with the number of hits summed over the constellation : {single_trigger_by_const} triggers")
+    print(f"   For a {self.snr_min} sigma trigger on at least one of the satellites : {single_trigger_by_sat} triggers")
+    print(f"   For a {self.snr_min-2} sigma trigger in at least 3 satellites of the constellation : {single_trigger_by_comparison} triggers")
+    print(f" Over the {total_in_view} GRBs simulated in the constellation field of view")
+
   def mdp_histogram(self, selected_sat="const", mdp_threshold=1, cumul=1, n_bins=30, x_scale='linear', y_scale="log"):
     """
     Display and histogram representing the number of grb of a certain mdp per year
@@ -1607,10 +1662,12 @@ class AllSourceData:
     ax1.legend()
     plt.show()
 
-  def peak_flux_distri(self, snr_type="compton", selected_sat="const", snr_min=5, n_bins=30, x_scale='log', y_scale="log"):
+  def peak_flux_distri(self, snr_type="compton", selected_sat="const", snr_min=None, n_bins=30, x_scale='log', y_scale="log"):
     """
 
     """
+    if snr_min is None:
+      snr_min = self.snr_min
     hist_pflux = []
     for source in self.alldata:
       if source is not None:
@@ -1636,11 +1693,11 @@ class AllSourceData:
                       hist_pflux.append(source.p_flux)
 
     if x_scale == "log":
-      if min(hist_pflux) < 1:
+      if np.min(hist_pflux) < 1:
         inf_limit = int(np.log10(min(hist_pflux))) - 1
       else:
         inf_limit = int(np.log10(min(hist_pflux)))
-      if max(hist_pflux) > 1:
+      if np.max(hist_pflux) > 1:
         sup_limit = int(np.log10(max(hist_pflux))) + 1
       else:
         sup_limit = int(np.log10(max(hist_pflux)))
