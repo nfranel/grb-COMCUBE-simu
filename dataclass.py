@@ -685,11 +685,11 @@ class AllSatData(list):
     sat_reduced_t90_triggers = 0
     for sat in self:
       if sat is not None:
-        if sat.snr_single >= self.snr_min:
+        if sat.snr_single_t90 >= self.snr_min:
           sat_t90_triggers += 1
-        if sat.snr_single >= self.snr_min-2:
+        if sat.snr_single_t90 >= self.snr_min-2:
           sat_reduced_t90_triggers += 1
-    self.single_t90_trigger_by_const = self.const_data.snr_single >= self.snr_min
+    self.single_t90_trigger_by_const = self.const_data.snr_single_t90 >= self.snr_min
     self.single_t90_trigger_by_sat = sat_t90_triggers >= 1
     self.single_t90_trigger_by_comparison = sat_reduced_t90_triggers >= 3
 
