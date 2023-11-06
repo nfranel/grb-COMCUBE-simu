@@ -242,9 +242,11 @@ class FormatedData:
     self.mdp = None
     self.snr_compton = None
     self.snr_single = None
+    self.snr_compton_t90 = None
+    self.snr_single_t90 = None
     ##############################################################
     # Attributes that are used while making const
-    self.n_sat_receivingect = 1
+    self.n_sat_detect = 1
     # Attributes that are used while determining the deterctor where the interaction occured
     ####
     ####
@@ -259,7 +261,7 @@ class FormatedData:
     #                   Reading data from file                   #
     ##############################################################
     if len(data_list) == 0: # Empty object for the constellation making
-      self.n_sat_receivingect = 0
+      self.n_sat_detect = 0
     else:
       # Change it so that it's not saved here !
       dec_world_frame, ra_world_frame, source_name, num_sim, num_sat = fname2decra(data_list[0])
@@ -566,20 +568,26 @@ class FormatedData:
           self.mdp = MDP((self.compton_cr - self.compton_b_rate) * source_duration, self.compton_b_rate * source_duration, self.mu100)
         else:
           self.mdp = MDP(self.compton_cr * source_duration, self.compton_b_rate * source_duration, self.mu100)
+    # Calculation of SNR with 1sec of integration
     if source_with_bkg:
-      snr_compton_val = SNR(self.compton_cr * source_duration, self.compton_b_rate * source_duration)
-      snr_single_val = SNR(self.single_cr * source_duration, self.single_b_rate * source_duration)
+      snr__compton_val = SNR(self.compton_cr, self.compton_b_rate)
+      snr_single_t90_val = SNR(self.single_cr, self.single_b_rate)
     else:
-      snr_compton_val = SNR((self.compton_cr + self.compton_b_rate) * source_duration, self.compton_b_rate * source_duration)
-      snr_single_val = SNR((self.single_cr + self.single_b_rate) * source_duration, self.single_b_rate * source_duration)
-    if snr_compton_val < 0:
+      snr__compton_val = SNR((self.compton_cr + self.compton_b_rate), self.compton_b_rate)
+      snr_single_t90_val = SNR((self.single_cr + self.single_b_rate), self.single_b_rate)
+    # Saving the snr for different integration times
+    if snr__compton_val < 0:
+      self.snr_compton_t90 = 0
       self.snr_compton = 0
     else:
-      self.snr_compton = snr_compton_val
-    if snr_single_val < 0:
+      self.snr_compton_t90 = snr__compton_val * np.sqrt(source_duration)
+      self.snr_compton = snr__compton_val
+    if snr_single_t90_val < 0:
+      self.snr_single_t90 = 0
       self.snr_single = 0
     else:
-      self.snr_single = snr_single_val
+      self.snr_single_t90 = snr_single_t90_val * np.sqrt(source_duration)
+      self.snr_single = snr_single_t90_val
 
 
 class AllSatData(list):
@@ -624,9 +632,12 @@ class AllSatData(list):
     self.const_data = None
     # Attributes meaningful after the analysis : trigger information
     self.snr_min = options[-1]
-    self.single_trigger_by_const = None
-    self.single_trigger_by_sat = None
-    self.single_trigger_by_comparison = None
+    self.single_instant_trigger_by_const = None
+    self.single_instant_trigger_by_sat = None
+    self.single_instant_trigger_by_comparison = None
+    self.single_t90_trigger_by_const = None
+    self.single_t90_trigger_by_sat = None
+    self.single_t90_trigger_by_comparison = None
 
   @staticmethod
   def get_keys():
@@ -647,7 +658,7 @@ class AllSatData(list):
     """
     Proceed to the analysis of polarigrams for all satellites and constellation (unless specified)
     """
-    # First step of the analyze, to obtain the polarigrams, and values for polarization and snr
+    ### First step of the analyze, to obtain the polarigrams, and values for polarization and snr
     for sat_ite, sat in enumerate(self):
       if sat is not None:
         sat.analyze(f"{source_message}sat {sat_ite}", source_duration, source_fluence, source_with_bkg, fit_bounds)
@@ -655,18 +666,32 @@ class AllSatData(list):
       self.const_data.analyze(f"{source_message}const", source_duration, source_fluence, source_with_bkg, fit_bounds)
     else:
       print("Constellation not set : please use make_const method if you want to analyze the constellation's results")
-    # Second step of the analyze to determine if there is a trigger for single events
-    sat_triggers = 0
-    sat_reduced_triggers = 0
+
+    ### Second step of the analyze to determine if there is a trigger for single events
+    # Instantaneous trigger
+    sat_instant_triggers = 0
+    sat_reduced_instant_triggers = 0
     for sat in self:
       if sat is not None:
         if sat.snr_single >= self.snr_min:
-          sat_triggers += 1
+          sat_instant_triggers += 1
         if sat.snr_single >= self.snr_min-2:
-          sat_reduced_triggers += 1
-    self.single_trigger_by_const = self.const_data.snr_single >= self.snr_min
-    self.single_trigger_by_sat = sat_triggers >= 1
-    self.single_trigger_by_comparison = sat_reduced_triggers >= 3
+          sat_reduced_instant_triggers += 1
+    self.single_instant_trigger_by_const = self.const_data.snr_single >= self.snr_min
+    self.single_instant_trigger_by_sat = sat_instant_triggers >= 1
+    self.single_instant_trigger_by_comparison = sat_reduced_instant_triggers >= 3
+    # t90 trigger
+    sat_t90_triggers = 0
+    sat_reduced_t90_triggers = 0
+    for sat in self:
+      if sat is not None:
+        if sat.snr_single >= self.snr_min:
+          sat_t90_triggers += 1
+        if sat.snr_single >= self.snr_min-2:
+          sat_reduced_t90_triggers += 1
+    self.single_t90_trigger_by_const = self.const_data.snr_single >= self.snr_min
+    self.single_t90_trigger_by_sat = sat_t90_triggers >= 1
+    self.single_t90_trigger_by_comparison = sat_reduced_t90_triggers >= 3
 
   def make_const(self, options, const=None):
     if const is None:
@@ -683,7 +708,7 @@ class AllSatData(list):
       # "snr_compton", "snr_single"]
       # [None, None, None, None, None, None, None, None, None, None, None]
       if item not in ["num_sat", "dec_sat_frame", "ra_sat_frame", "expected_pa", "fits", "mu100", "pa", "fit_compton_cr", "pa_err",
-                      "mu100_err", "fit_compton_cr_err", "fit_goodness", "mdp", "snr_compton", "snr_single"]:
+                      "mu100_err", "fit_compton_cr_err", "fit_goodness", "mdp", "snr_compton", "snr_single", "snr_compton_t90", "snr_single_t90"]:
         ###############################################################################################################
         # Values supposed to be the same for all sat and all sims so it doesn't change and is set using 1 sat
         # Except for polarigram error, its size is the same but the values depend on the fits
@@ -747,7 +772,7 @@ class AllSatData(list):
       # "snr_compton", "snr_single"]
       # [None, None, None, None, None, None, None, None, None, None, None]
       if item not in ["fits", "mu100", "pa", "fit_compton_cr", "pa_err", "mu100_err", "fit_compton_cr_err",
-                      "fit_goodness", "mdp", "snr_compton", "snr_single"]:
+                      "fit_goodness", "mdp", "snr_compton", "snr_single", "snr_compton_t90", "snr_single_t90"]:
         ###############################################################################################################
         # Non modified items set to None
         if item in ["num_sat", "dec_sat_frame", "ra_sat_frame", "expected_pa"]:
@@ -907,15 +932,15 @@ class AllSimData(list):
 
         for sat_ite, sat in enumerate(sim):
           if sat is not None:
-            if sat.snr_single >= snr_min:
+            if sat.snr_single_t90 >= snr_min:
               temp_single_proba_detec[sat_ite] += 1
-            if sat.snr_compton >= snr_min:
+            if sat.snr_compton_t90 >= snr_min:
               temp_compton_proba_detec[sat_ite] += 1
             if sat.compton >= n_image_min:
               temp_proba_compton_image[sat_ite] += 1
-        if sim.const_data.snr_single >= snr_min:
+        if sim.const_data.snr_single_t90 >= snr_min:
           temp_const_single_proba_detec += 1
-        if sim.const_data.snr_compton >= snr_min:
+        if sim.const_data.snr_compton_t90 >= snr_min:
           temp_const_compton_proba_detec += 1
         if sim.const_data.compton >= n_image_min:
           temp_const_proba_compton_image += 1
@@ -1302,6 +1327,56 @@ class AllSourceData:
       printv(f" - Number of simulation in the constellation's field of view : {len(self.alldata[source_position[0]])}", verbose)
       return source_position[0]
 
+
+  def source_information(self, source_id, verbose):
+    """
+
+    """
+    if type(source_id) == int:
+      source_ite = source_id
+      source = self.alldata[source_ite]
+    elif type(source_id) == str:
+      printv("================================================", verbose)
+      printv("==            Searching the source            ==", verbose)
+      source_position = np.where(np.array(self.namelist) == source_id)[0]
+      if len(source_position) == 0:
+        printv(f"No source corresponding to {source_id}, returning None", verbose)
+        return None
+      elif len(source_position) > 1:
+        printv(
+          f"Several items have been found that matches the source name {source_id}, returning a list of the indices",
+          verbose)
+        return source_position
+      elif len(source_position) == 1:
+        source_ite = source_position[0]
+        source = self.alldata[source_ite]
+      else:
+        return None
+    else:
+      printv(f"The source id doesn't match any known structure, use the position of the source in the list or its name.", verbose)
+      return
+    printv(f"The source {self.namelist[source_ite]} is at position {source_ite} in the data list", verbose)
+    printv("==  General information about the source simulated  ==", verbose)
+    printv(f" - Source duration : {source.source_duration} s", verbose)
+    printv(f" - Source flux at peak : {source.p_flux} photons/cm²/s", verbose)
+    printv(f" - Source fluence between {self.erg_cut[0]} keV and {self.erg_cut[1]} keV : {source.source_fluence} photons/cm²", verbose)
+    printv(f" - Number of simulation in the constellation's field of view : {len(source)}", verbose)
+    printv("==  Precise information about the simulation and satellites  ==")
+    for sim_ite, sim in enumerate(source):
+      if sim is not None:
+        printv(f" - For simulation {sim_ite} in the constellation's field of view :", verbose)
+        for sat_ite, sat in enumerate(sim):
+          if sat is not None:
+            printv(f" - For satellite {sat_ite} :", verbose)
+            printv(f"   - Position : DEC - {sat.dec_sat_frame}     RA - {sat.ra_sat_frame}", verbose)
+            printv(f"   - Position :", verbose)
+          else:
+            printv(f" - Satellite {sat_ite} do not see the source.", verbose)
+      else:
+        printv(f" - For simulation {sim_ite} not in the field of view.", verbose)
+
+    return
+
   def viewing_angle_study(self):
     """
 
@@ -1440,24 +1515,38 @@ class AllSourceData:
 
     """
     total_in_view = 0
-    single_trigger_by_const = 0
-    single_trigger_by_sat = 0
-    single_trigger_by_comparison = 0
+    single_instant_trigger_by_const = 0
+    single_instant_trigger_by_sat = 0
+    single_instant_trigger_by_comparison = 0
+    single_t90_trigger_by_const = 0
+    single_t90_trigger_by_sat = 0
+    single_t90_trigger_by_comparison = 0
     for source in self.alldata:
       if source is not None:
         for sim in source:
           if sim is not None:
             total_in_view += 1
-            if sim.single_trigger_by_const:
-              single_trigger_by_const += 1
-            if sim.single_trigger_by_sat:
-              single_trigger_by_sat += 1
-            if sim.single_trigger_by_comparison:
-              single_trigger_by_comparison += 1
+            if sim.single_instant_trigger_by_const:
+              single_instant_trigger_by_const += 1
+            if sim.single_instant_trigger_by_sat:
+              single_instant_trigger_by_sat += 1
+            if sim.single_instant_trigger_by_comparison:
+              single_instant_trigger_by_comparison += 1
+            if sim.single_t90_trigger_by_const:
+              single_t90_trigger_by_const += 1
+            if sim.single_t90_trigger_by_sat:
+              single_t90_trigger_by_sat += 1
+            if sim.single_t90_trigger_by_comparison:
+              single_t90_trigger_by_comparison += 1
     print("The number of trigger for single events for the different technics are the following :")
-    print(f"   For a {self.snr_min} sigma trigger with the number of hits summed over the constellation : {single_trigger_by_const} triggers")
-    print(f"   For a {self.snr_min} sigma trigger on at least one of the satellites : {single_trigger_by_sat} triggers")
-    print(f"   For a {self.snr_min-2} sigma trigger in at least 3 satellites of the constellation : {single_trigger_by_comparison} triggers")
+    print(" == Integration time for the trigger : 1s == ")
+    print(f"   For a {self.snr_min} sigma trigger with the number of hits summed over the constellation : {single_instant_trigger_by_const} triggers")
+    print(f"   For a {self.snr_min} sigma trigger on at least one of the satellites : {single_instant_trigger_by_sat} triggers")
+    print(f"   For a {self.snr_min-2} sigma trigger in at least 3 satellites of the constellation : {single_instant_trigger_by_comparison} triggers")
+    print(" == Integration time for the trigger : T90 == ")
+    print(f"   For a {self.snr_min} sigma trigger with the number of hits summed over the constellation : {single_t90_trigger_by_const} triggers")
+    print(f"   For a {self.snr_min} sigma trigger on at least one of the satellites : {single_t90_trigger_by_sat} triggers")
+    print(f"   For a {self.snr_min-2} sigma trigger in at least 3 satellites of the constellation : {single_t90_trigger_by_comparison} triggers")
     print(f" Over the {total_in_view} GRBs simulated in the constellation field of view")
 
   def mdp_histogram(self, selected_sat="const", mdp_threshold=1, cumul=1, n_bins=30, x_scale='linear', y_scale="log"):
@@ -1528,14 +1617,14 @@ class AllSourceData:
           if sim is not None:
             if selected_sat == "const":
               if snr_type == "compton":
-                snr_list.append(sim.const_data.snr_compton)
+                snr_list.append(sim.const_data.snr_compton_t90)
               elif snr_type == "single":
-                snr_list.append(sim.const_data.snr_single)
+                snr_list.append(sim.const_data.snr_single_t90)
             else:
               if snr_type == "compton":
-                snr_list.append(sim[selected_sat].snr_compton)
+                snr_list.append(sim[selected_sat].snr_compton_t90)
               elif snr_type == "single":
-                snr_list.append(sim[selected_sat].snr_single)
+                snr_list.append(sim[selected_sat].snr_single_t90)
 
     fig, ax = plt.subplots(1, 1)
     if x_scale == "log":
@@ -1675,21 +1764,21 @@ class AllSourceData:
           if sim is not None:
             if selected_sat == "const":
               if snr_type == "compton":
-                if sim.const_data.snr_compton >= snr_min:
+                if sim.const_data.snr_compton_t90 >= snr_min:
                   hist_pflux.append(source.p_flux)
               elif snr_type == "single":
-                if sim.const_data.snr_single >= snr_min:
+                if sim.const_data.snr_single_t90 >= snr_min:
                   hist_pflux.append(source.p_flux)
             else:
               if snr_type == "compton":
                 if sim[selected_sat] is not None:
-                  if sim[selected_sat].snr_compton is not None:
-                    if sim[selected_sat].snr_compton >= snr_min:
+                  if sim[selected_sat].snr_compton_t90 is not None:
+                    if sim[selected_sat].snr_compton_t90 >= snr_min:
                       hist_pflux.append(source.p_flux)
               elif snr_type == "single":
                 if sim[selected_sat] is not None:
-                  if sim[selected_sat].snr_single is not None:
-                    if sim[selected_sat].snr_single >= snr_min:
+                  if sim[selected_sat].snr_single_t90 is not None:
+                    if sim[selected_sat].snr_single_t90 >= snr_min:
                       hist_pflux.append(source.p_flux)
 
     if x_scale == "log":
@@ -2010,14 +2099,14 @@ class AllSourceData:
             if sim is not None:
               if selected_sat == "const":
                 if snr_type == "compton":
-                  if sim.const_data.snr_compton >= snr_threshold:
-                    snr_list.append(sim.const_data.snr_compton)
+                  if sim.const_data.snr_compton_t90 >= snr_threshold:
+                    snr_list.append(sim.const_data.snr_compton_t90)
                     fluence_list.append(source.source_fluence)
                   else:
                     no_detec_fluence.append(source.source_fluence)
                 elif snr_type == "single":
-                  if sim.const_data.snr_single >= snr_threshold:
-                    snr_list.append(sim.const_data.snr_single)
+                  if sim.const_data.snr_single_t90 >= snr_threshold:
+                    snr_list.append(sim.const_data.snr_single_t90)
                     fluence_list.append(source.source_fluence)
                   else:
                     no_detec_fluence.append(source.source_fluence)
@@ -2025,18 +2114,18 @@ class AllSourceData:
               else:
                 if snr_type == "compton":
                   if sim[selected_sat] is not None:
-                    if sim[selected_sat].snr_compton is not None:
-                      if sim[selected_sat].snr_compton >= snr_threshold:
-                        snr_list.append(sim[selected_sat].snr_compton)
+                    if sim[selected_sat].snr_compton_t90 is not None:
+                      if sim[selected_sat].snr_compton_t90 >= snr_threshold:
+                        snr_list.append(sim[selected_sat].snr_compton_t90)
                         fluence_list.append(source.source_fluence)
                       else:
                         no_detec_fluence.append(source.source_fluence)
                       snr_count += 1
                 elif snr_type == "single":
                   if sim[selected_sat] is not None:
-                    if sim[selected_sat].snr_single is not None:
-                      if sim[selected_sat].snr_single >= snr_threshold:
-                        snr_list.append(sim[selected_sat].snr_single)
+                    if sim[selected_sat].snr_single_t90 is not None:
+                      if sim[selected_sat].snr_single_t90 >= snr_threshold:
+                        snr_list.append(sim[selected_sat].snr_single_t90)
                         fluence_list.append(source.source_fluence)
                       else:
                         no_detec_fluence.append(source.source_fluence)
@@ -2082,14 +2171,14 @@ class AllSourceData:
           if sim is not None:
             if selected_sat == "const":
               if snr_type == "compton":
-                if sim.const_data.snr_compton >= snr_threshold:
-                  snr_list.append(sim.const_data.snr_compton)
+                if sim.const_data.snr_compton_t90 >= snr_threshold:
+                  snr_list.append(sim.const_data.snr_compton_t90)
                   flux_list.append(self.alldata[source_ite].p_flux)
                 else:
                   no_detec_flux.append(self.alldata[source_ite].p_flux)
               elif snr_type == "single":
-                if sim.const_data.snr_single >= snr_threshold:
-                  snr_list.append(sim.const_data.snr_single)
+                if sim.const_data.snr_single_t90 >= snr_threshold:
+                  snr_list.append(sim.const_data.snr_single_t90)
                   flux_list.append(self.alldata[source_ite].p_flux)
                 else:
                   no_detec_flux.append(self.alldata[source_ite].p_flux)
@@ -2097,18 +2186,18 @@ class AllSourceData:
             else:
               if snr_type == "compton":
                 if sim[selected_sat] is not None:
-                  if sim[selected_sat].snr_compton is not None:
-                    if sim[selected_sat].snr_compton >= snr_threshold:
-                      snr_list.append(sim[selected_sat].snr_compton)
+                  if sim[selected_sat].snr_compton_t90 is not None:
+                    if sim[selected_sat].snr_compton_t90 >= snr_threshold:
+                      snr_list.append(sim[selected_sat].snr_compton_t90)
                       flux_list.append(self.alldata[source_ite].p_flux)
                     else:
                       no_detec_flux.append(self.alldata[source_ite].p_flux)
                     snr_count += 1
               elif snr_type == "single":
                 if sim[selected_sat] is not None:
-                  if sim[selected_sat].snr_single is not None:
-                    if sim[selected_sat].snr_single >= snr_threshold:
-                      snr_list.append(sim[selected_sat].snr_single)
+                  if sim[selected_sat].snr_single_t90 is not None:
+                    if sim[selected_sat].snr_single_t90 >= snr_threshold:
+                      snr_list.append(sim[selected_sat].snr_single_t90)
                       flux_list.append(self.alldata[source_ite].p_flux)
                     else:
                       no_detec_flux.append(self.alldata[source_ite].p_flux)
@@ -2154,18 +2243,18 @@ class AllSourceData:
           if sim is not None:
             if snr_type == "compton":
               if sim[selected_sat] is not None:
-                if sim[selected_sat].snr_compton is not None:
-                  if sim[selected_sat].snr_compton >= snr_threshold:
-                    snr_list.append(sim[selected_sat].snr_compton)
+                if sim[selected_sat].snr_compton_t90 is not None:
+                  if sim[selected_sat].snr_compton_t90 >= snr_threshold:
+                    snr_list.append(sim[selected_sat].snr_compton_t90)
                     angle_list.append(sim[selected_sat].dec_sat_frame)
                   else:
                     no_detec_angle.append(sim[selected_sat].dec_sat_frame)
                   snr_count += 1
             elif snr_type == "single":
               if sim[selected_sat] is not None:
-                if sim[selected_sat].snr_single is not None:
-                  if sim[selected_sat].snr_single >= snr_threshold:
-                    snr_list.append(sim[selected_sat].snr_single)
+                if sim[selected_sat].snr_single_t90 is not None:
+                  if sim[selected_sat].snr_single_t90 >= snr_threshold:
+                    snr_list.append(sim[selected_sat].snr_single_t90)
                     angle_list.append(sim[selected_sat].dec_sat_frame)
                   else:
                     no_detec_angle.append(sim[selected_sat].dec_sat_frame)
@@ -2204,22 +2293,22 @@ class AllSourceData:
         for sim in source:
           if sim is not None:
             if selected_sat == "const":
-              if sim.const_data.snr_compton >= snr_threshold and sim.const_data.mdp <= mdp_threshold:
+              if sim.const_data.snr_compton_t90 >= snr_threshold and sim.const_data.mdp <= mdp_threshold:
                 mdp_list.append(sim.const_data.mdp * 100)
-                snr_list.append(sim.const_data.snr_compton)
+                snr_list.append(sim.const_data.snr_compton_t90)
               else:
                 no_detec[0].append(sim.const_data.mdp * 100)
-                no_detec[1].append(sim.const_data.snr_compton)
+                no_detec[1].append(sim.const_data.snr_compton_t90)
               count += 1
             else:
               if sim[selected_sat] is not None:
-                if sim[selected_sat].snr_compton is not None:
-                  if sim[selected_sat].snr_compton >= snr_threshold and sim[selected_sat].mdp <= mdp_threshold:
+                if sim[selected_sat].snr_compton_t90 is not None:
+                  if sim[selected_sat].snr_compton_t90 >= snr_threshold and sim[selected_sat].mdp <= mdp_threshold:
                     mdp_list.append(sim[selected_sat].mdp * 100)
-                    snr_list.append(sim[selected_sat].snr_compton)
+                    snr_list.append(sim[selected_sat].snr_compton_t90)
                   else:
                     no_detec[0].append(sim[selected_sat].mdp * 100)
-                    no_detec[1].append(sim[selected_sat].snr_compton)
+                    no_detec[1].append(sim[selected_sat].snr_compton_t90)
                   count += 1
 
       distrib, ax1 = plt.subplots(1, 1, figsize=(8, 6))
