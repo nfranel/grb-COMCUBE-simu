@@ -485,7 +485,7 @@ def eff_area_compton_func(theta, angle_lim, func_type="cos", duty=1.):
       return 0
 
 
-def eff_area_sinlge_func(theta, angle_lim, func_type="data", duty=True):
+def eff_area_single_func(theta, angle_lim, func_type="data", duty=True):
   """
   Returns a value of the effective area for spectrometry based on interpolation from values obtained from different reception angle relative to the instrument's zenith
   This is an approximation as the values used are obtained for monoenergetic simulations - grbs are not and sensitivity of the instrument depends on energy

@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib as mpl
-from funcmod import decra2tp, horizonAngle, eff_area_pola_func, eff_area_spectro_func, duty_calc
+from funcmod import decra2tp, horizonAngle, eff_area_compton_func, eff_area_single_func, duty_calc
 
 plt.rcParams.update({'font.size': 20})
 
@@ -42,14 +42,14 @@ def fov_const(parfile, num_val=500, dutymode=True, mode="polarization", show=Tru
       for ite in range(n_sat):
         dutyval = duty_calc(inc_list[ite])
         print(dutyval)
-        detection[ite] = np.array([[eff_area_pola_func(decra2tp(theta, phi, sat_info[ite], unit="rad")[0], sat_info[ite][2], func_type="FoV", duty=dutyval) for phi in phi_world] for theta in theta_world])
-        detection_pola[ite] = np.array([[eff_area_pola_func(decra2tp(theta, phi, sat_info[ite], unit="rad")[0], sat_info[ite][2], func_type="cos", duty=dutyval) for phi in phi_world] for theta in theta_world])
-        detection_spectro[ite] = np.array([[eff_area_spectro_func(decra2tp(theta, phi, sat_info[ite], unit="rad")[0], sat_info[ite][2], func_type="data", duty=dutyval) for phi in phi_world] for theta in theta_world])
+        detection[ite] = np.array([[eff_area_compton_func(decra2tp(theta, phi, sat_info[ite], unit="rad")[0], sat_info[ite][2], func_type="FoV", duty=dutyval) for phi in phi_world] for theta in theta_world])
+        detection_pola[ite] = np.array([[eff_area_compton_func(decra2tp(theta, phi, sat_info[ite], unit="rad")[0], sat_info[ite][2], func_type="cos", duty=dutyval) for phi in phi_world] for theta in theta_world])
+        detection_spectro[ite] = np.array([[eff_area_single_func(decra2tp(theta, phi, sat_info[ite], unit="rad")[0], sat_info[ite][2], func_type="data", duty=dutyval) for phi in phi_world] for theta in theta_world])
     else:
       for ite in range(n_sat):
-        detection[ite] = np.array([[eff_area_pola_func(decra2tp(theta, phi, sat_info[ite], unit="rad")[0], sat_info[ite][2], func_type="FoV", duty=dutyval) for phi in phi_world] for theta in theta_world])
-        detection_pola[ite] = np.array([[eff_area_pola_func(decra2tp(theta, phi, sat_info[ite], unit="rad")[0], sat_info[ite][2], func_type="cos", duty=dutyval) for phi in phi_world] for theta in theta_world])
-        detection_spectro[ite] = np.array([[eff_area_spectro_func(decra2tp(theta, phi, sat_info[ite], unit="rad")[0], sat_info[ite][2], func_type="data", duty=dutyval) for phi in phi_world] for theta in theta_world])
+        detection[ite] = np.array([[eff_area_compton_func(decra2tp(theta, phi, sat_info[ite], unit="rad")[0], sat_info[ite][2], func_type="FoV", duty=dutyval) for phi in phi_world] for theta in theta_world])
+        detection_pola[ite] = np.array([[eff_area_compton_func(decra2tp(theta, phi, sat_info[ite], unit="rad")[0], sat_info[ite][2], func_type="cos", duty=dutyval) for phi in phi_world] for theta in theta_world])
+        detection_spectro[ite] = np.array([[eff_area_single_func(decra2tp(theta, phi, sat_info[ite], unit="rad")[0], sat_info[ite][2], func_type="data", duty=dutyval) for phi in phi_world] for theta in theta_world])
 
     detec_sum = np.sum(detection, axis=0)
     detec_sum_pola = np.sum(detection_pola, axis=0)

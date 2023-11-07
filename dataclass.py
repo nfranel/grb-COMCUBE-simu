@@ -1,7 +1,7 @@
 # Autor Nathan Franel
 # Date 15/03/2023
 # Version 1 :
-# Creation of the class and modules, mainly based on work from Adrien Laviron
+# Creation of the class and modules
 
 from funcmod import *
 from catalogext import Catalog
@@ -13,8 +13,6 @@ import matplotlib as mpl
 import matplotlib.colors as colors
 import multiprocessing as mp
 from itertools import repeat
-# import numpy as np
-# import gzip
 
 mpl.use('Qt5Agg')
 # plt.rcParams.update({'font.size': 20})
@@ -734,7 +732,7 @@ class AllSatData(list):
         # Values stored in a 2D array that have to be initiated and treated so that no error occur
         elif item in ["compton_firstpos", "compton_secpos", "single_pos"]:
           if len(considered_sat) == 1:
-            if len(getattr(self[considered_sat[0]], item))==0:
+            if len(getattr(self[considered_sat[0]], item)) == 0:
               setattr(self.const_data, item, np.array([]))
             else:
               setattr(self.const_data, item, getattr(self[considered_sat[0]], item))
@@ -1401,7 +1399,7 @@ class AllSourceData:
                                                           self.sat_info[ite][2], func_type="cos") for phi in phi_world]
                                       for
                                       theta in theta_world])
-      detection_spectro[ite] = np.array([[eff_area_sinlge_func(
+      detection_spectro[ite] = np.array([[eff_area_single_func(
         decra2tp(theta, phi, self.sat_info[ite])[0], self.sat_info[ite][2], func_type="data") for phi in
         phi_world] for theta in theta_world])
 
