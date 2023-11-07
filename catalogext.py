@@ -95,7 +95,7 @@ class Catalog:
     items = [i.strip() for i in header.split(sttype[3])]
     c = 0  # Compteur d'Empty
     for i in range(len(items)):
-      if items[i] is "":
+      if items[i] == "":
         items[i] = "Empty{}".format(c)
         c += 1
     for item in items:
