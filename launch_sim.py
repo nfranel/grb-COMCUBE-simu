@@ -30,9 +30,8 @@ def vprint(s, v, l):
 
 ### Physics functions and class Catalog
 
-from trafile import *
-
-
+from funcmod import *
+from catalogext import Catalog
 
 ### System functions
 
