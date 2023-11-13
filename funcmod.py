@@ -451,11 +451,11 @@ def duty_calc(inclination):
     else:
       return 0.65
   else:
-    if inclination == 5:
+    if inclination == 5 or inclination == 0:
       return 1.
     elif inclination == 45:
       return 0.67
-    elif inclination == 90:
+    elif inclination == 83 or inclination == 82.5:
       return 0.5
 
 
@@ -471,7 +471,8 @@ def eff_area_compton_func(theta, angle_lim, func_type="cos", duty=1.):
     return 0
   if func_type == "cos":
     if theta < angle_lim:
-      ampl = 5.5
+      # ampl = 5.5
+      ampl = 1
       ang_freq = 0.222
       phi0 = 0.76
       y_off_set = 2.5

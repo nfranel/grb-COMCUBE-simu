@@ -12,7 +12,7 @@ def coor(i, om, nu):
     return x, y, z
 
 
-def trajectory(inc, ohm, nsat):
+def trajectory(inc, ohm, nsat, alt):
     fig = plt.figure()
     ax = fig.add_subplot(projection='3d')
 
@@ -22,7 +22,7 @@ def trajectory(inc, ohm, nsat):
     ax.axis('off')
     ax.grid(visible=None)
 
-    r = 0.93
+    r = (6371 - alt) / 6371
     x = []
     y = []
     z = []
@@ -59,38 +59,11 @@ def trajectory(inc, ohm, nsat):
     fig.show()
 
 mpl.rcParams.update({'font.size': 22})
-# trajectory([45, 45, 90], [0, 180, 0], [12, 12, 12])
-# trajectory([5, 5, 45], [0, 180, 0], [12, 12, 12])
 
-trajectory([45, 45, 90], [0, 180, 0], [8, 8, 8])
-trajectory([5, 5, 45], [0, 180, 0], [8, 8, 8])
+trajectory([0, 0, 0], [0, 0, 0], [9, 9, 9], 400)
+trajectory([5, 5, 45], [0, 180, 0], [9, 9, 9], 400)
+trajectory([0, 45, 83], [0, 0, 0], [9, 9, 9], 400)
 
-
-# fig = plt.axes(projection='3d')
-# fig.plot([0, 1], [0, 0], [0, 0], c="black")
-# fig.plot([0, 0], [0, 1], [0, 0], c="black")
-# fig.plot([0, 0], [0, 0], [0, 1], c="black")
-# fig.axis('off')
-# fig.grid(visible=None)
-# r = 0.93
-# x = []
-# y = []
-# z = []
-# n_ite_eq = 100
-# for theta in np.linspace(-np.pi/2, np.pi/2, int(n_ite_eq/2)):
-#     if theta == -np.pi/2 or theta == np.pi/2:
-#         phi_list = [0]
-#     else:
-#         phi_list = np.linspace(0, 2 * np.pi, int(np.cos(theta) * n_ite_eq))
-#     for phi in phi_list:
-#         x.append(r * np.cos(phi) * np.cos(theta))
-#         y.append(r * np.sin(phi) * np.cos(theta))
-#         z.append(r * np.sin(theta))
-# fig.scatter(x, y, z, s=1, c='slategrey', alpha=0.1)
-# x1, y1, z1 = coor(np.deg2rad(0), np.deg2rad(0), np.linspace(0, np.pi/3, 3))
-# xl1, yl1, zl1 = coor(np.deg2rad(0), np.deg2rad(0), np.linspace(0, 2 * np.pi, 100))
-# fig.scatter3D(x1, y1, z1, s=40, c="blue")
-# fig.plot(xl1, yl1, zl1, c="blue", label=f'Inclination : {0}° \nRA of the ascending node : {0}°')
-# fig.legend(bbox_to_anchor=(0.1, 1.15), loc='upper left')
-# fig.set(xlabel="x", ylabel="y", zlabel="z")
-# plt.show()
+trajectory([0, 0, 0], [0, 0, 0], [9, 9, 9], 500)
+trajectory([5, 5, 45], [0, 180, 0], [9, 9, 9], 500)
+trajectory([0, 45, 82.5], [0, 0, 0], [9, 9, 9], 500)

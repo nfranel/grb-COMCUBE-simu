@@ -6,7 +6,7 @@ init_time = time()
 bkg = "./backgrounds/bkg"  # _background_sat0_0000_90.0_0.0.inc1.id1.extracted.tra"
 param = "../quicktest-grb/polGBM.par"
 # param = "../fulltest-grb/polGBM.par"
-erg = (100, 460)
+erg = (10, 1000)
 arm = 180
 test = AllSourceData(bkg, param, erg, arm, parallel=10)
 test.make_const()
