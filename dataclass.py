@@ -861,6 +861,7 @@ class AllSimData(list):
       self.LC_p_flux_64 = float(cat_data.flux_64[source_ite])
       # Retrieving fluence of the source [photons/cm2]
       self.source_fluence = calc_fluence(cat_data, source_ite, options[-2]) * self.source_duration
+      # print(self.source_fluence, cat_data.fluence)
     if polsim_duration.isdigit():
       sim_duration = float(polsim_duration)
     elif polsim_duration == "t90":
