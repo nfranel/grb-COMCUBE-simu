@@ -1,11 +1,9 @@
-#!/home/adrien/anaconda3/bin/python
-
 """
 Multi-threaded automated MEGAlib runner
 """
 
 __version__ = "alpha"
-__author__ = "Adrien Laviron modified by Nathan Franel"
+__author__ = "Nathan Franel"
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -49,11 +47,6 @@ def genCommands(args):
     elif line.startswith("@revancfgfile"): args.rcf = line.split(" ")[1]
     elif line.startswith("@geometry") and args.geometry is None: args.geometry = line.split(" ")[1]
     elif line.startswith("@prefix") and args.prefix is None: args.prefix = line.split(" ")[1]
-#    #effective area
-#    elif line.startswith("@angle") and not hasattr(args, "theta") and not hasattr(args, "phi"): args.angle = [(float(e.split("_")[0]), float(e.split("_")[1])) for e in line.split(" ")[1:]]
-#    elif line.startswith("@theta") and not hasattr(args, "angle"): args.theta = [float(e) for e in line.split(" ")[1:]]
-#    elif line.startswith("@phi") and not hasattr(args, "angle"): args.phi = [float(e) for e in line.split(" ")[1:]]
-#    elif line.startswith("@energy"): args.energy = [float(e) for e in line.split(" ")[1:]] #keV
     #grb catalog
     elif line.startswith("@instrument"): args.instrument = line.split(" ")[1]
     elif line.startswith("@mode"): args.mode = line.split(" ")[1]
@@ -69,9 +62,6 @@ def genCommands(args):
       if len(temp) == 3:#satellite pointing
         dat = [temp[0], temp[1], horizonAngle(temp[2])]
       else:#satellite orbital parameters
-        #inclination, omega, nu = map(np.deg2rad, temp[:3]) #rad
-        #thetasat = np.arccos(np.sin(inclination)*np.cos(nu)) #rad
-        #phisat = np.arctan2( (np.cos(nu)*np.cos(inclination)*np.cos(omega)-np.sin(nu)*np.sin(omega)) , (-np.sin(nu)*np.cos(omega)-np.cos(nu)*np.cos(inclination)*np.sin(omega)) ) #rad
         # Extracting inclination, ohm, omega, respectively the inclination, the right ascention of the ascending node and the argument of periapsis
         inclination, ohm, omega = map(np.deg2rad, temp[:3])
         thetasat = np.arccos(np.sin(inclination)*np.sin(omega)) #rad
@@ -79,21 +69,6 @@ def genCommands(args):
         dat = [thetasat, phisat, horizonAngle(temp[3])]
       if hasattr(args, "satellites"): args.satellites.append(dat)
       else: args.satellites = [dat]
-    #elif line.startswith("@"): args.
-  #print(args)
-#  if args.type == "EffectiveArea":
-#    if args.geometry is not None and args.prefix is not None and hasattr(args, "csf") and hasattr(args, "rcf") and hasattr(args, "energy") and (hasattr(args, "angle") or (hasattr(args, "theta") and hasattr(args, "phi"))):
-#      if hasattr(args, "angle"):
-#        for e in args.energy:
-#          for a in args.angle:
-#            args.commands.append((not(args.nocosima), not(args.norevan), e, a))
-#      else:
-#        for e in args.energy:
-#          for t in args.theta:
-#            for p in args.phi:
-#              args.commands.append((not(args.nocosima), not(args.norevan), e, t, p))
-#    else:
-#      vprint("At least one key-word is missing for an effective area simulation. Check parameter file.", __verbose__, 0)
   if args.type == "GRBCatalog":
     missing, attributes = [], ["instrument", "sttype", "file", "spectrafilepath", "simulationsperevent", "position", "satellite"]
     for a in attributes:
@@ -121,6 +96,8 @@ def genCommands(args):
         spectrumfile = "{}{}_spectrum.dat".format(args.spectrafilepath, c.name[i])
         model = getattr(c, "{}_best_fitting_model".format(args.mode))[i].strip()
         phtflux = getattr(c, "{}_phtflux".format(model))[i]
+        pht_mflx = getattr(c, "{}_phtflux".format(getattr(c, "flnc_best_fitting_model")[i].strip()))[i]
+        pht_pflx = getattr(c, "{}_phtflux".format(getattr(c, "pflx_best_fitting_model")[i].strip()))[i]
         if not(spectrumfile in os.listdir(args.spectrafilepath)):
           logE = np.logspace(1, 3, 100)#energy (log scale)
           with open(spectrumfile, "w") as f:
@@ -152,7 +129,8 @@ def genCommands(args):
             else:
               vprint("Could not find best fit model for {} (indicated {}). Aborting this GRB.".format(c.name[i], model), __verbose__, 0)
               return
-            f.write("# Measured flux: {} ph/cm2/s in the 10-1000 keV band\n".format(phtflux))
+            f.write("# Measured mean flux: {} ph/cm2/s in the 10-1000 keV band\n".format(pht_mflx))
+            f.write("# Measured peak flux: {} ph/cm2/s in the 10-1000 keV band\n".format(pht_pflx))
             f.write("\nIP LOGLOG\n\n")
             for E in logE:
               f.write("DP {} {}\n".format(E, fun(E)))
@@ -209,32 +187,6 @@ def maketmpsf(command, args, pid):
   """
   fname = "tmp_{}.source".format(pid)
   sname = makeSimName(args, command)
-#  if args.type == "EffectiveArea":
-#    with open(args.csf) as f:
-#      lines = f.read().split("\n")
-#    with open(fname, "w") as f:
-#      run, source = "", ""
-#      for line in lines:
-#        if line.startswith("Geometry"):
-#          f.write("Geometry {}".format(args.geometry))
-#        elif line.startswith("Run"):
-#          run = line.split(" ")[-1]
-#          f.write(line)
-#        elif line.startswith("{}.FileName".format(run)):
-#          f.write("{}.FileName {}".format(run, sname))
-#        elif line.startswith("{}.Source"):
-#          source = line.split(" ")[-1]
-#          f.write(line)
-#        elif line.startswith("{}.Beam".format(source)):
-#          if hasattr(args, "angle"):
-#            f.write("{}.Beam FarFieldPointSource {} {}".format(source, command[3][0], command[3][1]))
-#          else:
-#            f.write("{}.Beam FarFieldPointSource {} {}".format(source, command[3], command[4]))
-#        elif line.startswith("{}.Spectrum".format(source)):
-#          f.write("{}.Spectrum Mono {}".format(source, command[2]))
-#        else: f.write(line)
-#        f.write("\n")
-#    return fname
   if args.type == "GRBCatalog":
     c = Catalog(args.file, args.sttype)
     with open(args.csf) as f:

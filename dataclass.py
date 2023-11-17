@@ -605,21 +605,21 @@ class AllSatData(list):
     for num_sat in range(self.n_sat):
       flist = subprocess.getoutput("ls {}_sat{}_{:04d}_*".format(source_prefix, num_sat, num_sim)).split("\n")
       if len(flist) == 2:
-        temp_list.append(FormatedData(flist, sat_info[num_sat], num_sat, sim_duration, *options[:-1]))
+        temp_list.append(FormatedData(flist, sat_info[num_sat], num_sat, sim_duration, *options))
         self.n_sat_receiving += 1
         self.loading_count += 2
       elif len(flist) == 1:
         if flist[0].startswith("ls: cannot access"):
           temp_list.append(None)
         elif pol_analysis:
-          temp_list.append(FormatedData(flist, sat_info[num_sat], sim_duration, num_sat, *options[:-1]))
+          temp_list.append(FormatedData(flist, sat_info[num_sat], sim_duration, num_sat, *options))
           self.n_sat_receiving += 1
           self.pol_analysis = False
           self.loading_count += 1
           print(
             f'WARNING : Polarization analysis is expected but the wrong number of trafile has been found, no polarization data were extracted : {flist}')
         else:
-          temp_list.append(FormatedData(flist, sat_info[num_sat], sim_duration, num_sat, *options[:-1]))
+          temp_list.append(FormatedData(flist, sat_info[num_sat], sim_duration, num_sat, *options))
           self.n_sat_receiving += 1
           self.pol_analysis = False
           self.loading_count += 1
@@ -628,14 +628,6 @@ class AllSatData(list):
     list.__init__(self, temp_list)
     # Attribute meaningful after the creation of the constellation
     self.const_data = None
-    # Attributes meaningful after the analysis : trigger information
-    self.snr_min = options[-1]
-    self.single_instant_trigger_by_const = None
-    self.single_instant_trigger_by_sat = None
-    self.single_instant_trigger_by_comparison = None
-    self.single_t90_trigger_by_const = None
-    self.single_t90_trigger_by_sat = None
-    self.single_t90_trigger_by_comparison = None
 
   @staticmethod
   def get_keys():
@@ -665,37 +657,11 @@ class AllSatData(list):
     else:
       print("Constellation not set : please use make_const method if you want to analyze the constellation's results")
 
-    ### Second step of the analyze to determine if there is a trigger for single events
-    # Instantaneous trigger
-    sat_instant_triggers = 0
-    sat_reduced_instant_triggers = 0
-    for sat in self:
-      if sat is not None:
-        if sat.snr_single >= self.snr_min:
-          sat_instant_triggers += 1
-        if sat.snr_single >= self.snr_min-2:
-          sat_reduced_instant_triggers += 1
-    self.single_instant_trigger_by_const = self.const_data.snr_single >= self.snr_min
-    self.single_instant_trigger_by_sat = sat_instant_triggers >= 1
-    self.single_instant_trigger_by_comparison = sat_reduced_instant_triggers >= 3
-    # t90 trigger
-    sat_t90_triggers = 0
-    sat_reduced_t90_triggers = 0
-    for sat in self:
-      if sat is not None:
-        if sat.snr_single_t90 >= self.snr_min:
-          sat_t90_triggers += 1
-        if sat.snr_single_t90 >= self.snr_min-2:
-          sat_reduced_t90_triggers += 1
-    self.single_t90_trigger_by_const = self.const_data.snr_single_t90 >= self.snr_min
-    self.single_t90_trigger_by_sat = sat_t90_triggers >= 1
-    self.single_t90_trigger_by_comparison = sat_reduced_t90_triggers >= 3
-
   def make_const(self, options, const=None):
     if const is None:
       const = np.array(range(self.n_sat))
     considered_sat = const[np.where(np.array(self) == None, False, True)]
-    self.const_data = FormatedData([], None, None, None, *options[:-1])
+    self.const_data = FormatedData([], None, None, None, *options)
 
     for item in self.const_data.__dict__.keys():
       ## Non modified items. They stay as :
@@ -843,25 +809,21 @@ class AllSimData(list):
     if type(cat_data) == list:
       self.source_name = cat_data[0][source_ite]
       self.source_duration = float(cat_data[1][source_ite])
-      self.spec_p_flux = None
       self.best_fit_model = None
+      self.best_fit_p_flux = None
+      self.best_fit_mean_flux = None
       self.source_fluence = None
-      self.LC_p_flux_1024 = None
-      self.LC_p_flux_256 = None
-      self.LC_p_flux_64 = None
     else:
       self.source_name = cat_data.name[source_ite]
       self.source_duration = float(cat_data.t90[source_ite])
-      # Retrieving pflux : the photon flux at the peak flux of the burst [photons/cm2/s]
+      # Retrieving pflux and mean flux : the photon flux at the peak flux (or mean photon flux) of the burst [photons/cm2/s]
       self.best_fit_model = getattr(cat_data, f"{mode}_best_fitting_model")[source_ite].rstrip()
-      self.spec_p_flux = float(getattr(cat_data, f"{self.best_fit_model}_phtflux")[source_ite])
-      # Retrieving the peak flux in the lightcurves detected by GBM between 10 and 1000 keV ONLY
-      self.LC_p_flux_1024 = float(cat_data.flux_1024[source_ite])
-      self.LC_p_flux_256 = float(cat_data.flux_256[source_ite])
-      self.LC_p_flux_64 = float(cat_data.flux_64[source_ite])
+      self.best_fit_p_flux = float(getattr(cat_data, f"{getattr(cat_data, 'pflx_best_fitting_model')[source_ite].rstrip()}_phtflux")[source_ite])
+      self.best_fit_mean_flux = float(getattr(cat_data, f"{getattr(cat_data, 'flnc_best_fitting_model')[source_ite].rstrip()}_phtflux")[source_ite])
       # Retrieving fluence of the source [photons/cm2]
-      self.source_fluence = calc_fluence(cat_data, source_ite, options[-2]) * self.source_duration
-      # print(self.source_fluence, cat_data.fluence)
+      self.source_fluence = calc_fluence(cat_data, source_ite, options[-1]) * self.source_duration
+      # print("pflx", self.best_fit_p_flux)
+      # print(self.best_fit_mean_flux, "  --  " , self.best_fit_mean_flux * self.source_duration, "  -  ", self.source_fluence)
     if polsim_duration.isdigit():
       sim_duration = float(polsim_duration)
     elif polsim_duration == "t90":
@@ -870,6 +832,7 @@ class AllSimData(list):
       sim_duration = None
       print("Warning : unusual sim duration, please check the parameter file.")
 
+    # These probabilities use a lot of memory, Make it differently ?
     self.proba_single_detec_fov = None
     self.proba_compton_image_fov = None
     self.const_single_proba_detec_fov = None
@@ -935,7 +898,6 @@ class AllSimData(list):
     temp_const_proba_compton_image = 0
     for sim in self:
       if sim is not None:
-
         for sat_ite, sat in enumerate(sim):
           if sat is not None:
             if sat.snr_single_t90 >= snr_min:
@@ -1016,7 +978,7 @@ class AllSourceData:
     self.init_correction = False
     self.snr_min = 5
     self.options = [self.save_pos, self.save_time, self.polarigram_bins, self.armcut, self.init_correction,
-                    self.erg_cut, self.snr_min]
+                    self.erg_cut]
 
     self.pol_data = False
     self.sat_info = [] # angles in it will be in deg
@@ -1328,7 +1290,7 @@ class AllSourceData:
       printv(f"The source {source_name} has been found at position {source_position[0]}, returning this position as an integer", verbose)
       printv("==  Additionnal information about the source  ==", verbose)
       printv(f" - Source duration : {self.alldata[source_position[0]].source_duration} s", verbose)
-      printv(f" - Source flux at peak : {self.alldata[source_position[0]].spec_p_flux} photons/cm²/s", verbose)
+      printv(f" - Source flux at peak : {self.alldata[source_position[0]].best_fit_p_flux} photons/cm²/s", verbose)
       printv(f" - Source fluence between {self.erg_cut[0]} keV and {self.erg_cut[1]} keV : {self.alldata[source_position[0]].source_fluence} photons/cm²", verbose)
       printv(f" - Number of simulation in the constellation's field of view : {len(self.alldata[source_position[0]])}", verbose)
       return source_position[0]
@@ -1364,7 +1326,7 @@ class AllSourceData:
     printv(f"The source {self.namelist[source_ite]} is at position {source_ite} in the data list", verbose)
     printv("==  General information about the source simulated  ==", verbose)
     printv(f" - Source duration : {source.source_duration} s", verbose)
-    printv(f" - Source flux at peak : {source.spec_p_flux} photons/cm²/s", verbose)
+    printv(f" - Source flux at peak : {source.best_fit_p_flux} photons/cm²/s", verbose)
     printv(f" - Source fluence between {self.erg_cut[0]} keV and {self.erg_cut[1]} keV : {source.source_fluence} photons/cm²", verbose)
     printv(f" - Number of simulation in the constellation's field of view : {len(source)}", verbose)
     printv("==  Precise information about the simulation and satellites  ==")
@@ -1521,119 +1483,89 @@ class AllSourceData:
 
     """
     total_in_view = 0
+    # Setting 1s mean triggers counter
     single_instant_trigger_by_const = 0
     single_instant_trigger_by_sat = 0
     single_instant_trigger_by_comparison = 0
-
+    # Setting 1s peak triggers counter
+    single_peak_trigger_by_const = 0
+    single_peak_trigger_by_sat = 0
+    single_peak_trigger_by_comparison = 0
+    # Setting T90 mean triggers counter
     single_t90_trigger_by_const = 0
     single_t90_trigger_by_sat = 0
     single_t90_trigger_by_comparison = 0
-
-    single_GBMpflux_trigger_1024ms_by_const = 0
-    single_GBMpflux_trigger_1024ms_by_sat = 0
-    single_GBMpflux_trigger_1024ms_by_comparison = 0
-
-    single_GBMpflux_trigger_256ms_by_const = 0
-    single_GBMpflux_trigger_256ms_by_sat = 0
-    single_GBMpflux_trigger_256ms_by_comparison = 0
-
-    single_GBMpflux_trigger_64ms_by_const = 0
-    single_GBMpflux_trigger_64ms_by_sat = 0
-    single_GBMpflux_trigger_64ms_by_comparison = 0
 
     for source in self.alldata:
       if source is not None:
         for sim in source:
           if sim is not None:
             total_in_view += 1
-            # Summing for simulated values
-            if sim.single_instant_trigger_by_const:
-              single_instant_trigger_by_const += 1
-            if sim.single_instant_trigger_by_sat:
-              single_instant_trigger_by_sat += 1
-            if sim.single_instant_trigger_by_comparison:
-              single_instant_trigger_by_comparison += 1
-            if sim.single_t90_trigger_by_const:
-              single_t90_trigger_by_const += 1
-            if sim.single_t90_trigger_by_sat:
-              single_t90_trigger_by_sat += 1
-            if sim.single_t90_trigger_by_comparison:
-              single_t90_trigger_by_comparison += 1
-
-            # Calculating with GBM pflux
-            sat_t90_triggers_1024 = 0
-            sat_reduced_t90_triggers_1024 = 0
-            sat_t90_triggers_256 = 0
-            sat_reduced_t90_triggers_256 = 0
-            sat_t90_triggers_64 = 0
-            sat_reduced_t90_triggers_64 = 0
+            ## Setting the trigger count to 0
+            # Instantaneous trigger
+            sat_instant_triggers = 0
+            sat_reduced_instant_triggers = 0
+            # Peak trigger
+            sat_peak_triggers = 0
+            sat_reduced_peak_triggers = 0
+            # t90 trigger
+            sat_t90_triggers = 0
+            sat_reduced_t90_triggers = 0
+            # Calculation for the individual sats
             for sat in sim:
               if sat is not None:
-                snr_1024 = SNR(source.LC_p_flux_1024 * 1.024 * sat.s_eff_single, sat.single_b_rate*1.024)
-                snr_256 = SNR(source.LC_p_flux_256 * 0.256 * sat.s_eff_single, sat.single_b_rate*0.256)
-                snr_64 = SNR(source.LC_p_flux_64 * 0.064 * sat.s_eff_single, sat.single_b_rate*0.064)
-                if snr_1024 >= self.snr_min:
-                  sat_t90_triggers_1024 += 1
-                if snr_1024 >= self.snr_min - 2:
-                  sat_reduced_t90_triggers_1024 += 1
-                if snr_256 >= self.snr_min:
-                  sat_t90_triggers_256 += 1
-                if snr_256 >= self.snr_min-2:
-                  sat_reduced_t90_triggers_256 += 1
-                if snr_64 >= self.snr_min:
-                  sat_t90_triggers_64 += 1
-                if snr_64 >= self.snr_min-2:
-                  sat_reduced_t90_triggers_64 += 1
-            snr_1024 = SNR(source.LC_p_flux_1024 * 1.024 * sim.const_data.s_eff_single + sim.const_data.single_b_rate * 1.024, sim.const_data.single_b_rate * 1.024)
-            snr_256 = SNR(source.LC_p_flux_256 * 0.256 * sim.const_data.s_eff_single + sim.const_data.single_b_rate * 0.256, sim.const_data.single_b_rate * 0.256)
-            snr_64 = SNR(source.LC_p_flux_64 * 0.064 * sim.const_data.s_eff_single + sim.const_data.single_b_rate * 0.064, sim.const_data.single_b_rate * 0.064)
-            # print(source.LC_p_flux_1024, source.LC_p_flux_256, source.LC_p_flux_64)
-            # print(snr_1024, snr_256, snr_64)
-
-            # Summing for GBM pflux
-            if snr_1024 >= self.snr_min:
-              single_GBMpflux_trigger_1024ms_by_const += 1
-            if sat_t90_triggers_1024 >= 1:
-              single_GBMpflux_trigger_1024ms_by_sat += 1
-            if sat_reduced_t90_triggers_1024 >= 3:
-              single_GBMpflux_trigger_1024ms_by_comparison += 1
-
-            if snr_256 >= self.snr_min:
-              single_GBMpflux_trigger_256ms_by_const += 1
-            if sat_t90_triggers_256 >= 1:
-              single_GBMpflux_trigger_256ms_by_sat += 1
-            if sat_reduced_t90_triggers_256 >= 3:
-              single_GBMpflux_trigger_256ms_by_comparison += 1
-
-            if snr_64 >= self.snr_min:
-              single_GBMpflux_trigger_64ms_by_const += 1
-            if sat_t90_triggers_64 >= 1:
-              single_GBMpflux_trigger_64ms_by_sat += 1
-            if sat_reduced_t90_triggers_64 >= 3:
-              single_GBMpflux_trigger_64ms_by_comparison += 1
+                if sat.snr_single >= self.snr_min:
+                  sat_instant_triggers += 1
+                if sat.snr_single >= self.snr_min - 2:
+                  sat_reduced_instant_triggers += 1
+                sat_peak_snr = SNR(rescale_GBM_peak_flux(source.best_fit_p_flux, source.best_fit_mean_flux, sat.single_cr), sat.single_b_rate)
+                if sat_peak_snr >= self.snr_min:
+                  sat_peak_triggers += 1
+                if sat_peak_snr >= self.snr_min - 2:
+                  sat_reduced_peak_triggers += 1
+                if sat.snr_single_t90 >= self.snr_min:
+                  sat_t90_triggers += 1
+                if sat.snr_single_t90 >= self.snr_min - 2:
+                  sat_reduced_t90_triggers += 1
+            # Calculation for the whole constellation
+            const_peak_snr = SNR(rescale_GBM_peak_flux(source.best_fit_p_flux, source.best_fit_mean_flux, sim.const_data.single_cr), sim.const_data.single_b_rate)
+            # Summing for simulated values
+            # 1s mean triggers
+            if sim.const_data.snr_single >= self.snr_min:
+              single_instant_trigger_by_const += 1
+            if sat_instant_triggers >= 1:
+              single_instant_trigger_by_sat += 1
+            if sat_reduced_instant_triggers >= 3:
+              single_instant_trigger_by_comparison += 1
+            # 1s peak triggers
+            if const_peak_snr >= self.snr_min:
+              single_peak_trigger_by_const += 1
+            if sat_peak_triggers >= 1:
+              single_peak_trigger_by_sat += 1
+            if sat_reduced_peak_triggers >= 3:
+              single_peak_trigger_by_comparison += 1
+            # T90 mean triggers
+            if sim.const_data.snr_single_t90 >= self.snr_min:
+              single_t90_trigger_by_const += 1
+            if sat_t90_triggers >= 1:
+              single_t90_trigger_by_sat += 1
+            if sat_reduced_t90_triggers >= 3:
+              single_t90_trigger_by_comparison += 1
 
     print("The number of trigger for single events for the different technics are the following :")
-    print(" == Integration time for the trigger : 1s == ")
+    print(" == Integration time for the trigger : 1s, mean flux == ")
     print(f"   For a {self.snr_min} sigma trigger with the number of hits summed over the constellation : {single_instant_trigger_by_const} triggers")
     print(f"   For a {self.snr_min} sigma trigger on at least one of the satellites : {single_instant_trigger_by_sat} triggers")
     print(f"   For a {self.snr_min-2} sigma trigger in at least 3 satellites of the constellation : {single_instant_trigger_by_comparison} triggers")
-    print(" == Integration time for the trigger : T90 == ")
+    print(" == Integration time for the trigger : T90, mean flux == ")
     print(f"   For a {self.snr_min} sigma trigger with the number of hits summed over the constellation : {single_t90_trigger_by_const} triggers")
     print(f"   For a {self.snr_min} sigma trigger on at least one of the satellites : {single_t90_trigger_by_sat} triggers")
     print(f"   For a {self.snr_min-2} sigma trigger in at least 3 satellites of the constellation : {single_t90_trigger_by_comparison} triggers")
     print("The number of trigger using GBM pflux for an energy range between 10keV and 1MeV are the following :")
-    print(" == Integration time for the trigger : 1.024s == ")
-    print(f"   For a {self.snr_min} sigma trigger with the number of hits summed over the constellation : {single_GBMpflux_trigger_1024ms_by_const} triggers")
-    print(f"   For a {self.snr_min} sigma trigger on at least one of the satellites : {single_GBMpflux_trigger_1024ms_by_sat} triggers")
-    print(f"   For a {self.snr_min-2} sigma trigger in at least 3 satellites of the constellation : {single_GBMpflux_trigger_1024ms_by_comparison} triggers")
-    print(" == Integration time for the trigger : 0.256s == ")
-    print(f"   For a {self.snr_min} sigma trigger with the number of hits summed over the constellation : {single_GBMpflux_trigger_256ms_by_const} triggers")
-    print(f"   For a {self.snr_min} sigma trigger on at least one of the satellites : {single_GBMpflux_trigger_256ms_by_sat} triggers")
-    print(f"   For a {self.snr_min-2} sigma trigger in at least 3 satellites of the constellation : {single_GBMpflux_trigger_256ms_by_comparison} triggers")
-    print(" == Integration time for the trigger : 0.064s == ")
-    print(f"   For a {self.snr_min} sigma trigger with the number of hits summed over the constellation : {single_GBMpflux_trigger_64ms_by_const} triggers")
-    print(f"   For a {self.snr_min} sigma trigger on at least one of the satellites : {single_GBMpflux_trigger_64ms_by_sat} triggers")
-    print(f"   For a {self.snr_min-2} sigma trigger in at least 3 satellites of the constellation : {single_GBMpflux_trigger_64ms_by_comparison} triggers")
+    print(" == Integration time for the trigger : 1s, peak flux == ")
+    print(f"   For a {self.snr_min} sigma trigger with the number of hits summed over the constellation : {single_peak_trigger_by_const} triggers")
+    print(f"   For a {self.snr_min} sigma trigger on at least one of the satellites : {single_peak_trigger_by_sat} triggers")
+    print(f"   For a {self.snr_min-2} sigma trigger in at least 3 satellites of the constellation : {single_peak_trigger_by_comparison} triggers")
     print("=============================================")
     print(f" Over the {total_in_view} GRBs simulated in the constellation field of view")
 
@@ -1854,21 +1786,21 @@ class AllSourceData:
             if selected_sat == "const":
               if snr_type == "compton":
                 if sim.const_data.snr_compton_t90 >= snr_min:
-                  hist_pflux.append(source.spec_p_flux)
+                  hist_pflux.append(source.best_fit_p_flux)
               elif snr_type == "single":
                 if sim.const_data.snr_single_t90 >= snr_min:
-                  hist_pflux.append(source.spec_p_flux)
+                  hist_pflux.append(source.best_fit_p_flux)
             else:
               if snr_type == "compton":
                 if sim[selected_sat] is not None:
                   if sim[selected_sat].snr_compton_t90 is not None:
                     if sim[selected_sat].snr_compton_t90 >= snr_min:
-                      hist_pflux.append(source.spec_p_flux)
+                      hist_pflux.append(source.best_fit_p_flux)
               elif snr_type == "single":
                 if sim[selected_sat] is not None:
                   if sim[selected_sat].snr_single_t90 is not None:
                     if sim[selected_sat].snr_single_t90 >= snr_min:
-                      hist_pflux.append(source.spec_p_flux)
+                      hist_pflux.append(source.best_fit_p_flux)
 
     if x_scale == "log":
       if np.min(hist_pflux) < 1:
@@ -1898,7 +1830,7 @@ class AllSourceData:
     det_prob_sky_list = []
     for source in self.alldata:
       if source is not None:
-        p_flux_list.append(source.spec_p_flux)
+        p_flux_list.append(source.best_fit_p_flux)
         if selected_sat == "const":
           det_prob_fov_list.append(source.const_single_proba_detec_fov)
           det_prob_sky_list.append(source.const_single_proba_detec_sky)
@@ -1927,7 +1859,7 @@ class AllSourceData:
     comp_im_prob_sky_list = []
     for source in self.alldata:
       if source is not None:
-        p_flux_list.append(source.spec_p_flux)
+        p_flux_list.append(source.best_fit_p_flux)
         if selected_sat == "const":
           comp_im_prob_fov_list.append(source.const_proba_compton_image_fov)
           comp_im_prob_sky_list.append(source.const_proba_compton_image_sky)
@@ -2093,18 +2025,18 @@ class AllSourceData:
               if sim.const_data.mdp is not None:
                 if sim.const_data.mdp <= mdp_threshold:
                   mdp_list.append(sim.const_data.mdp * 100)
-                  flux_list.append(source.spec_p_flux)
+                  flux_list.append(source.best_fit_p_flux)
                 else:
-                  no_detec_flux.append(source.spec_p_flux)
+                  no_detec_flux.append(source.best_fit_p_flux)
               mdp_count += 1
             else:
               if sim[selected_sat] is not None:
                 if sim[selected_sat].mdp is not None:
                   if sim[selected_sat].mdp <= mdp_threshold:
                     mdp_list.append(sim[selected_sat].mdp * 100)
-                    flux_list.append(source.spec_p_flux)
+                    flux_list.append(source.best_fit_p_flux)
                   else:
-                    no_detec_flux.append(source.spec_p_flux)
+                    no_detec_flux.append(source.best_fit_p_flux)
                 mdp_count += 1
 
     distrib, ax1 = plt.subplots(1, 1, figsize=(8, 6))
@@ -2262,15 +2194,15 @@ class AllSourceData:
               if snr_type == "compton":
                 if sim.const_data.snr_compton_t90 >= snr_threshold:
                   snr_list.append(sim.const_data.snr_compton_t90)
-                  flux_list.append(self.alldata[source_ite].spec_p_flux)
+                  flux_list.append(self.alldata[source_ite].best_fit_p_flux)
                 else:
-                  no_detec_flux.append(self.alldata[source_ite].spec_p_flux)
+                  no_detec_flux.append(self.alldata[source_ite].best_fit_p_flux)
               elif snr_type == "single":
                 if sim.const_data.snr_single_t90 >= snr_threshold:
                   snr_list.append(sim.const_data.snr_single_t90)
-                  flux_list.append(self.alldata[source_ite].spec_p_flux)
+                  flux_list.append(self.alldata[source_ite].best_fit_p_flux)
                 else:
-                  no_detec_flux.append(self.alldata[source_ite].spec_p_flux)
+                  no_detec_flux.append(self.alldata[source_ite].best_fit_p_flux)
               snr_count += 1
             else:
               if snr_type == "compton":
@@ -2278,18 +2210,18 @@ class AllSourceData:
                   if sim[selected_sat].snr_compton_t90 is not None:
                     if sim[selected_sat].snr_compton_t90 >= snr_threshold:
                       snr_list.append(sim[selected_sat].snr_compton_t90)
-                      flux_list.append(self.alldata[source_ite].spec_p_flux)
+                      flux_list.append(self.alldata[source_ite].best_fit_p_flux)
                     else:
-                      no_detec_flux.append(self.alldata[source_ite].spec_p_flux)
+                      no_detec_flux.append(self.alldata[source_ite].best_fit_p_flux)
                     snr_count += 1
               elif snr_type == "single":
                 if sim[selected_sat] is not None:
                   if sim[selected_sat].snr_single_t90 is not None:
                     if sim[selected_sat].snr_single_t90 >= snr_threshold:
                       snr_list.append(sim[selected_sat].snr_single_t90)
-                      flux_list.append(self.alldata[source_ite].spec_p_flux)
+                      flux_list.append(self.alldata[source_ite].best_fit_p_flux)
                     else:
-                      no_detec_flux.append(self.alldata[source_ite].spec_p_flux)
+                      no_detec_flux.append(self.alldata[source_ite].best_fit_p_flux)
                     snr_count += 1
 
     distrib, ax1 = plt.subplots(1, 1, figsize=(8, 6))

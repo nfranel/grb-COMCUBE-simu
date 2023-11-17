@@ -327,6 +327,13 @@ def decra2orbitalparam(thetasat, phisat):
   return np.deg2rad(inclination), np.deg2rad(ohm), np.deg2rad(omega)
 
 
+def rescale_GBM_peak_flux(GBM_peak_flux, GBM_mean_flux, real_mean_flux):
+  """
+
+  """
+  return GBM_peak_flux * real_mean_flux / GBM_mean_flux
+
+
 def SNR(S, B, C=0):
   """
   Calculates the signal to noise ratio of a GRB in a time bin
