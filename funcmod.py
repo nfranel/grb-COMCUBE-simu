@@ -331,9 +331,8 @@ def rescale_cr_to_GBM_pf(cr, GBM_mean_flux, real_mean_flux, GBM_peak_flux):
   """
 
   """
-  ergcut_ratio = real_mean_flux / GBM_mean_flux
   flux_ratio = GBM_peak_flux / GBM_mean_flux
-  return cr * ergcut_ratio * flux_ratio
+  return cr * flux_ratio
 
 
 def SNR(S, B, C=0):

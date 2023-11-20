@@ -1488,8 +1488,8 @@ class AllSourceData:
                   sat_instant_triggers += 1
                 if sat.snr_single >= self.snr_min - 2:
                   sat_reduced_instant_triggers += 1
-                sat_peak_snr = SNR(rescale_cr_to_GBM_pf(sat.single_cr, source.best_fit_mean_flux, source.source_fluence / source.source_duration, source.best_fit_p_flux), sat.single_b_rate)
-                print("rescaled cr : ", rescale_cr_to_GBM_pf(sat.single_cr, source.best_fit_mean_flux, source.source_fluence / source.source_duration, source.best_fit_p_flux))
+                sat_peak_snr = SNR(rescale_cr_to_GBM_pf(sat.single_cr, source.best_fit_mean_flux, source.best_fit_p_flux), sat.single_b_rate)
+                print("rescaled cr : ", rescale_cr_to_GBM_pf(sat.single_cr, source.best_fit_mean_flux, source.best_fit_p_flux))
                 print("initial cr : ", sat.single_cr)
                 print("peak flux : ", source.best_fit_p_flux)
                 print("mean flux : ", source.best_fit_mean_flux)
@@ -1505,11 +1505,9 @@ class AllSourceData:
                 if sat.snr_single_t90 >= self.snr_min - 2:
                   sat_reduced_t90_triggers += 1
             # Calculation for the whole constellation
-            const_peak_snr = SNR(rescale_cr_to_GBM_pf(sim.const_data.single_cr, source.best_fit_mean_flux, source.source_fluence / source.source_duration, source.best_fit_p_flux), sim.const_data.single_b_rate)
+            const_peak_snr = SNR(rescale_cr_to_GBM_pf(sim.const_data.single_cr, source.best_fit_mean_flux, source.best_fit_p_flux), sim.const_data.single_b_rate)
             print()
-            print("rescaled cr : ", rescale_cr_to_GBM_pf(sim.const_data.single_cr, source.best_fit_mean_flux,
-                                                         source.source_fluence / source.source_duration,
-                                                         source.best_fit_p_flux))
+            print("rescaled cr : ", rescale_cr_to_GBM_pf(sim.const_data.single_cr, source.best_fit_mean_flux, source.best_fit_p_flux))
             print("initial cr : ", sim.const_data.single_cr)
             print("peak flux : ", source.best_fit_p_flux)
             print("reduced peak flux : ", source.best_fit_p_flux * source.source_fluence / source.source_duration / source.best_fit_mean_flux)

@@ -16,10 +16,10 @@ test.verif_const()
 # test.alldata[0][0][0].show()
 test.count_triggers()
 # test.source_information(0)
-test.spectral_information()
 print("=======================================")
 print("processing time : ", time()-init_time, "seconds")
 print("=======================================")
+test.spectral_information()
 
 # sim = test.alldata[0][0]
 # sim0 = test.alldata[0][0][0]

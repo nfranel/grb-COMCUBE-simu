@@ -141,5 +141,30 @@ class Catalog:
     Displays the spectral information of the GRBs including the proportion of different best fit models and the
     corresponding parameters
     """
-    for ite in self.name:
-      print(self.t90[ite])
+
+    for ite in range(len(self.name)):
+      model = self.flnc_best_fitting_model[ite].rstrip()
+      if model == "flnc_plaw":
+        self.tofloat('flnc_plaw_ampl')
+        self.tofloat('flnc_plaw_index')
+        self.tofloat('flnc_plaw_pivot')
+
+      elif model == "flnc_comp":
+        self.tofloat('flnc_comp_ampl')
+        self.tofloat('flnc_comp_index')
+        self.tofloat('flnc_comp_epeak')
+        self.tofloat('flnc_comp_pivot')
+
+      elif model == "flnc_band":
+        self.tofloat('flnc_band_ampl')
+        self.tofloat('flnc_band_alpha')
+        self.tofloat('flnc_band_beta')
+        self.tofloat('flnc_band_epeak')
+
+      elif model == "flnc_sbpl":
+        self.tofloat('flnc_sbpl_ampl')
+        self.tofloat('flnc_sbpl_indx1')
+        self.tofloat('flnc_sbpl_indx2')
+        self.tofloat('flnc_sbpl_brken')
+        self.tofloat('flnc_sbpl_brksc')
+        self.tofloat('flnc_sbpl_pivot')
