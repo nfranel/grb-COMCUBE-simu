@@ -568,11 +568,11 @@ class FormatedData:
           self.mdp = MDP(self.compton_cr * source_duration, self.compton_b_rate * source_duration, self.mu100)
     # Calculation of SNR with 1sec of integration
     if source_with_bkg:
+      snr_compton_val = SNR(self.compton_cr - self.compton_b_rate, self.compton_b_rate)
+      snr_single_t90_val = SNR(self.single_cr - self.single_b_rate, self.single_b_rate)
+    else:
       snr_compton_val = SNR(self.compton_cr, self.compton_b_rate)
       snr_single_t90_val = SNR(self.single_cr, self.single_b_rate)
-    else:
-      snr_compton_val = SNR((self.compton_cr + self.compton_b_rate), self.compton_b_rate)
-      snr_single_t90_val = SNR((self.single_cr + self.single_b_rate), self.single_b_rate)
     # Saving the snr for different integration times
     if snr_compton_val < 0:
       self.snr_compton_t90 = 0
@@ -1519,7 +1519,14 @@ class AllSourceData:
                   sat_instant_triggers += 1
                 if sat.snr_single >= self.snr_min - 2:
                   sat_reduced_instant_triggers += 1
-                sat_peak_snr = SNR(rescale_GBM_peak_flux(source.best_fit_p_flux, source.best_fit_mean_flux, sat.single_cr), sat.single_b_rate)
+                sat_peak_snr = SNR(rescale_cr_to_GBM_pf(sat.single_cr, source.best_fit_mean_flux, source.source_fluence / source.source_duration, source.best_fit_p_flux), sat.single_b_rate)
+                print("rescaled cr : ", rescale_cr_to_GBM_pf(sat.single_cr, source.best_fit_mean_flux, source.source_fluence / source.source_duration, source.best_fit_p_flux))
+                print("initial cr : ", sat.single_cr)
+                print("peak flux : ", source.best_fit_p_flux)
+                print("mean flux : ", source.best_fit_mean_flux)
+                print("mean flux in ergcut :", source.source_fluence / source.source_duration)
+                print("b_rate : ", sat.single_b_rate)
+                print("snr : ", sat_peak_snr)
                 if sat_peak_snr >= self.snr_min:
                   sat_peak_triggers += 1
                 if sat_peak_snr >= self.snr_min - 2:
@@ -1529,7 +1536,16 @@ class AllSourceData:
                 if sat.snr_single_t90 >= self.snr_min - 2:
                   sat_reduced_t90_triggers += 1
             # Calculation for the whole constellation
-            const_peak_snr = SNR(rescale_GBM_peak_flux(source.best_fit_p_flux, source.best_fit_mean_flux, sim.const_data.single_cr), sim.const_data.single_b_rate)
+            const_peak_snr = SNR(rescale_cr_to_GBM_pf(sim.const_data.single_cr, source.best_fit_mean_flux, source.source_fluence / source.source_duration, source.best_fit_p_flux), sim.const_data.single_b_rate)
+            print("rescaled cr : ", rescale_cr_to_GBM_pf(sim.const_data.single_cr, source.best_fit_mean_flux,
+                                                         source.source_fluence / source.source_duration,
+                                                         source.best_fit_p_flux))
+            print("initial cr : ", sim.const_data.single_cr)
+            print("peak flux : ", source.best_fit_p_flux)
+            print("mean flux : ", source.best_fit_mean_flux)
+            print("mean flux in ergcut :", source.source_fluence / source.source_duration)
+            print("b_rate : ", sim.const_data.single_b_rate)
+            print("snr : ", const_peak_snr)
             # Summing for simulated values
             # 1s mean triggers
             if sim.const_data.snr_single >= self.snr_min:

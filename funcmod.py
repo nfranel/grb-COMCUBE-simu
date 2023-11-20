@@ -327,22 +327,24 @@ def decra2orbitalparam(thetasat, phisat):
   return np.deg2rad(inclination), np.deg2rad(ohm), np.deg2rad(omega)
 
 
-def rescale_GBM_peak_flux(GBM_peak_flux, GBM_mean_flux, real_mean_flux):
+def rescale_cr_to_GBM_pf(cr, GBM_mean_flux, real_mean_flux, GBM_peak_flux):
   """
 
   """
-  return GBM_peak_flux * real_mean_flux / GBM_mean_flux
+  ergcut_ratio = real_mean_flux / GBM_mean_flux
+  flux_ratio = GBM_peak_flux / GBM_mean_flux
+  return cr * ergcut_ratio * flux_ratio
 
 
 def SNR(S, B, C=0):
   """
   Calculates the signal to noise ratio of a GRB in a time bin
-  :param S: number of counts in the source (background included)
+  :param S: number of counts in the source (background not included)
   :param B: expected number of background counts
   :param C: minimum number of counts in the source to consider the detection
   :returns: SNR (as defined in Sarah Antier's PhD thesis)
   """
-  return (S - B) / np.sqrt(B + C)
+  return S / np.sqrt(B + C)
 
 
 def MDP(S, B, mu100, nsigma=4.29):
