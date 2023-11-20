@@ -1296,7 +1296,7 @@ class AllSourceData:
       return source_position[0]
 
 
-  def source_information(self, source_id, verbose):
+  def source_information(self, source_id, verbose=True):
     """
 
     """
@@ -1326,10 +1326,12 @@ class AllSourceData:
     printv(f"The source {self.namelist[source_ite]} is at position {source_ite} in the data list", verbose)
     printv("==  General information about the source simulated  ==", verbose)
     printv(f" - Source duration : {source.source_duration} s", verbose)
-    printv(f" - Source flux at peak : {source.best_fit_p_flux} photons/cm²/s", verbose)
+    printv(f" - Source spectrum model : {source.best_fit_model}", verbose)
+    printv(f" - Source flux at peak (best fit) : {source.best_fit_p_flux} photons/cm²/s", verbose)
+    printv(f" - Source mean flux (best fit) : {source.best_fit_mean_flux} photons/cm²/s", verbose)
     printv(f" - Source fluence between {self.erg_cut[0]} keV and {self.erg_cut[1]} keV : {source.source_fluence} photons/cm²", verbose)
     printv(f" - Number of simulation in the constellation's field of view : {len(source)}", verbose)
-    printv("==  Precise information about the simulation and satellites  ==")
+    printv("==  Precise information about the simulation and satellites  ==", verbose)
     for sim_ite, sim in enumerate(source):
       if sim is not None:
         printv(f" - For simulation {sim_ite} in the constellation's field of view :", verbose)
@@ -1337,7 +1339,6 @@ class AllSourceData:
           if sat is not None:
             printv(f" - For satellite {sat_ite} :", verbose)
             printv(f"   - Position : DEC - {sat.dec_sat_frame}     RA - {sat.ra_sat_frame}", verbose)
-            printv(f"   - Position :", verbose)
           else:
             printv(f" - Satellite {sat_ite} do not see the source.", verbose)
       else:
@@ -1551,6 +1552,7 @@ class AllSourceData:
               single_t90_trigger_by_sat += 1
             if sat_reduced_t90_triggers >= 3:
               single_t90_trigger_by_comparison += 1
+
 
     print("The number of trigger for single events for the different technics are the following :")
     print(" == Integration time for the trigger : 1s, mean flux == ")
