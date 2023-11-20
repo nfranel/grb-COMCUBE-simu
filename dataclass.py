@@ -1545,7 +1545,9 @@ class AllSourceData:
             print("mean flux : ", source.best_fit_mean_flux)
             print("mean flux in ergcut :", source.source_fluence / source.source_duration)
             print("b_rate : ", sim.const_data.single_b_rate)
-            print("snr : ", const_peak_snr)
+            print("         snr peak : ", const_peak_snr)
+            print("         snr mean : ", sim.const_data.snr_single)
+            print()
             # Summing for simulated values
             # 1s mean triggers
             if sim.const_data.snr_single >= self.snr_min:
