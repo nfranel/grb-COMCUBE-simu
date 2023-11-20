@@ -136,7 +136,7 @@ class Catalog:
       cbar.set_label("GRB Duration - T90 (s)", rotation=270, labelpad=20)
     plt.show()
 
-  def spectral_information(self):
+  def spectral_information(self, nbins=30):
     """
     Displays the spectral information of the GRBs including the proportion of different best fit models and the
     corresponding parameters
@@ -169,9 +169,9 @@ class Catalog:
         self.tofloat('flnc_plaw_ampl')
         self.tofloat('flnc_plaw_index')
         self.tofloat('flnc_plaw_pivot')
-        plaw_ampl.append(self.flnc_plaw_ampl)
-        plaw_index.append(self.flnc_plaw_index)
-        plaw_pivot.append(self.flnc_plaw_pivot)
+        plaw_ampl.append(self.flnc_plaw_ampl[ite])
+        plaw_index.append(self.flnc_plaw_index[ite])
+        plaw_pivot.append(self.flnc_plaw_pivot[ite])
 
 
       elif model == "flnc_comp":
@@ -179,10 +179,10 @@ class Catalog:
         self.tofloat('flnc_comp_index')
         self.tofloat('flnc_comp_epeak')
         self.tofloat('flnc_comp_pivot')
-        comp_ampl.append(self.flnc_comp_ampl)
-        comp_index.append(self.flnc_comp_index)
-        comp_epeak.append(self.flnc_comp_epeak)
-        comp_pivot.append(self.flnc_comp_pivot)
+        comp_ampl.append(self.flnc_comp_ampl[ite])
+        comp_index.append(self.flnc_comp_index[ite])
+        comp_epeak.append(self.flnc_comp_epeak[ite])
+        comp_pivot.append(self.flnc_comp_pivot[ite])
 
 
       elif model == "flnc_band":
@@ -190,10 +190,10 @@ class Catalog:
         self.tofloat('flnc_band_alpha')
         self.tofloat('flnc_band_beta')
         self.tofloat('flnc_band_epeak')
-        band_ampl.append(self.flnc_band_ampl)
-        band_alpha.append(self.flnc_band_alpha)
-        band_beta.append(self.flnc_band_beta)
-        band_epeak.append(self.flnc_band_epeak)
+        band_ampl.append(self.flnc_band_ampl[ite])
+        band_alpha.append(self.flnc_band_alpha[ite])
+        band_beta.append(self.flnc_band_beta[ite])
+        band_epeak.append(self.flnc_band_epeak[ite])
 
 
       elif model == "flnc_sbpl":
@@ -203,10 +203,76 @@ class Catalog:
         self.tofloat('flnc_sbpl_brken')
         self.tofloat('flnc_sbpl_brksc')
         self.tofloat('flnc_sbpl_pivot')
-        sbpl_ampl.append(self.flnc_sbpl_ampl)
-        sbpl_indx1.append(self.flnc_sbpl_indx1)
-        sbpl_indx2.append(self.flnc_sbpl_indx2)
-        sbpl_brken.append(self.flnc_sbpl_brken)
-        sbpl_brksc.append(self.flnc_sbpl_brksc)
-        sbpl_pivot.append(self.flnc_sbpl_pivot)
+        sbpl_ampl.append(self.flnc_sbpl_ampl[ite])
+        sbpl_indx1.append(self.flnc_sbpl_indx1[ite])
+        sbpl_indx2.append(self.flnc_sbpl_indx2[ite])
+        sbpl_brken.append(self.flnc_sbpl_brken[ite])
+        sbpl_brksc.append(self.flnc_sbpl_brksc[ite])
+        sbpl_pivot.append(self.flnc_sbpl_pivot[ite])
+
+    # Plot the proportion of the different models
+    prop, ax = plt.subplots(1, 1)
+    plt.get_current_fig_manager().window.showMaximized()
+    labels = ["plaw", "comp", "band", "sbpl"]
+    print([len(plaw_ampl), len(comp_ampl), len(band_ampl), len(sbpl_ampl)])
+    ax.pie([len(plaw_ampl), len(comp_ampl), len(band_ampl), len(sbpl_ampl)], labels=labels)
+    plt.show()
+
+    # Plot the distributions of the models' parameters
+    plaw, (ax1, ax2, ax3) = plt.subplots(1, 3)
+    ax1.hist(plaw_ampl, bins=nbins)
+    ax2.hist(plaw_index, bins=nbins)
+    ax3.hist(plaw_pivot, bins=nbins)
+
+    ax1.set(xlabel="Amplitude (photon/cm2/s/keV)", ylabel="Number of GRBs", title=f"plaw parameters")
+    ax2.set(xlabel="Index", ylabel="Number of GRBs")
+    ax3.set(xlabel="Pivot energy (keV)", ylabel="Number of GRBs")
+
+    plt.show()
+
+    # Plot the distributions of the models' parameters
+    plaw, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2)
+    ax1.hist(comp_ampl, bins=nbins)
+    ax2.hist(comp_index, bins=nbins)
+    ax3.hist(comp_epeak, bins=nbins)
+    ax4.hist(comp_pivot, bins=nbins)
+
+    ax1.set(xlabel="Amplitude (photon/cm2/s/keV)", ylabel="Number of GRBs", title=f"comp parameters")
+    ax2.set(xlabel="Index", ylabel="Number of GRBs")
+    ax3.set(xlabel="Peak energy (keV)", ylabel="Number of GRBs")
+    ax4.set(xlabel="Pivot energy (keV)", ylabel="Number of GRBs")
+
+    plt.show()
+
+    # Plot the distributions of the models' parameters
+    band, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2)
+    ax1.hist(band_ampl, bins=nbins)
+    ax2.hist(band_alpha, bins=nbins)
+    ax3.hist(band_beta, bins=nbins)
+    ax4.hist(band_epeak, bins=nbins)
+
+    ax1.set(xlabel="Amplitude (photon/cm2/s/keV)", ylabel="Number of GRBs", title=f"comp parameters")
+    ax2.set(xlabel="Alpha index", ylabel="Number of GRBs")
+    ax3.set(xlabel="Beta index", ylabel="Number of GRBs")
+    ax4.set(xlabel="Peak energy (keV)", ylabel="Number of GRBs")
+
+    plt.show()
+
+    # Plot the distributions of the models' parameters
+    band, ((ax1, ax2, ax3), (ax4, ax5, ax6)) = plt.subplots(2, 3)
+    ax1.hist(sbpl_ampl, bins=nbins)
+    ax2.hist(sbpl_indx1, bins=nbins)
+    ax3.hist(sbpl_indx2, bins=nbins)
+    ax4.hist(sbpl_brken, bins=nbins)
+    ax5.hist(sbpl_brksc, bins=nbins)
+    ax6.hist(sbpl_pivot, bins=nbins)
+
+    ax1.set(xlabel="Amplitude (photon/cm2/s/keV)", ylabel="Number of GRBs", title=f"comp parameters")
+    ax2.set(xlabel="Index 1", ylabel="Number of GRBs")
+    ax3.set(xlabel="Index 2", ylabel="Number of GRBs")
+    ax4.set(xlabel="Break energy (keV)", ylabel="Number of GRBs")
+    ax5.set(xlabel="Break scale (keV)", ylabel="Number of GRBs")
+    ax6.set(xlabel="Pivot energy (keV)", ylabel="Number of GRBs")
+
+    plt.show()
 
