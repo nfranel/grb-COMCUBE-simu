@@ -4,17 +4,18 @@ from time import time
 
 init_time = time()
 bkg = "./backgrounds/bkg"  # _background_sat0_0000_90.0_0.0.inc1.id1.extracted.tra"
-# param = "../quicktest-grb/polGBM.par"
-param = "../fulltest-grb/polGBM.par"
-erg = (10, 1000)
+param = "../quicktest-grb/polGBM.par"
+# param = "../fulltest-grb/polGBM.par"
+erg = (30, 1000)
 arm = 180
-test = AllSourceData(bkg, param, erg, arm, parallel=15)
+test = AllSourceData(bkg, param, erg, arm, parallel=10)
 test.make_const()
 test.verif_const()
 test.analyze()
 test.verif_const()
-test.alldata[0][0][0].show()
+# test.alldata[0][0][0].show()
 test.count_triggers()
+# test.source_information(0)
 
 print("=======================================")
 print("processing time : ", time()-init_time, "seconds")
