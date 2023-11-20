@@ -10,7 +10,6 @@ from inspect import signature
 import matplotlib.pyplot as plt
 import subprocess
 import matplotlib as mpl
-import matplotlib.colors as colors
 import multiprocessing as mp
 from itertools import repeat
 
@@ -1447,36 +1446,6 @@ class AllSourceData:
     print(f"La surface efficace moyenne pour la polarisation est de {np.mean(np.mean(detec_sum_pola, axis=1))} cm²")
     print(f"La surface efficace moyenne pour la spectrométrie est de {np.mean(np.mean(detec_sum_spectro, axis=1))} cm²")
 
-  def grb_map_plot(self, mode="no_cm"):
-    """
-    Display the catalog GRBs position in the sky
-    """
-    if self.cat_file == "None":
-      print("No cat file has been given, the GRBs' position cannot be displayed")
-    else:
-      cat_data = Catalog(self.cat_file, self.sttype)
-      # Extracting dec and ra from catalog and transforms decimal degrees into degrees into the right frame
-      thetap = [
-        np.sum(np.array(dec.split(" ")).astype(np.float) / [1, 60, 3600]) if len(dec.split("+")) == 2 else np.sum(
-          np.array(dec.split(" ")).astype(np.float) / [1, -60, -3600]) for dec in cat_data.dec]
-      thetap = np.deg2rad(np.array(thetap))
-      phip = [np.sum(np.array(ra.split(" ")).astype(np.float) / [1, 60, 3600]) if len(ra.split("+")) == 2 else np.sum(
-        np.array(ra.split(" ")).astype(np.float) / [1, -60, -3600]) for ra in cat_data.ra]
-      phip = np.mod(np.deg2rad(np.array(phip)) + np.pi, 2 * np.pi) - np.pi
-
-      plt.subplot(111, projection="aitoff")
-      plt.xlabel("RA (°)")
-      plt.ylabel("DEC (°)")
-      plt.grid(True)
-      plt.title("Map of GRB")
-      if mode == "no_cm":
-        plt.scatter(phip, thetap, s=12, marker="*")
-      elif mode == "t90":
-        cat_data.tofloat("t90")
-        sc = plt.scatter(phip, thetap, s=12, marker="*", c=cat_data.t90, norm=colors.LogNorm())
-        cbar = plt.colorbar(sc)
-        cbar.set_label("GRB Duration - T90 (s)", rotation=270, labelpad=20)
-      plt.show()
 
 
   def count_triggers(self):
@@ -1537,11 +1506,13 @@ class AllSourceData:
                   sat_reduced_t90_triggers += 1
             # Calculation for the whole constellation
             const_peak_snr = SNR(rescale_cr_to_GBM_pf(sim.const_data.single_cr, source.best_fit_mean_flux, source.source_fluence / source.source_duration, source.best_fit_p_flux), sim.const_data.single_b_rate)
+            print()
             print("rescaled cr : ", rescale_cr_to_GBM_pf(sim.const_data.single_cr, source.best_fit_mean_flux,
                                                          source.source_fluence / source.source_duration,
                                                          source.best_fit_p_flux))
             print("initial cr : ", sim.const_data.single_cr)
             print("peak flux : ", source.best_fit_p_flux)
+            print("reduced peak flux : ", source.best_fit_p_flux * source.source_fluence / source.source_duration / source.best_fit_mean_flux)
             print("mean flux : ", source.best_fit_mean_flux)
             print("mean flux in ergcut :", source.source_fluence / source.source_duration)
             print("b_rate : ", sim.const_data.single_b_rate)
@@ -1588,6 +1559,22 @@ class AllSourceData:
     print(f"   For a {self.snr_min-2} sigma trigger in at least 3 satellites of the constellation : {single_peak_trigger_by_comparison} triggers")
     print("=============================================")
     print(f" Over the {total_in_view} GRBs simulated in the constellation field of view")
+
+
+  def grb_map_plot(self, mode="no_cm"):
+    """
+    Display the catalog GRBs position in the sky using the corresponding function in catalogext
+    """
+    cat_data = Catalog(self.cat_file, self.sttype)
+    cat_data.grb_map_plot(mode)
+
+  def spectral_information(self):
+    """
+    Displays the spectral information of the GRBs including the proportion of different best fit models and the
+    corresponding parameters
+    """
+    cat_data = Catalog(self.cat_file, self.sttype)
+    cat_data.spectral_information()
 
 
   def mdp_histogram(self, selected_sat="const", mdp_threshold=1, cumul=1, n_bins=30, x_scale='linear', y_scale="log"):

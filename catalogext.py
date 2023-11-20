@@ -1,4 +1,6 @@
 import numpy as np
+import matplotlib.pyplot as plt
+import matplotlib.colors as colors
 
 # Version 2, Created by Adrien Laviron, updated by Nathan Franel
 
@@ -109,3 +111,35 @@ class Catalog:
     List all knowns items
     """
     return list(self.__dict__.keys())[3:]
+
+  def grb_map_plot(self, mode="no_cm"):
+    """
+    Display the catalog GRBs position in the sky
+    """
+    # Extracting dec and ra from catalog and transforms decimal degrees into degrees into the right frame
+    thetap = [np.sum(np.array(dec.split(" ")).astype(np.float) / [1, 60, 3600]) if len(dec.split("+")) == 2 else np.sum(np.array(dec.split(" ")).astype(np.float) / [1, -60, -3600]) for dec in self.dec]
+    thetap = np.deg2rad(np.array(thetap))
+    phip = [np.sum(np.array(ra.split(" ")).astype(np.float) / [1, 60, 3600]) if len(ra.split("+")) == 2 else np.sum(np.array(ra.split(" ")).astype(np.float) / [1, -60, -3600]) for ra in self.ra]
+    phip = np.mod(np.deg2rad(np.array(phip)) + np.pi, 2 * np.pi) - np.pi
+
+    plt.subplot(111, projection="aitoff")
+    plt.xlabel("RA (°)")
+    plt.ylabel("DEC (°)")
+    plt.grid(True)
+    plt.title("Map of GRB")
+    if mode == "no_cm":
+      plt.scatter(phip, thetap, s=12, marker="*")
+    elif mode == "t90":
+      self.tofloat("t90")
+      sc = plt.scatter(phip, thetap, s=12, marker="*", c=self.t90, norm=colors.LogNorm())
+      cbar = plt.colorbar(sc)
+      cbar.set_label("GRB Duration - T90 (s)", rotation=270, labelpad=20)
+    plt.show()
+
+  def spectral_information(self):
+    """
+    Displays the spectral information of the GRBs including the proportion of different best fit models and the
+    corresponding parameters
+    """
+    for ite in self.name:
+      print(self.t90[ite])
