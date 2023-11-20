@@ -141,25 +141,60 @@ class Catalog:
     Displays the spectral information of the GRBs including the proportion of different best fit models and the
     corresponding parameters
     """
-
+    ## Containers for the different model parameters
+    # Powerlaw model
+    plaw_ampl = []
+    plaw_index = []
+    plaw_pivot = []
+    # Comptonized model
+    comp_ampl = []
+    comp_index = []
+    comp_epeak = []
+    comp_pivot = []
+    # Band model
+    band_ampl = []
+    band_alpha = []
+    band_beta = []
+    band_epeak = []
+    # Smoothly broken powerlaw model
+    sbpl_ampl = []
+    sbpl_indx1 = []
+    sbpl_indx2 = []
+    sbpl_brken = []
+    sbpl_brksc = []
+    sbpl_pivot = []
     for ite in range(len(self.name)):
       model = self.flnc_best_fitting_model[ite].rstrip()
       if model == "flnc_plaw":
         self.tofloat('flnc_plaw_ampl')
         self.tofloat('flnc_plaw_index')
         self.tofloat('flnc_plaw_pivot')
+        plaw_ampl.append(self.flnc_plaw_ampl)
+        plaw_index.append(self.flnc_plaw_index)
+        plaw_pivot.append(self.flnc_plaw_pivot)
+
 
       elif model == "flnc_comp":
         self.tofloat('flnc_comp_ampl')
         self.tofloat('flnc_comp_index')
         self.tofloat('flnc_comp_epeak')
         self.tofloat('flnc_comp_pivot')
+        comp_ampl.append(self.flnc_comp_ampl)
+        comp_index.append(self.flnc_comp_index)
+        comp_epeak.append(self.flnc_comp_epeak)
+        comp_pivot.append(self.flnc_comp_pivot)
+
 
       elif model == "flnc_band":
         self.tofloat('flnc_band_ampl')
         self.tofloat('flnc_band_alpha')
         self.tofloat('flnc_band_beta')
         self.tofloat('flnc_band_epeak')
+        band_ampl.append(self.flnc_band_ampl)
+        band_alpha.append(self.flnc_band_alpha)
+        band_beta.append(self.flnc_band_beta)
+        band_epeak.append(self.flnc_band_epeak)
+
 
       elif model == "flnc_sbpl":
         self.tofloat('flnc_sbpl_ampl')
@@ -168,3 +203,10 @@ class Catalog:
         self.tofloat('flnc_sbpl_brken')
         self.tofloat('flnc_sbpl_brksc')
         self.tofloat('flnc_sbpl_pivot')
+        sbpl_ampl.append(self.flnc_sbpl_ampl)
+        sbpl_indx1.append(self.flnc_sbpl_indx1)
+        sbpl_indx2.append(self.flnc_sbpl_indx2)
+        sbpl_brken.append(self.flnc_sbpl_brken)
+        sbpl_brksc.append(self.flnc_sbpl_brksc)
+        sbpl_pivot.append(self.flnc_sbpl_pivot)
+

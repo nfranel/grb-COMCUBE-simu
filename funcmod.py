@@ -327,7 +327,7 @@ def decra2orbitalparam(thetasat, phisat):
   return np.deg2rad(inclination), np.deg2rad(ohm), np.deg2rad(omega)
 
 
-def rescale_cr_to_GBM_pf(cr, GBM_mean_flux, real_mean_flux, GBM_peak_flux):
+def rescale_cr_to_GBM_pf(cr, GBM_mean_flux, GBM_peak_flux):
   """
 
   """
