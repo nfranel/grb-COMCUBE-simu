@@ -136,7 +136,7 @@ class Catalog:
       cbar.set_label("GRB Duration - T90 (s)", rotation=270, labelpad=20)
     plt.show()
 
-  def spectral_information(self, nbins=30):
+  def spectral_information(self, nbins=50):
     """
     Displays the spectral information of the GRBs including the proportion of different best fit models and the
     corresponding parameters
@@ -214,17 +214,19 @@ class Catalog:
     prop, ax = plt.subplots(1, 1)
     plt.get_current_fig_manager().window.showMaximized()
     labels = ["plaw", "comp", "band", "sbpl"]
-    print([len(plaw_ampl), len(comp_ampl), len(band_ampl), len(sbpl_ampl)])
-    ax.pie([len(plaw_ampl), len(comp_ampl), len(band_ampl), len(sbpl_ampl)], labels=labels)
+    values = [len(plaw_ampl), len(comp_ampl), len(band_ampl), len(sbpl_ampl)]
+    ax.pie(values, labels=labels, autopct=lambda x: int(19.28*x))
     plt.show()
 
     # Plot the distributions of the models' parameters
     plaw, (ax1, ax2, ax3) = plt.subplots(1, 3)
+    plt.get_current_fig_manager().window.showMaximized()
+    plt.suptitle("plaw parameters")
     ax1.hist(plaw_ampl, bins=nbins)
     ax2.hist(plaw_index, bins=nbins)
     ax3.hist(plaw_pivot, bins=nbins)
 
-    ax1.set(xlabel="Amplitude (photon/cm2/s/keV)", ylabel="Number of GRBs", title=f"plaw parameters")
+    ax1.set(xlabel="Amplitude (photon/cm2/s/keV)", ylabel="Number of GRBs")
     ax2.set(xlabel="Index", ylabel="Number of GRBs")
     ax3.set(xlabel="Pivot energy (keV)", ylabel="Number of GRBs")
 
@@ -232,12 +234,14 @@ class Catalog:
 
     # Plot the distributions of the models' parameters
     plaw, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2)
+    plt.get_current_fig_manager().window.showMaximized()
+    plt.suptitle("comp parameters")
     ax1.hist(comp_ampl, bins=nbins)
     ax2.hist(comp_index, bins=nbins)
     ax3.hist(comp_epeak, bins=nbins)
     ax4.hist(comp_pivot, bins=nbins)
 
-    ax1.set(xlabel="Amplitude (photon/cm2/s/keV)", ylabel="Number of GRBs", title=f"comp parameters")
+    ax1.set(xlabel="Amplitude (photon/cm2/s/keV)", ylabel="Number of GRBs")
     ax2.set(xlabel="Index", ylabel="Number of GRBs")
     ax3.set(xlabel="Peak energy (keV)", ylabel="Number of GRBs")
     ax4.set(xlabel="Pivot energy (keV)", ylabel="Number of GRBs")
@@ -246,12 +250,14 @@ class Catalog:
 
     # Plot the distributions of the models' parameters
     band, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2)
+    plt.get_current_fig_manager().window.showMaximized()
+    plt.suptitle("band parameters")
     ax1.hist(band_ampl, bins=nbins)
     ax2.hist(band_alpha, bins=nbins)
     ax3.hist(band_beta, bins=nbins)
     ax4.hist(band_epeak, bins=nbins)
 
-    ax1.set(xlabel="Amplitude (photon/cm2/s/keV)", ylabel="Number of GRBs", title=f"comp parameters")
+    ax1.set(xlabel="Amplitude (photon/cm2/s/keV)", ylabel="Number of GRBs")
     ax2.set(xlabel="Alpha index", ylabel="Number of GRBs")
     ax3.set(xlabel="Beta index", ylabel="Number of GRBs")
     ax4.set(xlabel="Peak energy (keV)", ylabel="Number of GRBs")
@@ -259,7 +265,9 @@ class Catalog:
     plt.show()
 
     # Plot the distributions of the models' parameters
-    band, ((ax1, ax2, ax3), (ax4, ax5, ax6)) = plt.subplots(2, 3)
+    sbpl, ((ax1, ax2, ax3), (ax4, ax5, ax6)) = plt.subplots(2, 3)
+    plt.get_current_fig_manager().window.showMaximized()
+    plt.suptitle("sbpl parameters")
     ax1.hist(sbpl_ampl, bins=nbins)
     ax2.hist(sbpl_indx1, bins=nbins)
     ax3.hist(sbpl_indx2, bins=nbins)
@@ -267,7 +275,7 @@ class Catalog:
     ax5.hist(sbpl_brksc, bins=nbins)
     ax6.hist(sbpl_pivot, bins=nbins)
 
-    ax1.set(xlabel="Amplitude (photon/cm2/s/keV)", ylabel="Number of GRBs", title=f"comp parameters")
+    ax1.set(xlabel="Amplitude (photon/cm2/s/keV)", ylabel="Number of GRBs")
     ax2.set(xlabel="Index 1", ylabel="Number of GRBs")
     ax3.set(xlabel="Index 2", ylabel="Number of GRBs")
     ax4.set(xlabel="Break energy (keV)", ylabel="Number of GRBs")

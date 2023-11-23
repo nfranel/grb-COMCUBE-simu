@@ -21,6 +21,8 @@ print("processing time : ", time()-init_time, "seconds")
 print("=======================================")
 test.spectral_information()
 
+cat = Catalog("./longGBM.txt", [4, '\n', 5, '|', 2000])
+
 # sim = test.alldata[0][0]
 # sim0 = test.alldata[0][0][0]
 # sim1 = test.alldata[0][0][1]
