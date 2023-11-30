@@ -105,7 +105,7 @@ def save_log(filename, name, num_sim, num_sat, status, inc, ohm, omega, alt, sat
   May be used to make sure everything works or to make some plots
   """
   with open(filename, "a") as f:
-    f.write(f"{name} | {num_sim} | {num_sat} | {status} | {inc} | {ohm} | {omega} | {alt} | {sat_dec_wf} | {sat_ra_wf} | {grb_dec_wf} | {grb_ra_wf} | {grb_dec_st} | {grb_ra_sf}")
+    f.write(f"{name} | {num_sim} | {num_sat} | {status} | {inc} | {ohm} | {omega} | {alt} | {sat_dec_wf} | {sat_ra_wf} | {grb_dec_wf} | {grb_ra_wf} | {grb_dec_st} | {grb_ra_sf}\n")
 
 
 def readfile(fname):

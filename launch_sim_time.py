@@ -85,11 +85,11 @@ def genCommands(args):
       c.tofloats(items, defaults)
       args.commands = []
       with open("simulation_logs.txt", "w") as f:
-        f.write("========================================================================")
-        f.write("                    Log file for the simulations                        ")
-        f.write("GRB name | simulation number | satellite number | status of the simulation | sat inclination | sat RA of ascending node | sat argument of periapsis | altitude | sat dec world frame | sat ra world frame | grb dec world frame | grb ra world frame | grb dec sat frame | grb ra sat frame")
-        f.write("Angles in degrees and altitude in km")
-        f.write("========================================================================")
+        f.write("========================================================================\n")
+        f.write("                    Log file for the simulations                        \n")
+        f.write("GRB name | simulation number | satellite number | status of the simulation | sat inclination | sat RA of ascending node | sat argument of periapsis | altitude | sat dec world frame | sat ra world frame | grb dec world frame | grb ra world frame | grb dec sat frame | grb ra sat frame\n")
+        f.write("Angles in degrees and altitude in km\n")
+        f.write("========================================================================\n")
       def genGRB(i): #Generate a single GRB command
         #generate spectrum file here if not already done
         if not(args.spectrafilepath.endswith("/")) and os.name == "posix": args.spectrafilepath += "/"
@@ -144,8 +144,6 @@ def genCommands(args):
             true_anomaly = true_anomaly_calc(rand_time, orbital_period)
             dec_sat_world_frame, ra_sat_world_frame = orbitalparam2decra(s[0], s[1], s[2], nu=true_anomaly) #deg
             ra_sat_world_frame -= earth_ra_offset
-            print(orbital_period, rand_time, earth_ra_offset, true_anomaly)
-            print(dec_sat_world_frame, ra_sat_world_frame)
             if verif_zone(90 - dec_sat_world_frame, ra_sat_world_frame):  # checks if the satellite is in the switch off zone
               save_log("simulation_logs.txt", c.name[i], j, k, "Ignored(off)", s[0], s[1], s[2], s[3], dec_sat_world_frame, ra_sat_world_frame, dec_grb_world_frame, ra_grb_world_frame, None, None)
             else:
