@@ -4,7 +4,7 @@
 # Creation of the class and modules
 
 from funcmod import *
-from catalogext import Catalog
+from catalog import Catalog
 from scipy.optimize import curve_fit
 from inspect import signature
 import matplotlib.pyplot as plt
@@ -262,7 +262,7 @@ class FormatedData:
     else:
       # Change it so that it's not saved here !
       dec_world_frame, ra_world_frame, source_name, num_sim, num_sat = fname2decra(data_list[0])
-      self.dec_sat_frame, self.ra_sat_frame, self.expected_pa = decra2tpPA(dec_world_frame, ra_world_frame, sat_info[:3])
+      self.expected_pa, self.dec_sat_frame, self.ra_sat_frame = grb_decrapol_worldf2satf(dec_world_frame, ra_world_frame, sat_info[0], sat_info[1])[:3]
       # Extracting the data from first file
       data_pol = readfile(data_list[0])
       for event in data_pol:
@@ -1359,19 +1359,16 @@ class AllSourceData:
       Spectrometry gives the sensibility to spectrometry (capacity of detection)
     """
     phi_world = np.linspace(0, 360, num_val)
-    # theta will be converted in sat coord with decra2tp, which takes dec in world coord with 0 being north pole and 180 the south pole !
+    # theta will be converted in sat coord with grb_decra_worldf2satf, which takes dec in world coord with 0 being north pole and 180 the south pole !
     theta_world = np.linspace(0, 180, num_val)
     detection_pola = np.zeros((self.n_sat, num_val, num_val))
     detection_spectro = np.zeros((self.n_sat, num_val, num_val))
 
     for ite in range(self.n_sat):
-      detection_pola[ite] = np.array([[eff_area_compton_func(decra2tp(theta, phi, self.sat_info[ite])[0],
-                                                          self.sat_info[ite][2], func_type="cos") for phi in phi_world]
-                                      for
-                                      theta in theta_world])
-      detection_spectro[ite] = np.array([[eff_area_single_func(
-        decra2tp(theta, phi, self.sat_info[ite])[0], self.sat_info[ite][2], func_type="data") for phi in
-        phi_world] for theta in theta_world])
+      detection_pola[ite] = np.array([[eff_area_compton_func(grb_decra_worldf2satf(theta, phi, self.sat_info[ite][0],
+                                                                                   self.sat_info[ite][1])[0], self.sat_info[ite][2], func_type="cos") for phi in phi_world] for theta in theta_world])
+      detection_spectro[ite] = np.array([[eff_area_single_func(grb_decra_worldf2satf(theta, phi, self.sat_info[ite][0],
+                                                                                     self.sat_info[ite][1])[0], self.sat_info[ite][2], func_type="data") for phi in phi_world] for theta in theta_world])
 
     detec_sum_pola = np.sum(detection_pola, axis=0)
     detec_sum_spectro = np.sum(detection_spectro, axis=0)

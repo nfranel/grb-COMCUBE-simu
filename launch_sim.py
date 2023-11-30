@@ -29,7 +29,7 @@ def vprint(s, v, l):
 ### Physics functions and class Catalog
 
 from funcmod import *
-from catalogext import Catalog
+from catalog import Catalog
 
 ### System functions
 
