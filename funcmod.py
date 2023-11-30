@@ -3,6 +3,7 @@ import gzip
 from scipy.integrate import quad
 from time import time
 
+#UTILISER ASTROPY;constant ?
 m_elec = 9.1094e-31 #kg
 c_light = 2.99792458e+8 #m/s
 charge_elem = 1.6021e-19 #C
@@ -96,6 +97,15 @@ def fname2decra(fname):
   data = fname.split("/")[-1] # to get rid of the first part of the prefix (and the potential "_" in it)
   data = data.split("_")
   return float(data[4]), float(".".join(data[5].split(".")[:2])), data[1], int(data[3]), int(data[2].split("sat")[1])
+
+
+def save_log(filename, name, num_sim, num_sat, status, inc, ohm, omega, alt, sat_dec_wf, sat_ra_wf, grb_dec_wf, grb_ra_wf, grb_dec_st, grb_ra_sf):
+  """
+  Saves all the simulation informations into a log file.
+  May be used to make sure everything works or to make some plots
+  """
+  with open(filename, "a") as f:
+    f.write(f"{name} | {num_sim} | {num_sat} | {status} | {inc} | {ohm} | {omega} | {alt} | {sat_dec_wf} | {sat_ra_wf} | {grb_dec_wf} | {grb_ra_wf} | {grb_dec_st} | {grb_ra_sf}")
 
 
 def readfile(fname):

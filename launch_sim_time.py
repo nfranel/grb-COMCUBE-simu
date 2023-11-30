@@ -84,6 +84,12 @@ def genCommands(args):
       defaults = [0, 100, 0, 0, 0, 1, 0, 100, 0, 0, 1, 0, 0, 0, 0, 100, 0, 0, 0, 0, 0]
       c.tofloats(items, defaults)
       args.commands = []
+      with open("simulation_logs.txt", "w") as f:
+        f.write("========================================================================")
+        f.write("                    Log file for the simulations                        ")
+        f.write("GRB name | simulation number | satellite number | status of the simulation | sat inclination | sat RA of ascending node | sat argument of periapsis | altitude | sat dec world frame | sat ra world frame | grb dec world frame | grb ra world frame | grb dec sat frame | grb ra sat frame")
+        f.write("Angles in degrees and altitude in km")
+        f.write("========================================================================")
       def genGRB(i): #Generate a single GRB command
         #generate spectrum file here if not already done
         if not(args.spectrafilepath.endswith("/")) and os.name == "posix": args.spectrafilepath += "/"
@@ -140,9 +146,13 @@ def genCommands(args):
             ra_sat_world_frame -= earth_ra_offset
             print(orbital_period, rand_time, earth_ra_offset, true_anomaly)
             print(dec_sat_world_frame, ra_sat_world_frame)
-            if not verif_zone(90 - dec_sat_world_frame, ra_sat_world_frame):  # checks if the satellite is in the switch off zone
+            if verif_zone(90 - dec_sat_world_frame, ra_sat_world_frame):  # checks if the satellite is in the switch off zone
+              save_log("simulation_logs.txt", c.name[i], j, k, "Ignored(off)", s[0], s[1], s[2], s[3], dec_sat_world_frame, ra_sat_world_frame, dec_grb_world_frame, ra_grb_world_frame, None, None)
+            else:
               theta, phi, thetap, phip = grb_decrapol_worldf2satf(dec_grb_world_frame, ra_grb_world_frame, dec_sat_world_frame, ra_sat_world_frame)[1:]
-              if theta < horizonAngle(temp[3]):#source above horizon
+              if theta >= horizonAngle(temp[3]):#source below horizon
+                save_log("simulation_logs.txt", c.name[i], j, k, "Ignored(horizon)", s[0], s[1], s[2], s[3], dec_sat_world_frame, ra_sat_world_frame, dec_grb_world_frame, ra_grb_world_frame, theta, phi)
+              else:
                 polstr = "{} {} {}".format(np.sin(thetap)*np.cos(phip), np.sin(thetap)*np.sin(phip), np.cos(thetap))
                 # Add command to commands list
                 if args.poltime.isdigit():
@@ -153,6 +163,7 @@ def genCommands(args):
                   vprint("Poltime in parameter file unknown. Check parameter file.", __verbose__, 0)
                 unpoltime = args.unpoltime
                 args.commands.append((not(args.nocosima), not(args.norevan), c.name[i], k, spectrumfile, phtflux, poltime, unpoltime, polstr, j, "{:.1f}_{:.1f}".format(np.rad2deg(dec_grb_world_frame), np.rad2deg(ra_grb_world_frame)), theta, phi))
+                save_log("simulation_logs.txt", c.name[i], j, k, "Simulated", s[0], s[1], s[2], s[3], dec_sat_world_frame, ra_sat_world_frame, dec_grb_world_frame, ra_grb_world_frame, theta, phi)
       for i in range(len(c)): genGRB(i)
   else: vprint("Type in parameter file unknown. Check parameter file.", __verbose__, 0)
   return args
