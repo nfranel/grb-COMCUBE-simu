@@ -1,0 +1,47 @@
+# cosima source file for background simulation at 550 km altitude, 0 deg inclination
+# EXAMPLE TO BE UPDATED : specify field that need to be changed and the other that are optional while using the automatic grb simulation with the param file
+Version         1
+Geometry        repo_path/geom/COMCUBE_v134.geo.setup                                                    # Optional, rewriten by automatic python launcher
+
+# Physics list
+PhysicsListHD                        QGSP-BIC-HP
+PhysicsListEM                        Livermore-Pol
+PhysicsListEMActivateFluorescence    false
+
+
+# Output formats. StoreScientific added (July 2010)
+StoreCalibrated                      true
+StoreScientific		     	     true 5
+StoreSimulationInfo                  true
+StoreSimulationInfoIonization        false
+DiscretizeHits                       true
+
+DefaultRangeCut 0.1
+
+
+# Polarized run parameters:
+
+Run GRBpol
+GRBpol.FileName         GRBwoBackground_550km_0deg                                                       # Optional, rewriten by automatic python launcher
+GRBpol.Time             100                                                                              # Optional, rewriten by automatic python launcher
+
+GRBpol.Source GRBsource
+GRBsource.ParticleType                    1
+GRBsource.Beam                            FarFieldPointSource 0. 0.                                      # Optional, rewriten by automatic python launcher
+GRBsource.Spectrum                        File repo_path/sources/grb/GRBSpectrum_Ep300keV.dat            # Optional, rewriten by automatic python launcher
+GRBsource.Polarization                    RelativeX 1. 0.                                                # Optional, rewriten by automatic python launcher
+GRBsource.Flux                            10.                                                            # Optional, rewriten by automatic python launcher
+#Flux in #/cm^2/s
+
+# Unpolarized run parameters:
+
+Run GRBnpol
+GRBnpol.FileName         GRBwoBackground_550km_0deg                                                      # Optional, rewriten by automatic python launcher | get rid of this ?
+GRBnpol.Time             100                                                                             # Optional, rewriten by automatic python launcher | get rid of this ?
+
+GRBnpol.Source GRBsourcenp
+GRBsourcenp.ParticleType                    1
+GRBsourcenp.Beam                            FarFieldPointSource 0. 0.                                     # Optional, rewriten by automatic python launcher | get rid of this ?
+GRBsourcenp.Spectrum                        File repo_path/sources/grb/GRBSpectrum_Ep300keV.dat           # Optional, rewriten by automatic python launcher | get rid of this ?
+GRBsourcenp.Flux                            10.                                                           # Optional, rewriten by automatic python launcher | get rid of this ?
+#Flux in #/cm^2/s
