@@ -51,7 +51,6 @@ def make_tmp_source(alt, lat, geom, source_model):
   with open(fname, "w") as f:
     run, source = "", ""  # "GRBsource" or "GRBsourcenp"
     for line in lines:
-      print(line)
       if line.startswith("Geometry"):
         f.write(f"Geometry {geom}")
       elif line.startswith("Run"):
@@ -67,6 +66,7 @@ def make_tmp_source(alt, lat, geom, source_model):
         f.write(f"{run}.Time {10}")
       elif line.startswith(f"{run}.Source"):
         source = line.split(" ")[-1]
+        print("SOURCE READ : ", source)
         particle = source.split("Source")[0]
         if particle in source_list:
           f.write(line)
