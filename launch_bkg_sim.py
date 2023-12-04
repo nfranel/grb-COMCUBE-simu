@@ -43,7 +43,8 @@ def make_tmp_source(alt, lat, geom, source_model):
 
   """
   fname = f"tmp_{os.getpid()}.source"
-  sname = f"./sim/bkg_{alt}_{lat}_3600s"
+  geom_name = geometry.split(".geo.setup")[0].split("/")[-1]
+  sname = f"./sim--{geom_name}/bkg_{alt}_{lat}_3600s"
   source_list = ["SecondaryElectrons", "AtmosphericNeutrons", "AlbedoPhotons", "SecondaryPositrons", "SecondaryProtonsUpward", "SecondaryProtonsDownward", "PrimaryElectrons", "CosmicPhotons", "PrimaryPositrons", "PrimaryProtons"]
   with open(source_model) as f:
     lines = f.read().split("\n")
@@ -104,13 +105,14 @@ def run_bkg(params):
   sourcefile, simname = make_tmp_source(params[0], params[1], params[2], params[3])
   # Making a generic name for files
   simfile, trafile = f"{simname}.inc1.id1.sim.gz", f"{simname}.inc1.id1.tra.gz"
-  mv_simname = f"{simname.split('/')[0]}rawsim{simname.split('/')[1]}"
-  mv_simfile, mv_trafile = f"{simname}.inc1.id1.sim.gz", f"{simname}.inc1.id1.tra.gz"
+  mv_simname = f"{simname.split('sim--')[0]}rawsim{simname.split('sim--')[1]}"
+  mv_simfile, mv_trafile = f"{mv_simname}.inc1.id1.sim.gz", f"{mv_simname}.inc1.id1.tra.gz"
   #   Running the different simulations
   # Running cosima
   print(f"cosima -z {sourcefile}; rm {sourcefile}")
+  print(simfile, trafile, mv_simfile, mv_trafile)
   subprocess.call(f"ls", shell=True)
-  subprocess.call(f"cosima -z {sourcefile}; rm -f {sourcefile}", shell=True, stdout=open(os.devnull, 'wb'), stderr=open(os.devnull, 'wb'))
+  # subprocess.call(f"cosima -z {sourcefile}; rm -f {sourcefile}", shell=True, stdout=open(os.devnull, 'wb'), stderr=open(os.devnull, 'wb'))
   # Running revan
   # subprocess.call(f"revan -g {params[2]} -c {params[3]} -f {simfile} -n -a; rm -f {simfile}", shell=True, stdout=open(os.devnull, 'wb'), stderr=open(os.devnull, 'wb'))
   # subprocess.call(f"revan -g {params[2]} -c {params[3]} -f {simfile} -n -a", shell=True, stdout=open(os.devnull, 'wb'), stderr=open(os.devnull, 'wb'))
