@@ -62,8 +62,7 @@ def make_tmp_source(alt, lat, geom, source_model):
       elif line.startswith(f"{run}.FileName"):
         f.write(f"{run}.FileName {sname}")
       elif line.startswith(f"{run}.Time"):
-        # f.write(f"{run}.Time {3600}")
-        f.write(f"{run}.Time {10}")
+        f.write(f"{run}.Time {3600}")
       elif line.startswith(f"{run}.Source"):
         source = line.split(" ")[-1]
         particle = source.split("Source")[0]
@@ -121,7 +120,7 @@ def run_bkg(params):
   #   Running the different simulations
   # Running cosima
   # subprocess.call(f"cosima -z {sourcefile}; rm -f {sourcefile}", shell=True, stdout=open(os.devnull, 'wb'), stderr=open(os.devnull, 'wb'))
-  subprocess.call(f"cosima -z {sourcefile}", shell=True, stdout=open(os.devnull, 'wb'))
+  subprocess.call(f"cosima -z {sourcefile}; rm -f {sourcefile}", shell=True, stdout=open(os.devnull, 'wb'))
   # Running revan
   # subprocess.call(f"revan -g {params[2]} -c {params[3]} -f {simfile} -n -a; rm -f {simfile}", shell=True, stdout=open(os.devnull, 'wb'), stderr=open(os.devnull, 'wb'))
   subprocess.call(f"revan -g {params[2]} -c {params[4]} -f {simfile} -n -a", shell=True)
@@ -136,12 +135,8 @@ source_base = "./bkgrnd_model.source"
 revanfile = "../cfgs/revanv1.cfg"
 mimrecfile ="../cfgs/mimrec10-1000single.cfg"
 # Creating the different source spectra for different latitudes
-# latitudes = np.linspace(-90, 90, 3)
-# altitudes = [400, 500]
-latitudes = [0]
-altitudes = [400]
-# repertory for bkg source spectra : source-dat--alt_{altitude}--lat_{latitudes}
-# source spectra names : {Particle}_Spec_{altitude}km_{latitude}deg.dat
+latitudes = np.linspace(-90, 90, 91)
+altitudes = [400, 500]
 
 os.chdir("./bkg/")
 # Creating the bkg_source_spectra repertory if it doesn't exist
@@ -159,8 +154,3 @@ parameters = make_parameters(altitudes, latitudes, geometry, source_base, revanf
 
 with mp.Pool() as pool:
   pool.map(run_bkg, parameters)
-
-
-# bkg_{alt}_{lat}_3600s.inc1.id1.sim.gz
-# bkg_{alt}_{lat}_3600s.inc1.id1.tra.gz
-# bkg_{alt}_{lat}_3600s.inc1.id1.extracted.tra
