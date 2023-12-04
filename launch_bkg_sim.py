@@ -107,16 +107,6 @@ def run_bkg(params):
   simfile, trafile = f"{simname}.inc1.id1.sim.gz", f"{simname}.inc1.id1.tra.gz"
   mv_simname = f"{simname.split('sim--')[0]}rawsim--{simname.split('sim--')[1]}"
   mv_simfile, mv_trafile = f"{mv_simname}.inc1.id1.sim.gz", f"{mv_simname}.inc1.id1.tra.gz"
-  print("sourcefile", sourcefile)
-  print("simname", simname)
-  print("simfile", simfile)
-  print("trafile", trafile)
-  print("mv_simname", mv_simname)
-  print("mv_simfile", mv_simfile)
-  print("mv_trafile", mv_trafile)
-  print(f"cosima -z {sourcefile}; rm -f {sourcefile}")
-  print(f"revan -g {params[2]} -c {params[4]} -f {simfile} -n -a")
-  print(f"mimrec -g {params[2]} -c {params[5]} -f {trafile} -x -n")
   #   Running the different simulations
   # Running cosima
   # subprocess.call(f"cosima -z {sourcefile}; rm -f {sourcefile}", shell=True, stdout=open(os.devnull, 'wb'), stderr=open(os.devnull, 'wb'))
