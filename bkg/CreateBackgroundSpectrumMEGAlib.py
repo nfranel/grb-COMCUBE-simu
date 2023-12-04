@@ -70,6 +70,7 @@ ViewSky = 2*np.pi * (1-np.cos(np.deg2rad(LEOClass.HorizonAngle)))
 #    fac = [ViewAtmo, ViewSky, ViewSky, 4*np.pi, 4*np.pi, ViewSky, ViewAtmo]
 #
 #else:
+
 Megalibfunc = [LEOClass.AtmosphericNeutrons, LEOClass.PrimaryProtons, 
                LEOClass.SecondaryProtonsUpward, LEOClass.SecondaryProtonsDownward,
                LEOClass.PrimaryAlphas, LEOClass.PrimaryElectrons,
