@@ -68,6 +68,7 @@ def make_tmp_source(alt, lat, geom, source_model):
         source = line.split(" ")[-1]
         print("SOURCE READ : ", source)
         particle = source.split("Source")[0]
+        print("Ca se fait 1")
         # print(particle)
         if particle in source_list:
           f.write(line)
@@ -84,7 +85,7 @@ def make_tmp_source(alt, lat, geom, source_model):
         particle_dat = f"./bkg_source_spectra/source-dat--alt_{alt}--lat_{lat}/{particle}_Spec_{alt}km_{lat}deg.dat"
         f.write(f"{source}.Spectrum File {particle_dat}")
         print("Ca se fait 4")
-      elif line.startswith("{source}.Flux"):
+      elif line.startswith(f"{source}.Flux"):
         flux = read_flux_from_spectrum(particle_dat)
         f.write(f"{source}.Flux {flux}")
         print("Ca se fait 5")
