@@ -105,7 +105,7 @@ def run_bkg(params):
   sourcefile, simname = make_tmp_source(params[0], params[1], params[2], params[3])
   # Making a generic name for files
   simfile, trafile = f"{simname}.inc1.id1.sim.gz", f"{simname}.inc1.id1.tra.gz"
-  mv_simname = f"{simname.split('sim--')[0]}rawsim{simname.split('sim--')[1]}"
+  mv_simname = f"{simname.split('sim--')[0]}rawsim--{simname.split('sim--')[1]}"
   mv_simfile, mv_trafile = f"{mv_simname}.inc1.id1.sim.gz", f"{mv_simname}.inc1.id1.tra.gz"
   #   Running the different simulations
   # Running cosima
