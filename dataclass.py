@@ -154,7 +154,7 @@ class BkgContainer:
     self.compton_cr = self.compton / sim_duration
 
 
-class FormatedData:
+class GRBFormatedData:
   """
   Class containing the data for 1 GRB, for 1 sim, and 1 satellite
   """
@@ -604,21 +604,21 @@ class AllSatData(list):
     for num_sat in range(self.n_sat):
       flist = subprocess.getoutput("ls {}_sat{}_{:04d}_*".format(source_prefix, num_sat, num_sim)).split("\n")
       if len(flist) == 2:
-        temp_list.append(FormatedData(flist, sat_info[num_sat], num_sat, sim_duration, *options))
+        temp_list.append(GRBFormatedData(flist, sat_info[num_sat], num_sat, sim_duration, *options))
         self.n_sat_receiving += 1
         self.loading_count += 2
       elif len(flist) == 1:
         if flist[0].startswith("ls: cannot access"):
           temp_list.append(None)
         elif pol_analysis:
-          temp_list.append(FormatedData(flist, sat_info[num_sat], sim_duration, num_sat, *options))
+          temp_list.append(GRBFormatedData(flist, sat_info[num_sat], sim_duration, num_sat, *options))
           self.n_sat_receiving += 1
           self.pol_analysis = False
           self.loading_count += 1
           print(
             f'WARNING : Polarization analysis is expected but the wrong number of trafile has been found, no polarization data were extracted : {flist}')
         else:
-          temp_list.append(FormatedData(flist, sat_info[num_sat], sim_duration, num_sat, *options))
+          temp_list.append(GRBFormatedData(flist, sat_info[num_sat], sim_duration, num_sat, *options))
           self.n_sat_receiving += 1
           self.pol_analysis = False
           self.loading_count += 1
@@ -660,7 +660,7 @@ class AllSatData(list):
     if const is None:
       const = np.array(range(self.n_sat))
     considered_sat = const[np.where(np.array(self) == None, False, True)]
-    self.const_data = FormatedData([], None, None, None, *options)
+    self.const_data = GRBFormatedData([], None, None, None, *options)
 
     for item in self.const_data.__dict__.keys():
       ## Non modified items. They stay as :
@@ -1056,7 +1056,7 @@ class AllSourceData:
 
     # Setting the background rate detected by each satellite
     for sat_ite in range(len(self.sat_info)):
-      for count_rates in closest_bkg_rate(self.sat_info[sat_ite][0], self.bkgdata):
+      for count_rates in closest_bkg_rate(self.sat_info[sat_ite][0], self.sat_info[sat_ite][1], self.bkgdata):
         self.sat_info[sat_ite].append(count_rates)
 
     # Setting the catalog and the attributes associated
@@ -2343,3 +2343,4 @@ class AllSourceData:
       ax1.set(xlabel="Fluence (erg.cm-2)", ylabel="SNR (dimensionless)", xscale=x_scale, yscale=y_scale)
       ax1.legend()
       plt.show()
+

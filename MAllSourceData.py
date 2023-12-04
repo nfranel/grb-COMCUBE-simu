@@ -132,7 +132,7 @@ class AllSourceData:
 
     # Setting the background rate detected by each satellite
     for sat_ite in range(len(self.sat_info)):
-      for count_rates in closest_bkg_rate(self.sat_info[sat_ite][0], self.bkgdata):
+      for count_rates in closest_bkg_rate(self.sat_info[sat_ite][0], self.sat_info[sat_ite][1], self.bkgdata):
         self.sat_info[sat_ite].append(count_rates)
 
     # Setting the catalog and the attributes associated

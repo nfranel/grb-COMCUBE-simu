@@ -16,7 +16,11 @@ class BkgContainer:
 
   def __init__(self, datafile, sim_duration, save_pos, save_time, ergcut):
     """
-    -data_list : 1 background tra file (unpol) from which extract the data
+    :param datafile : background file to read
+    :param sim_duration : duration of the background simulation
+    :param save_pos : True if the interaction positions are to be saved
+    :param save_time : True if the interaction times are to be saved
+    :param ergcut : energy cut to apply
     """
     # Extraction of the background position (the important impormation is mostly its dec)
     self.dec, self.ra = datafile.split("_")[-2:]

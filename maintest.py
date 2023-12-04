@@ -1,29 +1,24 @@
-from dataclass import *
+from MAllSourceData import AllSourceData
 from time import time
 
-from LEOBackgroundGenerator import LEOBackgroundGenerator as LEO
-LEOClass = LEO(500, 0)
-
-print(LEOClass.PrimaryElectrons(1000))
-
-# init_time = time()
-# bkg_path = "./backgrounds/bkg"  # _background_sat0_0000_90.0_0.0.inc1.id1.extracted.tra"
-# paramfile = "../quicktest-grb/polGBM.par"
-# # param = "../fulltest-grb/polGBM.par"
-# erg = (30, 1000)
-# arm = 180
-# test = AllSourceData(bkg_path, paramfile, erg, arm, parallel=10)
-# test.make_const()
-# test.verif_const()
-# test.analyze()
-# test.verif_const()
-# # test.alldata[0][0][0].show()
-# test.count_triggers()
-# # test.source_information(0)
-# print("=======================================")
-# print("processing time : ", time()-init_time, "seconds")
-# print("=======================================")
-# test.spectral_information()
+init_time = time()
+bkg_path = "./bkg/bkg"  # _background_sat0_0000_90.0_0.0.inc1.id1.extracted.tra"
+paramfile = "../quicktest-grb/polGBM.par"
+# param = "../fulltest-grb/polGBM.par"
+erg = (30, 1000)
+arm = 180
+test = AllSourceData(bkg_path, paramfile, erg, arm, parallel=10)
+test.make_const()
+test.verif_const()
+test.analyze()
+test.verif_const()
+# test.alldata[0][0][0].show()
+test.count_triggers()
+# test.source_information(0)
+print("=======================================")
+print("processing time : ", time()-init_time, "seconds")
+print("=======================================")
+test.spectral_information()
 
 # cat = Catalog("./longGBM.txt", [4, '\n', 5, '|', 2000])
 

@@ -57,31 +57,31 @@ ViewSky = 2*np.pi * (1-np.cos(np.deg2rad(LEOClass.HorizonAngle)))
 
 #fac = [ViewAtmo, ViewSky, 2*np.pi, 2*np.pi, ViewSky, ViewSky, ViewAtmo]
 
-if LEOClass.AvGeomagCutOff < 1.0623 or LEOClass.AvGeomagCutOff > 12.4706:
-    Megalibfunc = [LEOClass.AtmosphericNeutrons, LEOClass.PrimaryProtons,
-                   LEOClass.PrimaryAlphas, LEOClass.PrimaryElectrons,
-                   LEOClass.PrimaryPositrons, LEOClass.CosmicPhotons, LEOClass.AlbedoPhotons]
+#if LEOClass.AvGeomagCutOff < 1.0623 or LEOClass.AvGeomagCutOff > 12.4706:
+#    Megalibfunc = [LEOClass.AtmosphericNeutrons, LEOClass.PrimaryProtons,
+#                   LEOClass.PrimaryAlphas, LEOClass.PrimaryElectrons,
+#                   LEOClass.PrimaryPositrons, LEOClass.CosmicPhotons, LEOClass.AlbedoPhotons]
+#
+#    Particle = ["AtmosphericNeutrons", "PrimaryProtons",
+#                "PrimaryAlphas", "PrimaryElectrons",
+#                "PrimaryPositrons", "CosmicPhotons", "AlbedoPhotons"]
+#
+#    #     [neutron,  prim p,  p alpha, p e-,    p e+,    cosm pho, alb pho]
+#    fac = [ViewAtmo, ViewSky, ViewSky, 4*np.pi, 4*np.pi, ViewSky, ViewAtmo]
+#
+#else:
+Megalibfunc = [LEOClass.AtmosphericNeutrons, LEOClass.PrimaryProtons, 
+               LEOClass.SecondaryProtonsUpward, LEOClass.SecondaryProtonsDownward,
+               LEOClass.PrimaryAlphas, LEOClass.PrimaryElectrons,
+               LEOClass.PrimaryPositrons, LEOClass.SecondaryElectrons,
+               LEOClass.SecondaryPositrons, LEOClass.CosmicPhotons, LEOClass.AlbedoPhotons]
 
-    Particle = ["AtmosphericNeutrons", "PrimaryProtons",
-                "PrimaryAlphas", "PrimaryElectrons",
-                "PrimaryPositrons", "CosmicPhotons", "AlbedoPhotons"]
+Particle = ["AtmosphericNeutrons", "PrimaryProtons",
+            "SecondaryProtonsUpward", "SecondaryProtonsDownward", "PrimaryAlphas", "PrimaryElectrons",
+            "PrimaryPositrons", "SecondaryElectrons", "SecondaryPositrons", "CosmicPhotons", "AlbedoPhotons"]
 
-    #     [neutron,  prim p,  p alpha, p e-,    p e+,    cosm pho, alb pho]
-    fac = [ViewAtmo, ViewSky, ViewSky, 4*np.pi, 4*np.pi, ViewSky, ViewAtmo]
-
-else:
-    Megalibfunc = [LEOClass.AtmosphericNeutrons, LEOClass.PrimaryProtons, 
-                   LEOClass.SecondaryProtonsUpward, LEOClass.SecondaryProtonsDownward,
-                   LEOClass.PrimaryAlphas, LEOClass.PrimaryElectrons,
-                   LEOClass.PrimaryPositrons, LEOClass.SecondaryElectrons,
-                   LEOClass.SecondaryPositrons, LEOClass.CosmicPhotons, LEOClass.AlbedoPhotons]
-
-    Particle = ["AtmosphericNeutrons", "PrimaryProtons",
-                "SecondaryProtonsUpward", "SecondaryProtonsDownward", "PrimaryAlphas", "PrimaryElectrons",
-                "PrimaryPositrons", "SecondaryElectrons", "SecondaryPositrons", "CosmicPhotons", "AlbedoPhotons"]
-
-    #     [neutron, prim p, sec p up, sec p down, p alpha, p e-,  p e+,   sec e-,   sec e+, cosm pho, alb pho]
-    fac = [ViewAtmo, ViewSky, 2*np.pi, 2*np.pi, ViewSky, 4*np.pi, 4*np.pi, 4*np.pi, 4*np.pi, ViewSky, ViewAtmo]
+#     [neutron, prim p, sec p up, sec p down, p alpha, p e-,  p e+,   sec e-,   sec e+, cosm pho, alb pho]
+fac = [ViewAtmo, ViewSky, 2*np.pi, 2*np.pi, ViewSky, 4*np.pi, 4*np.pi, 4*np.pi, 4*np.pi, ViewSky, ViewAtmo]
 
 for i in range(0, len(Megalibfunc)):
 

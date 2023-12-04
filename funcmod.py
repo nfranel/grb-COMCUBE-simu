@@ -129,7 +129,7 @@ def readfile(fname):
 def readevt(event, ergcut=None):
   """
   Reads an event and returns the information about this event if it's in the energy range
-  :param fname: str, name of .tra file
+  :param event: str, event in a trafile
   :param ergcut: couple (Emin, Emax) or None, energy range in which events have to be to be processed, default=None(=no selection)
   :returns:     list of 3-uple of float
   """
@@ -291,7 +291,7 @@ def MDP(S, B, mu100, nsigma=4.29):
   return nsigma * np.sqrt(S + B) / (mu100 * S)
 
 
-def closest_bkg_rate(sat_lat, bkg_list):
+def closest_bkg_rate(sat_lat, sat_long, bkg_list):
   """
   Find the closest bkg file for a satellite (in terms of latitude)
   Returns the count rate of this bkg file
@@ -300,6 +300,8 @@ def closest_bkg_rate(sat_lat, bkg_list):
     return 0.000001
   else:
     latitude_error = np.array([abs(bkg.dec - sat_lat) for bkg in bkg_list])
+    longitude_error = np.array([abs(bkg.ra - sat_long) for bkg in bkg_list])
+    total_error = np.sqrt(latitude_error**2 + longitude_error**2) # TODO
     return [bkg_list[np.argmin(latitude_error)].compton_cr, bkg_list[np.argmin(latitude_error)].single_cr]
 
 
@@ -581,10 +583,21 @@ def true_anomaly_calc(time, period):
 
 
 def cond_between(val, lim1, lim2):
+  """
+  Checks if a value is in an interval
+  :param val : value to test
+  :param lim1 : inferior limit
+  :param lim2 : superior limit
+  Returns True if the value is in the interval [lim1, lim2]
+  """
   return val >= lim1 and val <= lim2
 
 
 def verif_zone(theta, phi):
+  """
+  :param theta : latitude (-90 - 90°)
+  :param phi : longitude (-180 - 180°)
+  """
   ### SAA
   if cond_between(phi, -60, -10) and cond_between(theta, -45, -15):
     return True

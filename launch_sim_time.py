@@ -144,7 +144,7 @@ def genCommands(args):
             true_anomaly = true_anomaly_calc(rand_time, orbital_period)
             dec_sat_world_frame, ra_sat_world_frame = orbitalparam2decra(s[0], s[1], s[2], nu=true_anomaly) #deg
             ra_sat_world_frame -= earth_ra_offset
-            if verif_zone(90 - dec_sat_world_frame, ra_sat_world_frame):  # checks if the satellite is in the switch off zone
+            if verif_zone(90 - dec_sat_world_frame, ra_sat_world_frame):  # checks if the sat is in the switch off zone
               save_log("simulation_logs.txt", c.name[i], j, k, "Ignored(off)", s[0], s[1], s[2], s[3], dec_sat_world_frame, ra_sat_world_frame, dec_grb_world_frame, ra_grb_world_frame, None, None)
             else:
               theta, phi, thetap, phip = grb_decrapol_worldf2satf(dec_grb_world_frame, ra_grb_world_frame, dec_sat_world_frame, ra_sat_world_frame)[1:]
