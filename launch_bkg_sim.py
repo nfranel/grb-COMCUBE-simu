@@ -113,7 +113,8 @@ def run_bkg(params):
   print(f"cosima -z {sourcefile}; rm {sourcefile}")
   print(simfile, trafile, mv_simfile, mv_trafile)
   subprocess.call(f"ls", shell=True)
-  subprocess.call(f"cosima -z {sourcefile}; rm -f {sourcefile}", shell=True, stdout=open(os.devnull, 'wb'), stderr=open(os.devnull, 'wb'))
+  # subprocess.call(f"cosima -z {sourcefile}; rm -f {sourcefile}", shell=True, stdout=open(os.devnull, 'wb'), stderr=open(os.devnull, 'wb'))
+  subprocess.call(f"cosima -z {sourcefile}", shell=True, stdout=open(os.devnull, 'wb'), stderr=open(os.devnull, 'wb'))
   # # Running revan
   # # subprocess.call(f"revan -g {params[2]} -c {params[3]} -f {simfile} -n -a; rm -f {simfile}", shell=True, stdout=open(os.devnull, 'wb'), stderr=open(os.devnull, 'wb'))
   # subprocess.call(f"revan -g {params[2]} -c {params[3]} -f {simfile} -n -a", shell=True, stdout=open(os.devnull, 'wb'), stderr=open(os.devnull, 'wb'))
