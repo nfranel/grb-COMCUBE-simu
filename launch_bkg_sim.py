@@ -66,32 +66,24 @@ def make_tmp_source(alt, lat, geom, source_model):
         f.write(f"{run}.Time {10}")
       elif line.startswith(f"{run}.Source"):
         source = line.split(" ")[-1]
-        print("SOURCE READ : ", source)
         particle = source.split("Source")[0]
-        print("Ca se fait 1")
-        # print(particle)
         if particle in source_list:
           f.write(line)
         else:
           print("Name of source is not valid. Should be one of the ones for which a spectrum was calculated.")
       elif line.startswith(f"{source}.Beam"):
-        print("Ca se fait 2")
         if particle in ["AtmosphericNeutrons", "AlbedoPhotons"]:
           f.write(f"{source}.Beam FarFieldFileZenithDependent ./AlbedoPhotonBeam.dat")
-          print("Ca se fait 3")
         else:
           f.write(line)
       elif line.startswith(f"{source}.Spectrum"):
         particle_dat = f"./bkg_source_spectra/source-dat--alt_{alt}--lat_{lat}/{particle}_Spec_{alt}km_{lat}deg.dat"
         f.write(f"{source}.Spectrum File {particle_dat}")
-        print("Ca se fait 4")
       elif line.startswith(f"{source}.Flux"):
         flux = read_flux_from_spectrum(particle_dat)
         f.write(f"{source}.Flux {flux}")
-        print("Ca se fait 5")
       else:
         f.write(line)
-        # print(line)
       f.write("\n")
   return fname, sname
 
@@ -116,20 +108,27 @@ def run_bkg(params):
   simfile, trafile = f"{simname}.inc1.id1.sim.gz", f"{simname}.inc1.id1.tra.gz"
   mv_simname = f"{simname.split('sim--')[0]}rawsim--{simname.split('sim--')[1]}"
   mv_simfile, mv_trafile = f"{mv_simname}.inc1.id1.sim.gz", f"{mv_simname}.inc1.id1.tra.gz"
+  print("sourcefile", sourcefile)
+  print("simname", simname)
+  print("simfile", simfile)
+  print("trafile", trafile)
+  print("mv_simname", mv_simname)
+  print("mv_simfile", mv_simfile)
+  print("mv_trafile", mv_trafile)
+  print(f"cosima -z {sourcefile}; rm -f {sourcefile}")
+  print(f"revan -g {params[2]} -c {params[4]} -f {simfile} -n -a")
+  print(f"mimrec -g {params[2]} -c {params[5]} -f {trafile} -x -n")
   #   Running the different simulations
   # Running cosima
-  print(f"cosima -z {sourcefile}; rm {sourcefile}")
-  print(simfile, trafile, mv_simfile, mv_trafile)
-  subprocess.call(f"ls", shell=True)
   # subprocess.call(f"cosima -z {sourcefile}; rm -f {sourcefile}", shell=True, stdout=open(os.devnull, 'wb'), stderr=open(os.devnull, 'wb'))
-  subprocess.call(f"cosima -z {sourcefile}", shell=True)
-  # # Running revan
-  # # subprocess.call(f"revan -g {params[2]} -c {params[3]} -f {simfile} -n -a; rm -f {simfile}", shell=True, stdout=open(os.devnull, 'wb'), stderr=open(os.devnull, 'wb'))
-  # subprocess.call(f"revan -g {params[2]} -c {params[3]} -f {simfile} -n -a", shell=True)
-  # subprocess.call(f"mv {simfile} {mv_simfile}", shell=True)
-  # # Running mimrec
-  # subprocess.call(f"mimrec -g {params[2]} -c {params[4]} -f {trafile} -x -n", shell=True)
-  # subprocess.call(f"mv {trafile} {mv_trafile}", shell=True)
+  subprocess.call(f"cosima -z {sourcefile}", shell=True, stdout=open(os.devnull, 'wb'))
+  # Running revan
+  # subprocess.call(f"revan -g {params[2]} -c {params[3]} -f {simfile} -n -a; rm -f {simfile}", shell=True, stdout=open(os.devnull, 'wb'), stderr=open(os.devnull, 'wb'))
+  subprocess.call(f"revan -g {params[2]} -c {params[4]} -f {simfile} -n -a", shell=True)
+  subprocess.call(f"mv {simfile} {mv_simfile}", shell=True)
+  # Running mimrec
+  subprocess.call(f"mimrec -g {params[2]} -c {params[5]} -f {trafile} -x -n", shell=True)
+  subprocess.call(f"mv {trafile} {mv_trafile}", shell=True)
 
 
 geometry = "../geom/COMCUBE_v134.geo.setup"
