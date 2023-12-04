@@ -108,7 +108,7 @@ def run_bkg(params):
   mv_simfile, mv_trafile = f"{simname}.inc1.id1.sim.gz", f"{simname}.inc1.id1.tra.gz"
   #   Running the different simulations
   # Running cosima
-  print(f"cosima -z {sourcefile}, rm -f {sourcefile}")
+  print(f"cosima -z {sourcefile}, rm {sourcefile}")
   subprocess.call(f"cosima -z {sourcefile}, rm -f {sourcefile}", shell=True, stdout=open(os.devnull, 'wb'), stderr=open(os.devnull, 'wb'))
   # Running revan
   # subprocess.call(f"revan -g {params[2]} -c {params[3]} -f {simfile} -n -a; rm -f {simfile}", shell=True, stdout=open(os.devnull, 'wb'), stderr=open(os.devnull, 'wb'))
