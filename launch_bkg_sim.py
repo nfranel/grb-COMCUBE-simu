@@ -71,6 +71,7 @@ def make_tmp_source(alt, lat, geom, source_model):
         print(particle)
         if particle in source_list:
           f.write(line)
+          print("Ca se fait")
         else:
           print("Name of source is not valid. Should be one of the ones for which a spectrum was calculated.")
       elif line.startswith(f"{source}.Beam"):
