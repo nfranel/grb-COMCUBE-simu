@@ -1,0 +1,96 @@
+# cosima source file for background simulation at 550 km altitude, 0 deg inclination
+
+Version         1
+Geometry        ../COMCUBE_M7/COMCUBE_v134.geo.setup
+
+# Physics list
+PhysicsListHD                        QGSP-BIC-HP
+PhysicsListEM                        Livermore-Pol
+PhysicsListEMActivateFluorescence    false
+
+
+# Output formats. StoreScientific added (July 2010)
+StoreCalibrated                      true
+StoreScientific		     	     true 5
+StoreSimulationInfo                  true
+StoreSimulationInfoIonization        false
+DiscretizeHits                       true
+
+DefaultRangeCut 0.1
+
+# Polarized run parameters:
+
+Run Bckgrnd
+Bckgrnd.FileName         ./sim/bkg_550km-0deg-3600s
+Bckgrnd.Time             3600
+
+
+Bckgrnd.Source SecondaryElectronsSource
+AtmosphericElectronsSource.ParticleType    3
+AtmosphericElectronsSource.Beam            FarFieldAreaSource 0. 180. 0. 360.
+AtmosphericElectronsSource.Spectrum        File ../sources/bkgnd/SecondaryElectrons_Spec_550km_0deg.dat
+AtmosphericElectronsSource.Flux            0.2047083846286457
+#Flux in #/cm^2/s
+
+Bckgrnd.Source AtmosphericNeutronsSource
+AtmosphericNeutronsSource.ParticleType    6
+#AtmosphericNeutronsSource.Beam            FarFieldAreaSource 0. 180. 0. 360.
+AtmosphericNeutronsSource.Beam            FarFieldFileZenithDependent ../sources/bkgnd/AlbedoPhotonBeam.dat
+AtmosphericNeutronsSource.Spectrum        File ../sources/bkgnd/AtmosphericNeutrons_Spec_550km_0deg.dat
+AtmosphericNeutronsSource.Flux            0.04072353674576243
+#Flux in #/cm^2/s
+
+Bckgrnd.Source AlbedoPhotonsSource
+AtmosphericPhotonsSource.ParticleType    1
+AtmosphericPhotonsSource.Beam            FarFieldFileZenithDependent ../sources/bkgnd/AlbedoPhotonBeam.dat
+AtmosphericPhotonsSource.Spectrum        File ../sources/bkgnd/AlbedoPhotons_Spec_550km_0deg.dat
+AtmosphericPhotonsSource.Flux            16.41449335756656
+#Flux in #/cm^2/s
+
+Bckgrnd.Source SecondaryPositronsSource
+AtmosphericPositronsSource.ParticleType    2
+AtmosphericPositronsSource.Beam            FarFieldAreaSource 0. 180. 0. 360.
+AtmosphericPositronsSource.Spectrum        File ../sources/bkgnd/SecondaryPositrons_Spec_550km_0deg.dat
+AtmosphericPositronsSource.Flux            0.6755376693118478
+#Flux in #/cm^2/s
+
+Bckgrnd.Source SecondaryProtonsUpwardSource
+AtmosphericProtonsSourceUp.ParticleType    4
+AtmosphericProtonsSourceUp.Beam            FarFieldAreaSource 90. 180. 0. 360.
+AtmosphericProtonsSourceUp.Spectrum        File ../sources/bkgnd/SecondaryProtonsUpward_Spec_550km_0deg.dat
+AtmosphericProtonsSourceUp.Flux            0.07957765073433282
+#Flux in #/cm^2/s
+
+Bckgrnd.Source SecondaryProtonsDownwardSource
+AtmosphericProtonsSourceDown.ParticleType    4
+AtmosphericProtonsSourceDown.Beam            FarFieldAreaSource 0. 90. 0. 360.
+AtmosphericProtonsSourceDown.Spectrum        File ../sources/bkgnd/SecondaryProtonsDownward_Spec_550km_0deg.dat
+AtmosphericProtonsSourceDown.Flux            0.07957765073433282
+#Flux in #/cm^2/s
+
+Bckgrnd.Source PrimaryElectronsSource
+CosmicElectronsSource.ParticleType    3
+CosmicElectronsSource.Beam            FarFieldAreaSource 0. 180. 0. 360.
+CosmicElectronsSource.Spectrum        File ../sources/bkgnd/PrimaryElectrons_Spec_550km_0deg.dat
+CosmicElectronsSource.Flux            0.0010505395723598024
+#Flux in #/cm^2/s
+
+Bckgrnd.Source CosmicPhotonsSource
+CosmicPhotonsSource.ParticleType    1
+CosmicPhotonsSource.Beam            FarFieldAreaSource 0. 112. 0. 360.
+CosmicPhotonsSource.Spectrum        File ../sources/bkgnd/CosmicPhotons_Spec_550km_0deg.dat
+CosmicPhotonsSource.Flux            4.108330315398538
+#Flux in #/cm^2/s
+
+Bckgrnd.Source PrimaryPositronsSource
+CosmicPositronsSource.ParticleType    2
+CosmicPositronsSource.Beam            FarFieldAreaSource 0. 180. 0. 360.
+CosmicPositronsSource.Spectrum        File ../sources/bkgnd/PrimaryPositrons_Spec_550km_0deg.dat
+CosmicPositronsSource.Flux            6.617885837016451e-05
+#Flux in #/cm^2/s
+
+Bckgrnd.Source PrimaryProtonsSource
+CosmicProtonsSource.ParticleType    4
+CosmicProtonsSource.Beam            FarFieldAreaSource 0. 112. 0. 360.
+CosmicProtonsSource.Spectrum        File ../sources/bkgnd/PrimaryProtons_Spec_550km_0deg.dat
+CosmicProtonsSource.Flux            0.10287451623364807
