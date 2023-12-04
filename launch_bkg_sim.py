@@ -62,7 +62,8 @@ def make_tmp_source(alt, lat, geom, source_model):
       elif line.startswith(f"{run}.FileName"):
         f.write(f"{run}.FileName {sname}")
       elif line.startswith(f"{run}.Time"):
-        f.write(f"{run}.Time {3600}")
+        # f.write(f"{run}.Time {3600}")
+        f.write(f"{run}.Time {10}")
       elif line.startswith(f"{run}.Source"):
         source = line.split(" ")[-1]
         particle = source.split("Source")[0]
