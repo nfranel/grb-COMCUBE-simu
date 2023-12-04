@@ -74,23 +74,23 @@ def make_tmp_source(alt, lat, geom, source_model):
         else:
           print("Name of source is not valid. Should be one of the ones for which a spectrum was calculated.")
       elif line.startswith(f"{source}.Beam"):
-        # print("Ca se fait 2")
+        print("Ca se fait 2")
         if particle in ["AtmosphericNeutrons", "AlbedoPhotons"]:
           f.write(f"{source}.Beam FarFieldFileZenithDependent ./AlbedoPhotonBeam.dat")
-          # print("Ca se fait 3")
+          print("Ca se fait 3")
         else:
           f.write(line)
       elif line.startswith(f"{source}.Spectrum"):
         particle_dat = f"./bkg_source_spectra/source-dat--alt_{alt}--lat_{lat}/{particle}_Spec_{alt}km_{lat}deg.dat"
         f.write(f"{source}.Spectrum File {particle_dat}")
-        # print("Ca se fait 4")
+        print("Ca se fait 4")
       elif line.startswith("{source}.Flux"):
         flux = read_flux_from_spectrum(particle_dat)
         f.write(f"{source}.Flux {flux}")
-        # print("Ca se fait 5")
+        print("Ca se fait 5")
       else:
         f.write(line)
-        print(line)
+        # print(line)
       f.write("\n")
   return fname, sname
 
