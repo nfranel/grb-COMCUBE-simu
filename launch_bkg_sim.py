@@ -68,6 +68,7 @@ def make_tmp_source(alt, lat, geom, source_model):
         source = line.split(" ")[-1]
         print("SOURCE READ : ", source)
         particle = source.split("Source")[0]
+        print(particle)
         if particle in source_list:
           f.write(line)
         else:
