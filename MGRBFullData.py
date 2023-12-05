@@ -23,7 +23,7 @@ class GRBFormatedData:
   def __init__(self, data_list, sat_info, num_sat, sim_duration, save_pos, save_time,
                polarigram_bins, armcut, corr, ergcut):
     """
-    -data_list : list of 1 or 2 files (pol or pol+unpol) from which extract the data
+    -data_list : 1 polarized data file from which extract the data
     """
     ##############################################################
     #                   Attributes declaration                   #
@@ -52,16 +52,11 @@ class GRBFormatedData:
       compton_firstpos = []
       compton_secpos = []
       single_pos = []
-    unpol_compton_second = []
-    unpol_compton_ener = []
-    unpol_compton_firstpos = []
-    unpol_compton_secpos = []
 
     if save_time:
       self.compton_time = []
       self.single_time = []
     self.pol = None
-    self.unpol = None
     self.polar_from_position = None
     # This polar angle is the one considered as compton scatter angle by mimrec
     self.polar_from_energy = None
@@ -77,20 +72,20 @@ class GRBFormatedData:
     self.compton = 0
     self.compton_cr = 0
     # Set with the fit or for the fit
-    self.bins = polarigram_bins
-    self.polarigram_error = []
-    self.fits = None
+    # self.bins = polarigram_bins
+    # self.polarigram_error = []
+    # self.fits = None
     self.mu100 = None
-    self.pa = None
-    self.fit_compton_cr = None
-    self.pa_err = None
-    self.mu100_err = None
-    self.fit_compton_cr_err = None
+    # self.pa = None
+    # self.fit_compton_cr = None
+    # self.pa_err = None
+    # self.mu100_err = None
+    # self.fit_compton_cr_err = None
     # =0 : fit perfectly
     # ~1 : fit reasonably
     # >1 : not a good fit
     # >>1 : very poor fit
-    self.fit_goodness = None
+    # self.fit_goodness = None
     # Setting of mdp and snr
     self.mdp = None
     self.snr_compton = None
@@ -111,7 +106,6 @@ class GRBFormatedData:
     if len(data_list) == 0:  # Empty object for the constellation making
       self.n_sat_detect = 0
     else:
-      # Change it so that it's not saved here !
       dec_world_frame, ra_world_frame, source_name, num_sim, num_sat = fname2decra(data_list[0])
       self.expected_pa, self.dec_sat_frame, self.ra_sat_frame = grb_decrapol_worldf2satf(dec_world_frame, ra_world_frame, sat_info[0], sat_info[1])[:3]
       # Extracting the data from first file
@@ -177,36 +171,13 @@ class GRBFormatedData:
       self.polar_from_position = self.polar_from_position[accepted_arm_pol]
       self.pol = self.pol[accepted_arm_pol]
 
-      # Extracting the data from second file if it exists
-      if len(data_list) == 2:
-        data_unpol = readfile(data_list[1])
-        for event in data_unpol:
-          reading = readevt(event, ergcut)
-          if len(reading) == 5:
-            unpol_compton_second.append(reading[0])
-            unpol_compton_ener.append(reading[1])
-            unpol_compton_firstpos.append(reading[3])
-            unpol_compton_secpos.append(reading[4])
-        unpol_compton_second = np.array(unpol_compton_second)
-        unpol_compton_ener = np.array(unpol_compton_ener)
-        unpol_compton_firstpos = np.array(unpol_compton_firstpos)
-        unpol_compton_secpos = np.array(unpol_compton_secpos)
-        # Calculating the polar angle using the energy values and compton azimuthal and polar scattering angles from the kinematics
-        unpol_polar_from_energy = calculate_polar_angle(unpol_compton_second, unpol_compton_ener)
-        self.unpol, unpol_polar_from_position = angle(unpol_compton_secpos - unpol_compton_firstpos, self.dec_sat_frame, self.ra_sat_frame, source_name, num_sim, num_sat)
-        # Calculating the arm and extracting the indexes of correct arm events
-        arm_unpol = unpol_polar_from_position - unpol_polar_from_energy
-        accepted_arm_unpol = np.where(np.abs(arm_unpol) <= armcut, True, False)
-        # Restriction of the values according to arm cut
-        self.unpol = self.unpol[accepted_arm_unpol]
-
       # Correcting the angle correction for azimuthal angle according to cosima's polarization definition
       # And setting the attribute stating if the correction is applied or not
       # Putting the correction before the filtering may cause some issues
       if corr:
         self.corr()
 
-      self.bins = set_bins(polarigram_bins, self.pol)
+      # self.bins = set_bins(polarigram_bins, self.pol)
 
       # Putting the azimuthal scattering angle between the correct bins for creating histograms
       self.single = len(self.single_ener)
@@ -374,7 +345,7 @@ class GRBFormatedData:
     print("    Methods")
     print("======================================================================")
 
-  def analyze(self, message, source_duration, source_fluence, source_with_bkg, fit_bounds):
+  def analyze(self, message, source_duration, source_fluence, fit_bounds):
     """
     Proceeds to the data analysis to get mu100, pa, compton cr, mdp and snr
     mdp has physical significance between 0 and 1
@@ -385,35 +356,27 @@ class GRBFormatedData:
     else:
       self.s_eff_compton = self.compton_cr * source_duration / source_fluence
       self.s_eff_single = self.single_cr * source_duration / source_fluence
-    if self.unpol is not None:
-      self.fit(message, fit_bounds=fit_bounds)
-      # self.fit(fit_bounds=([-np.inf, -np.inf, (len(self.pol)-1)/100], [np.inf, np.inf, (len(self.pol)+1)/100]))
-      if self.fits[0] is not None:
-        self.pa, self.mu100, self.fit_compton_cr = self.fits[-2].popt
-        if self.mu100 < 0:
-          self.pa = (self.pa + 90) % 180
-          self.mu100 = - self.mu100
-        else:
-          self.pa = self.pa % 180
-        if self.mu100 > 0.8:
-          print(f"Warning : unusual value - {message} may need further verification, mu100 = {self.mu100}")
-        self.pa_err = np.sqrt(self.fits[-2].pcov[0][0])
-        self.mu100_err = np.sqrt(self.fits[-2].pcov[1][1])
-        self.fit_compton_cr_err = np.sqrt(self.fits[-2].pcov[2][2])
-        self.fit_goodness = self.fits[-2].q2 / (len(self.fits[-2].x) - self.fits[-2].nparam)
+    # if self.unpol is not None:
+    #   self.fit(message, fit_bounds=fit_bounds)
+    #   # self.fit(fit_bounds=([-np.inf, -np.inf, (len(self.pol)-1)/100], [np.inf, np.inf, (len(self.pol)+1)/100]))
+    #   if self.fits[0] is not None:
+    #     self.pa, self.mu100, self.fit_compton_cr = self.fits[-2].popt
+    #     if self.mu100 < 0:
+    #       self.pa = (self.pa + 90) % 180
+    #       self.mu100 = - self.mu100
+    #     else:
+    #       self.pa = self.pa % 180
+    #     if self.mu100 > 0.8:
+    #       print(f"Warning : unusual value - {message} may need further verification, mu100 = {self.mu100}")
+    #     self.pa_err = np.sqrt(self.fits[-2].pcov[0][0])
+    #     self.mu100_err = np.sqrt(self.fits[-2].pcov[1][1])
+    #     self.fit_compton_cr_err = np.sqrt(self.fits[-2].pcov[2][2])
+    #     self.fit_goodness = self.fits[-2].q2 / (len(self.fits[-2].x) - self.fits[-2].nparam)
 
-        if source_with_bkg:
-          print("MDP calculation may not work if source is simulated with the background")
-          self.mdp = MDP((self.compton_cr - self.compton_b_rate) * source_duration, self.compton_b_rate * source_duration, self.mu100)
-        else:
-          self.mdp = MDP(self.compton_cr * source_duration, self.compton_b_rate * source_duration, self.mu100)
+    self.mdp = MDP(self.compton_cr * source_duration, self.compton_b_rate * source_duration, self.mu100)
     # Calculation of SNR with 1sec of integration
-    if source_with_bkg:
-      snr_compton_val = SNR(self.compton_cr - self.compton_b_rate, self.compton_b_rate)
-      snr_single_t90_val = SNR(self.single_cr - self.single_b_rate, self.single_b_rate)
-    else:
-      snr_compton_val = SNR(self.compton_cr, self.compton_b_rate)
-      snr_single_t90_val = SNR(self.single_cr, self.single_b_rate)
+    snr_compton_val = SNR(self.compton_cr, self.compton_b_rate)
+    snr_single_t90_val = SNR(self.single_cr, self.single_b_rate)
     # Saving the snr for different integration times
     if snr_compton_val < 0:
       self.snr_compton_t90 = 0

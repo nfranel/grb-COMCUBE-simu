@@ -57,7 +57,6 @@ class AllSourceData:
     self.options = [self.save_pos, self.save_time, self.polarigram_bins, self.armcut, self.init_correction,
                     self.erg_cut]
 
-    self.pol_data = False
     self.sat_info = []  # angles in it will be in deg
     self.bkg_sim_duration = 3600
     # Parameters extracted from parfile
@@ -107,9 +106,9 @@ class AllSourceData:
     # Parameters extracted from source file
     with open(self.source_file) as f:
       lines = f.read().split("\n")
-    self.source_with_bkg = False
-    if len(lines) > 50:
-      self.source_with_bkg = True
+    # self.source_with_bkg = False
+    # if len(lines) > 50:
+    #   self.source_with_bkg = True
     sim_name = ""
     source_name = ""
     for line in lines:
@@ -120,10 +119,6 @@ class AllSourceData:
         sim_name = line.split(" ")[1]
       elif line.startswith(f"{sim_name}.Source"):
         source_name = line.split(" ")[1]
-      elif line.startswith(f"{source_name}.Polarization") and not self.pol_data:
-        self.pol_data = True
-      elif line.startswith(f"{source_name}.Polarization") and self.pol_data:
-        raise Warning("Sourcefile contains 2 polarized sources")
     # Setting the background files
     self.bkgdata = []
     flist = subprocess.getoutput("ls {}_*".format(bkg_prefix)).split("\n")
@@ -151,18 +146,16 @@ class AllSourceData:
       with mp.Pool() as pool:
         self.alldata = pool.starmap(AllSimData, zip(repeat(self.sim_prefix), range(self.n_source), repeat(cat_data),
                                                     repeat(self.mode), repeat(self.n_sim), repeat(self.sat_info),
-                                                    repeat(self.pol_data), repeat(self.polsim_duration),
-                                                    repeat(self.options)))
+                                                    repeat(self.polsim_duration), repeat(self.options)))
     elif type(parallel) is int:
       print(f"Parallel extraction of the data with {parallel} threads")
       with mp.Pool(parallel) as pool:
         self.alldata = pool.starmap(AllSimData, zip(repeat(self.sim_prefix), range(self.n_source), repeat(cat_data),
                                                     repeat(self.mode), repeat(self.n_sim), repeat(self.sat_info),
-                                                    repeat(self.pol_data), repeat(self.polsim_duration),
-                                                    repeat(self.options)))
+                                                    repeat(self.polsim_duration), repeat(self.options)))
     else:
       self.alldata = [
-        AllSimData(self.sim_prefix, source_ite, cat_data, self.mode, self.n_sim, self.sat_info, self.pol_data,
+        AllSimData(self.sim_prefix, source_ite, cat_data, self.mode, self.n_sim, self.sat_info,
                    self.polsim_duration, self.options) for source_ite in range(self.n_source)]
 
     # Setting some informations used for obtaining the GRB count rates
@@ -201,7 +194,6 @@ class AllSourceData:
     print("    save_pos : to get another fiels from trafiles")
     print("    save_time : to handle the new field with a specific function")
     print("    corr : to correct the polarization angle")
-    print(" Whether or not polarized simulations were done :       .pol_data")
     print(" Whether or not bkg simulated with the source :         .source_with_bkg")
     print("======================================================================")
     print("    Data and simulation information")
@@ -271,7 +263,7 @@ class AllSourceData:
       if source is not None:
         for sim_ite, sim in enumerate(source):
           if sim is not None:
-            sim.analyze(f"source {self.namelist[source_ite]}({source_ite}), sim {sim_ite}, ", source.source_duration, source.source_fluence, self.source_with_bkg, fit_bounds, const_analysis)
+            sim.analyze(f"source {self.namelist[source_ite]}({source_ite}), sim {sim_ite}, ", source.source_duration, source.source_fluence, fit_bounds, const_analysis)
             # if source.source_fluence is None:
             #   sim.analyze(source.source_duration, source.source_fluence, self.source_with_bkg, fit_bounds, const_analysis)
             # else:

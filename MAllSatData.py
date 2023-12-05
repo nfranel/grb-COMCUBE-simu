@@ -7,7 +7,7 @@
 import subprocess
 # Developped modules imports
 from funcmod import *
-from MGRBFormatedData import GRBFormatedData
+from MGRBFullData import GRBFormatedData
 
 
 class AllSatData(list):
@@ -15,36 +15,25 @@ class AllSatData(list):
   Class containing all the data for 1 simulation of 1 GRB (or other source) for a full set of trafiles
   """
 
-  def __init__(self, source_prefix, num_sim, pol_analysis, sat_info, sim_duration, options):
+  def __init__(self, source_prefix, num_sim, sat_info, sim_duration, options):
     temp_list = []
     # Attributes relative to the simulations without any analysis
     self.n_sat_receiving = 0
     self.n_sat = len(sat_info)
     self.dec_world_frame = None
     self.ra_world_frame = None
-    self.pol_analysis = True
     self.loading_count = 0
     for num_sat in range(self.n_sat):
-      flist = subprocess.getoutput("ls {}_sat{}_{:04d}_*".format(source_prefix, num_sat, num_sim)).split("\n")
-      if len(flist) == 2:
-        temp_list.append(GRBFormatedData(flist, sat_info[num_sat], num_sat, sim_duration, *options))
-        self.n_sat_receiving += 1
-        self.loading_count += 2
-      elif len(flist) == 1:
+      flist = subprocess.getoutput("ls {}_sat{}_{:04d}_*.inc1.id1.extracted.tra".format(source_prefix, num_sat, num_sim)).split("\n")
+      if len(flist) == 1:
         if flist[0].startswith("ls: cannot access"):
           temp_list.append(None)
-        elif pol_analysis:
-          temp_list.append(GRBFormatedData(flist, sat_info[num_sat], sim_duration, num_sat, *options))
-          self.n_sat_receiving += 1
-          self.pol_analysis = False
-          self.loading_count += 1
-          print(
-            f'WARNING : Polarization analysis is expected but the wrong number of trafile has been found, no polarization data were extracted : {flist}')
         else:
           temp_list.append(GRBFormatedData(flist, sat_info[num_sat], sim_duration, num_sat, *options))
           self.n_sat_receiving += 1
-          self.pol_analysis = False
           self.loading_count += 1
+      else:
+        print(f'WARNING : Unusual number of file : {flist}')
       if not flist[0].startswith("ls: cannot access") and self.dec_world_frame is None:
         self.dec_world_frame, self.ra_world_frame = fname2decra(flist[0])[:2]
     list.__init__(self, temp_list)
@@ -59,23 +48,22 @@ class AllSatData(list):
     print(" Number of satellites in the simulation :              .n_sat")
     print(" Declination of the source (world frame) :             .dec_world_frame")
     print(" Right ascention of the source (world frame) :         .ra_world_frame")
-    print(" Whether or not a polarization analysis is possible    .pol_analysis")
     print(" ===== Attribute that needs to be handled + 2 cases (full FoV or full sky)")
     print(" Extracted data but for a given set of satellites      .const_data")
     print("======================================================================")
     print("    Methods")
     print("======================================================================")
 
-  def analyze(self, source_message, source_duration, source_fluence, source_with_bkg, fit_bounds, const_analysis):
+  def analyze(self, source_message, source_duration, source_fluence, fit_bounds, const_analysis):
     """
     Proceed to the analysis of polarigrams for all satellites and constellation (unless specified)
     """
     # First step of the analyze, to obtain the polarigrams, and values for polarization and snr
     for sat_ite, sat in enumerate(self):
       if sat is not None:
-        sat.analyze(f"{source_message}sat {sat_ite}", source_duration, source_fluence, source_with_bkg, fit_bounds)
+        sat.analyze(f"{source_message}sat {sat_ite}", source_duration, source_fluence, fit_bounds)
     if self.const_data is not None and const_analysis:
-      self.const_data.analyze(f"{source_message}const", source_duration, source_fluence, source_with_bkg, fit_bounds)
+      self.const_data.analyze(f"{source_message}const", source_duration, source_fluence, fit_bounds)
     else:
       print("Constellation not set : please use make_const method if you want to analyze the constellation's results")
 

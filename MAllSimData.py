@@ -15,7 +15,7 @@ class AllSimData(list):
   Class containing all the data for 1 GRB (or other source) for a full set of trafiles
   """
 
-  def __init__(self, sim_prefix, source_ite, cat_data, mode, n_sim, sat_info, pol_analysis, polsim_duration, options):
+  def __init__(self, sim_prefix, source_ite, cat_data, mode, n_sim, sat_info, polsim_duration, options):
     temp_list = []
     self.n_sim_det = 0
     if type(cat_data) is list:
@@ -69,13 +69,13 @@ class AllSimData(list):
     for num_sim in range(n_sim):
       flist = subprocess.getoutput("ls {}_*_{:04d}_*".format(source_prefix, num_sim)).split("\n")
       if len(flist) >= 2:
-        temp_list.append(AllSatData(source_prefix, num_sim, pol_analysis, sat_info, sim_duration, options))
+        temp_list.append(AllSatData(source_prefix, num_sim, sat_info, sim_duration, options))
         self.n_sim_det += 1
       elif len(flist) == 1:
         if flist[0].startswith("ls: cannot access"):
           temp_list.append(None)
         else:
-          temp_list.append(AllSatData(source_prefix, num_sim, pol_analysis, sat_info, sim_duration, options))
+          temp_list.append(AllSatData(source_prefix, num_sim, sat_info, sim_duration, options))
           self.n_sim_det += 1
     list.__init__(self, temp_list)
     for sim_ite, sim in enumerate(self):

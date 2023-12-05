@@ -1,6 +1,7 @@
 from MAllSourceData import AllSourceData
 from time import time
 
+
 init_time = time()
 bkg_path = "./bkg/bkg"  # _background_sat0_0000_90.0_0.0.inc1.id1.extracted.tra"
 paramfile = "../quicktest-grb/polGBM.par"
