@@ -36,7 +36,6 @@ def read_par(parfile):
     elif line.startswith("@latitudes"):
       latitudes = list(map(int, line.split(" ")[1:]))
       latitudes = np.linspace(latitudes[0], latitudes[1], latitudes[2])
-  print(geom, revanf, mimrecf, source_base, spectra, simtime, latitudes, altitudes)
   return geom, revanf, mimrecf, source_base, spectra, simtime, latitudes, altitudes
 
 
