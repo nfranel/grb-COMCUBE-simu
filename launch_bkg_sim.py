@@ -55,10 +55,11 @@ def make_directories(geometry, spectra):
     os.mkdir(f"./bkg/sim_{geom_name}/rawsim")
 
 
-def make_spectra(spectra, alt, lat):
+def make_spectra(params):
   """
 
   """
+  spectra, alt, lat = params[6], params[0], params[1]
   if not f"source-dat--alt_{alt:.1f}--lat_{lat:.1f}" in os.listdir(spectra):
     os.mkdir(f"{spectra}/source-dat--alt_{alt:.1f}--lat_{lat:.1f}")
   os.chdir("./bkg")
