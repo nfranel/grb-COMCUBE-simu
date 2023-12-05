@@ -64,6 +64,7 @@ def make_spectra(spectra, alt, lat):
   os.chdir("./bkg")
   subprocess.call(f"python CreateBackgroundSpectrumMEGAlib.py -i {lat} -a {alt}", shell=True)
   source_spectra = subprocess.getoutput("ls *_Spec_{alt:.1f}km_{lat:.1f}deg.dat").split("\n")
+  print("source_spectra", source_spectra)
   os.chdir("..")
   for spectrum in source_spectra:
     subprocess.call(f"mv ./bkg/{spectrum} {spectra}/source-dat--alt_{alt:.1f}--lat_{lat:.1f}", shell=True)
@@ -123,6 +124,7 @@ def make_tmp_source(alt, lat, geom, source_model, spectra):
           f.write(line)
       elif line.startswith(f"{source}.Spectrum"):
         particle_dat = f"{spectra}/source-dat--alt_{alt:.1f}--lat_{lat:.1f}/{particle}_Spec_{alt:.1f}km_{lat:.1f}deg.dat"
+        # print("Particle file : ", particle_dat)
         f.write(f"{source}.Spectrum File {particle_dat}")
       elif line.startswith(f"{source}.Flux"):
         flux = read_flux_from_spectrum(particle_dat)
