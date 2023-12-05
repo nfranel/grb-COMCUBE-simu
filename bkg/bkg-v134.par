@@ -26,7 +26,6 @@
 @cosimasourcefile ./bkg/bkgrnd_model.source
 @spectrafilepath ./bkg/bkg_source_spectra/
 
-@simtime 3
+@simtime 3600
 @altitudes 400 500
-#@latitudes -90 90 91
-@latitudes -90 90 3
+@latitudes -90 90 91
