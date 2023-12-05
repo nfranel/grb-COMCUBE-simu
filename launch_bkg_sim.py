@@ -184,8 +184,10 @@ if __name__ == "__main__":
     # Making the different sources spectra :
     # with mp.Pool() as pool:
     #   pool.map(make_spectra, parameters)
-    for params in parameters:
-      make_spectra(params[6], params[0], params[1])
+    # for params in parameters:
+    #   make_spectra(params[6], params[0], params[1])
+    with mp.Pool() as pool:
+      pool.map(make_spectra, parameters)
     with mp.Pool() as pool:
       pool.map(run_bkg, parameters)
   else:
