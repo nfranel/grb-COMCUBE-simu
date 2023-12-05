@@ -66,6 +66,7 @@ def make_spectra(spectra, alt, lat):
   os.chdir("./bkg")
   subprocess.call(f"python CreateBackgroundSpectrumMEGAlib.py -i {lat} -a {alt}", shell=True)
   source_spectra = subprocess.getoutput("ls *Spec*.dat").split("\n")
+  print(os.listdir("."))
   os.chdir("..")
   print(os.listdir("."))
   for spectrum in source_spectra:
@@ -181,6 +182,8 @@ if __name__ == "__main__":
     parameters = make_parameters(altitudes, latitudes, geometry, source_base, revanfile, mimrecfile, spectra)
     print(f"{len(parameters)} Commands have been parsed")
     # Making the different sources spectra :
+    # with mp.Pool() as pool:
+    #   pool.map(make_spectra, parameters)
     for params in parameters:
       make_spectra(params[6], params[0], params[1])
     with mp.Pool() as pool:
