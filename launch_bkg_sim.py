@@ -30,10 +30,10 @@ def read_par(parfile):
     elif line.startswith("@simtime"):
       simtime = float(line.split(" ")[1])
     elif line.startswith("@altitudes"):
-      latitudes = map(float, line.split(" ")[1:])
-    elif line.startswith("@latitudes"):
       altitudes = map(float, line.split(" ")[1:])
-      altitudes = np.linspace(altitudes[0], altitudes[1], altitudes[2])
+    elif line.startswith("@latitudes"):
+      latitudes = map(float, line.split(" ")[1:])
+      latitudes = np.linspace(latitudes[0], latitudes[1], latitudes[2])
     return geom, revanf, mimrecf, source_base, spectra, simtime, latitudes, altitudes
 
 
