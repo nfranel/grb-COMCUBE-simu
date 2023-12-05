@@ -27,6 +27,8 @@ def read_par(parfile):
       source_base = line.split(" ")[1]
     elif line.startswith("@spectrafilepath"):
       spectra = line.split(" ")[1]
+      if spectra.endswith("/"):
+        spectra = spectra[:-1]
     elif line.startswith("@simtime"):
       simtime = float(line.split(" ")[1])
     elif line.startswith("@altitudes"):
@@ -40,11 +42,7 @@ def read_par(parfile):
 
 def make_directories(geometry, spectra):
   # Creating the bkg_source_spectra repertory if it doesn't exist
-  if spectra.endswith("/"):
-    directory = spectra.split("/")[-2]
-  else:
-    directory = spectra.split("/")[-1]
-  if not directory in os.listdir("./bkg"):
+  if not spectra.split("/")[-1] in os.listdir("./bkg"):
     os.mkdir(spectra)
   # Creating a directory specific to the geometry
   geom_name = geometry.split(".geo.setup")[0].split("/")[-1]
