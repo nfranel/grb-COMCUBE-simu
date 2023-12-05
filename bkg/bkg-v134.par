@@ -26,6 +26,7 @@
 @cosimasourcefile ./bkg/mu100_model.source
 @spectrafilepath ./bkg/bkg_source_spectra/
 
-@simtime 300
+@simtime 3
 @altitudes 400 500
-@latitudes -90 90 91
+#@latitudes -90 90 91
+@latitudes -90 90 3
