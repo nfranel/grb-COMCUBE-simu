@@ -87,7 +87,7 @@ fac = [ViewAtmo, ViewSky, 2*np.pi, 2*np.pi, ViewSky, 4*np.pi, 4*np.pi, 4*np.pi, 
 for i in range(0, len(Megalibfunc)):
 
     Energies = np.logspace(Elow, Ehigh, num=100, endpoint=True, base=10.0)
-    Output = "%s_Spec_%skm_%sdeg.dat" % (Particle[i], int(Altitude), int(Inclination))
+    Output = f"{Particle[i]}_Spec_{Altitude:.1f}km_{Inclination:.1f}deg.dat"
     IntSpectrum, err = quad(Megalibfunc[i], 10**Elow, 10**Ehigh)
     print(Particle[i], IntSpectrum*fac[i], " #/cm^2/s", err)
     with open(Output, 'w') as f:
