@@ -177,9 +177,12 @@ if __name__ == "__main__":
   # parser.add_argument("-nm", "--nomimrec", help="Does not run mimrec", action="store_true")
   args = parser.parse_args()
   if args.parameterfile:
+    # Reading the param file
     print(f"Running of {args.parameterfile} parameter file")
     geometry, revanfile, mimrecfile, source_base, spectra, simtime, latitudes, altitudes = read_par(args.parameterfile)
-
+    # Creating the required directories
+    make_directories(geometry, spectra)
+    # Creating the parameter list
     parameters = make_parameters(altitudes, latitudes, geometry, source_base, revanfile, mimrecfile, spectra)
     print(f"{len(parameters)} Commands have been parsed")
     # Making the different sources spectra :
