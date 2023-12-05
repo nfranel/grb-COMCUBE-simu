@@ -148,8 +148,6 @@ def make_parameters(alts, lats, geomfile, source_model, rcffile, mimfile, spectr
 
 
 def run_bkg(params):
-  # Making the different sources spectra :
-  make_spectra(params[6], params[0], params[1])
   # Making a temporary source file using a source_model
   sourcefile, simname = make_tmp_source(params[0], params[1], params[2], params[3], params[6])
   # Making a generic name for files
@@ -182,6 +180,9 @@ if __name__ == "__main__":
 
     parameters = make_parameters(altitudes, latitudes, geometry, source_base, revanfile, mimrecfile, spectra)
     print(f"{len(parameters)} Commands have been parsed")
+    # Making the different sources spectra :
+    for params in parameters:
+      make_spectra(params[6], params[0], params[1])
     with mp.Pool() as pool:
       pool.map(run_bkg, parameters)
   else:
