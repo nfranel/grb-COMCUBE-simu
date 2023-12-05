@@ -63,7 +63,7 @@ def make_spectra(spectra, alt, lat):
     os.mkdir(f"{spectra}/source-dat--alt_{alt:.1f}--lat_{lat:.1f}")
   os.chdir("./bkg")
   subprocess.call(f"python CreateBackgroundSpectrumMEGAlib.py -i {lat} -a {alt}", shell=True)
-  source_spectra = subprocess.getoutput("ls *_Spec_{alt:.1f}km_{lat:.1f}deg.dat").split("\n")
+  source_spectra = subprocess.getoutput(f"ls *_Spec_{alt:.1f}km_{lat:.1f}deg.dat").split("\n")
   print()
   print("source_spectra", source_spectra)
   os.chdir("..")
