@@ -65,9 +65,6 @@ def make_spectra(params):
   os.chdir("./bkg")
   subprocess.call(f"python CreateBackgroundSpectrumMEGAlib.py -i {lat} -a {alt}", shell=True)
   source_spectra = subprocess.getoutput(f"ls *_Spec_{alt:.1f}km_{lat:.1f}deg.dat").split("\n")
-  print()
-  print("ls normal : ", subprocess.getoutput(f"ls *_Spec_{alt:.1f}km_{lat:.1f}deg.dat").split("\n"))
-  print("source_spectra", source_spectra)
   os.chdir("..")
   for spectrum in source_spectra:
     subprocess.call(f"mv ./bkg/{spectrum} {spectra}/source-dat--alt_{alt:.1f}--lat_{lat:.1f}", shell=True)
@@ -88,7 +85,7 @@ def read_flux_from_spectrum(file):
     line = lines[line_ite]
 
 
-def make_tmp_source(alt, lat, geom, source_model, spectra):
+def make_tmp_source(alt, lat, geom, source_model, spectra, simtime):
   """
 
   """
@@ -112,7 +109,7 @@ def make_tmp_source(alt, lat, geom, source_model, spectra):
       elif line.startswith(f"{run}.FileName"):
         f.write(f"{run}.FileName {sname}")
       elif line.startswith(f"{run}.Time"):
-        f.write(f"{run}.Time {3600}")
+        f.write(f"{run}.Time {simtime}")
       elif line.startswith(f"{run}.Source"):
         source = line.split(" ")[-1]
         particle = source.split("Source")[0]
@@ -138,20 +135,20 @@ def make_tmp_source(alt, lat, geom, source_model, spectra):
   return fname, sname
 
 
-def make_parameters(alts, lats, geomfile, source_model, rcffile, mimfile, spectra):
+def make_parameters(alts, lats, geomfile, source_model, rcffile, mimfile, spectra, simtime):
   """
 
   """
   parameters = []
   for alt in alts:
     for lat in lats:
-      parameters.append((alt, lat, geomfile, source_model, rcffile, mimfile, spectra))
+      parameters.append((alt, lat, geomfile, source_model, rcffile, mimfile, spectra, simtime))
   return parameters
 
 
 def run_bkg(params):
   # Making a temporary source file using a source_model
-  sourcefile, simname = make_tmp_source(params[0], params[1], params[2], params[3], params[6])
+  sourcefile, simname = make_tmp_source(params[0], params[1], params[2], params[3], params[6], params[7])
   # Making a generic name for files
   simfile, trafile = f"{simname}.inc1.id1.sim.gz", f"{simname}.inc1.id1.tra.gz"
   mv_simname = f"{simname.split('/sim/')[0]}/rawsim/{simname.split('/sim/')[-1]}"
@@ -183,15 +180,24 @@ if __name__ == "__main__":
     # Creating the required directories
     make_directories(geometry, spectra)
     # Creating the parameter list
-    parameters = make_parameters(altitudes, latitudes, geometry, source_base, revanfile, mimrecfile, spectra)
+    parameters = make_parameters(altitudes, latitudes, geometry, source_base, revanfile, mimrecfile, spectra, simtime)
+    print("===================================================================")
     print(f"{len(parameters)} Commands have been parsed")
+    print("===================================================================")
+
     # Making the different sources spectra :
     # with mp.Pool() as pool:
     #   pool.map(make_spectra, parameters)
     # for params in parameters:
     #   make_spectra(params[6], params[0], params[1])
+    print("===================================================================")
+    print("Running the creation of spectra")
+    print("===================================================================")
     with mp.Pool() as pool:
       pool.map(make_spectra, parameters)
+    print("===================================================================")
+    print("Running the background simulations and extraction")
+    print("===================================================================")
     with mp.Pool() as pool:
       pool.map(run_bkg, parameters)
   else:
