@@ -30,7 +30,6 @@ def read_par(parfile):
       if spectra.endswith("/"):
         spectra = spectra[:-1]
     elif line.startswith("@bandparam"):
-      print(line.split(" ")[1:])
       bandparam = list(map(float, line.split(" ")[1:]))
     elif line.startswith("@poltime"):
       poltime = float(line.split(" ")[1])
