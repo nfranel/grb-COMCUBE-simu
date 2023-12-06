@@ -283,4 +283,3 @@ class Catalog:
     ax6.set(xlabel="Pivot energy (keV)", ylabel="Number of GRBs")
 
     plt.show()
-

@@ -12,7 +12,7 @@
 #@cosimasourcefile   : Source file used as model for temporary source files
 #@spectrafilepath    : Path of the directory where all the source spectra are created
 
-#@simtime            : Time of simulation (usually 3600 s)
+#@simtime            : Duration of simulation (usually 3600 s)
 #@altitudes          : Altitudes simulated (separated by a blank space)
 #@latitudes          : Latitudes simulated (Initial value, final value, number of values)
 

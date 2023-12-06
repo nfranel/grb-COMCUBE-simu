@@ -54,6 +54,7 @@ def genCommands(args):
     elif line.startswith("@file"): args.file = line.split(" ")[1]
     elif line.startswith("@simulationsperevent"): args.simulationsperevent = int(line.split(" ")[1])
     elif line.startswith("@poltime"): args.poltime = line.split(" ")[1]
+    #### A CHANGER todo
     elif line.startswith("@unpoltime"): args.unpoltime = int(line.split(" ")[1])
     elif line.startswith("@position"): args.position = [float(e) for e in line.split(" ")[1:]] #sky positions (rad)
     elif line.startswith("@spectrafilepath"): args.spectrafilepath = line.split(" ")[1]
@@ -84,10 +85,12 @@ def genCommands(args):
       defaults = [0, 100, 0, 0, 0, 1, 0, 100, 0, 0, 1, 0, 0, 0, 0, 100, 0, 0, 0, 0, 0]
       c.tofloats(items, defaults)
       args.commands = []
-      with open("simulation_logs.txt", "w") as f:
+      sim_directory = args.prefix.split("/sim/")[0]
+      with open(f"{sim_directory}/simulation_logs.txt", "w") as f:
         f.write("========================================================================\n")
         f.write("                    Log file for the simulations                        \n")
         f.write("GRB name | simulation number | satellite number | status of the simulation | sat inclination | sat RA of ascending node | sat argument of periapsis | altitude | sat dec world frame | sat ra world frame | grb dec world frame | grb ra world frame | grb dec sat frame | grb ra sat frame\n")
+        f.write("name | sim_num | sat_num | status | inc | ohm | omega | alt | sat_decwf | sat_rawf | grb_decwf | grb_rawf | grb_decsf | grb_rasf")
         f.write("Angles in degrees and altitude in km\n")
         f.write("========================================================================\n")
       def genGRB(i): #Generate a single GRB command

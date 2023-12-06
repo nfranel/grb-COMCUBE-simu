@@ -1,7 +1,7 @@
 # Autor Nathan Franel
 # Date 01/12/2023
 # Version 2 :
-# Separating the code in different modules
+# file to launch background simulations
 
 # Package imports
 import subprocess
@@ -104,7 +104,7 @@ def make_tmp_source(alt, lat, geom, source_model, spectra, simtime):
         if run == "Bckgrnd":
           f.write(line)
         else:
-          print("Name of run is not valid. Check parameter file and use either GRBpol for polarized run or GRBnpol for unpolarized run.")
+          print("Name of run is not valid. Check parameter file and use Bckgrnd.")
       elif line.startswith(f"{run}.FileName"):
         f.write(f"{run}.FileName {sname}")
       elif line.startswith(f"{run}.Time"):
