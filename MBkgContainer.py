@@ -30,6 +30,7 @@ class BkgContainer(list):
     self.lat_range = latitudes
     self.alt_range = altitudes
 
+    print(self.geometry, self.revanfile, self.mimrecfile, self.sim_time, self.lat_range, self.alt_range)
     geom_name = geom.split(".geo.setup")[0].split("/")[-1]
     saving = f"bkgsaved_{geom_name}_{self.lat_range[0]:.0f}-{self.lat_range[1]:.0f}-{self.lat_range[2]:.0f}_{self.alt_range[0]:.0f}-{self.alt_range[1]:.0f}-{self.alt_range[2]:.0f}.txt"
 
