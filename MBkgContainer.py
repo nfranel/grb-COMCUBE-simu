@@ -30,12 +30,17 @@ class BkgContainer(list):
     self.lat_range = latitudes
     self.alt_range = altitudes
 
-    print(self.geometry, self.revanfile, self.mimrecfile, self.sim_time, self.lat_range, self.alt_range)
     geom_name = geom.split(".geo.setup")[0].split("/")[-1]
     saving = f"bkgsaved_{geom_name}_{np.min(self.lat_range):.0f}-{np.max(self.lat_range):.0f}-{len(self.lat_range):.0f}_{np.min(self.alt_range):.0f}-{np.max(self.alt_range):.0f}-{len(self.alt_range):.0f}.txt"
 
     if not saving in os.listdir(f"./bkg/sim_{geom_name}"):
+      print("###########################################################################")
+      print(" bkg data not saved : Saving ")
+      print("###########################################################################")
       self.save_data(f"./bkg/sim_{geom_name}/{saving}")
+    print("###########################################################################")
+    print(" Extraction of bkg data ")
+    print("###########################################################################")
     list.__init__(self, self.read_data(f"./bkg/sim_{geom_name}/{saving}", save_pos, save_time, ergcut))
 
   def save_data(self, file):
