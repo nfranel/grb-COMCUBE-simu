@@ -117,7 +117,8 @@ class BkgContainer(list):
     """
     with open(file, "r") as f:
       files_saved = f.read().split("NewBkg\n")
-    return [BkgData(file_saved, self.sim_time, save_pos, save_time, ergcut) for file_saved in files_saved]
+      header = files_saved[0]
+    return [BkgData(file_saved, self.sim_time, save_pos, save_time, ergcut) for file_saved in files_saved[1:]]
 
 
 class BkgData:
