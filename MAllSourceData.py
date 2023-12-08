@@ -25,7 +25,7 @@ class AllSourceData:
   Class containing all the data for a full set of trafiles
   """
 
-  def __init__(self, bkg_prefix, param_file, erg_cut=(100, 460), armcut=180, polarigram_bins="fixed", parallel=False):
+  def __init__(self, bkg_param, param_file, erg_cut=(100, 460), armcut=180, polarigram_bins="fixed", parallel=False):
     """
     Initiate the class AllData using
     - bkg_prefix : str, the prefix for background files
@@ -39,7 +39,7 @@ class AllSourceData:
     Ceci est le cas de base pour les simulations, le modifier pour permettre des sources moins habituelles
     """
     # General parameters
-    self.bkg_prefix = bkg_prefix
+    self.bkg_param = bkg_param
     self.param_file = param_file
     self.armcut = armcut
     self.erg_cut = erg_cut
@@ -96,6 +96,7 @@ class AllSourceData:
         if len(temp) == 3:  # satellite pointing
           dat = [temp[0], temp[1], horizonAngle(temp[2])]
         else:  # satellite orbital parameters
+          # TODO change with the correct function in funcmod
           inclination, ohm, omega = map(np.deg2rad, temp[:3])
           thetasat = np.rad2deg(np.arccos(np.sin(inclination) * np.sin(omega)))  # deg
           phisat = np.rad2deg(np.arctan2((np.cos(omega) * np.sin(ohm) + np.sin(omega) * np.cos(inclination) * np.cos(ohm)), (np.cos(omega) * np.cos(ohm) - np.sin(omega) * np.cos(inclination) * np.sin(ohm))))  # deg
@@ -104,30 +105,27 @@ class AllSourceData:
         self.sat_info.append(dat)
     self.n_sat = len(self.sat_info)
     # Parameters extracted from source file
-    with open(self.source_file) as f:
-      lines = f.read().split("\n")
-    # self.source_with_bkg = False
-    # if len(lines) > 50:
-    #   self.source_with_bkg = True
-    sim_name = ""
-    source_name = ""
-    for line in lines:
-      if line.startswith("Geometry"):
-        if line.split("Geometry")[1].strip() != self.geometry:
-          raise Warning("Different geometry files in parfile and sourcefile")
-      elif line.startswith("Run"):
-        sim_name = line.split(" ")[1]
-      elif line.startswith(f"{sim_name}.Source"):
-        source_name = line.split(" ")[1]
+    # with open(self.source_file) as f:
+    #   lines = f.read().split("\n")
+    # # self.source_with_bkg = False
+    # # if len(lines) > 50:
+    # #   self.source_with_bkg = True
+    # sim_name = ""
+    # source_name = ""
+    # for line in lines:
+    #   if line.startswith("Geometry"):
+    #     if line.split("Geometry")[1].strip() != self.geometry:
+    #       raise Warning("Different geometry files in parfile and sourcefile")
+    #   elif line.startswith("Run"):
+    #     sim_name = line.split(" ")[1]
+    #   elif line.startswith(f"{sim_name}.Source"):
+    #     source_name = line.split(" ")[1]
     # Setting the background files
-    self.bkgdata = []
-    flist = subprocess.getoutput("ls {}_*".format(bkg_prefix)).split("\n")
-    for bkgfile in flist:
-      self.bkgdata.append(BkgContainer(bkgfile, self.bkg_sim_duration, save_pos=self.save_pos, save_time=self.save_time, ergcut=self.erg_cut))
+    self.bkgdata = BkgContainer(bkg_param, self.save_pos, self.save_time, self.erg_cut)
 
     # Setting the background rate detected by each satellite
     for sat_ite in range(len(self.sat_info)):
-      for count_rates in closest_bkg_rate(self.sat_info[sat_ite][0], self.sat_info[sat_ite][1], self.bkgdata):
+      for count_rates in closest_bkg_rate(self.sat_info[sat_ite][0], self.sat_info[sat_ite][1], self.bkgdata): # TODO
         self.sat_info[sat_ite].append(count_rates)
 
     # Setting the catalog and the attributes associated

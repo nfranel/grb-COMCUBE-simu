@@ -83,7 +83,7 @@ def inwindow(E, ergcut):
   :returns: bool
   """
   # print(E)
-  return E > ergcut[0] and E < ergcut[1]
+  return E >= ergcut[0] and E <= ergcut[1]
 
 
 def fname2decra(fname):

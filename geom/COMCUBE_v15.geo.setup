@@ -176,7 +176,7 @@ Constant StructurePosX             {0.5*InstrumentSize*NUSatX+0.5*StructureThick
 Constant StructurePosY             {0.5*InstrumentSize*NUSatY+0.5*StructureThickness}                                                      // 5
 Constant StructurePosZ             {-0.5*(StructureZSize-InstrumentHeight)+AbsoluteZPos}                                                                                 // -3.085
 // bottom and top structure position
-Constant StructureTopPosZ          {0.5*InstrumentSize+AbsoluteZPos+0.5*StructureTopThickness}                                     //
+Constant StructureTopPosZ          {0.5*InstrumentHeight+AbsoluteZPos+0.5*StructureTopThickness}                                  //
 Constant StructureBottomPosZ       {-(StructureZSize-0.5*InstrumentHeight+0.5*StructureBottomThickness)+AbsoluteZPos}                                  //
 
 // -- Relative to the instrument
