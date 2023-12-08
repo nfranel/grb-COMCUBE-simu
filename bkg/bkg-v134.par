@@ -20,7 +20,7 @@
 ### Parameters :
 ############################################################
 @geometry ./geom/COMCUBE_v134.geo.setup
-@revancfgfile ./cfgs/revan303.cfg
+@revancfgfile ./cfgs/revanv1.cfg
 @mimrecfile ./cfgs/mimrec10-1000single.cfg
 
 @cosimasourcefile ./bkg/bkgrnd_model.source
