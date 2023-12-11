@@ -45,14 +45,8 @@ class Mu100Container(list):
 
     geom_name = geom.split(".geo.setup")[0].split("/")[-1]
     saving = f"mu-seff-saved_{geom_name}_{np.min(self.decs):.0f}-{np.max(self.decs):.0f}-{len(self.decs):.0f}_{np.min(self.ras):.0f}-{np.max(self.ras):.0f}-{len(self.ras):.0f}.txt"
-    if ergcut is None:
-      ergname = "ergcut-None"
-    else:
-      ergname = f"ergcut-{ergcut[0]}-{ergcut[1]}"
-    if armcut is None:
-      armname = "armcut-None"
-    else:
-      armname = f"armcut-{armcut[0]}-{armcut[1]}"
+    ergname = f"ergcut-{ergcut[0]}-{ergcut[1]}"
+    armname = f"armcut-{armcut}"
     cond_saving = f"condensed-saved_{geom_name}_{np.min(self.decs):.0f}-{np.max(self.decs):.0f}-{len(self.decs):.0f}_{np.min(self.ras):.0f}-{np.max(self.ras):.0f}-{len(self.ras):.0f}_{ergname}_{armname}.txt"
 
     if not saving in os.listdir(f"./mu100/sim_{geom_name}"):
@@ -253,15 +247,14 @@ class Mu100Container(list):
         pol, polar_from_position_pol = angle(compton_secpos_pol - compton_firstpos_pol, dec, ra, f"{dec}_{ra}_pol", 0, 0)
         unpol, polar_from_position_unpol = angle(compton_secpos_unpol - compton_firstpos_unpol, dec, ra, f"{dec}_{ra}_unpol", 0, 0)
 
-        if armcut is not None:
-          polar_from_energy_pol = calculate_polar_angle(compton_second_pol, compton_ener_pol)
-          polar_from_energy_unpol = calculate_polar_angle(compton_second_unpol, compton_ener_unpol)
-          arm_pol = polar_from_position_pol - polar_from_energy_pol
-          arm_unpol = polar_from_position_unpol - polar_from_energy_unpol
-          accepted_arm_pol = np.where(np.abs(arm_pol) <= armcut, True, False)
-          accepted_arm_unpol = np.where(np.abs(arm_unpol) <= armcut, True, False)
-          pol = pol[accepted_arm_pol]
-          unpol = unpol[accepted_arm_unpol]
+        polar_from_energy_pol = calculate_polar_angle(compton_second_pol, compton_ener_pol)
+        polar_from_energy_unpol = calculate_polar_angle(compton_second_unpol, compton_ener_unpol)
+        arm_pol = polar_from_position_pol - polar_from_energy_pol
+        arm_unpol = polar_from_position_unpol - polar_from_energy_unpol
+        accepted_arm_pol = np.where(np.abs(arm_pol) <= armcut, True, False)
+        accepted_arm_unpol = np.where(np.abs(arm_unpol) <= armcut, True, False)
+        pol = pol[accepted_arm_pol]
+        unpol = unpol[accepted_arm_unpol]
 
         hist_pol = np.histogram(pol, self.bins)[0] / binw
         hist_unpol = np.histogram(unpol, self.bins)[0] / binw
