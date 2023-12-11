@@ -15,8 +15,8 @@
 #@bandparam          : Parameters for the band spectrum - amplitude (in ph/cm2/keV/s), alpha, beta, peak energy in keV, pivot energy (100 keV for GBM)
 #@poltime            : Duration of polarized simulation
 #@unpoltime          : Duration of not polarized simulation
-#@decposition        : DEC simulated (Initial value, final value, number of values)
-#@raposition         : RA simulated (Initial value, final value, number of values)
+#@decposition        : DEC simulated (Initial value, final value, number of values) # 0 114 115
+#@raposition         : RA simulated (Initial value, final value, number of values) # 0 359 120
 
 ############################################################
 ### Parameters :
@@ -31,5 +31,5 @@
 @bandparam 10 -0.8 -2.2 200 100
 @poltime 300
 @unpoltime 300
-@decposition 0 114 2 # 0 114 115
-@raposition 0 359 2 # 0 359 120
+@decposition 0 114 2
+@raposition 0 359 2
