@@ -228,7 +228,7 @@ def modulation_func(x, pa, mu, S):
   return (S / (2 * np.pi)) * (1 - mu * np.cos(np.pi * (x - pa) / 90))
 
 
-def set_bins(bin_mode, data):
+def set_bins(bin_mode, data=None):
   """
 
   """

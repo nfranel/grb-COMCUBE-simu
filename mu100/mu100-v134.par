@@ -31,5 +31,5 @@
 @bandparam 10 -0.8 -2.2 200 100
 @poltime 300
 @unpoltime 300
-@decposition 0 114 2
-@raposition 0 359 2
+@decposition 0 114 2 # 0 114 115
+@raposition 0 359 2 # 0 359 120
