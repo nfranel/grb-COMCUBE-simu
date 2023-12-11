@@ -22,7 +22,7 @@ class Mu100Container(list):
   Class containing the information for mu100 files
   """
 
-  def __init__(self, mu100parfile, ergcut, armcut):
+  def __init__(self, mu100parfile, ergcut=(100, 460), armcut=180):
     """
     :param bkgparfile : background parameter file
     :param save_pos : True if the interaction positions are to be saved
