@@ -98,30 +98,30 @@ class Mu100Container(list):
           # single_time_unpol = []
           # single_pos_pol = []
           # single_pos_unpol = []
-          for event in datapol:
-            reading = readevt(event, None)
-            if len(reading) == 5:
-              compton_second_pol.append(reading[0])
-              compton_ener_pol.append(reading[1])
-              # compton_time_pol.append(reading[2])
-              compton_firstpos_pol.append(reading[3])
-              compton_secpos_pol.append(reading[4])
-            elif len(reading) == 3:
-              single_ener_pol.append(reading[0])
-              # single_time_pol.append(reading[1])
-              # single_pos_pol.append(reading[2])
-          for event in dataunpol:
-            reading = readevt(event, None)
-            if len(reading) == 5:
-              compton_second_unpol.append(reading[0])
-              compton_ener_unpol.append(reading[1])
-              # compton_time_unpol.append(reading[2])
-              compton_firstpos_unpol.append(reading[3])
-              compton_secpos_unpol.append(reading[4])
-            # elif len(reading) == 3:
-            #   single_ener_unpol.append(reading[0])
-              # single_time_unpol.append(reading[1])
-              # single_pos_unpol.append(reading[2])
+          for event_pol in datapol:
+            reading_pol = readevt(event_pol, None)
+            if len(reading_pol) == 5:
+              compton_second_pol.append(reading_pol[0])
+              compton_ener_pol.append(reading_pol[1])
+              # compton_time_pol.append(reading_pol[2])
+              compton_firstpos_pol.append(reading_pol[3])
+              compton_secpos_pol.append(reading_pol[4])
+            elif len(reading_pol) == 3:
+              single_ener_pol.append(reading_pol[0])
+              # single_time_pol.append(reading_pol[1])
+              # single_pos_pol.append(reading_pol[2])
+          for event_unpol in dataunpol:
+            reading_unpol = readevt(event_unpol, None)
+            if len(reading_unpol) == 5:
+              compton_second_unpol.append(reading_unpol[0])
+              compton_ener_unpol.append(reading_unpol[1])
+              # compton_time_unpol.append(reading_unpol[2])
+              compton_firstpos_unpol.append(reading_unpol[3])
+              compton_secpos_unpol.append(reading_unpol[4])
+            # elif len(reading_unpol) == 3:
+            #   single_ener_unpol.append(reading_unpol[0])
+              # single_time_unpol.append(reading_unpol[1])
+              # single_pos_unpol.append(reading_unpol[2])
           f.write("NewPos\n")
           f.write(f"{dec}\n")
           f.write(f"{ra}\n")
@@ -222,7 +222,6 @@ class Mu100Container(list):
         compton_ener_pol = np.array(lines[4].split("|"), dtype=float)
         compton_ener_unpol = np.array(lines[5].split("|"), dtype=float)
         # Extraction of compton position for pol and unpol events
-        print(lines[6])
         compton_firstpos_pol = np.array([val.split("_") for val in lines[6].split("|")], dtype=float)
         compton_firstpos_unpol = np.array([val.split("_") for val in lines[7].split("|")], dtype=float)
         compton_secpos_pol = np.array([val.split("_") for val in lines[8].split("|")], dtype=float)
