@@ -104,8 +104,8 @@ class Mu100Container(list):
               compton_second_pol.append(reading[0])
               compton_ener_pol.append(reading[1])
               # compton_time_pol.append(reading[2])
-              # compton_firstpos_pol.append(reading[3])
-              # compton_secpos_pol.append(reading[4])
+              compton_firstpos_pol.append(reading[3])
+              compton_secpos_pol.append(reading[4])
             elif len(reading) == 3:
               single_ener_pol.append(reading[0])
               # single_time_pol.append(reading[1])
@@ -116,8 +116,8 @@ class Mu100Container(list):
               compton_second_unpol.append(reading[0])
               compton_ener_unpol.append(reading[1])
               # compton_time_unpol.append(reading[2])
-              # compton_firstpos_unpol.append(reading[3])
-              # compton_secpos_unpol.append(reading[4])
+              compton_firstpos_unpol.append(reading[3])
+              compton_secpos_unpol.append(reading[4])
             # elif len(reading) == 3:
             #   single_ener_unpol.append(reading[0])
               # single_time_unpol.append(reading[1])
@@ -149,8 +149,6 @@ class Mu100Container(list):
           for ite in range(len(compton_firstpos_pol) - 1):
             string = f"{compton_firstpos_pol[ite][0]}_{compton_firstpos_pol[ite][1]}_{compton_firstpos_pol[ite][2]}"
             f.write(f"{string}|")
-            print(string)
-          print(compton_firstpos_pol)
           string = f"{compton_firstpos_pol[-1][0]}_{compton_firstpos_pol[-1][1]}_{compton_firstpos_pol[-1][2]}"
           f.write(f"{string}\n")
           for ite in range(len(compton_firstpos_unpol) - 1):
