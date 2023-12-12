@@ -302,7 +302,7 @@ class Mu100Container(list):
     """
     with open(file, "r") as f:
       files_saved = f.read().split("NewPos\n")
-    return [Mu100Data(file_saved) for file_saved in files_saved]
+    return [Mu100Data(file_saved) for file_saved in files_saved[1:]]
 
 
 class Mu100Data:
