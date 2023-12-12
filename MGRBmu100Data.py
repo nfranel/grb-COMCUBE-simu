@@ -149,7 +149,7 @@ class Mu100Container(list):
           for ite in range(len(compton_firstpos_pol) - 1):
             string = f"{compton_firstpos_pol[ite][0]}_{compton_firstpos_pol[ite][1]}_{compton_firstpos_pol[ite][2]}"
             f.write(f"{string}|")
-          print(compton_firstpos_pol[ite], compton_firstpos_pol[ite+1])
+          print(compton_firstpos_pol[ite])
           string = f"{compton_firstpos_pol[-1][0]}_{compton_firstpos_pol[-1][1]}_{compton_firstpos_pol[-1][2]}"
           f.write(f"{string}\n")
           for ite in range(len(compton_firstpos_unpol) - 1):
