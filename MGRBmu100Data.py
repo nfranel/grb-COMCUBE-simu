@@ -222,6 +222,7 @@ class Mu100Container(list):
         compton_ener_pol = np.array(lines[4].split("|"), dtype=float)
         compton_ener_unpol = np.array(lines[5].split("|"), dtype=float)
         # Extraction of compton position for pol and unpol events
+        print(lines[6])
         compton_firstpos_pol = np.array([val.split("_") for val in lines[6].split("|")], dtype=float)
         compton_firstpos_unpol = np.array([val.split("_") for val in lines[7].split("|")], dtype=float)
         compton_secpos_pol = np.array([val.split("_") for val in lines[8].split("|")], dtype=float)
