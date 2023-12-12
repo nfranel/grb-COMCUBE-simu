@@ -40,7 +40,7 @@ def read_par(parfile):
       decs = np.linspace(decs[0], decs[1], decs[2])
     elif line.startswith("@raposition"):
       ras = list(map(int, line.split(" ")[1:]))
-      ras = np.linspace(ras[0], ras[1], ras[2])
+      # ras = np.linspace(ras[0], ras[1], ras[2])
   return geom, revanf, mimrecf, source_base, spectra, bandparam, poltime, unpoltime, decs, ras
 
 
@@ -122,7 +122,11 @@ def make_parameters(decs, ras, geom, source_model, spectra, timepol, timeunpol, 
   """
   parameters = []
   for dec in decs:
-    for ra in ras:
+    if dec == 0:
+      new_ra = [0]
+    else:
+      new_ra = np.linspace(ras[0], ras[1], np.max([4, int(np.sin(np.deg2rad(dec))*ras[2])]), endpoint=False)
+    for ra in new_ra:
       parameters.append((dec, ra, geom, source_model, spectra, timepol, timeunpol, ampl, rcffile, mimfile))
   return parameters
 
