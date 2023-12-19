@@ -142,13 +142,11 @@ def maketmpsf(command, args, pid):
   """
   fname = f"tmp_{pid}.source"
   sname = make_sim_name(args, command)
-  print(args.csf)
-  print(fname)
   with open(args.csf) as f:
     lines = f.read().split("\n")
   with open(fname, "w") as f:
+    run, source = "", "" # So that the test with startswith may be done even if run and source are not initialized yet
     for line in lines:
-      print(line)
       if line.startswith("Geometry"):
         f.write(f"Geometry {args.geometry}")
       elif line.startswith("PhysicsListEM "):
@@ -180,7 +178,8 @@ def maketmpsf(command, args, pid):
         f.write(f"{source}.Polarization Absolute 1. {command[8]}")
       elif line.startswith(f"{source}.Flux") and (source=="GRBsource" or source=="GRBsourcenp"):
         f.write(f"{source}.Flux {command[6]}")
-      else: f.write(line)
+      else:
+        f.write(line)
       f.write("\n")
   return fname
 
