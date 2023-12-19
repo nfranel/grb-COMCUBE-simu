@@ -245,6 +245,7 @@ if __name__ == "__main__":
   parser.add_argument("-p", "--prefix", help="Output file prefix", default=None)
   parser.add_argument("-nc", "--nocosima", help="Does not run cosima", action="store_true")
   parser.add_argument("-nr", "--norevan", help="Does not run revan", action="store_true")
+  parser.add_argument("-nm", "--nomimrec", help="Does not run mimrec", action="store_true")
   parser.add_argument("-v", "--verbose", help="Verbosity level (0 to 3)", type=int, default=__verbose__)
   parser.add_argument("-V", "--version", help="Prints out the version of the script", action="store_true")
   args = parser.parse_args()
