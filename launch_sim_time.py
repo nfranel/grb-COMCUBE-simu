@@ -142,45 +142,44 @@ def maketmpsf(command, args, pid):
   """
   fname = f"tmp_{pid}.source"
   sname = make_sim_name(args, command)
-  if args.type == "GRBCatalog":
-    with open(args.csf) as f:
-      lines = f.read().split("\n")
-    with open(fname, "w") as f:
-      for line in lines:
-        if line.startswith("Geometry"):
-          f.write(f"Geometry {args.geometry}")
-        elif line.startswith("PhysicsListEM "):
+  with open(args.csf) as f:
+    lines = f.read().split("\n")
+  with open(fname, "w") as f:
+    for line in lines:
+      if line.startswith("Geometry"):
+        f.write(f"Geometry {args.geometry}")
+      elif line.startswith("PhysicsListEM "):
+        f.write(line)
+        if line.split(" ")[-1] != "Livermore-Pol":
+          vprint("Warning : the PhysicsListEM used does not handle polarization, results may be impacted", __verbose__, 0)
+      elif line.startswith("Run"):
+        run = line.split(" ")[-1]
+        if run == "GRBpol" or run == "GRBnpol":
           f.write(line)
-          if line.split(" ")[-1] != "Livermore-Pol":
-            vprint("Warning : the PhysicsListEM used does not handle polarization, results may be impacted", __verbose__, 0)
-        elif line.startswith("Run"):
-          run = line.split(" ")[-1]
-          if run == "GRBpol" or run == "GRBnpol":
-            f.write(line)
-          else:
-            vprint("Name of run is not valid. Check parameter file and use either GRBpol for polarized run or GRBnpol for unpolarized run.", __verbose__, 0)
-        elif line.startswith(f"{run}.Source"):
-          source = line.split(" ")[-1]
-          if source == "GRBsource" or source == "GRBsourcenp":
-            f.write(line)
-          else:
-            vprint("Name of source is not valid. Check parameter file and use either GRBsource for polarized run or GRBsourcenp for unpolarized run.", __verbose__, 0)
-        # Adding 2 more conditions to prevent background sources to be changed
-        elif line.startswith(f"{run}.FileName"):
-          f.write(f"{run}.FileName {sname}")
-        elif line.startswith(f"{run}.Time"):
-          f.write(f"{run}.Time {command[7]}")
-        elif line.startswith(f"{source}.Beam") and (source=="GRBsource" or source=="GRBsourcenp"):
-          f.write(f"{source}.Beam FarFieldPointSource {command[-2]} {command[-1]}")
-        elif line.startswith(f"{source}.Spectrum") and (source=="GRBsource" or source=="GRBsourcenp"):
-          f.write(f"{source}.Spectrum File {command[5]}")
-        elif line.startswith(f"{source}.Polarization") and (source=="GRBsource" or source=="GRBsourcenp"):
-          f.write(f"{source}.Polarization Absolute 1. {command[8]}")
-        elif line.startswith(f"{source}.Flux") and (source=="GRBsource" or source=="GRBsourcenp"):
-          f.write(f"{source}.Flux {command[6]}")
-        else: f.write(line)
-        f.write("\n")
-    return fname
+        else:
+          vprint("Name of run is not valid. Check parameter file and use either GRBpol for polarized run or GRBnpol for unpolarized run.", __verbose__, 0)
+      elif line.startswith(f"{run}.Source"):
+        source = line.split(" ")[-1]
+        if source == "GRBsource" or source == "GRBsourcenp":
+          f.write(line)
+        else:
+          vprint("Name of source is not valid. Check parameter file and use either GRBsource for polarized run or GRBsourcenp for unpolarized run.", __verbose__, 0)
+      # Adding 2 more conditions to prevent background sources to be changed
+      elif line.startswith(f"{run}.FileName"):
+        f.write(f"{run}.FileName {sname}")
+      elif line.startswith(f"{run}.Time"):
+        f.write(f"{run}.Time {command[7]}")
+      elif line.startswith(f"{source}.Beam") and (source=="GRBsource" or source=="GRBsourcenp"):
+        f.write(f"{source}.Beam FarFieldPointSource {command[-2]} {command[-1]}")
+      elif line.startswith(f"{source}.Spectrum") and (source=="GRBsource" or source=="GRBsourcenp"):
+        f.write(f"{source}.Spectrum File {command[5]}")
+      elif line.startswith(f"{source}.Polarization") and (source=="GRBsource" or source=="GRBsourcenp"):
+        f.write(f"{source}.Polarization Absolute 1. {command[8]}")
+      elif line.startswith(f"{source}.Flux") and (source=="GRBsource" or source=="GRBsourcenp"):
+        f.write(f"{source}.Flux {command[6]}")
+      else: f.write(line)
+      f.write("\n")
+  return fname
 
 
 # MEGAlib interface functions
