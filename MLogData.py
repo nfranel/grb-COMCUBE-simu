@@ -76,6 +76,7 @@ class LogData:
     print(f"   Number of ignored simulation : {len(self.name) - simulated}")
     print(f"       With {horizon} ignored because the source is bellow the atmosphere")
     print(f"       With {off} ignored because the satellite if off")
+    return simulated, horizon, off
 
 
 lgrb_cat = "./GBM/longGBM.txt"

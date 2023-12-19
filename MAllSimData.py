@@ -15,7 +15,7 @@ class AllSimData(list):
   Class containing all the data for 1 GRB (or other source) for a full set of trafiles
   """
 
-  def __init__(self, sim_prefix, source_ite, cat_data, mode, n_sim, sat_info, polsim_duration, options):
+  def __init__(self, sim_prefix, source_ite, cat_data, n_sim, sat_info, param_sim_duration, bkg_data, mu_data, options):
     temp_list = []
     self.n_sim_det = 0
     if type(cat_data) is list:
@@ -29,16 +29,16 @@ class AllSimData(list):
       self.source_name = cat_data.name[source_ite]
       self.source_duration = float(cat_data.t90[source_ite])
       # Retrieving pflux and mean flux : the photon flux at the peak flux (or mean photon flux) of the burst [photons/cm2/s]
-      self.best_fit_model = getattr(cat_data, f"{mode}_best_fitting_model")[source_ite].rstrip()
+      self.best_fit_model = getattr(cat_data, "flnc_best_fitting_model")[source_ite].rstrip()
       self.best_fit_p_flux = float(getattr(cat_data, f"{getattr(cat_data, 'pflx_best_fitting_model')[source_ite].rstrip()}_phtflux")[source_ite])
       self.best_fit_mean_flux = float(getattr(cat_data, f"{getattr(cat_data, 'flnc_best_fitting_model')[source_ite].rstrip()}_phtflux")[source_ite])
       # Retrieving fluence of the source [photons/cm2]
       self.source_fluence = calc_fluence(cat_data, source_ite, options[-1]) * self.source_duration
       # print("pflx", self.best_fit_p_flux)
       # print(self.best_fit_mean_flux, "  --  " , self.best_fit_mean_flux * self.source_duration, "  -  ", self.source_fluence)
-    if polsim_duration.isdigit():
-      sim_duration = float(polsim_duration)
-    elif polsim_duration == "t90":
+    if param_sim_duration.isdigit():
+      sim_duration = float(param_sim_duration)
+    elif param_sim_duration == "t90":
       sim_duration = self.source_duration
     else:
       sim_duration = None
@@ -68,15 +68,13 @@ class AllSimData(list):
       output_message = f"{len(flist)} files to be loaded for source {self.source_name} : "
     for num_sim in range(n_sim):
       flist = subprocess.getoutput("ls {}_*_{:04d}_*".format(source_prefix, num_sim)).split("\n")
-      if len(flist) >= 2:
-        temp_list.append(AllSatData(source_prefix, num_sim, sat_info, sim_duration, options))
-        self.n_sim_det += 1
-      elif len(flist) == 1:
+      if len(flist) >= 1:
         if flist[0].startswith("ls: cannot access"):
           temp_list.append(None)
         else:
-          temp_list.append(AllSatData(source_prefix, num_sim, sat_info, sim_duration, options))
+          temp_list.append(AllSatData(source_prefix, num_sim, sat_info, sim_duration, self.source_fluence, bkg_data, mu_data, options))
           self.n_sim_det += 1
+
     list.__init__(self, temp_list)
     for sim_ite, sim in enumerate(self):
       if sim is not None:

@@ -99,13 +99,121 @@ def fname2decra(fname):
   return float(data[4]), float(".".join(data[5].split(".")[:2])), data[1], int(data[3]), int(data[2].split("sat")[1])
 
 
-def save_log(filename, name, num_sim, num_sat, status, inc, ohm, omega, alt, sat_dec_wf, sat_ra_wf, grb_dec_wf, grb_ra_wf, grb_dec_st, grb_ra_sf):
+def fname2decratime(fname):
+  """
+  Infers dec and RA from file name with the shape :
+    {prefix}_{sourcename}_sat{num_sat}_{num_sim}_{dec_world_frame}_{ra_world_frame}_{burst_time}.inc{1/2}.id1.extracted.tra
+  :param fname: *.tra or *.tra.gz filename
+  :param polmark: str that identifies polarized files, default='inc1'
+  :returns: dec, RA
+  """
+  data = fname.split("/")[-1] # to get rid of the first part of the prefix (and the potential "_" in it)
+  data = data.split("_")
+  return float(data[4]), float(".".join(data[5].split(".")[:2])), float(data[6]), data[1], int(data[3]), int(data[2].split("sat")[1])
+
+
+def save_log(filename, name, num_sim, num_sat, status, inc, ohm, omega, alt, random_time, sat_dec_wf, sat_ra_wf, grb_dec_wf, grb_ra_wf, grb_dec_st, grb_ra_sf):
   """
   Saves all the simulation informations into a log file.
   May be used to make sure everything works or to make some plots
   """
   with open(filename, "a") as f:
-    f.write(f"{name} | {num_sim} | {num_sat} | {status} | {inc} | {ohm} | {omega} | {alt} | {sat_dec_wf} | {sat_ra_wf} | {grb_dec_wf} | {grb_ra_wf} | {grb_dec_st} | {grb_ra_sf}\n")
+    f.write(f"{name} | {num_sim} | {num_sat} | {status} | {inc} | {ohm} | {omega} | {alt} | {random_time} | {sat_dec_wf} | {sat_ra_wf} | {grb_dec_wf} | {grb_ra_wf} | {grb_dec_st} | {grb_ra_sf}\n")
+
+
+def read_grbpar(parfile):
+  """
+
+  """
+  sat_info = []
+  with open(parfile) as f:
+    lines = f.read().split("\n")
+  for line in lines:
+    if line.startswith("@geometry"):
+      geometry = line.split(" ")[1]
+    elif line.startswith("@revancfgfile"):
+      revan_file = line.split(" ")[1]
+    elif line.startswith("@mimrecfile"):
+      mimrec_file = line.split(" ")[1]
+    elif line.startswith("@spectrafilepath"):
+      spectra_path = line.split(" ")[1]
+    elif line.startswith("@grbfile"):
+      cat_file = line.split(" ")[1]
+    elif line.startswith("@cosimasourcefile"):
+      source_file = line.split(" ")[1]
+    elif line.startswith("@prefix"):
+      sim_prefix = line.split(" ")[1]
+    elif line.startswith("@sttype"):
+      sttype = line.split(" ")[1:]
+    elif line.startswith("@simulationsperevent"):
+      n_sim = int(line.split(" ")[1])
+    elif line.startswith("@simtime"):
+      simtime = line.split(" ")[1]
+    elif line.startswith("@position"):
+      position_allowed_sim = np.array(line.split(" ")[1:], dtype=float)
+    elif line.startswith("@satellite"):
+      dat = [float(e) for e in line.split(" ")[1:]]
+      sat_info.append(dat)
+  return geometry, revan_file, mimrec_file, spectra_path, cat_file, source_file, sim_prefix, sttype, n_sim, simtime, position_allowed_sim, sat_info
+
+
+def read_bkgpar(parfile):
+  with open(parfile, "r") as f:
+    lines = f.read().split("\n")
+  geom, revanf, mimrecf, source_base, spectra, simtime, latitudes, altitudes = None, None, None, None, None, None, None, None
+  for line in lines:
+    if line.startswith("@geometry"):
+      geom = line.split(" ")[1]
+    elif line.startswith("@revancfgfile"):
+      revanf = line.split(" ")[1]
+    elif line.startswith("@mimrecfile"):
+      mimrecf = line.split(" ")[1]
+    elif line.startswith("@cosimasourcefile"):
+      source_base = line.split(" ")[1]
+    elif line.startswith("@spectrafilepath"):
+      spectra = line.split(" ")[1]
+      if spectra.endswith("/"):
+        spectra = spectra[:-1]
+    elif line.startswith("@simtime"):
+      simtime = float(line.split(" ")[1])
+    elif line.startswith("@altitudes"):
+      altitudes = list(map(float, line.split(" ")[1:]))
+    elif line.startswith("@latitudes"):
+      latitudes = list(map(int, line.split(" ")[1:]))
+      latitudes = np.linspace(latitudes[0], latitudes[1], latitudes[2])
+  return geom, revanf, mimrecf, source_base, spectra, simtime, latitudes, altitudes
+
+
+def read_mupar(parfile):
+  with open(parfile, "r") as f:
+    lines = f.read().split("\n")
+  geom, revanf, mimrecf, source_base, spectra, bandparam, poltime, unpoltime, decs, ras = None, None, None, None, None, None, None, None, None, None
+  for line in lines:
+    if line.startswith("@geometry"):
+      geom = line.split(" ")[1]
+    elif line.startswith("@revancfgfile"):
+      revanf = line.split(" ")[1]
+    elif line.startswith("@mimrecfile"):
+      mimrecf = line.split(" ")[1]
+    elif line.startswith("@cosimasourcefile"):
+      source_base = line.split(" ")[1]
+    elif line.startswith("@spectrafilepath"):
+      spectra = line.split(" ")[1]
+      if spectra.endswith("/"):
+        spectra = spectra[:-1]
+    elif line.startswith("@bandparam"):
+      bandparam = list(map(float, line.split(" ")[1:]))
+    elif line.startswith("@poltime"):
+      poltime = float(line.split(" ")[1])
+    elif line.startswith("@unpoltime"):
+      unpoltime = float(line.split(" ")[1])
+    elif line.startswith("@decposition"):
+      decs = list(map(int, line.split(" ")[1:]))
+      decs = np.linspace(decs[0], decs[1], decs[2])
+    elif line.startswith("@raposition"):
+      ras = list(map(int, line.split(" ")[1:]))
+      # ras = np.linspace(ras[0], ras[1], ras[2])
+  return geom, revanf, mimrecf, source_base, spectra, bandparam, poltime, unpoltime, decs, ras
 
 
 def readfile(fname):
@@ -291,18 +399,50 @@ def MDP(S, B, mu100, nsigma=4.29):
   return nsigma * np.sqrt(S + B) / (mu100 * S)
 
 
-def closest_bkg_rate(sat_lat, sat_long, bkg_list):
+def closest_bkg_rate(sat_dec, sat_ra, bkg_list):
   """
   Find the closest bkg file for a satellite (in terms of latitude)
   Returns the count rate of this bkg file
+  Warining : for now, only takes into account the dec of backgrounds, can be updated but the way the error is calculated may not be optimal as the surface of the sphere (polar coordinates) is not a plan.
   """
   if len(bkg_list) == 0:
     return 0.000001
   else:
-    latitude_error = np.array([abs(bkg.dec - sat_lat) for bkg in bkg_list])
-    longitude_error = np.array([abs(bkg.ra - sat_long) for bkg in bkg_list])
-    total_error = np.sqrt(latitude_error**2 + longitude_error**2) # TODO
-    return [bkg_list[np.argmin(latitude_error)].compton_cr, bkg_list[np.argmin(latitude_error)].single_cr]
+    dec_error = np.array([(bkg.dec - sat_dec) ** 2 for bkg in bkg_list])
+    # ra_error = np.array([(bkg.ra - sat_ra) ** 2 for bkg in bkg_list])
+    ra_error = np.array([0 for bkg in bkg_list])
+    total_error = np.sqrt(dec_error + ra_error)
+    index = np.argmin(total_error)
+    return [bkg_list[index].compton_cr, bkg_list[index].single_cr]
+
+
+def affect_bkg(info_sat, burst_time, bkg_list):
+  """
+
+  """
+  orbital_period = orbital_period_calc(info_sat[3])
+  earth_ra_offset = earth_rotation_offset(burst_time)
+  true_anomaly = true_anomaly_calc(burst_time, orbital_period)
+  dec_sat_world_frame, ra_sat_world_frame = orbitalparam2decra(info_sat[0], info_sat[1], info_sat[2], nu=true_anomaly)  # deg
+  ra_sat_world_frame -= earth_ra_offset
+  count_rates = closest_bkg_rate(dec_sat_world_frame, ra_sat_world_frame, bkg_list)
+  return dec_sat_world_frame, ra_sat_world_frame, count_rates[0], count_rates[1]
+
+
+def closest_mufile(grb_dec_sf, grb_ra_sf, mu_list):
+  """
+  Find the closest bkg file for a satellite (in terms of latitude)
+  Returns the count rate of this bkg file
+  Warining : for now, only takes into account the dec of backgrounds, can be updated but the way the error is calculated may not be optimal as the surface of the sphere (polar coordinates) is not a plan.
+  """
+  if len(mu_list) == 0:
+    return 0.000001, 0.000001, 0.000001, 0.000001
+  else:
+    dec_error = np.array([(mu.dec - grb_dec_sf) ** 2 for mu in mu_list])
+    ra_error = np.array([(mu.ra - grb_ra_sf) ** 2 for mu in mu_list])
+    total_error = np.sqrt(dec_error + ra_error)
+    index = np.argmin(total_error)
+    return mu_list[index].mu100, mu_list[index].mu100_err, mu_list[index].s_eff_compton, mu_list[index].s_eff_single
 
 
 def calc_fluence(catalog, index, ergCut):
@@ -595,8 +735,10 @@ def cond_between(val, lim1, lim2):
 
 def verif_zone(theta, phi):
   """
+  Function to verify wether a coordinate is in the exclusion area or not
   :param theta : latitude (-90 - 90°)
   :param phi : longitude (-180 - 180°)
+  Returns True when the theta and phi are in an excusion area
   """
   ### SAA
   if cond_between(phi, -60, -10) and cond_between(theta, -45, -15):
@@ -615,6 +757,62 @@ def verif_zone(theta, phi):
     return True
   else:
     return False
+
+
+def verif_rad_belts(lat, long, alt):
+  """
+
+  """
+  files = ["./bkg/exclusion/400km/AE8max_a400km_i90deg.out", "./bkg/exclusion/400km/AE8min_a400km_i90deg.out",
+           "./bkg/exclusion/400km/AP8max_a400km_i90deg.out", "./bkg/exclusion/400km/AP8min_a400km_i90deg.out",
+           "./bkg/exclusion/500km/AE8max_a500km_i90deg.out", "./bkg/exclusion/500km/AE8min_a500km_i90deg.out",
+           "./bkg/exclusion/500km/AP8max_a500km_i90deg.out", "./bkg/exclusion/500km/AP8min_a500km_i90deg.out"]
+  for file in files:
+    file_alt = int(file.split("km/")[0].split("/")[-1])
+    if alt == file_alt:
+      if verif_zone_file(lat, long, file):
+        return True
+  return False
+
+
+def verif_zone_file(lat, long, file):
+  """
+  :param theta : latitude (-90 - 90°)
+  :param phi : longitude (-180 - 180°)
+  """
+  with open(file, "r") as f:
+    lines = f.read().split("\n")
+  exclusions = []
+  for line in lines:
+    exclusion = []
+    if not line.startswith("#"):
+      for val in line.split(" "):
+        if val != '':
+          exclusion.append(float(val))
+    if len(exclusion) >= 1:
+      exclusions.append(exclusion)
+  new_exclusions = []
+  for zone in exclusions:
+    if len(zone) == 3:
+      new_exclusions.append(zone)
+    else:
+      for ite in range(int(len(zone[1:])/2)):
+        new_exclusions.append([zone[0], zone[1+ite*2], zone[2+ite*2]])
+  new_exclusions = np.array(new_exclusions)
+  exclude_lats = new_exclusions[:, 0]
+  # print(exclude_lats)
+  # print(exclusions)
+  # print(new_exclusions)
+  # from time import time
+  # init = time()
+  lat_index = []
+  for ite in range(len(exclude_lats)):
+    if lat >= exclude_lats[ite] - 0.5 and lat <= exclude_lats[ite] + 0.5:
+      lat_index.append(ite)
+  for index in lat_index:
+    if cond_between(long, new_exclusions[index, 1], new_exclusions[index, 2]):
+      return True
+  return False
 
 
 def random_GRB_dec_ra(dec_min, dec_max, ra_min, ra_max):

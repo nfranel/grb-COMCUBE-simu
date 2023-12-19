@@ -13,7 +13,9 @@ import matplotlib as mpl
 from funcmod import *
 from catalog import Catalog
 from MBkgContainer import BkgContainer
+from MmuSeffContainer import MuSeffContainer
 from MAllSimData import AllSimData
+from MLogData import LogData
 
 # Ploting adjustments
 mpl.use('Qt5Agg')
@@ -25,7 +27,7 @@ class AllSourceData:
   Class containing all the data for a full set of trafiles
   """
 
-  def __init__(self, bkg_param, param_file, erg_cut=(100, 460), armcut=180, polarigram_bins="fixed", parallel=False):
+  def __init__(self, grb_param, bkg_param, muSeff_param, erg_cut=(100, 460), armcut=180, polarigram_bins="fixed", parallel=False):
     """
     Initiate the class AllData using
     - bkg_prefix : str, the prefix for background files
@@ -39,10 +41,11 @@ class AllSourceData:
     Ceci est le cas de base pour les simulations, le modifier pour permettre des sources moins habituelles
     """
     # General parameters
+    self.grb_param = grb_param
     self.bkg_param = bkg_param
-    self.param_file = param_file
-    self.armcut = armcut
+    self.muSeff_param = muSeff_param
     self.erg_cut = erg_cut
+    self.armcut = armcut
     # Different kinds of bins can be made :
     if polarigram_bins in ["fixed", "limited", "optimized"]:
       self.polarigram_bins = polarigram_bins
@@ -52,81 +55,31 @@ class AllSourceData:
     # Setup of some options
     self.save_pos = True
     self.save_time = True
-    self.init_correction = False
+    # self.init_correction = False
     self.snr_min = 5
-    self.options = [self.save_pos, self.save_time, self.polarigram_bins, self.armcut, self.init_correction,
-                    self.erg_cut]
+    # self.options = [self.save_pos, self.save_time, self.polarigram_bins, self.armcut, self.init_correction,self.erg_cut]
+    self.options = [self.save_pos, self.save_time, self.polarigram_bins, self.armcut, self.erg_cut]
 
-    self.sat_info = []  # angles in it will be in deg
-    self.bkg_sim_duration = 3600
+    # self.bkg_sim_duration = 3600
     # Parameters extracted from parfile
-    with open(self.param_file) as f:
-      lines = f.read().split("\n")
-    for line in lines:
-      if line.startswith("@prefix"):
-        self.sim_prefix = line.split(" ")[1]
-      elif line.startswith("@cosimasourcefile"):
-        self.source_file = line.split(" ")[1]
-      elif line.startswith("@revancfgfile"):
-        self.revan_file = line.split(" ")[1]
-      elif line.startswith("@geometry"):
-        self.geometry = line.split(" ")[1]
-      elif line.startswith("@type"):
-        self.sim_type = line.split(" ")[1]
-      elif line.startswith("@instrument"):
-        self.instrument = line.split(" ")[1]
-      elif line.startswith("@mode"):
-        self.mode = line.split(" ")[1]
-      elif line.startswith("@sttype"):
-        self.sttype = line.split(" ")[1:]
-      elif line.startswith("@file"):
-        self.cat_file = line.split(" ")[1]
-      elif line.startswith("@spectrafilepath"):
-        self.spectra_path = line.split(" ")[1]
-      elif line.startswith("@simulationsperevent"):
-        self.n_sim = int(line.split(" ")[1])
-      elif line.startswith("@poltime"):
-        self.polsim_duration = line.split(" ")[1]
-      elif line.startswith("@unpoltime"):
-        self.unpolsim_duration = int(line.split(" ")[1])
-      elif line.startswith("@position"):
-        self.position_allowed_sim = np.array(line.split(" ")[1:], dtype=float)
-      elif line.startswith("@satellite"):
-        temp = [float(e) for e in line.split(" ")[1:]]
-        if len(temp) == 3:  # satellite pointing
-          dat = [temp[0], temp[1], horizonAngle(temp[2])]
-        else:  # satellite orbital parameters
-          # TODO change with the correct function in funcmod
-          inclination, ohm, omega = map(np.deg2rad, temp[:3])
-          thetasat = np.rad2deg(np.arccos(np.sin(inclination) * np.sin(omega)))  # deg
-          phisat = np.rad2deg(np.arctan2((np.cos(omega) * np.sin(ohm) + np.sin(omega) * np.cos(inclination) * np.cos(ohm)), (np.cos(omega) * np.cos(ohm) - np.sin(omega) * np.cos(inclination) * np.sin(ohm))))  # deg
-          # data saved are in deg
-          dat = [thetasat, phisat, horizonAngle(temp[3])]
-        self.sat_info.append(dat)
+    self.geometry, self.revan_file, self.mimrec_file, self.spectra_path, self.cat_file, self.source_file, self.sim_prefix, self.sttype, self.n_sim, self.sim_duration, self.position_allowed_sim, self.sat_info = read_grbpar(self.grb_param)
     self.n_sat = len(self.sat_info)
-    # Parameters extracted from source file
-    # with open(self.source_file) as f:
-    #   lines = f.read().split("\n")
-    # # self.source_with_bkg = False
-    # # if len(lines) > 50:
-    # #   self.source_with_bkg = True
-    # sim_name = ""
-    # source_name = ""
-    # for line in lines:
-    #   if line.startswith("Geometry"):
-    #     if line.split("Geometry")[1].strip() != self.geometry:
-    #       raise Warning("Different geometry files in parfile and sourcefile")
-    #   elif line.startswith("Run"):
-    #     sim_name = line.split(" ")[1]
-    #   elif line.startswith(f"{sim_name}.Source"):
-    #     source_name = line.split(" ")[1]
+
     # Setting the background files
-    self.bkgdata = BkgContainer(bkg_param, self.save_pos, self.save_time, self.erg_cut)
+    self.bkgdata = BkgContainer(self.bkg_param, self.save_pos, self.save_time, self.erg_cut)
+
+    # Setting the background files
+    self.muSeffdata = MuSeffContainer(self.muSeff_param, self.erg_cut, self.armcut)
+
+    # Log information
+    # log = LogData("/pdisk/ESA/test--400km--0-0-0--27sat")
+    self.n_sim_simulated, self.n_sim_below_horizon, self.n_sim_in_radbelt = LogData(self.sim_prefix.split("/sim/")[0]).detection_statistics()
 
     # Setting the background rate detected by each satellite
-    for sat_ite in range(len(self.sat_info)):
-      for count_rates in closest_bkg_rate(self.sat_info[sat_ite][0], self.sat_info[sat_ite][1], self.bkgdata): # TODO
-        self.sat_info[sat_ite].append(count_rates)
+    # for sat_ite in range(len(self.sat_info)):
+    #   for count_rates in closest_bkg_rate(self.sat_info[sat_ite][1], self.sat_info[sat_ite][0], self.bkgdata):
+    #     self.sat_info[sat_ite].append(count_rates)
+    # TODO set the bkg information to each sim file because the sats are moving now
 
     # Setting the catalog and the attributes associated
     if self.cat_file == "None":
@@ -142,26 +95,21 @@ class AllSourceData:
     if parallel == 'all':
       print("Parallel extraction of the data with all threads")
       with mp.Pool() as pool:
-        self.alldata = pool.starmap(AllSimData, zip(repeat(self.sim_prefix), range(self.n_source), repeat(cat_data),
-                                                    repeat(self.mode), repeat(self.n_sim), repeat(self.sat_info),
-                                                    repeat(self.polsim_duration), repeat(self.options)))
+        self.alldata = pool.starmap(AllSimData, zip(repeat(self.sim_prefix), range(self.n_source), repeat(cat_data), repeat(self.n_sim), repeat(self.sat_info), repeat(self.sim_duration), repeat(self.bkgdata), repeat(self.muSeffdata), repeat(self.options)))
     elif type(parallel) is int:
       print(f"Parallel extraction of the data with {parallel} threads")
       with mp.Pool(parallel) as pool:
-        self.alldata = pool.starmap(AllSimData, zip(repeat(self.sim_prefix), range(self.n_source), repeat(cat_data),
-                                                    repeat(self.mode), repeat(self.n_sim), repeat(self.sat_info),
-                                                    repeat(self.polsim_duration), repeat(self.options)))
+        self.alldata = pool.starmap(AllSimData, zip(repeat(self.sim_prefix), range(self.n_source), repeat(cat_data), repeat(self.n_sim), repeat(self.sat_info), repeat(self.sim_duration), repeat(self.bkgdata), repeat(self.muSeffdata), repeat(self.options)))
     else:
-      self.alldata = [
-        AllSimData(self.sim_prefix, source_ite, cat_data, self.mode, self.n_sim, self.sat_info,
-                   self.polsim_duration, self.options) for source_ite in range(self.n_source)]
+      self.alldata = [AllSimData(self.sim_prefix, source_ite, cat_data, self.n_sim, self.sat_info, self.sim_duration, self.bkgdata, self.muSeffdata, self.options) for source_ite in range(self.n_source)]
 
     # Setting some informations used for obtaining the GRB count rates
     self.cat_duration = 10
-    self.com_duty = 1
+    # self.com_duty = 1
+    self.com_duty = self.n_sim_simulated / (self.n_sim_simulated + self.n_sim_in_radbelt)
     self.gbm_duty = 0.85
     ### Implementer une maniere automatique de calculer le fov de comcube
-    self.com_fov = 1 # kept as 1 because GRBs simulated accross all sky and not considered if behind the earth
+    self.com_fov = 1  # kept as 1 because GRBs simulated accross all sky and not considered if behind the earth
     self.gbm_fov = (1 - np.cos(np.deg2rad(horizonAngle(565)))) / 2
     self.weights = 1 / self.n_sim / self.cat_duration * self.com_duty / self.gbm_duty * self.com_fov / self.gbm_fov
 
@@ -211,9 +159,9 @@ class AllSourceData:
 
     """
     if duration is None:
-      if self.polsim_duration.isdigit():
-        duration = float(self.polsim_duration)
-      elif self.polsim_duration == "t90":
+      if self.sim_duration.isdigit():
+        duration = float(self.sim_duration)
+      elif self.sim_duration == "t90":
         duration = None
         print("Warning : impossible to load the t90 as sim duration is no catalog is given.")
       else:

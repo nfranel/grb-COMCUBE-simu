@@ -7,7 +7,7 @@
 import os
 # Developped modules imports
 from funcmod import *
-from launch_bkg_sim import read_par
+from launch_bkg_sim import read_bkgpar
 
 
 class BkgContainer(list):
@@ -22,7 +22,7 @@ class BkgContainer(list):
     :param save_time : True if the interaction times are to be saved
     :param ergcut : energy cut to apply
     """
-    geom, revanf, mimrecf, source_base, spectra, simtime, latitudes, altitudes = read_par(bkgparfile)
+    geom, revanf, mimrecf, source_base, spectra, simtime, latitudes, altitudes = read_bkgpar(bkgparfile)
     self.geometry = geom       # To compare with data/mu100 and make sure everything works with the same softs
     self.revanfile = revanf    # To compare with data/mu100 and make sure everything works with the same softs
     self.mimrecfile = mimrecf  # To compare with data/mu100 and make sure everything works with the same softs

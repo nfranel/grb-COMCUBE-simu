@@ -10,33 +10,7 @@ import numpy as np
 import multiprocessing as mp
 import argparse
 # Developped modules imports
-
-
-def read_par(parfile):
-  with open(parfile, "r") as f:
-    lines = f.read().split("\n")
-  geom, revanf, mimrecf, source_base, spectra, simtime, latitudes, altitudes = None, None, None, None, None, None, None, None
-  for line in lines:
-    if line.startswith("@geometry"):
-      geom = line.split(" ")[1]
-    elif line.startswith("@revancfgfile"):
-      revanf = line.split(" ")[1]
-    elif line.startswith("@mimrecfile"):
-      mimrecf = line.split(" ")[1]
-    elif line.startswith("@cosimasourcefile"):
-      source_base = line.split(" ")[1]
-    elif line.startswith("@spectrafilepath"):
-      spectra = line.split(" ")[1]
-      if spectra.endswith("/"):
-        spectra = spectra[:-1]
-    elif line.startswith("@simtime"):
-      simtime = float(line.split(" ")[1])
-    elif line.startswith("@altitudes"):
-      altitudes = list(map(float, line.split(" ")[1:]))
-    elif line.startswith("@latitudes"):
-      latitudes = list(map(int, line.split(" ")[1:]))
-      latitudes = np.linspace(latitudes[0], latitudes[1], latitudes[2])
-  return geom, revanf, mimrecf, source_base, spectra, simtime, latitudes, altitudes
+from funcmod import read_bkgpar
 
 
 def make_directories(geometry, spectra):
@@ -175,7 +149,8 @@ if __name__ == "__main__":
   if args.parameterfile:
     # Reading the param file
     print(f"Running of {args.parameterfile} parameter file")
-    geometry, revanfile, mimrecfile, source_base, spectra, simtime, latitudes, altitudes = read_par(args.parameterfile)
+    geometry, revanfile, mimrecfile, source_base, spectra, simtime, latitudes, altitudes = read_bkgpar(
+      args.parameterfile)
     # Creating the required directories
     make_directories(geometry, spectra)
     # Creating the parameter list

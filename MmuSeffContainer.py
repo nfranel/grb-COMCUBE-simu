@@ -8,7 +8,7 @@ import os
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 # Developped modules imports
-from launch_mu100_sim import read_par
+from launch_mu100_sim import read_mupar
 from funcmod import *
 from MFit import Fit
 
@@ -17,7 +17,7 @@ mpl.use('Qt5Agg')
 # plt.rcParams.update({'font.size': 20})
 
 
-class Mu100Container(list):
+class MuSeffContainer(list):
   """
   Class containing the information for mu100 files
   """
@@ -29,7 +29,7 @@ class Mu100Container(list):
     :param save_time : True if the interaction times are to be saved
     :param ergcut : energy cut to apply
     """
-    geom, revanf, mimrecf, source_base, spectra, bandparam, poltime, unpoltime, decs, ras = read_par(mu100parfile)
+    geom, revanf, mimrecf, source_base, spectra, bandparam, poltime, unpoltime, decs, ras = read_mupar(mu100parfile)
     self.geometry = geom       # To compare with data/mu100 and make sure everything works with the same softs
     self.revanfile = revanf    # To compare with data/mu100 and make sure everything works with the same softs
     self.mimrecfile = mimrecf  # To compare with data/mu100 and make sure everything works with the same softs

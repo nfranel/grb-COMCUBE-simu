@@ -15,32 +15,37 @@ mpl.use('Qt5Agg')
 # plt.rcParams.update({'font.size': 20})
 
 
-class GRBFormatedData:
+class GRBFullData:
   """
   Class containing the data for 1 GRB, for 1 sim, and 1 satellite
   """
 
-  def __init__(self, data_list, sat_info, num_sat, sim_duration, save_pos, save_time,
-               polarigram_bins, armcut, corr, ergcut):
+  def __init__(self, data_list, sat_info, burst_time, sim_duration, num_sat, source_fluence, bkg_data, mu_data, save_pos, save_time,
+               armcut, corr, ergcut):
     """
     -data_list : 1 polarized data file from which extract the data
     """
     ##############################################################
     #                   Attributes declaration                   #
     ##############################################################
-    if sat_info is None:
-      self.compton_b_rate = 0
-      self.single_b_rate = 0
-    else:
-      self.compton_b_rate = sat_info[-2]
-      self.single_b_rate = sat_info[-1]
+    ##############################################################
+    # Attributes for the sat
+    self.compton_b_rate = 0
+    self.single_b_rate = 0
+    self.sat_dec_wf = None
+    self.sat_ra_wf = None
     self.num_sat = num_sat
+    ##############################################################
+    # Attributes from the mu100 files
+    self.mu100_ref = None
+    self.mu100_err_ref = None
+    self.s_eff_compton_ref = 0
+    self.s_eff_single_ref = 0
 
     ##############################################################
     # Attributes filled with file reading (or to be used from this moment)
-    self.dec_sat_frame = None
-    self.ra_sat_frame = None
-    self.expected_pa = None
+    self.grb_dec_sat_frame = None
+    self.grb_ra_sat_frame = None
     self.compton_ener = []
     self.compton_second = []
     self.single_ener = []
@@ -52,7 +57,6 @@ class GRBFormatedData:
       compton_firstpos = []
       compton_secpos = []
       single_pos = []
-
     if save_time:
       self.compton_time = []
       self.single_time = []
@@ -63,7 +67,7 @@ class GRBFormatedData:
     self.arm_pol = None
     self.azim_angle_corrected = False
     ##############################################################
-    # Attributes to be filled with the method analyze
+    # Attributes filled after the reading
     # Set using extracted data
     self.s_eff_compton = 0
     self.s_eff_single = 0
@@ -71,22 +75,7 @@ class GRBFormatedData:
     self.single_cr = 0
     self.compton = 0
     self.compton_cr = 0
-    # Set with the fit or for the fit
-    # self.bins = polarigram_bins
-    # self.polarigram_error = []
-    # self.fits = None
-    self.mu100 = None
-    # self.pa = None
-    # self.fit_compton_cr = None
-    # self.pa_err = None
-    # self.mu100_err = None
-    # self.fit_compton_cr_err = None
-    # =0 : fit perfectly
-    # ~1 : fit reasonably
-    # >1 : not a good fit
-    # >>1 : very poor fit
-    # self.fit_goodness = None
-    # Setting of mdp and snr
+
     self.mdp = None
     self.snr_compton = None
     self.snr_single = None
@@ -107,7 +96,7 @@ class GRBFormatedData:
       self.n_sat_detect = 0
     else:
       dec_world_frame, ra_world_frame, source_name, num_sim, num_sat = fname2decra(data_list[0])
-      self.expected_pa, self.dec_sat_frame, self.ra_sat_frame = grb_decrapol_worldf2satf(dec_world_frame, ra_world_frame, sat_info[0], sat_info[1])[:3]
+      self.grb_dec_sat_frame, self.grb_ra_sat_frame = grb_decrapol_worldf2satf(dec_world_frame, ra_world_frame, sat_info[0], sat_info[1])[1:3]
       # Extracting the data from first file
       data_pol = readfile(data_list[0])
       for event in data_pol:
@@ -147,16 +136,18 @@ class GRBFormatedData:
         self.compton_time = np.array(self.compton_time)
         self.single_time = np.array(self.single_time)
 
-      # Calculating the polar angle using the energy values and compton azimuthal and polar scattering angles from the kinematics
+      ##############################################################
+      #                     Filling the fields                     #
+      ##############################################################
+      # Calculating the polar angle with energy values and compton azim and polar scattering angles from the kinematics
       # polar and position angle stored in deg
       self.polar_from_energy = calculate_polar_angle(self.compton_second, self.compton_ener)
       if save_pos:
-        self.pol, self.polar_from_position = angle(self.compton_secpos - self.compton_firstpos, self.dec_sat_frame, self.ra_sat_frame, source_name, num_sim, num_sat)
+        self.pol, self.polar_from_position = angle(self.compton_secpos - self.compton_firstpos, self.grb_dec_sat_frame, self.grb_ra_sat_frame, source_name, num_sim, num_sat)
       else:
-        self.pol, self.polar_from_position = angle(compton_secpos - compton_firstpos, self.dec_sat_frame, self.ra_sat_frame, source_name, num_sim, num_sat)
+        self.pol, self.polar_from_position = angle(compton_secpos - compton_firstpos, self.grb_dec_sat_frame, self.grb_ra_sat_frame, source_name, num_sim, num_sat)
 
-      # Calculating the arm and extracting the indexes of correct arm events
-      # arm in deg
+      # Calculating the arm and extracting the indexes of correct arm events (arm in deg)
       self.arm_pol = self.polar_from_position - self.polar_from_energy
       accepted_arm_pol = np.where(np.abs(self.arm_pol) <= armcut, True, False)
       # Restriction of the values according to arm cut
@@ -177,8 +168,14 @@ class GRBFormatedData:
       if corr:
         self.corr()
 
-      # self.bins = set_bins(polarigram_bins, self.pol)
-
+      ##############################################################
+      #        Filling the fields with bkg and mu100 files         #
+      ##############################################################
+      if sat_info is not None:
+        self.compton_b_rate = sat_info[-2]
+        self.single_b_rate = sat_info[-1]
+        self.sat_dec_wf, self.sat_ra_wf, self.compton_b_rate, self.single_b_rate = affect_bkg(sat_info, burst_time, bkg_data)
+      self.mu100, self.mu100_err, self.s_eff_compton_ref, self.s_eff_single_ref = closest_mufile(self.grb_dec_sat_frame, self.grb_ra_sat_frame, mu_data)
       # Putting the azimuthal scattering angle between the correct bins for creating histograms
       self.single = len(self.single_ener)
       self.single_cr = self.single / sim_duration
@@ -193,33 +190,34 @@ class GRBFormatedData:
       self.dsssd = 0
       self.side = 0
 
-  def fit(self, message, fit_bounds=None):
-    """
-    Fits first a modulation function and then a constant function to the polarigram
-    :param message: message to be printed when a fit is not done properly to indicate which simulation has the issue
-    :param fit_bounds: Bounds for the fit
-    """
-    var_x = .5 * (self.bins[1:] + self.bins[:-1])
-    binw = self.bins[1:] - self.bins[:-1]
-    histo = np.histogram(self.pol, self.bins)[0] / binw
-    self.fits = []
-    if self.unpol is not None:
-      unpol_hist = np.histogram(self.unpol, self.bins)[0] / binw
-      if 0. in unpol_hist:
-        print(f"Unpolarized data do not allow a fit - {message} : a bin is empty")
-        self.fits.append(None)
-      else:
-        self.polarigram_error = err_calculation(np.histogram(self.pol, self.bins)[0], np.histogram(self.unpol, self.bins)[0], binw)
-        if 0. in self.polarigram_error:
-          print(f"Polarized data do not allow a fit - {message} : a bin is empty leading to uncorrect fit")
-          self.fits.append(None)
-        else:
-          histo = histo / unpol_hist * np.mean(unpol_hist)
-          self.fits.append(Fit(modulation_func, var_x, histo, yerr=self.polarigram_error, bounds=fit_bounds, comment="modulation"))
-          self.fits.append(Fit(lambda x, a: a * x / x, var_x, histo, yerr=self.polarigram_error, comment="constant"))
-    else:
-      self.fits.append(Fit(modulation_func, var_x, histo, bounds=fit_bounds, comment="modulation"))
-      self.fits.append(Fit(lambda x, a: a * x / x, var_x, histo, comment="constant"))
+
+  # def fit(self, message, fit_bounds=None):
+  #   """
+  #   Fits first a modulation function and then a constant function to the polarigram
+  #   :param message: message to be printed when a fit is not done properly to indicate which simulation has the issue
+  #   :param fit_bounds: Bounds for the fit
+  #   """
+  #   var_x = .5 * (self.bins[1:] + self.bins[:-1])
+  #   binw = self.bins[1:] - self.bins[:-1]
+  #   histo = np.histogram(self.pol, self.bins)[0] / binw
+  #   self.fits = []
+  #   if self.unpol is not None:
+  #     unpol_hist = np.histogram(self.unpol, self.bins)[0] / binw
+  #     if 0. in unpol_hist:
+  #       print(f"Unpolarized data do not allow a fit - {message} : a bin is empty")
+  #       self.fits.append(None)
+  #     else:
+  #       self.polarigram_error = err_calculation(np.histogram(self.pol, self.bins)[0], np.histogram(self.unpol, self.bins)[0], binw)
+  #       if 0. in self.polarigram_error:
+  #         print(f"Polarized data do not allow a fit - {message} : a bin is empty leading to uncorrect fit")
+  #         self.fits.append(None)
+  #       else:
+  #         histo = histo / unpol_hist * np.mean(unpol_hist)
+  #         self.fits.append(Fit(modulation_func, var_x, histo, yerr=self.polarigram_error, bounds=fit_bounds, comment="modulation"))
+  #         self.fits.append(Fit(lambda x, a: a * x / x, var_x, histo, yerr=self.polarigram_error, comment="constant"))
+  #   else:
+  #     self.fits.append(Fit(modulation_func, var_x, histo, bounds=fit_bounds, comment="modulation"))
+  #     self.fits.append(Fit(lambda x, a: a * x / x, var_x, histo, comment="constant"))
 
   def cor(self):
     """
@@ -227,7 +225,7 @@ class GRBFormatedData:
     :returns: float, angle in deg
     Warning : That's actually minus the correction angle (so that the correction uses a + instead of a - ...)
     """
-    theta, phi = np.deg2rad(self.dec_sat_frame), np.deg2rad(self.ra_sat_frame)
+    theta, phi = np.deg2rad(self.grb_dec_sat_frame), np.deg2rad(self.grb_ra_sat_frame)
     return np.rad2deg(np.arctan(np.cos(theta) * np.tan(phi))) + self.expected_pa
 
   def behave(self, width=360):
@@ -237,8 +235,8 @@ class GRBFormatedData:
     :param width: float, width of the polarigram in deg, default=360, SHOULD BE 360
     """
     self.pol = self.pol % width + self.bins[0]
-    if self.unpol is not None:
-      self.unpol = self.unpol % width + self.bins[0]
+    # if self.unpol is not None:
+    #   self.unpol = self.unpol % width + self.bins[0]
 
   def corr(self):
     """
@@ -249,8 +247,8 @@ class GRBFormatedData:
     else:
       cor = self.cor()
       self.pol += cor
-      if self.unpol is not None:
-        self.unpol += cor
+      # if self.unpol is not None:
+      #   self.unpol += cor
       self.behave()
       self.azim_angle_corrected = True
 
@@ -261,54 +259,54 @@ class GRBFormatedData:
     if self.azim_angle_corrected:
       cor = self.cor()
       self.pol -= cor
-      if self.unpol is not None:
-        self.unpol -= cor
+      # if self.unpol is not None:
+      #   self.unpol -= cor
       self.behave()
       self.azim_angle_corrected = False
     else:
       print(" Impossible to undo the correction of the azimuthal compton scattering angles : no correction were made")
 
-  def clf(self):
-    """
-    Clears the fit list
-    """
-    self.fits = []
+  # def clf(self):
+  #   """
+  #   Clears the fit list
+  #   """
+  #   self.fits = []
 
-  def show(self, disp=True, plot=True, plotfit=None, show=True, ret=True):
-    """
-    Plots and show a polarigram, and also does all the statistical analysis (indev)
-    :param disp:      bool,        whether or not to print fit results,                   default=True
-    :param plot:      bool,        whether or not to plot the polarigram and fit results, default=True
-    :param plotfit:   list of int, which fit(s) to plot (None is none),                   default=[-2]
-    :param show:      bool,        whether or not to show fit results,                    default=True
-    :param ret:       bool,        whether or not to return the result,                   default=True
-    :returns:         couple of np.ndarray or None
-    """
-    if self.fits is None:
-      print("There is no fit to show yet")
-    else:
-      if plotfit is None:
-        plotfit = [-2]
-      binw = self.bins[1:] - self.bins[:-1]
-      ylabel = "Number of counts (per degree)"
-      if self.unpol is not None:
-        ylabel = "Corrected number of count"
-      if plot:
-        plt.step(self.fits[plotfit[0]].x, self.fits[plotfit[0]].y, "g", where="mid")
-        plt.errorbar(self.fits[plotfit[0]].x, self.fits[plotfit[0]].y, yerr=self.polarigram_error, fmt='none')
-        if plotfit is not None:
-          xfit = np.arange(self.bins[0] - binw[0], self.bins[-1] + binw[-1], 1)
-          for i in plotfit:
-            if disp:
-              self.fits[i].disp()
-            plt.plot(xfit, self.fits[i].f(xfit, *self.fits[i].popt), "r--")
-        plt.xlabel("Azimuthal scatter angle (degree)")
-        plt.ylabel(ylabel)
-        plt.xlim(-180, 180)
-        if show:
-          plt.show()
-      if ret:
-        return self.fits[plotfit[0]].y
+  # def show(self, disp=True, plot=True, plotfit=None, show=True, ret=True):
+  #   """
+  #   Plots and show a polarigram, and also does all the statistical analysis (indev)
+  #   :param disp:      bool,        whether or not to print fit results,                   default=True
+  #   :param plot:      bool,        whether or not to plot the polarigram and fit results, default=True
+  #   :param plotfit:   list of int, which fit(s) to plot (None is none),                   default=[-2]
+  #   :param show:      bool,        whether or not to show fit results,                    default=True
+  #   :param ret:       bool,        whether or not to return the result,                   default=True
+  #   :returns:         couple of np.ndarray or None
+  #   """
+  #   if self.fits is None:
+  #     print("There is no fit to show yet")
+  #   else:
+  #     if plotfit is None:
+  #       plotfit = [-2]
+  #     binw = self.bins[1:] - self.bins[:-1]
+  #     ylabel = "Number of counts (per degree)"
+  #     if self.unpol is not None:
+  #       ylabel = "Corrected number of count"
+  #     if plot:
+  #       plt.step(self.fits[plotfit[0]].x, self.fits[plotfit[0]].y, "g", where="mid")
+  #       plt.errorbar(self.fits[plotfit[0]].x, self.fits[plotfit[0]].y, yerr=self.polarigram_error, fmt='none')
+  #       if plotfit is not None:
+  #         xfit = np.arange(self.bins[0] - binw[0], self.bins[-1] + binw[-1], 1)
+  #         for i in plotfit:
+  #           if disp:
+  #             self.fits[i].disp()
+  #           plt.plot(xfit, self.fits[i].f(xfit, *self.fits[i].popt), "r--")
+  #       plt.xlabel("Azimuthal scatter angle (degree)")
+  #       plt.ylabel(ylabel)
+  #       plt.xlim(-180, 180)
+  #       if show:
+  #         plt.show()
+  #     if ret:
+  #       return self.fits[plotfit[0]].y
 
   @staticmethod
   def get_keys():
@@ -345,7 +343,7 @@ class GRBFormatedData:
     print("    Methods")
     print("======================================================================")
 
-  def analyze(self, message, source_duration, source_fluence, fit_bounds):
+  def analyze(self, source_duration, source_fluence):
     """
     Proceeds to the data analysis to get mu100, pa, compton cr, mdp and snr
     mdp has physical significance between 0 and 1
@@ -356,22 +354,6 @@ class GRBFormatedData:
     else:
       self.s_eff_compton = self.compton_cr * source_duration / source_fluence
       self.s_eff_single = self.single_cr * source_duration / source_fluence
-    # if self.unpol is not None:
-    #   self.fit(message, fit_bounds=fit_bounds)
-    #   # self.fit(fit_bounds=([-np.inf, -np.inf, (len(self.pol)-1)/100], [np.inf, np.inf, (len(self.pol)+1)/100]))
-    #   if self.fits[0] is not None:
-    #     self.pa, self.mu100, self.fit_compton_cr = self.fits[-2].popt
-    #     if self.mu100 < 0:
-    #       self.pa = (self.pa + 90) % 180
-    #       self.mu100 = - self.mu100
-    #     else:
-    #       self.pa = self.pa % 180
-    #     if self.mu100 > 0.8:
-    #       print(f"Warning : unusual value - {message} may need further verification, mu100 = {self.mu100}")
-    #     self.pa_err = np.sqrt(self.fits[-2].pcov[0][0])
-    #     self.mu100_err = np.sqrt(self.fits[-2].pcov[1][1])
-    #     self.fit_compton_cr_err = np.sqrt(self.fits[-2].pcov[2][2])
-    #     self.fit_goodness = self.fits[-2].q2 / (len(self.fits[-2].x) - self.fits[-2].nparam)
 
     self.mdp = MDP(self.compton_cr * source_duration, self.compton_b_rate * source_duration, self.mu100)
     # Calculation of SNR with 1sec of integration

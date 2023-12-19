@@ -1,56 +1,52 @@
-### Parameter file for mamr
+############################################################
+### Parameter file for grb simulations
+############################################################
 
+############################################################
 ### Supported keywords:
-# General
-- @type EffectiveArea OR GRBCatalog
-- @cosimasourcefile cosima source file
-- @revancfgfile revan config file
-- @geometry .geo.setup geometry file
-- @prefix path and prefix for outputfiles names
+############################################################
+#@geometry           : Geometry used
+#@revancfgfile       : Revan configuration file
+#@mimrecfile         : Mimrec configuration file
 
-# GRB catalog
-- @instrument (used to determine what to look for - only GBM implemented)
-- @mode pflx or flnc, whether to use the peak flux spectrum or the fluence (=time-integrated) one
-- @sttype header_position event_separator first_event item_separator last_event
-  -> header_position : int
-  -> event_separator : str (n for newline, t for tab)
-  -> first_event     : int
-  -> item_separator  : str (n for newline, t for tab)
-  -> last_event      : int
-- @file catalog_file
-- @spectralfilepath path of the spectra folder
-- @simulationsperevent number of times each GRB is simulated
-- @poltime duration of the burst : integer or t90 if real grb duration wanted
-- @position possible positions in sky (positions ahead the satellite ?)
-  -> min dec (deg)
-  -> max dec (deg)
-  -> min ra (deg)
-  -> max ra (deg)
-- @satellite pointing or orbital parameters
-  -> pointing in direction theta, phi in deg and altitude in km
-  -> orbital parameters i, ohm, omega (orbit inclination, longitude of ascending node and true anomaly) in deg and altitude in km to account for earch occultation (may be used several times for different satellites)
+#@spectrafilepath    : Path of the directory where all the source spectra are created
+#@grbfile            : Catalog file ./GBM/longGBM.txt or ./GBM/shortGBM.txt
 
-############
+#@cosimasourcefile   : Source file used as model for temporary source files
+#@prefix             : Prefix for the simulation files, usually sim_folder_path/sim/long (or short for short grbs)
 
-@type GRBCatalog
-@cosimasourcefile path/sourcefile
-@revancfgfile repo_path/cfgs/revanfile
-@geometry repo_path/geom/geomfile
-@prefix path/sim/long # or short for sgrb
+#@sttype             : format for reading the GBM catalog, 5 informations separated by a space that are :
+    -> header_position : int
+    -> event_separator : str (n for newline, t for tab)
+    -> first_event     : int
+    -> item_separator  : str (n for newline, t for tab)
+    -> last_event      : int or a list of grb names
+    -> examples : for all long grbs and to simulate 40 GRB with evenly distributed fluence (in log scale)
+      -> 4 n 5 | 2000
+      -> 4 n 5 | [GRB140320092,GRB150828901,GRB100302061,GRB141122956,GRB120506128,GRB100326294,GRB160917921,GRB140429975,GRB150425617,GRB090428441,GRB150721732,GRB080805496,GRB130514560,GRB140521184,GRB121231445,GRB110904531,GRB090513916,GRB160515819,GRB130811186,GRB090912660,GRB091209001,GRB100224112,GRB170114833,GRB130630272,GRB140423356,GRB141222691,GRB081221681,GRB110921912,GRB130131511,GRB180427442,GRB170921168,GRB130925173,GRB140810782,GRB150330828,GRB150627183,GRB090902462,GRB170409112,GRB160821857,GRB160625945,GRB130427324]
+#@simulationsperevent: Number of simulations to make
+#@simtime            : Duration of simulation, either t90 or a number for a fixed value
+#@position           : latitude min, latitude max, longitude min, longitude max (latitude from -90 to 90°) in deg to define in which sky area the grbs are randomly produced
+#@satellite          : orbital parameters i, ohm, omega (orbit inclination, longitude of ascending node and true anomaly) in deg and altitude in km (may be used several times for different satellites)
 
-@instrument GBM
-@mode flnc
+############################################################
+### Parameters :
+############################################################
+@geometry ./geom/geomfile
+@revancfgfile ./cfgs/revanv1.cfg
+@mimrecfile ./cfgs/mimrec10-1000single.cfg
+
+@spectrafilepath ./sources/longGBMspectra/
+@grbfile ./GBM/shortGBM.txt
+
+@cosimasourcefile path/wobkgGRB_Pol.source
+@prefix path/sim/long
+
 @sttype 4 n 5 | 2000
-# Following line to simulate 40 GRB with evenly distributed fluence (in log scale)
-#@sttype 4 n 5 | [GRB140320092,GRB150828901,GRB100302061,GRB141122956,GRB120506128,GRB100326294,GRB160917921,GRB140429975,GRB150425617,GRB090428441,GRB150721732,GRB080805496,GRB130514560,GRB140521184,GRB121231445,GRB110904531,GRB090513916,GRB160515819,GRB130811186,GRB090912660,GRB091209001,GRB100224112,GRB170114833,GRB130630272,GRB140423356,GRB141222691,GRB081221681,GRB110921912,GRB130131511,GRB180427442,GRB170921168,GRB130925173,GRB140810782,GRB150330828,GRB150627183,GRB090902462,GRB170409112,GRB160821857,GRB160625945,GRB130427324]
-#@file repo_path/GBM/shortGBM.txt
-@file repo_path/GBM/longGBM.txt
-@spectrafilepath repo_path/sources/longGBMspectra/
 @simulationsperevent 1
-@poltime t90
-@unpoltime 1
+@simtime t90
 @position -90 90 0 360
 @satellite 0 -90 0 550
-@satellite 0 -90 30 550
-@satellite 0 -90 60 550
+
+
 

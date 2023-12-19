@@ -10,38 +10,7 @@ import numpy as np
 import multiprocessing as mp
 import argparse
 # Developped modules imports
-from funcmod import band
-
-def read_par(parfile):
-  with open(parfile, "r") as f:
-    lines = f.read().split("\n")
-  geom, revanf, mimrecf, source_base, spectra, bandparam, poltime, unpoltime, decs, ras = None, None, None, None, None, None, None, None, None, None
-  for line in lines:
-    if line.startswith("@geometry"):
-      geom = line.split(" ")[1]
-    elif line.startswith("@revancfgfile"):
-      revanf = line.split(" ")[1]
-    elif line.startswith("@mimrecfile"):
-      mimrecf = line.split(" ")[1]
-    elif line.startswith("@cosimasourcefile"):
-      source_base = line.split(" ")[1]
-    elif line.startswith("@spectrafilepath"):
-      spectra = line.split(" ")[1]
-      if spectra.endswith("/"):
-        spectra = spectra[:-1]
-    elif line.startswith("@bandparam"):
-      bandparam = list(map(float, line.split(" ")[1:]))
-    elif line.startswith("@poltime"):
-      poltime = float(line.split(" ")[1])
-    elif line.startswith("@unpoltime"):
-      unpoltime = float(line.split(" ")[1])
-    elif line.startswith("@decposition"):
-      decs = list(map(int, line.split(" ")[1:]))
-      decs = np.linspace(decs[0], decs[1], decs[2])
-    elif line.startswith("@raposition"):
-      ras = list(map(int, line.split(" ")[1:]))
-      # ras = np.linspace(ras[0], ras[1], ras[2])
-  return geom, revanf, mimrecf, source_base, spectra, bandparam, poltime, unpoltime, decs, ras
+from funcmod import band, read_mupar
 
 
 def make_directories(geometry):
@@ -168,7 +137,8 @@ if __name__ == "__main__":
   if args.parameterfile:
     # Reading the param file
     print(f"Running of {args.parameterfile} parameter file")
-    geometry, revanfile, mimrecfile, source_base, spectra, bandparam, poltime, unpoltime, decs, ras = read_par(args.parameterfile)
+    geometry, revanfile, mimrecfile, source_base, spectra, bandparam, poltime, unpoltime, decs, ras = read_mupar(
+      args.parameterfile)
 
     # Creating the required directories
     make_directories(geometry)

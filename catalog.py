@@ -12,6 +12,25 @@ class Catalog:
     :param data: None or string, data to put in the catalog
     :param sttype: See Catalog.fill
     """
+    # Fields added for some clarity (used for making the grb spectra
+    self.flnc_plaw_ampl = None
+    self.flnc_plaw_index = None
+    self.flnc_plaw_pivot = None
+    self.flnc_comp_ampl = None
+    self.flnc_comp_index = None
+    self.flnc_comp_epeak = None
+    self.flnc_comp_pivot = None
+    self.flnc_band_ampl = None
+    self.flnc_band_alpha = None
+    self.flnc_band_beta = None
+    self.flnc_band_epeak = None
+    self.flnc_sbpl_ampl = None
+    self.flnc_sbpl_indx1 = None
+    self.flnc_sbpl_indx2 = None
+    self.flnc_sbpl_brken = None
+    self.flnc_sbpl_brksc = None
+    self.flnc_sbpl_pivot = None
+    # Catalog attributes
     self.name = None
     self.t90 = None
     self.length = 0
