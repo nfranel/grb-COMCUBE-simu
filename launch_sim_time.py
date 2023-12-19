@@ -146,6 +146,7 @@ def maketmpsf(command, args, pid):
     lines = f.read().split("\n")
   with open(fname, "w") as f:
     for line in lines:
+      print(line)
       if line.startswith("Geometry"):
         f.write(f"Geometry {args.geometry}")
       elif line.startswith("PhysicsListEM "):
