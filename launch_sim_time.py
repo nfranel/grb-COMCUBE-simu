@@ -142,10 +142,13 @@ def maketmpsf(command, args, pid):
   """
   fname = f"tmp_{pid}.source"
   sname = make_sim_name(args, command)
+  print(args.csf)
+  print(fname)
   with open(args.csf) as f:
     lines = f.read().split("\n")
   with open(fname, "w") as f:
     for line in lines:
+      print(line)
       if line.startswith("Geometry"):
         f.write(f"Geometry {args.geometry}")
       elif line.startswith("PhysicsListEM "):
