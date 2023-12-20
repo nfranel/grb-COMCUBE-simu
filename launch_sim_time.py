@@ -107,11 +107,11 @@ def gen_commands(args):
         ra_sat_world_frame -= earth_ra_offset
         # if verif_zone(90 - dec_sat_world_frame, ra_sat_world_frame):  # checks if the sat is in the switch off zone
         if verif_rad_belts(90 - dec_sat_world_frame, ra_sat_world_frame, s[3]):  # checks if the sat is in the switch off zone
-          save_log("simulation_logs.txt", c.name[i], j, k, "Ignored(off)", s[0], s[1], s[2], s[3], rand_time, dec_sat_world_frame, ra_sat_world_frame, dec_grb_world_frame, ra_grb_world_frame, None, None)
+          save_log(f"{sim_directory}/simulation_logs.txt", c.name[i], j, k, "Ignored(off)", s[0], s[1], s[2], s[3], rand_time, dec_sat_world_frame, ra_sat_world_frame, dec_grb_world_frame, ra_grb_world_frame, None, None)
         else:
           theta, phi, thetap, phip = grb_decrapol_worldf2satf(dec_grb_world_frame, ra_grb_world_frame, dec_sat_world_frame, ra_sat_world_frame)[1:]
           if theta >= horizonAngle(s[3]):#source below horizon
-            save_log("simulation_logs.txt", c.name[i], j, k, "Ignored(horizon)", s[0], s[1], s[2], s[3], rand_time, dec_sat_world_frame, ra_sat_world_frame, dec_grb_world_frame, ra_grb_world_frame, theta, phi)
+            save_log(f"{sim_directory}/simulation_logs.txt", c.name[i], j, k, "Ignored(horizon)", s[0], s[1], s[2], s[3], rand_time, dec_sat_world_frame, ra_sat_world_frame, dec_grb_world_frame, ra_grb_world_frame, theta, phi)
           else:
             polstr = "{} {} {}".format(np.sin(thetap)*np.cos(phip), np.sin(thetap)*np.sin(phip), np.cos(thetap))
             # Add command to commands list
@@ -123,7 +123,7 @@ def gen_commands(args):
               simtime = None
               vprint("simtime in parameter file unknown. Check parameter file.", __verbose__, 0)
             args.commands.append((not(args.nocosima), not(args.norevan), not(args.nomimrec), c.name[i], k, spectrumfile, pht_mflx, simtime, polstr, j, f"{dec_grb_world_frame:.1f}_{ra_grb_world_frame:.1f}_{rand_time:.4f}", theta, phi))
-            save_log("simulation_logs.txt", c.name[i], j, k, "Simulated", s[0], s[1], s[2], s[3], rand_time, dec_sat_world_frame, ra_sat_world_frame, dec_grb_world_frame, ra_grb_world_frame, theta, phi)
+            save_log(f"{sim_directory}/simulation_logs.txt", c.name[i], j, k, "Simulated", s[0], s[1], s[2], s[3], rand_time, dec_sat_world_frame, ra_sat_world_frame, dec_grb_world_frame, ra_grb_world_frame, theta, phi)
   for i in range(len(c)):
     gen_grb(i)
   return args
@@ -200,13 +200,16 @@ def cosirevan(command):
   source_name = maketmpsf(command, args, pid)
   if command[0]:
     # Running cosima
+    print("    Cosima")
     run(f"cosima -z {source_name}; rm -f {source_name}", __verbose__)
   if command[1]: #run revan
     # Running revan
+    print("                 Revan")
     run(f"revan -g {args.geometry} -c {args.rcf} -f {simfile} -n -a; mv {simfile} {mv_simfile}", __verbose__)
     # run(f"revan -g {args.geometry} -c {args.rcf} -f {simfile} -n -a; rm -f {simfile}", __verbose__)
   if command[2]:
     # Running mimrec
+    print("                                                 Mimrec")
     run(f"mimrec -g {args.geometry} -c {args.mcf} -f {trafile} -n -a; mv {trafile} {mv_trafile}", __verbose__)
     # run(f"mimrec -g {args.geometry} -c {args.mcf} -f {trafile} -n -a; rm -f {trafile}", __verbose__)
 
