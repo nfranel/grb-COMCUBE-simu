@@ -208,7 +208,7 @@ def cosirevan(command):
   if command[2]:
     # Running mimrec
     print("                                                 Mimrec")
-    run(f"mimrec -g {args.geometry} -c {args.mcf} -f {trafile} -n -a; mv {trafile} {mv_trafile}", 3)
+    run(f"mimrec -g {args.geometry} -c {args.mcf} -f {trafile} -x -n; mv {trafile} {mv_trafile}", 3)
     # run(f"mimrec -g {args.geometry} -c {args.mcf} -f {trafile} -n -a; rm -f {trafile}", __verbose__)
 
 
