@@ -122,7 +122,7 @@ def gen_commands(args):
             else:
               simtime = None
               vprint("simtime in parameter file unknown. Check parameter file.", __verbose__, 0)
-            args.commands.append((not(args.nocosima), not(args.norevan), not(args.nomimrec), c.name[i], k, spectrumfile, pht_mflx, simtime, polstr, j, f"{dec_grb_world_frame:.1f}_{ra_grb_world_frame:.1f}{rand_time:.4f}", theta, phi))
+            args.commands.append((not(args.nocosima), not(args.norevan), not(args.nomimrec), c.name[i], k, spectrumfile, pht_mflx, simtime, polstr, j, f"{dec_grb_world_frame:.1f}_{ra_grb_world_frame:.1f}_{rand_time:.4f}", theta, phi))
             save_log("simulation_logs.txt", c.name[i], j, k, "Simulated", s[0], s[1], s[2], s[3], rand_time, dec_sat_world_frame, ra_sat_world_frame, dec_grb_world_frame, ra_grb_world_frame, theta, phi)
   for i in range(len(c)):
     gen_grb(i)
