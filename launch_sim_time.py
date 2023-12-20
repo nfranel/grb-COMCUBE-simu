@@ -200,17 +200,15 @@ def cosirevan(command):
   source_name = maketmpsf(command, args, pid)
   if command[0]:
     # Running cosima
-    print("    Cosima")
     run(f"cosima -z {source_name}; rm -f {source_name}", __verbose__)
   if command[1]: #run revan
     # Running revan
-    print("                 Revan")
     run(f"revan -g {args.geometry} -c {args.rcf} -f {simfile} -n -a; mv {simfile} {mv_simfile}", __verbose__)
     # run(f"revan -g {args.geometry} -c {args.rcf} -f {simfile} -n -a; rm -f {simfile}", __verbose__)
   if command[2]:
     # Running mimrec
     print("                                                 Mimrec")
-    run(f"mimrec -g {args.geometry} -c {args.mcf} -f {trafile} -n -a; mv {trafile} {mv_trafile}", __verbose__)
+    run(f"mimrec -g {args.geometry} -c {args.mcf} -f {trafile} -n -a; mv {trafile} {mv_trafile}", 3)
     # run(f"mimrec -g {args.geometry} -c {args.mcf} -f {trafile} -n -a; rm -f {trafile}", __verbose__)
 
 
