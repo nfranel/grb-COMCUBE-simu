@@ -79,11 +79,11 @@ class LogData:
     return simulated, horizon, off
 
 
-lgrb_cat = "./GBM/longGBM.txt"
-sgrb_cat = "./GBM/shortGBM.txt"
-
-cat = Catalog(lgrb_cat, [4, '\n', 5, '|', 2000])
-cat.spectral_information()
-
-log = LogData("/pdisk/ESA/test--400km--0-0-0--27sat")
-log.detection_statistics()
+# lgrb_cat = "./GBM/longGBM.txt"
+# sgrb_cat = "./GBM/shortGBM.txt"
+#
+# cat = Catalog(lgrb_cat, [4, '\n', 5, '|', 2000])
+# cat.spectral_information()
+#
+# log = LogData("/pdisk/ESA/test--400km--0-0-0--27sat")
+# log.detection_statistics()
