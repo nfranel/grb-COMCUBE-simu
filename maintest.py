@@ -8,7 +8,7 @@ bkg_param = "./bkg/bkg-v134.par"
 mu_param = "./mu100/mu100-v134.par"
 erg = (30, 1000)
 arm = 180
-test = AllSourceData(grb_sim_param, bkg_param, mu_param, erg, arm, parallel=10)
+test = AllSourceData(grb_sim_param, bkg_param, mu_param, erg, arm, parallel="all")
 test.make_const()
 test.verif_const()
 test.analyze()
