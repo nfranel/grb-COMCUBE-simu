@@ -109,7 +109,7 @@ def fname2decratime(fname):
   """
   data = fname.split("/")[-1] # to get rid of the first part of the prefix (and the potential "_" in it)
   data = data.split("_")
-  return float(data[4]), float(".".join(data[5].split(".")[:2])), float(data[6]), data[1], int(data[3]), int(data[2].split("sat")[1])
+  return float(data[4]), float(data[5]), float(".".join(data[6].split(".")[:2])), data[1], int(data[3]), int(data[2].split("sat")[1])
 
 
 def save_log(filename, name, num_sim, num_sat, status, inc, ohm, omega, alt, random_time, sat_dec_wf, sat_ra_wf, grb_dec_wf, grb_ra_wf, grb_dec_st, grb_ra_sf):
