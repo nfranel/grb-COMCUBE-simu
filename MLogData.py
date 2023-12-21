@@ -42,7 +42,8 @@ class LogData:
     """
     Extracts the information from the log file
     """
-    with open(self.sim_directory, "r") as f:
+    logfile = f"{self.sim_directory}/simulation_logs.txt"
+    with open(logfile, "r") as f:
       lines = f.read().split("\n")
     self.keys_description = lines[2]
     self.keys = lines[3]
