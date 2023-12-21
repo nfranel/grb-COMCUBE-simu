@@ -149,6 +149,7 @@ class GRBFullData:
 
       # Calculating the arm and extracting the indexes of correct arm events (arm in deg)
       self.arm_pol = self.polar_from_position - self.polar_from_energy
+      print(np.abs(self.arm_pol), armcut)
       accepted_arm_pol = np.where(np.abs(self.arm_pol) <= armcut, True, False)
       # Restriction of the values according to arm cut
       self.compton_ener = self.compton_ener[accepted_arm_pol]
