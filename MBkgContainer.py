@@ -187,7 +187,7 @@ class BkgContainer(list):
       fcond.write(f"# Altitude list : {self.alt_range}\n")
       fcond.write("# Keys : dec | alt | compton_cr | single_cr\n")
 
-      for file in files_saved:
+      for file in files_saved[1:]:
         lines = file.split("\n")
         decbkg = float(lines[0])
         altbkg = float(lines[1])
