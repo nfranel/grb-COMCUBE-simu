@@ -47,7 +47,7 @@ class LogData:
       lines = f.read().split("\n")
     self.keys_description = lines[2]
     self.keys = lines[3]
-    for line, iteline in enumerate(lines[6:]):
+    for iteline, line in enumerate(lines[6:]):
       print(line)
       print(iteline)
       data = line.split(" | ")
