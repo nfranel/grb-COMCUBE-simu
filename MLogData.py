@@ -48,8 +48,6 @@ class LogData:
     self.keys_description = lines[2]
     self.keys = lines[3]
     for iteline, line in enumerate(lines[6:-1]):
-      print(line)
-      print(iteline)
       data = line.split(" | ")
       self.name.append(data[0])
       self.sim_num.append(data[1])
