@@ -61,7 +61,7 @@ class BkgContainer(list):
     # # Saving the data with a full format
     # list.__init__(self, self.read_data(f"./bkg/sim_{geom_name}/{saving}", save_pos, save_time, ergcut, data_type="full"))
     # Saving the data with a condensed format
-    list.__init__(self, self.read_data(f"./bkg/sim_{geom_name}/{saving}", save_pos, save_time, ergcut, data_type="cond"))
+    list.__init__(self, self.read_data(f"./bkg/sim_{geom_name}/{cond_saving}", save_pos, save_time, ergcut, data_type="cond"))
     print("=======================================")
     print(" Extraction of bkg data finished in : ", time() - init_time, "seconds")
     print("=======================================")
