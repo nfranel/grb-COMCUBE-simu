@@ -221,7 +221,7 @@ class BkgData:
     :param save_time : True if the interaction times are to be saved
     :param ergcut : energy cut to apply
     """
-    if data_type == "cond":
+    if data_type == "full":
       # Extraction of the background values
       lines = data.split("\n")
       self.dec = float(lines[0])
@@ -262,7 +262,7 @@ class BkgData:
       self.single_cr = self.single / sim_duration
       self.compton = len(self.compton_ener)
       self.compton_cr = self.compton / sim_duration
-    elif data_type == "full":
+    elif data_type == "cond":
       # Extraction of the background values
       lines = data.split("\n")
       self.dec = float(lines[0])
