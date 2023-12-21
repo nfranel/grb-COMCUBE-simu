@@ -32,7 +32,7 @@ class BkgContainer(list):
 
     geom_name = geom.split(".geo.setup")[0].split("/")[-1]
     saving = f"bkgsaved_{geom_name}_{np.min(self.lat_range):.0f}-{np.max(self.lat_range):.0f}-{len(self.lat_range):.0f}_{np.min(self.alt_range):.0f}-{np.max(self.alt_range):.0f}-{len(self.alt_range):.0f}.txt"
-    cond_saving = f"bkgsaved_{geom_name}_{np.min(self.lat_range):.0f}-{np.max(self.lat_range):.0f}-{len(self.lat_range):.0f}_{np.min(self.alt_range):.0f}-{np.max(self.alt_range):.0f}-{len(self.alt_range):.0f}_erg-{ergcut[0]}-{ergcut[1]}.txt"
+    cond_saving = f"cond_bkgsaved_{geom_name}_{np.min(self.lat_range):.0f}-{np.max(self.lat_range):.0f}-{len(self.lat_range):.0f}_{np.min(self.alt_range):.0f}-{np.max(self.alt_range):.0f}-{len(self.alt_range):.0f}_erg-{ergcut[0]}-{ergcut[1]}.txt"
 
     if not saving in os.listdir(f"./bkg/sim_{geom_name}"):
       init_time = time()
