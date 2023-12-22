@@ -439,6 +439,7 @@ def closest_mufile(grb_dec_sf, grb_ra_sf, mu_list):
     return 0.000001, 0.000001, 0.000001, 0.000001
   else:
     print("AAAAAAH")
+    print(mu_list)
     for mu in mu_list:
       print(mu.dec, grb_dec_sf, mu.ra, grb_ra_sf)
     print("OOOOOOH")
