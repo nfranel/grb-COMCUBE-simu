@@ -440,6 +440,8 @@ def closest_mufile(grb_dec_sf, grb_ra_sf, mu_list):
   else:
     print("AAAAAAH")
     print(mu_list)
+    print(grb_dec_sf, grb_ra_sf)
+    print(type(grb_dec_sf), type(grb_ra_sf))
     for mu in mu_list:
       print(mu.dec, grb_dec_sf, mu.ra, grb_ra_sf)
     print("OOOOOOH")
