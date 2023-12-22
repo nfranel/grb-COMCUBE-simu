@@ -75,7 +75,7 @@ class MuSeffContainer(list):
       # Keys if the usefull data are saved
       f.write("# Keys : dec | ra | compton_ener_pol | compton_ener_unpol | compton_second_pol | compton_second_unpol | single_ener_pol\n")
       for dec in np.linspace(self.decs[0], self.decs[1], self.decs[2]):
-        for ra in make_ra_list(ras, dec):
+        for ra in make_ra_list(self.ras, dec):
           #  The commented parts are the ones that may not be useful
           geom_name = self.geometry.split(".geo.setup")[0].split("/")[-1]
           polsname = f"./mu100/sim_{geom_name}/sim/mu100_{dec:.1f}_{ra:.1f}pol.inc1.id1.extracted.tra"
