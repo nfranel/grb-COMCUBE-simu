@@ -68,9 +68,13 @@ class LogData:
     """
     Prints the detection statistics for a set a simulation
     """
+    print("=====")
+    print(self.status)
     simulated = np.sum(np.where(self.status == "Simulated", 1, 0))
     horizon = np.sum(np.where(self.status == "Ignored(horizon)", 1, 0))
     off = np.sum(np.where(self.status == "Ignored(off)", 1, 0))
+    print(simulated, horizon, off)
+    print("=====")
     print("The detection statistics for the simulated grbs is the following :")
     print(f"   Number of simulation possible : {len(self.name)}")
     print(f"   Number of simulation done : {simulated}")
