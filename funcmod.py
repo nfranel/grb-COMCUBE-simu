@@ -438,8 +438,10 @@ def closest_mufile(grb_dec_sf, grb_ra_sf, mu_list):
   if len(mu_list) == 0:
     return 0.000001, 0.000001, 0.000001, 0.000001
   else:
+    print("AAAAAAH")
     for mu in mu_list:
       print(mu.dec, grb_dec_sf, mu.ra, grb_ra_sf)
+    print("OOOOOOH")
     dec_error = np.array([(mu.dec - grb_dec_sf) ** 2 for mu in mu_list])
     ra_error = np.array([(mu.ra - grb_ra_sf) ** 2 for mu in mu_list])
     total_error = np.sqrt(dec_error + ra_error)
