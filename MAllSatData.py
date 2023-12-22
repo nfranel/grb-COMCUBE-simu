@@ -15,7 +15,7 @@ class AllSatData(list):
   Class containing all the data for 1 simulation of 1 GRB (or other source) for a full set of trafiles
   """
 
-  def __init__(self, source_prefix, num_sim, sat_info, sim_duration, source_fluence, bkg_data, mu_data, options):
+  def __init__(self, source_prefix, num_sim, sat_info, sim_duration, bkg_data, mu_data, options):
     temp_list = []
     # Attributes relative to the simulations without any analysis
     self.n_sat_receiving = 0
@@ -32,7 +32,7 @@ class AllSatData(list):
         if flist[0].startswith("ls: cannot access"):
           temp_list.append(None)
         else:
-          temp_list.append(GRBFullData(flist, sat_info[num_sat], self.grb_burst_time, sim_duration, num_sat, source_fluence, bkg_data, mu_data, *options))
+          temp_list.append(GRBFullData(flist, sat_info[num_sat], self.grb_burst_time, sim_duration, num_sat, bkg_data, mu_data, *options))
           self.n_sat_receiving += 1
           self.loading_count += 1
       else:
@@ -72,7 +72,8 @@ class AllSatData(list):
     if const is None:
       const = np.array(range(self.n_sat))
     considered_sat = const[np.where(np.array(self) == None, False, True)]
-    self.const_data = GRBFullData([], None, None, None, None, None, None, None, *options)
+    self.const_data = GRBFullData([], None, None, None, None, None, None, *options)
+
     for item in self.const_data.__dict__.keys():
       if item not in ["sat_dec_wf", "sat_ra_wf", "num_sat", "grb_dec_sat_frame", "grb_ra_sat_frame", "expected_pa", "fits", "mu100", "pa", "fit_compton_cr", "pa_err",
                       "mu100_err", "fit_compton_cr_err", "fit_goodness", "mdp", "snr_compton", "snr_single", "snr_compton_t90", "snr_single_t90"]:

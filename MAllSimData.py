@@ -72,7 +72,7 @@ class AllSimData(list):
         if flist[0].startswith("ls: cannot access"):
           temp_list.append(None)
         else:
-          temp_list.append(AllSatData(source_prefix, num_sim, sat_info, sim_duration, self.source_fluence, bkg_data, mu_data, options))
+          temp_list.append(AllSatData(source_prefix, num_sim, sat_info, sim_duration, bkg_data, mu_data, options))
           self.n_sim_det += 1
 
     list.__init__(self, temp_list)

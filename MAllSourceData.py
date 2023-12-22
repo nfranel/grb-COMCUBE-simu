@@ -55,12 +55,12 @@ class AllSourceData:
     # Setup of some options
     self.save_pos = True
     self.save_time = True
-    # self.init_correction = False
+    self.init_correction = False
     self.snr_min = 5
     # self.options = [self.save_pos, self.save_time, self.polarigram_bins, self.armcut, self.init_correction,self.erg_cut]
-    self.options = [self.save_pos, self.save_time, self.polarigram_bins, self.armcut, self.erg_cut]
+    self.options = [self.erg_cut, self.armcut, self.save_pos, self.save_time, self.init_correction, self.polarigram_bins]
 
-    # self.bkg_sim_duration = 3600
+# self.bkg_sim_duration = 3600
     # Parameters extracted from parfile
     self.geometry, self.revan_file, self.mimrec_file, self.spectra_path, self.cat_file, self.source_file, self.sim_prefix, self.sttype, self.n_sim, self.sim_duration, self.position_allowed_sim, self.sat_info = read_grbpar(self.grb_param)
     self.n_sat = len(self.sat_info)

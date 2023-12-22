@@ -20,8 +20,8 @@ class GRBFullData:
   Class containing the data for 1 GRB, for 1 sim, and 1 satellite
   """
 
-  def __init__(self, data_list, sat_info, burst_time, sim_duration, num_sat, source_fluence, bkg_data, mu_data, save_pos, save_time,
-               armcut, corr, ergcut):
+  def __init__(self, data_list, sat_info, burst_time, sim_duration, num_sat, bkg_data, mu_data, ergcut, armcut,
+               save_pos, save_time, corr, polarigram_bins):
     """
     -data_list : 1 polarized data file from which extract the data
     """
@@ -76,6 +76,8 @@ class GRBFullData:
     self.compton = 0
     self.compton_cr = 0
 
+    self.expected_pa = None
+    self.bins = polarigram_bins
     self.mdp = None
     self.snr_compton = None
     self.snr_single = None
@@ -96,7 +98,7 @@ class GRBFullData:
       self.n_sat_detect = 0
     else:
       dec_world_frame, ra_world_frame, source_name, num_sim, num_sat = fname2decra(data_list[0])
-      self.grb_dec_sat_frame, self.grb_ra_sat_frame = grb_decrapol_worldf2satf(dec_world_frame, ra_world_frame, sat_info[0], sat_info[1])[1:3]
+      self.expected_pa, self.grb_dec_sat_frame, self.grb_ra_sat_frame = grb_decrapol_worldf2satf(dec_world_frame, ra_world_frame, sat_info[0], sat_info[1])[3]
       # Extracting the data from first file
       data_pol = readfile(data_list[0])
       for event in data_pol:
