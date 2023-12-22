@@ -98,7 +98,7 @@ class GRBFullData:
       self.n_sat_detect = 0
     else:
       dec_world_frame, ra_world_frame, source_name, num_sim, num_sat = fname2decra(data_list[0])
-      self.expected_pa, self.grb_dec_sat_frame, self.grb_ra_sat_frame = grb_decrapol_worldf2satf(dec_world_frame, ra_world_frame, sat_info[0], sat_info[1])[3]
+      self.expected_pa, self.grb_dec_sat_frame, self.grb_ra_sat_frame = grb_decrapol_worldf2satf(dec_world_frame, ra_world_frame, sat_info[0], sat_info[1])[:3]
       # Extracting the data from first file
       data_pol = readfile(data_list[0])
       for event in data_pol:
@@ -151,7 +151,6 @@ class GRBFullData:
 
       # Calculating the arm and extracting the indexes of correct arm events (arm in deg)
       self.arm_pol = self.polar_from_position - self.polar_from_energy
-      print(np.abs(self.arm_pol), armcut)
       accepted_arm_pol = np.where(np.abs(self.arm_pol) <= armcut, True, False)
       # Restriction of the values according to arm cut
       self.compton_ener = self.compton_ener[accepted_arm_pol]

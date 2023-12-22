@@ -513,7 +513,6 @@ def calc_fluence(catalog, index, ergCut):
   else:
     print("Could not find best fit model for {} (indicated {}). Aborting this GRB.".format(catalog.name[index], model))
     return
-  print(ergCut)
   return quad(func, ergCut[0], ergCut[1])[0]
 
 
