@@ -317,20 +317,20 @@ class Mu100Data:
     ##############################################################
     # Attributes filled with file reading
     lines = data.split("\n")
-    self.dec = lines[0]
-    self.ra = lines[1]
-    self.mu100 = lines[2]
-    self.mu100_err = lines[3]
-    self.pa = lines[4]
-    self.pa_err = lines[5]
+    self.dec = float(lines[0])
+    self.ra = float(lines[1])
+    self.mu100 = float(lines[2])
+    self.mu100_err = float(lines[3])
+    self.pa = float(lines[4])
+    self.pa_err = float(lines[5])
     # Set with the fit or for the fit
     # =0 : fit perfectly
     # ~1 : fit reasonably
     # >1 : not a good fit
     # >>1 : very poor fit
-    self.fit_goodness = lines[6]
-    self.s_eff_compton = lines[7]
-    self.s_eff_single = lines[8]
+    self.fit_goodness = float(lines[6])
+    self.s_eff_compton = float(lines[7])
+    self.s_eff_single = float(lines[8])
 
   @staticmethod
   def get_keys():

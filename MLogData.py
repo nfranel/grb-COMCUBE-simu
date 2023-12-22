@@ -70,7 +70,7 @@ class LogData:
     """
     print("=====")
     print(self.status)
-    simulated = np.sum(np.where(self.status == "Simulated", 1, 0))
+    simulated = np.where(self.status == "Simulated", 1, 0)
     horizon = np.sum(np.where(self.status == "Ignored(horizon)", 1, 0))
     off = np.sum(np.where(self.status == "Ignored(off)", 1, 0))
     print(simulated, horizon, off)
