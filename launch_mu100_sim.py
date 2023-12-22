@@ -85,17 +85,24 @@ def make_tmp_source(dec, ra, geom, source_model, spectra, timepol, timeunpol, am
   return fname, sname
 
 
+def make_ra_list(ras, dec):
+  """
+
+  """
+  if dec == 0:
+    new_ra = [0]
+  else:
+    new_ra = np.linspace(ras[0], ras[1], np.max([4, int(np.sin(np.deg2rad(dec)) * ras[2])]), endpoint=False)
+  return new_ra
+
+
 def make_parameters(decs, ras, geom, source_model, spectra, timepol, timeunpol, ampl, rcffile, mimfile):
   """
 
   """
   parameters = []
   for dec in np.linspace(decs[0], decs[1], decs[2]):
-    if dec == 0:
-      new_ra = [0]
-    else:
-      new_ra = np.linspace(ras[0], ras[1], np.max([4, int(np.sin(np.deg2rad(dec))*ras[2])]), endpoint=False)
-    for ra in new_ra:
+    for ra in make_ra_list(ras, dec):
       parameters.append((dec, ra, geom, source_model, spectra, timepol, timeunpol, ampl, rcffile, mimfile))
   return parameters
 

@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 import matplotlib as mpl
 # Developped modules imports
 from funcmod import *
+from launch_mu100_sim import make_ra_list
 from MFit import Fit
 
 # Ploting adjustments
@@ -74,11 +75,13 @@ class MuSeffContainer(list):
       # Keys if the usefull data are saved
       f.write("# Keys : dec | ra | compton_ener_pol | compton_ener_unpol | compton_second_pol | compton_second_unpol | single_ener_pol\n")
       for dec in np.linspace(self.decs[0], self.decs[1], self.decs[2]):
-        for ra in np.linspace(self.ras[0], self.ras[1], np.max([4, int(np.sin(np.deg2rad(dec))*self.ras[2])]), endpoint=False):
+        for ra in make_ra_list(ras, dec):
           #  The commented parts are the ones that may not be useful
           geom_name = self.geometry.split(".geo.setup")[0].split("/")[-1]
           polsname = f"./mu100/sim_{geom_name}/sim/mu100_{dec:.1f}_{ra:.1f}pol.inc1.id1.extracted.tra"
           unpolsname = f"./mu100/sim_{geom_name}/sim/mu100_{dec:.1f}_{ra:.1f}unpol.inc1.id1.extracted.tra"
+          print("====== files loaded ======")
+          print(polsname, unpolsname)
           datapol = readfile(polsname)
           dataunpol = readfile(unpolsname)
           compton_second_pol = []
