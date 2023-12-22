@@ -90,7 +90,7 @@ def make_parameters(decs, ras, geom, source_model, spectra, timepol, timeunpol, 
 
   """
   parameters = []
-  for dec in decs:
+  for dec in np.linspace(decs[0], decs[1], decs[2]):
     if dec == 0:
       new_ra = [0]
     else:

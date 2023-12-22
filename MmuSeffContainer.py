@@ -8,7 +8,6 @@ import os
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 # Developped modules imports
-from launch_mu100_sim import read_mupar
 from funcmod import *
 from MFit import Fit
 
@@ -44,10 +43,10 @@ class MuSeffContainer(list):
     self.fluence = quad(func, self.ergcut[0], self.ergcut[1])[0] * self.poltime
 
     geom_name = geom.split(".geo.setup")[0].split("/")[-1]
-    saving = f"mu-seff-saved_{geom_name}_{np.min(self.decs):.0f}-{np.max(self.decs):.0f}-{len(self.decs):.0f}_{np.min(self.ras):.0f}-{np.max(self.ras):.0f}-{len(self.ras):.0f}.txt"
+    saving = f"mu-seff-saved_{geom_name}_{self.decs[0]:.0f}-{self.decs[1]:.0f}-{self.decs[2]:.0f}_{self.ras[0]:.0f}-{self.ras[1]:.0f}-{self.ras[2]:.0f}.txt"
     ergname = f"ergcut-{ergcut[0]}-{ergcut[1]}"
     armname = f"armcut-{armcut}"
-    cond_saving = f"condensed-saved_{geom_name}_{np.min(self.decs):.0f}-{np.max(self.decs):.0f}-{len(self.decs):.0f}_{np.min(self.ras):.0f}-{np.max(self.ras):.0f}-{len(self.ras):.0f}_{ergname}_{armname}.txt"
+    cond_saving = f"condensed-saved_{geom_name}_{self.decs[0]:.0f}-{self.decs[1]:.0f}-{self.decs[2]:.0f}_{self.ras[0]:.0f}-{self.ras[1]:.0f}-{self.ras[2]:.0f}_{ergname}_{armname}.txt"
 
     if not saving in os.listdir(f"./mu100/sim_{geom_name}"):
       self.save_fulldata(f"./mu100/sim_{geom_name}/{saving}")
@@ -68,14 +67,14 @@ class MuSeffContainer(list):
       f.write(f"# Mimrec file : {self.mimrecfile}\n")
       f.write(f"# Pol simulation time : {self.poltime}\n")
       f.write(f"# Unpol simulation time : {self.unpoltime}\n")
-      f.write(f"# dec min-max-number of value : {np.min(self.decs)}-{np.max(self.decs)}-{len(self.decs)}\n")
-      f.write(f"# ra min-max-number of value : {np.min(self.ras)}-{np.max(self.ras)}-{len(self.ras)}\n")
+      f.write(f"# dec min-max-number of value : {self.decs[0]}-{self.decs[1]}-{self.decs[2]}\n")
+      f.write(f"# ra min-max-number of value (at equator) : {self.ras[0]}-{self.ras[1]}-{self.ras[2]}\n")
       # Keys if EVERYTHING is saved
       # f.write("# Keys : dec | ra | compton_ener_pol | compton_ener_unpol | compton_second_pol | compton_second_unpol | single_ener_pol | single_ener_unpol | compton_firstpos_pol |compton_firstpos_unpol | compton_secpos_pol | compton_secpos_unpol | single_pos_pol | single_pos_unpol | compton_time_pol | compton_time_unpol | single_time_pol | single_time_unpol | single_pol | single_unpol | single_cr_pol | single_cr | compton | compton_cr | calor | dsssd | side\n")
       # Keys if the usefull data are saved
       f.write("# Keys : dec | ra | compton_ener_pol | compton_ener_unpol | compton_second_pol | compton_second_unpol | single_ener_pol\n")
-      for dec in self.decs:
-        for ra in self.ras:
+      for dec in np.linspace(self.decs[0], self.decs[1], self.decs[2]):
+        for ra in np.linspace(self.ras[0], self.ras[1], np.max([4, int(np.sin(np.deg2rad(dec))*self.ras[2])]), endpoint=False):
           #  The commented parts are the ones that may not be useful
           geom_name = self.geometry.split(".geo.setup")[0].split("/")[-1]
           polsname = f"./mu100/sim_{geom_name}/sim/mu100_{dec:.1f}_{ra:.1f}pol.inc1.id1.extracted.tra"
@@ -208,8 +207,8 @@ class MuSeffContainer(list):
       f.write(f"# Mimrec file : {self.mimrecfile}\n")
       f.write(f"# Pol simulation time : {self.poltime}\n")
       f.write(f"# Unpol simulation time : {self.unpoltime}\n")
-      f.write(f"# dec min-max-number of value : {np.min(self.decs)}-{np.max(self.decs)}-{len(self.decs)}\n")
-      f.write(f"# ra min-max-number of value : {np.min(self.ras)}-{np.max(self.ras)}-{len(self.ras)}\n")
+      f.write(f"# dec min-max-number of value : {self.decs[0]}-{self.decs[1]}-{self.decs[2]}\n")
+      f.write(f"# ra min-max-number of value (at equator) : {self.ras[0]}-{self.ras[1]}-{self.ras[2]}\n")
       f.write("# Keys : dec | ra | mu100 | mu100_err | pa | pa_err | fit_goodness | seff_compton | seff_single\n")
       for filedata in fulldata[1:]:
         lines = filedata.split("\n")

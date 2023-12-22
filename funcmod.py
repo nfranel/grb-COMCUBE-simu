@@ -209,10 +209,10 @@ def read_mupar(parfile):
       unpoltime = float(line.split(" ")[1])
     elif line.startswith("@decposition"):
       decs = list(map(int, line.split(" ")[1:]))
-      decs = np.linspace(decs[0], decs[1], decs[2])
+      # decs = np.linspace(decs[0], decs[1], decs[2])
     elif line.startswith("@raposition"):
       ras = list(map(int, line.split(" ")[1:]))
-      ras = np.linspace(ras[0], ras[1], ras[2])
+      # ras = np.linspace(ras[0], ras[1], ras[2])
   return geom, revanf, mimrecf, source_base, spectra, bandparam, poltime, unpoltime, decs, ras
 
 
