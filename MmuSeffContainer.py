@@ -147,8 +147,7 @@ class MuSeffContainer(list):
           f.write("NewPos\n")
           f.write(f"{dec}\n")
           f.write(f"{ra}\n")
-          print(polsname)
-          print(compton_second_pol)
+          print("polsname, len(compton_second_pol), dec, ra", polsname, len(compton_second_pol), dec, ra)
           for ite in range(len(compton_second_pol) - 1):
             f.write(f"{compton_second_pol[ite]}|")
           f.write(f"{compton_second_pol[-1]}\n")
