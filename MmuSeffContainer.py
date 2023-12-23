@@ -5,7 +5,7 @@
 
 # Package imports
 import os
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 import matplotlib as mpl
 # Developped modules imports
 from funcmod import *
@@ -24,9 +24,7 @@ class MuSeffContainer(list):
 
   def __init__(self, mu100parfile, ergcut=(100, 460), armcut=180):
     """
-    :param bkgparfile : background parameter file
-    :param save_pos : True if the interaction positions are to be saved
-    :param save_time : True if the interaction times are to be saved
+    :param mu100parfile : mu100 parameter file
     :param ergcut : energy cut to apply
     """
     geom, revanf, mimrecf, source_base, spectra, bandparam, poltime, unpoltime, decs, ras = read_mupar(mu100parfile)
