@@ -170,10 +170,10 @@ files = ["./bkg/exclusion/400km/AE8max_a400km_i90deg.out", "./bkg/exclusion/400k
 # for alt in [400, 500]:
 #     trajectory([5, 5, 45], [0, 180, 90], [12, 12, 12], alt, excludefile="all", projection="carre")
 
-filecomp = ["./bkg/exclusion/400km/3-AE8max_a400km_i90deg.out", "./bkg/exclusion/400km/3-AP8min_a400km_i90deg.out",
-            "./bkg/exclusion/500km/3-AE8max_a500km_i90deg.out", "./bkg/exclusion/500km/3-AP8min_a500km_i90deg.out"]
-for file in filecomp:
-    trajectory([5, 5, 45], [0, 180, 90], [12, 12, 12], None, excludefile=file, projection="carre")
+# filecomp = ["./bkg/exclusion/400km/3-AE8max_a400km_i90deg.out", "./bkg/exclusion/400km/3-AP8min_a400km_i90deg.out",
+#             "./bkg/exclusion/500km/3-AE8max_a500km_i90deg.out", "./bkg/exclusion/500km/3-AP8min_a500km_i90deg.out"]
+# for file in filecomp:
+#     trajectory([5, 5, 45], [0, 180, 90], [12, 12, 12], None, excludefile=file, projection="carre")
 
 def calc_duty(inc, ohm, omega):
     """
@@ -224,3 +224,6 @@ def calc_duty(inc, ohm, omega):
 # calc_duty(45, 0, 0)
 # calc_duty(82.5, 0, 0)
 # calc_duty(83, 0, 0)
+
+from MLogData import LogData
+LogData("./").detection_statistics()
