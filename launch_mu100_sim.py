@@ -90,9 +90,9 @@ def make_ra_list(ras, dec):
 
   """
   if dec == 0:
-    new_ra = [0]
+    new_ra = [0.0]
   else:
-    new_ra = np.linspace(ras[0], ras[1], np.max([4, int(np.sin(np.deg2rad(dec)) * ras[2])]), endpoint=False)
+    new_ra = np.around(np.linspace(ras[0], ras[1], np.max([4, int(np.sin(np.deg2rad(dec)) * ras[2])]), endpoint=False), 1)
   return new_ra
 
 
