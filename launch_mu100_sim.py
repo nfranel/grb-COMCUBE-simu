@@ -165,7 +165,7 @@ if __name__ == "__main__":
     print("===================================================================")
     make_spectrum(spectra, bandparam)
     print("===================================================================")
-    print("Running the background simulations and extraction")
+    print("Running the mu100 simulations and extraction")
     print("===================================================================")
     with mp.Pool() as pool:
       pool.map(run_bkg, parameters)
