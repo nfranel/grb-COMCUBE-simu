@@ -133,6 +133,7 @@ class AllSatData(list):
           if temp_denom != 0:
             setattr(self.const_data, item, temp_num / temp_denom)
 
+
   def verif_const(self, message="", const=None):
     """
     Method to check that the constellation has been done properly
@@ -149,8 +150,8 @@ class AllSatData(list):
       # ["fits", "mu100", "pa", "fit_compton_cr", "pa_err", "mu100_err", "fit_compton_cr_err", "fit_goodness", "mdp",
       # "snr_compton", "snr_single"]
       # [None, None, None, None, None, None, None, None, None, None, None]
-      if item not in ["fits", "mu100", "pa", "fit_compton_cr", "pa_err", "mu100_err", "fit_compton_cr_err",
-                      "fit_goodness", "mdp", "snr_compton", "snr_single", "snr_compton_t90", "snr_single_t90"]:
+      if item not in ["sat_dec_wf", "sat_ra_wf", "num_sat", "grb_dec_sat_frame", "grb_ra_sat_frame", "expected_pa", "fits", "mu100", "pa", "fit_compton_cr", "pa_err",
+                      "mu100_err", "fit_compton_cr_err", "fit_goodness", "mdp", "snr_compton", "snr_single", "snr_compton_t90", "snr_single_t90"]:
         ###############################################################################################################
         # Non modified items set to None
         if item in ["num_sat", "dec_sat_frame", "ra_sat_frame", "expected_pa"]:
@@ -159,7 +160,7 @@ class AllSatData(list):
         ###############################################################################################################
         # Values supposed to be the same for all sat and all sims so it doesn't change and is set using 1 sat
         # Except for polarigram error, only is size doesn't change, hence this verification
-        elif item in ["bins", "polarigram_error"]:
+        elif item in ["bins", "polarigram_error", "azim_angle_corrected"]:
           verification_bool = False
           for num_sat in considered_sat:
             if len(getattr(self[num_sat], item)) != len(getattr(self.const_data, item)):
@@ -167,13 +168,13 @@ class AllSatData(list):
           if verification_bool:
             print(f"Anomaly detected in the setting of the item {item} by make_const {message}")
         ###############################################################################################################
-        # Values supposed to be true unless the polarigrams haven't been added correctly
-        elif item in ["azim_angle_corrected"]:
-          if not getattr(self.const_data, item):
-            print(f"Anomaly detected in the setting of the item {item} by make_const {message}")
+        # # Values supposed to be true unless the polarigrams haven't been added correctly (not added in that version)
+        # elif item in ["azim_angle_corrected"]:
+        #   if not getattr(self.const_data, item):
+        #     print(f"Anomaly detected in the setting of the item {item} by make_const {message}")
         ###############################################################################################################
         # Values summed
-        elif item in ["compton_b_rate", "single_b_rate", "s_eff_compton", "s_eff_single", "single", "single_cr",
+        elif item in ["compton_b_rate", "single_b_rate", "s_eff_compton_ref", "s_eff_single_ref", "s_eff_compton", "s_eff_single", "single", "single_cr",
                       "compton", "compton_cr", "n_sat_detect", "calor", "dsssd", "side"]:
           temp_val = 0
           for num_sat in considered_sat:
@@ -183,7 +184,7 @@ class AllSatData(list):
             print(f"  The compared values from the satelitte and the constellation are : {temp_val} & {getattr(self.const_data, item)}")
         ###############################################################################################################
         # Values stored in a 1D array that have to be concanated (except unpol that needs another verification)
-        elif item in ["compton_ener", "compton_second", "compton_time", "single_ener", "single_time", "pol",
+        elif item in ["compton_ener", "compton_second", "single_ener", "compton_time", "single_time", "pol",
                       "polar_from_position", "polar_from_energy", "arm_pol"]:
           temp_val = 0
           for num_sat in considered_sat:
