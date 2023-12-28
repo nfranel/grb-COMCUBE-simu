@@ -173,6 +173,7 @@ class AllSatData(list):
           verification_bool = False
           for num_sat in considered_sat:
             if getattr(self[num_sat], item) != getattr(self.const_data, item):
+              print(getattr(self[num_sat], item), getattr(self.const_data, item))
               verification_bool = True
           if verification_bool:
             print(f"Anomaly detected in the setting of the item {item} by make_const {message}")
