@@ -160,18 +160,22 @@ class AllSatData(list):
         ###############################################################################################################
         # Values supposed to be the same for all sat and all sims so it doesn't change and is set using 1 sat
         # Except for polarigram error, only is size doesn't change, hence this verification
-        elif item in ["bins", "polarigram_error", "azim_angle_corrected"]:
+        elif item in ["bins", "polarigram_error"]:
+          verification_bool = False
+          for num_sat in considered_sat:
+            if len(getattr(self[num_sat], item)) != len(getattr(self.const_data, item)):
+              verification_bool = True
+          if verification_bool:
+            print(f"Anomaly detected in the setting of the item {item} by make_const {message}")
+        ###############################################################################################################
+        # Values supposed to be the same
+        elif item in ["azim_angle_corrected"]:
           verification_bool = False
           for num_sat in considered_sat:
             if getattr(self[num_sat], item) != getattr(self.const_data, item):
               verification_bool = True
           if verification_bool:
             print(f"Anomaly detected in the setting of the item {item} by make_const {message}")
-        ###############################################################################################################
-        # # Values supposed to be true unless the polarigrams haven't been added correctly (not added in that version)
-        # elif item in ["azim_angle_corrected"]:
-        #   if not getattr(self.const_data, item):
-        #     print(f"Anomaly detected in the setting of the item {item} by make_const {message}")
         ###############################################################################################################
         # Values summed
         elif item in ["compton_b_rate", "single_b_rate", "s_eff_compton_ref", "s_eff_single_ref", "s_eff_compton", "s_eff_single", "single", "single_cr",
