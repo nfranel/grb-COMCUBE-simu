@@ -77,7 +77,7 @@ class GRBFullData:
     self.compton_cr = 0
 
     self.expected_pa = None
-    self.bins = polarigram_bins
+    self.bins = None
     self.mdp = None
     self.snr_compton = None
     self.snr_single = None
@@ -167,6 +167,7 @@ class GRBFullData:
       # Correcting the angle correction for azimuthal angle according to cosima's polarization definition
       # And setting the attribute stating if the correction is applied or not
       # Putting the correction before the filtering may cause some issues
+      self.bins = set_bins(polarigram_bins, self.pol)
       if corr:
         self.corr()
 
@@ -236,6 +237,8 @@ class GRBFullData:
     Calculi are made in-place
     :param width: float, width of the polarigram in deg, default=360, SHOULD BE 360
     """
+    print(self.pol)
+    print(self.bins[0])
     self.pol = self.pol % width + self.bins[0]
     # if self.unpol is not None:
     #   self.unpol = self.unpol % width + self.bins[0]
