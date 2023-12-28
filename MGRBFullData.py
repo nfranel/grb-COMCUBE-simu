@@ -179,7 +179,6 @@ class GRBFullData:
         self.single_b_rate = sat_info[-1]
         self.sat_dec_wf, self.sat_ra_wf, self.compton_b_rate, self.single_b_rate = affect_bkg(sat_info, burst_time, bkg_data)
       self.mu100_ref, self.mu100_err_ref, self.s_eff_compton_ref, self.s_eff_single_ref = closest_mufile(self.grb_dec_sat_frame, self.grb_ra_sat_frame, mu_data)
-      print(self.mu100, self.mu100_err, self.s_eff_compton_ref, self.s_eff_single_ref)
       # Putting the azimuthal scattering angle between the correct bins for creating histograms
       self.single = len(self.single_ener)
       self.single_cr = self.single / sim_duration
