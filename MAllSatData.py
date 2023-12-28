@@ -163,7 +163,7 @@ class AllSatData(list):
         elif item in ["bins", "polarigram_error", "azim_angle_corrected"]:
           verification_bool = False
           for num_sat in considered_sat:
-            if len(getattr(self[num_sat], item)) != len(getattr(self.const_data, item)):
+            if getattr(self[num_sat], item) != getattr(self.const_data, item):
               verification_bool = True
           if verification_bool:
             print(f"Anomaly detected in the setting of the item {item} by make_const {message}")
