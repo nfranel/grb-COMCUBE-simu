@@ -129,7 +129,6 @@ class AllSatData(list):
           temp_num = 0
           temp_denom = 0
           for num_sat in considered_sat:
-            print(getattr(self[num_sat], item),  self[num_sat].compton)
             temp_num += getattr(self[num_sat], item) * self[num_sat].compton
             temp_denom += self[num_sat].compton
           if temp_denom != 0:
