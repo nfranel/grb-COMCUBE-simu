@@ -88,7 +88,6 @@ class AllSatData(list):
                       "compton", "compton_cr", "n_sat_detect", "calor", "dsssd", "side"]:
           temp_val = 0
           for num_sat in considered_sat:
-            print(considered_sat)
             temp_val += getattr(self[num_sat], item)
           setattr(self.const_data, item, temp_val)
         ###############################################################################################################
