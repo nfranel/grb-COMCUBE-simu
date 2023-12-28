@@ -237,8 +237,6 @@ class GRBFullData:
     Calculi are made in-place
     :param width: float, width of the polarigram in deg, default=360, SHOULD BE 360
     """
-    print(self.pol)
-    print(self.bins[0])
     self.pol = self.pol % width + self.bins[0]
     # if self.unpol is not None:
     #   self.unpol = self.unpol % width + self.bins[0]
