@@ -177,16 +177,6 @@ class AllSatData(list):
           if verification_bool:
             print(f"Anomaly detected in the setting of the item {item} by make_const {message}")
         ###############################################################################################################
-        # Values supposed to be the same
-        elif item in ["azim_angle_corrected"]:
-          verification_bool = False
-          for num_sat in considered_sat:
-            if getattr(self[num_sat], item) != getattr(self.const_data, item):
-              print(getattr(self[num_sat], item), getattr(self.const_data, item))
-              verification_bool = True
-          if verification_bool:
-            print(f"Anomaly detected in the setting of the item {item} by make_const {message}")
-        ###############################################################################################################
         # Values summed
         elif item in ["compton_b_rate", "single_b_rate", "s_eff_compton_ref", "s_eff_single_ref", "s_eff_compton", "s_eff_single", "single", "single_cr",
                       "compton", "compton_cr", "n_sat_detect", "calor", "dsssd", "side"]:
