@@ -209,7 +209,7 @@ class AllSourceData:
       if source is not None:
         for sim_ite, sim in enumerate(source):
           if sim is not None:
-            sim.analyze(f"source {self.namelist[source_ite]}({source_ite}), sim {sim_ite}, ", source.source_duration, source.source_fluence, fit_bounds, const_analysis)
+            sim.analyze(source.source_duration, source.source_fluence, const_analysis)
             # if source.source_fluence is None:
             #   sim.analyze(source.source_duration, source.source_fluence, self.source_with_bkg, fit_bounds, const_analysis)
             # else:

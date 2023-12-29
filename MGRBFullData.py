@@ -358,7 +358,7 @@ class GRBFullData:
       self.s_eff_compton = self.compton_cr * source_duration / source_fluence
       self.s_eff_single = self.single_cr * source_duration / source_fluence
 
-    self.mdp = MDP(self.compton_cr * source_duration, self.compton_b_rate * source_duration, self.mu100)
+    self.mdp = MDP(self.compton_cr * source_duration, self.compton_b_rate * source_duration, self.mu100_ref)
     # Calculation of SNR with 1sec of integration
     snr_compton_val = SNR(self.compton_cr, self.compton_b_rate)
     snr_single_t90_val = SNR(self.single_cr, self.single_b_rate)

@@ -55,16 +55,16 @@ class AllSatData(list):
     print("    Methods")
     print("======================================================================")
 
-  def analyze(self, source_message, source_duration, source_fluence, fit_bounds, const_analysis):
+  def analyze(self, source_duration, source_fluence, const_analysis):
     """
     Proceed to the analysis of polarigrams for all satellites and constellation (unless specified)
     """
     # First step of the analyze, to obtain the polarigrams, and values for polarization and snr
     for sat_ite, sat in enumerate(self):
       if sat is not None:
-        sat.analyze(f"{source_message}sat {sat_ite}", source_duration, source_fluence, fit_bounds)
+        sat.analyze(source_duration, source_fluence)
     if self.const_data is not None and const_analysis:
-      self.const_data.analyze(f"{source_message}const", source_duration, source_fluence, fit_bounds)
+      self.const_data.analyze(source_duration, source_fluence)
     else:
       print("Constellation not set : please use make_const method if you want to analyze the constellation's results")
 
