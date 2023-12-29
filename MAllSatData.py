@@ -180,7 +180,7 @@ class AllSatData(list):
           temp_val = 0
           for num_sat in considered_sat:
             temp_val += getattr(self[num_sat], item)
-          if temp_val != getattr(self.const_data, item):
+          if round(temp_val, 8) != round(getattr(self.const_data, item), 8):
             print(f"Anomaly detected in the setting of the item {item} by make_const {message}")
             print(f"  The compared values from the satelitte and the constellation are : {temp_val} & {getattr(self.const_data, item)}")
         ###############################################################################################################
