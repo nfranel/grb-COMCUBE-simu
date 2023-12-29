@@ -2,6 +2,7 @@
 
 requirements : astropy, cartopy
 
+############################################################################
 This git contains :
 
 - the codes and routines to analyze the data : shape M....py
@@ -27,22 +28,51 @@ This git contains :
   - MFit.py contains a class to proceed to polarigram fits
 
 - the folder bkg 
-  - contains information about the background, to be done 
+  - contains information about the background 
+    - codes to simulate the background spectra and the data it uses in a folder
+    - folder where the spectra are saved
+    - parameter and source file to run the background simulations
+    - folder with files containing the exclusion area where the satellite is switch off
+    - folder containing the simulations (Empty if not simulations were made) for a specific geometry and different latitudes
+      - contains a file with condensed data for saving and a quicker use in the analysis 
 - the folder cfgs 
   - contains the configuration files for revan and mimrec 
 - the folder GBM 
-  - contains the GBM data 
+  - contains the GBM data for short and long bursts
 - the folder geom 
   - contains the geometries 
 - the folder mu100 will be 
-  - containing values for mu100 at different position in the detector FoV 
+  - parameter and source files
+  - containing simulations for mu100 at different position in the detector FoV (Empty if not simulations were made) for a specific geometry
+    - contains a file with condensed data for saving and a quicker use in the analysis
 - the folder sources is made to 
-  - contain the spectra of the sources simulated to be done
+  - contain the spectra of the sources simulated (best fit spectra obtained from GBM data)
+  - contain the spectrum for a typical GRB (band spectrum)
+- the folder example that contains some example files (parameter file, source file)
 
-To run a simulation : 
-create a folder in which everything will be stored
-in this folder put :
-  a param file "polGBM.par" (# EXAMPLES NEEDED#)
-  a source file "wobkgGRB_Pol.source" (# EXAMPLES NEEDED#) 
-  the mimrecAutoMT.py file
-  create folders sim and rawsim
+############################################################################
+Necessary to run the simulation
+
+Geometry
+Background condensed file for specific geometry
+Mu100/Seff condensed file for specific geometry
+cfg fileq
+A folder to contain the simulation with :
+  source file
+  parameter file
+  a folder named sim
+  a folder named rawsim
+
+############################################################################
+To run the simulations :
+  Make sure the necessary files and folders are created
+  use python specific_launcher -f specific_parameter_file
+
+For background simulations : launch_bkg_sim with param file in bkg folder
+For mu100 simulations : launch_mu100_sim with param file in mu100 folder
+For GRB simulations : launch_sim_time with param file in the folder to contain simulation
+  launch_sim is the old version, not up to date
+
+############################################################################
+To analyze results :
+The maintest.py file gives an example of how to load data

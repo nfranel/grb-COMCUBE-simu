@@ -1,3 +1,0 @@
-Python script for automatic sims will be in the previous folder
-File containing the bkg for different latitudes (and then longitudes too ?)
-The simulations for background should be stored there but not saved on the git

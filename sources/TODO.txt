@@ -1,2 +1,0 @@
-The source file will be updated with the long and short GBM spectra when a simulation will be done.
-Should be the location where a/some synthetic spectra and light curves should be stored !

@@ -1,3 +1,0 @@
-1 or Different files containing the mu100 for DEC and RA different angles (in the sat frame) with sufficient statistics.
-Python file to make all the analysis and the storage here (but without storing the raw data on the git)?
----> Need to have different analysis mode/class for both this analysis with not polarized source and for an analysis using the obtained mu100 without doing the unpolarized source ?
