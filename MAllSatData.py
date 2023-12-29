@@ -84,6 +84,10 @@ class AllSatData(list):
           setattr(self.const_data, item, getattr(self[considered_sat[0]], item))
           print("debug", getattr(self[considered_sat[0]], item), getattr(self.const_data, item))
         ###############################################################################################################
+        # Value set to True
+        elif item in ["azim_angle_corrected"]:
+          setattr(self.const_data, item, True)
+        ###############################################################################################################
         # Values summed
         elif item in ["compton_b_rate", "single_b_rate", "s_eff_compton_ref", "s_eff_single_ref", "s_eff_compton", "s_eff_single", "single", "single_cr",
                       "compton", "compton_cr", "n_sat_detect", "calor", "dsssd", "side"]:
@@ -158,6 +162,10 @@ class AllSatData(list):
         if item in ["num_sat", "dec_sat_frame", "ra_sat_frame", "expected_pa"]:
           if getattr(self.const_data, item) is not None:
             print(f"Anomaly detected in the setting of the item {item} by make_const {message}")
+        ###############################################################################################################
+        # Value set to True
+        elif item in ["azim_angle_corrected"]:
+          setattr(self.const_data, item, True)
         ###############################################################################################################
         # Values supposed to be the same for all sat and all sims so it doesn't change and is set using 1 sat
         # Except for polarigram error, only is size doesn't change, hence this verification
