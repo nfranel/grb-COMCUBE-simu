@@ -113,10 +113,7 @@ class AllSatData(list):
           else:
             temp_array = np.array([[0, 0, 0]])
             for ite_num_sat in range(len(considered_sat)):
-              print(temp_array)
-              if len(getattr(self[considered_sat[ite_num_sat]], item)) == 0:
-                temp_array = np.array([[0, 0, 0]])
-              else:
+              if len(getattr(self[considered_sat[ite_num_sat]], item)) != 0:
                 temp_array = np.concatenate((temp_array, getattr(self[considered_sat[ite_num_sat]], item)))
             setattr(self.const_data, item, temp_array[1:])
         ###############################################################################################################
