@@ -82,7 +82,6 @@ class AllSatData(list):
         # Except for polarigram error, its size is the same but the values depend on the fits
         if item in ["bins", "polarigram_error", "azim_angle_corrected"]:
           setattr(self.const_data, item, getattr(self[considered_sat[0]], item))
-          print("debug", getattr(self[considered_sat[0]], item), getattr(self.const_data, item))
         ###############################################################################################################
         # Value set to True
         elif item in ["azim_angle_corrected"]:
