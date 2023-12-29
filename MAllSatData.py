@@ -201,6 +201,7 @@ class AllSatData(list):
           for num_sat in considered_sat:
             temp_val += len(getattr(self[num_sat], item))
           if temp_val != len(getattr(self.const_data, item)):
+            print(temp_val, len(getattr(self.const_data, item)))
             print(f"Anomaly detected in the setting of the item {item} by make_const {message}")
         ###############################################################################################################
         # unpol key
