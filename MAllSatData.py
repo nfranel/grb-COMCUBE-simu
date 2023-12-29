@@ -82,6 +82,7 @@ class AllSatData(list):
         # Except for polarigram error, its size is the same but the values depend on the fits
         if item in ["bins", "polarigram_error", "azim_angle_corrected"]:
           setattr(self.const_data, item, getattr(self[considered_sat[0]], item))
+          print("debug", getattr(self[considered_sat[0]], item), getattr(self.const_data, item))
         ###############################################################################################################
         # Values summed
         elif item in ["compton_b_rate", "single_b_rate", "s_eff_compton_ref", "s_eff_single_ref", "s_eff_compton", "s_eff_single", "single", "single_cr",
