@@ -669,6 +669,7 @@ def grb_decrapol_worldf2satf(dec_grb_wf, ra_grb_wf, dec_sat_wf, ra_sat_wf):
   thetap = np.arccos(np.dot(pol_vec, z_ref_sat))  # polarization direction in satellite coordinates
   phip = np.arctan2(np.dot(pol_vec, y_ref_sat), np.dot(pol_vec, x_ref_sat))  # idem
   pol_angle = np.arccos(np.dot(pol_vec, np.cross(source, y_ref_sat)))
+  print("source, z_ref_sat, y_ref_sat, x_ref_sat, theta, phi, dec_p, ra_p, pol_vec, thetap, phip, pol_angle  :  ", source, z_ref_sat, y_ref_sat, x_ref_sat, theta, phi, dec_p, ra_p, pol_vec, thetap, phip, pol_angle)
   return np.rad2deg(pol_angle), np.rad2deg(theta), np.rad2deg(phi), np.rad2deg(thetap), np.rad2deg(phip)
 
 
@@ -827,6 +828,7 @@ def random_GRB_dec_ra(dec_min, dec_max, ra_min, ra_max):
   dec_min, dec_max, ra_min, ra_max = np.deg2rad(dec_min), np.deg2rad(dec_max), np.deg2rad(ra_min), np.deg2rad(ra_max)
   dec = np.pi / 2 - np.arcsin(np.sin(dec_min) + np.random.rand() * (np.sin(dec_max) - np.sin(dec_min)))  # rad, 0 at north pole
   ra = ra_min + np.random.rand() * (ra_max - ra_min)  # rad, 0->2pi
+  print("dec, ra  :  ", np.rad2deg(dec), np.rad2deg(ra))
   return np.rad2deg(dec), np.rad2deg(ra)
 
 def decra2orbitalparam(thetasat, phisat):
