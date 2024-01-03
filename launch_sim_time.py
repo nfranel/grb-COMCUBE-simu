@@ -199,14 +199,23 @@ def cosirevan(command):
   source_name = maketmpsf(command, args, pid)
   if command[0]:
     # Running cosima
+    print("Running : f'cosima -z {source_name}; rm -f {source_name}'")
     run(f"cosima -z {source_name}; rm -f {source_name}", __verbose__)
+    run("ll /pdisk/ESA/400km--0-0-0--27sat/sim", 1)
+    run("ll /pdisk/ESA/400km--0-0-0--27sat/rawsim", 1)
   if command[1]: #run revan
     # Running revan
+    print("Running : f'revan -g {args.geometry} -c {args.rcf} -f {simfile} -n -a; mv {simfile} {mv_simfile}'")
     run(f"revan -g {args.geometry} -c {args.rcf} -f {simfile} -n -a; mv {simfile} {mv_simfile}", __verbose__)
+    run("ll /pdisk/ESA/400km--0-0-0--27sat/sim", 1)
+    run("ll /pdisk/ESA/400km--0-0-0--27sat/rawsim", 1)
     # run(f"revan -g {args.geometry} -c {args.rcf} -f {simfile} -n -a; rm -f {simfile}", __verbose__)
   if command[2]:
     # Running mimrec
+    print("Running : f'mimrec -g {args.geometry} -c {args.mcf} -f {trafile} -x -n; mv {trafile} {mv_trafile}'")
     run(f"mimrec -g {args.geometry} -c {args.mcf} -f {trafile} -x -n; mv {trafile} {mv_trafile}", __verbose__)
+    run("ll /pdisk/ESA/400km--0-0-0--27sat/sim", 1)
+    run("ll /pdisk/ESA/400km--0-0-0--27sat/rawsim", 1)
     # run(f"mimrec -g {args.geometry} -c {args.mcf} -f {trafile} -n -a; rm -f {trafile}", __verbose__)
 
 
