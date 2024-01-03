@@ -111,7 +111,8 @@ def gen_commands(args):
         else:
           theta, phi, thetap, phip, polstr = grb_decrapol_worldf2satf(dec_grb_world_frame, ra_grb_world_frame, dec_sat_world_frame, ra_sat_world_frame)[1:]
           print(polstr)
-          print(f"{np.sin(thetap) * np.cos(phip)} {np.sin(thetap) * np.sin(phip)} {np.cos(thetap)}")
+          polstr = f"{np.sin(thetap) * np.cos(phip)} {np.sin(thetap) * np.sin(phip)} {np.cos(thetap)}"
+          print(polstr)
           # ############################################################### test
           # print("============================================")
           # dec, ra = np.deg2rad(dec_grb_world_frame), np.deg2rad(ra_grb_world_frame)
