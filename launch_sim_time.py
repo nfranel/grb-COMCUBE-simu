@@ -133,7 +133,7 @@ def gen_commands(args):
           phip = np.arctan2(np.dot(vecpol, yprime), np.dot(vecpol, xprime))  # idem
           print(
             "TEST : source, yprime, xprime, theta, phi, dec_p, ra_p, thetap, phip  :  ",
-            source, yprime, xprime, theta, phi, dec_p, ra_p, thetap, phip)
+            source, yprime, xprime, theta, phi, np.rad2deg(dec_p), np.rad2deg(ra_p), np.rad2deg(thetap), np.rad2deg(phip))
           print("============================================")
           ############################################################### test
           if theta >= horizonAngle(s[3]):#source below horizon
