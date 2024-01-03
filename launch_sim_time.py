@@ -110,9 +110,9 @@ def gen_commands(args):
           save_log(f"{sim_directory}/simulation_logs.txt", c.name[i], j, k, "Ignored(off)", s[0], s[1], s[2], s[3], rand_time, dec_sat_world_frame, ra_sat_world_frame, dec_grb_world_frame, ra_grb_world_frame, None, None)
         else:
           theta, phi, thetap, phip, polstr = grb_decrapol_worldf2satf(dec_grb_world_frame, ra_grb_world_frame, dec_sat_world_frame, ra_sat_world_frame)[1:]
-          print(list(polstr))
+          print(np.array(polstr))
           polstr = f"{np.sin(thetap) * np.cos(phip)} {np.sin(thetap) * np.sin(phip)} {np.cos(thetap)}"
-          print(list(polstr))
+          print(np.array(polstr))
           # ############################################################### test
           # print("============================================")
           # dec, ra = np.deg2rad(dec_grb_world_frame), np.deg2rad(ra_grb_world_frame)
