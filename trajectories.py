@@ -140,7 +140,7 @@ def trajectory(inc, ohm, nsat, alt, excludefile=None, omega=0, projection="carre
             cancel_theta = np.array(cancel_theta)
             cancel_phi = np.array(cancel_phi)
         else:
-            plottitle = excludefile.split("/")[-1].split("_i90")[0]
+            plottitle = excludefile.split("/")[-1]
             cancel_theta = []
             cancel_phi = []
             for theta in theta_verif:
@@ -160,18 +160,16 @@ def trajectory(inc, ohm, nsat, alt, excludefile=None, omega=0, projection="carre
 
     plt.show()
 
-files = ["./bkg/exclusion/400km/AE8max_a400km_i90deg.out", "./bkg/exclusion/400km/AE8min_a400km_i90deg.out",
-         "./bkg/exclusion/400km/AP8max_a400km_i90deg.out", "./bkg/exclusion/400km/AP8min_a400km_i90deg.out",
-         "./bkg/exclusion/500km/AE8max_a500km_i90deg.out", "./bkg/exclusion/500km/AE8min_a500km_i90deg.out",
-         "./bkg/exclusion/500km/AP8max_a500km_i90deg.out", "./bkg/exclusion/500km/AP8min_a500km_i90deg.out"]
+files = ["./bkg/exclusion/400km/AE8max_400km.out", "./bkg/exclusion/400km/AP8min_400km.out",
+           "./bkg/exclusion/500km/AE8max_500km.out", "./bkg/exclusion/500km/AP8min_500km.out"]
 
-# for file in files:
-#     trajectory([5, 5, 45], [0, 180, 90], [12, 12, 12], 400, excludefile=file, projection="carre")
-# for alt in [400, 500]:
-#     trajectory([5, 5, 45], [0, 180, 90], [12, 12, 12], alt, excludefile="all", projection="carre")
+for file in files:
+    trajectory([5, 5, 45], [0, 180, 90], [12, 12, 12], 400, excludefile=file, projection="carre")
+for alt in [400, 500]:
+    trajectory([5, 5, 45], [0, 180, 90], [12, 12, 12], alt, excludefile="all", projection="carre")
 
-# filecomp = ["./bkg/exclusion/400km/3-AE8max_a400km_i90deg.out", "./bkg/exclusion/400km/3-AP8min_a400km_i90deg.out",
-#             "./bkg/exclusion/500km/3-AE8max_a500km_i90deg.out", "./bkg/exclusion/500km/3-AP8min_a500km_i90deg.out"]
+# filecomp = ["./bkg/exclusion/400km/AE8max_400km.out", "./bkg/exclusion/400km/AP8min_400km.out",
+#            "./bkg/exclusion/500km/AE8max_500km.out", "./bkg/exclusion/500km/AP8min_500km.out"]
 # for file in filecomp:
 #     trajectory([5, 5, 45], [0, 180, 90], [12, 12, 12], None, excludefile=file, projection="carre")
 
@@ -225,5 +223,3 @@ def calc_duty(inc, ohm, omega):
 # calc_duty(82.5, 0, 0)
 # calc_duty(83, 0, 0)
 
-from MLogData import LogData
-LogData("./").detection_statistics()

@@ -764,10 +764,8 @@ def verif_rad_belts(lat, long, alt):
   """
 
   """
-  files = ["./bkg/exclusion/400km/AE8max_a400km_i90deg.out", "./bkg/exclusion/400km/AE8min_a400km_i90deg.out",
-           "./bkg/exclusion/400km/AP8max_a400km_i90deg.out", "./bkg/exclusion/400km/AP8min_a400km_i90deg.out",
-           "./bkg/exclusion/500km/AE8max_a500km_i90deg.out", "./bkg/exclusion/500km/AE8min_a500km_i90deg.out",
-           "./bkg/exclusion/500km/AP8max_a500km_i90deg.out", "./bkg/exclusion/500km/AP8min_a500km_i90deg.out"]
+  files = ["./bkg/exclusion/400km/AE8max_400km.out", "./bkg/exclusion/400km/AP8min_400km.out",
+           "./bkg/exclusion/500km/AE8max_500km.out", "./bkg/exclusion/500km/AP8min_500km.out"]
   for file in files:
     file_alt = int(file.split("km/")[0].split("/")[-1])
     if alt == file_alt:
