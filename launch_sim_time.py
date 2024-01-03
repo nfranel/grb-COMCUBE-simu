@@ -111,6 +111,7 @@ def gen_commands(args):
         else:
           theta, phi, thetap, phip = grb_decrapol_worldf2satf(dec_grb_world_frame, ra_grb_world_frame, dec_sat_world_frame, ra_sat_world_frame)[1:]
           ############################################################### test
+          print("============================================")
           dec, ra = np.deg2rad(dec_grb_world_frame), np.deg2rad(ra_grb_world_frame)
           s[0], s[1] = np.deg2rad(dec_sat_world_frame), np.deg2rad(ra_sat_world_frame)
           theta = np.rad2deg(np.arccos(
@@ -134,7 +135,7 @@ def gen_commands(args):
             print(
               "TEST : source, yprime, xprime, theta, phi, dec_p, ra_p, thetap, phip  :  ",
               source, yprime, xprime, theta, phi, dec_p, ra_p, thetap, phip)
-
+          print("============================================")
           ############################################################### test
           if theta >= horizonAngle(s[3]):#source below horizon
             save_log(f"{sim_directory}/simulation_logs.txt", c.name[i], j, k, "Ignored(horizon)", s[0], s[1], s[2], s[3], rand_time, dec_sat_world_frame, ra_sat_world_frame, dec_grb_world_frame, ra_grb_world_frame, theta, phi)
