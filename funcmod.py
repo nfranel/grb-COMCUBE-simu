@@ -670,6 +670,7 @@ def grb_decrapol_worldf2satf(dec_grb_wf, ra_grb_wf, dec_sat_wf, ra_sat_wf):
   phip = np.arctan2(np.dot(pol_vec, y_ref_sat), np.dot(pol_vec, x_ref_sat))  # idem
   pol_angle = np.arccos(np.dot(pol_vec, np.cross(source, y_ref_sat)))
   polstr = f"{np.sin(thetap) * np.cos(phip)} {np.sin(thetap) * np.sin(phip)} {np.cos(thetap)}"
+  print("pv : ", pol_vec)
   print("============================================")
   print("source, z_ref_sat, y_ref_sat, x_ref_sat, theta, phi, dec_p, ra_p, pol_vec, thetap, phip, pol_angle  :  ", source, z_ref_sat, y_ref_sat, x_ref_sat, np.rad2deg(theta), np.rad2deg(phi), np.rad2deg(dec_p), np.rad2deg(ra_p), pol_vec, np.rad2deg(thetap), np.rad2deg(phip), pol_angle, )
   print("============================================")
