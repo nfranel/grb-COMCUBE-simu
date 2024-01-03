@@ -199,32 +199,14 @@ def cosirevan(command):
   source_name = maketmpsf(command, args, pid)
   if command[0]:
     # Running cosima
-    print("Running : f'cosima -z {source_name}; rm -f {source_name}'")
     run(f"cosima -z {source_name}; rm -f {source_name}", __verbose__)
-    print("=======================================")
-    subprocess.call("ls /pdisk/ESA/400km--0-0-0--27sat/sim", shell=True)
-    print()
-    subprocess.call("ls /pdisk/ESA/400km--0-0-0--27sat/rawsim", shell=True)
-    print("=======================================")
   if command[1]: #run revan
     # Running revan
-    print("Running : f'revan -g {args.geometry} -c {args.rcf} -f {simfile} -n -a; mv {simfile} {mv_simfile}'")
     run(f"revan -g {args.geometry} -c {args.rcf} -f {simfile} -n -a; mv {simfile} {mv_simfile}", __verbose__)
-    print("=======================================")
-    subprocess.call("ls /pdisk/ESA/400km--0-0-0--27sat/sim", shell=True)
-    print()
-    subprocess.call("ls /pdisk/ESA/400km--0-0-0--27sat/rawsim", shell=True)
-    print("=======================================")
     # run(f"revan -g {args.geometry} -c {args.rcf} -f {simfile} -n -a; rm -f {simfile}", __verbose__)
   if command[2]:
     # Running mimrec
-    print("Running : f'mimrec -g {args.geometry} -c {args.mcf} -f {trafile} -x -n; mv {trafile} {mv_trafile}'")
     run(f"mimrec -g {args.geometry} -c {args.mcf} -f {trafile} -x -n; mv {trafile} {mv_trafile}", __verbose__)
-    print("=======================================")
-    subprocess.call("ls /pdisk/ESA/400km--0-0-0--27sat/sim", shell=True)
-    print()
-    subprocess.call("ls /pdisk/ESA/400km--0-0-0--27sat/rawsim", shell=True)
-    print("=======================================")
     # run(f"mimrec -g {args.geometry} -c {args.mcf} -f {trafile} -n -a; rm -f {trafile}", __verbose__)
 
 
