@@ -109,37 +109,38 @@ def gen_commands(args):
         if verif_rad_belts(90 - dec_sat_world_frame, ra_sat_world_frame, s[3]):  # checks if the sat is in the switch off zone
           save_log(f"{sim_directory}/simulation_logs.txt", c.name[i], j, k, "Ignored(off)", s[0], s[1], s[2], s[3], rand_time, dec_sat_world_frame, ra_sat_world_frame, dec_grb_world_frame, ra_grb_world_frame, None, None)
         else:
-          theta, phi, thetap, phip = grb_decrapol_worldf2satf(dec_grb_world_frame, ra_grb_world_frame, dec_sat_world_frame, ra_sat_world_frame)[1:]
-          ############################################################### test
-          print("============================================")
-          dec, ra = np.deg2rad(dec_grb_world_frame), np.deg2rad(ra_grb_world_frame)
-          s[0], s[1] = np.deg2rad(dec_sat_world_frame), np.deg2rad(ra_sat_world_frame)
-          theta = np.rad2deg(np.arccos(
-            np.product(np.sin(np.array([dec, ra, s[0], s[1]]))) + np.sin(dec) * np.cos(ra) * np.sin(s[0]) * np.cos(
-              s[1]) + np.cos(dec) * np.cos(s[0])))  # deg
-          source = [np.sin(dec) * np.cos(ra), np.sin(dec) * np.sin(ra), np.cos(dec)]
-          # xp et yp le plan du detec, yp, zp et z sont dans un même plan (qui contient aussi thetasat)
-          yprime = [-np.cos(s[0]) * np.cos(s[1]), -np.cos(s[0]) * np.sin(s[1]), np.sin(s[0])]
-          xprime = [-np.sin(s[1]), np.cos(s[1]), 0]
-          phi = np.mod(np.rad2deg(np.arctan2(np.dot(source, yprime), np.dot(source, xprime))), 360)
-          # Polarization
-          dec_p, ra_p = np.mod(.5 * np.pi - dec,
-                               np.pi), ra + np.pi  # polarization direction in world coordinates (towards north or south pole)
-          vecpol = [np.sin(dec_p) * np.cos(ra_p), np.sin(dec_p) * np.sin(ra_p), np.cos(
-            dec_p)]  # polarization vector in world coordinates this way vecpol is in the plane defined by z and source direction (then y direction ?)
-          thetap = np.arccos(
-            np.product(np.sin(np.array([dec_p, ra_p, s[0], s[1]]))) + np.sin(dec_p) * np.cos(ra_p) * np.sin(
-              s[0]) * np.cos(s[1]) + np.cos(dec_p) * np.cos(s[0]))  # polarization direction in satellite coordinates
-          phip = np.arctan2(np.dot(vecpol, yprime), np.dot(vecpol, xprime))  # idem
-          print(
-            "TEST : source, yprime, xprime, theta, phi, dec_p, ra_p, thetap, phip  :  ",
-            source, yprime, xprime, theta, phi, np.rad2deg(dec_p), np.rad2deg(ra_p), np.rad2deg(thetap), np.rad2deg(phip))
-          print("============================================")
-          ############################################################### test
+          theta, phi, thetap, phip, polstr = grb_decrapol_worldf2satf(dec_grb_world_frame, ra_grb_world_frame, dec_sat_world_frame, ra_sat_world_frame)[1:]
+          print(polstr)
+          print(f"{np.sin(thetap) * np.cos(phip)} {np.sin(thetap) * np.sin(phip)} {np.cos(thetap)}")
+          # ############################################################### test
+          # print("============================================")
+          # dec, ra = np.deg2rad(dec_grb_world_frame), np.deg2rad(ra_grb_world_frame)
+          # s[0], s[1] = np.deg2rad(dec_sat_world_frame), np.deg2rad(ra_sat_world_frame)
+          # theta = np.rad2deg(np.arccos(
+          #   np.product(np.sin(np.array([dec, ra, s[0], s[1]]))) + np.sin(dec) * np.cos(ra) * np.sin(s[0]) * np.cos(
+          #     s[1]) + np.cos(dec) * np.cos(s[0])))  # deg
+          # source = [np.sin(dec) * np.cos(ra), np.sin(dec) * np.sin(ra), np.cos(dec)]
+          # # xp et yp le plan du detec, yp, zp et z sont dans un même plan (qui contient aussi thetasat)
+          # yprime = [-np.cos(s[0]) * np.cos(s[1]), -np.cos(s[0]) * np.sin(s[1]), np.sin(s[0])]
+          # xprime = [-np.sin(s[1]), np.cos(s[1]), 0]
+          # phi = np.mod(np.rad2deg(np.arctan2(np.dot(source, yprime), np.dot(source, xprime))), 360)
+          # # Polarization
+          # dec_p, ra_p = np.mod(.5 * np.pi - dec,
+          #                      np.pi), ra + np.pi  # polarization direction in world coordinates (towards north or south pole)
+          # vecpol = [np.sin(dec_p) * np.cos(ra_p), np.sin(dec_p) * np.sin(ra_p), np.cos(
+          #   dec_p)]  # polarization vector in world coordinates this way vecpol is in the plane defined by z and source direction (then y direction ?)
+          # thetap = np.arccos(
+          #   np.product(np.sin(np.array([dec_p, ra_p, s[0], s[1]]))) + np.sin(dec_p) * np.cos(ra_p) * np.sin(
+          #     s[0]) * np.cos(s[1]) + np.cos(dec_p) * np.cos(s[0]))  # polarization direction in satellite coordinates
+          # phip = np.arctan2(np.dot(vecpol, yprime), np.dot(vecpol, xprime))  # idem
+          # print(
+          #   "TEST : source, yprime, xprime, theta, phi, dec_p, ra_p, thetap, phip  :  ",
+          #   source, yprime, xprime, theta, phi, np.rad2deg(dec_p), np.rad2deg(ra_p), np.rad2deg(thetap), np.rad2deg(phip))
+          # print("============================================")
+          # ############################################################### test
           if theta >= horizonAngle(s[3]):#source below horizon
             save_log(f"{sim_directory}/simulation_logs.txt", c.name[i], j, k, "Ignored(horizon)", s[0], s[1], s[2], s[3], rand_time, dec_sat_world_frame, ra_sat_world_frame, dec_grb_world_frame, ra_grb_world_frame, theta, phi)
           else:
-            polstr = f"{np.sin(thetap)*np.cos(phip)} {np.sin(thetap)*np.sin(phip)} {np.cos(thetap)}"
             # Add command to commands list
             if args.simtime.isdigit():
               simtime = float(args.simtime)
