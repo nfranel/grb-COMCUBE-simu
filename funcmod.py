@@ -871,17 +871,17 @@ def find_detector(pos_firt_compton, pos_sec_compton, pos_single, geometry):
   file_fc = f"temp_pos_fc_{pid}"
   file_sc = f"temp_pos_sc_{pid}"
   file_s = f"temp_pos_s_{pid}"
-  if len(pos_firt_compton) >=1:
+  if len(pos_firt_compton) >= 1:
     det_first_compton = execute_finder(file_fc, pos_firt_compton, geometry)
     subprocess.call(f"rm {file_fc}*", shell=True)
   else:
     det_first_compton = np.array([])
-  if len(pos_firt_compton) >=1:
+  if len(pos_firt_compton) >= 1:
     det_sec_compton = execute_finder(file_sc, pos_sec_compton, geometry)
     subprocess.call(f"rm {file_sc}*", shell=True)
   else:
     det_sec_compton = np.array([])
-  if len(pos_firt_compton) >=1:
+  if len(pos_firt_compton) >= 1:
     det_single = execute_finder(file_s, pos_single, geometry)
     subprocess.call(f"rm {file_s}*", shell=True)
   else:
