@@ -860,6 +860,7 @@ def execute_finder(file, events, geometry, cpp_routine="find_detector"):
     lines = save_file.read().split("\n")
     for line in lines:
       positions.append(line.split(" "))
+
   return np.array(positions, dtype=str)
 
 
@@ -875,6 +876,7 @@ def find_detector(pos_firt_compton, pos_sec_compton, pos_single, geometry):
   det_first_compton = execute_finder(file_fc, pos_firt_compton, geometry)
   det_sec_compton = execute_finder(file_sc, pos_sec_compton, geometry)
   det_single = execute_finder(file_s, pos_single, geometry)
+  subprocess.call(f"rm {file_fc}* {file_fc}* {file_fc}*", shell=True)
   return det_first_compton, det_sec_compton, det_single
 
 
