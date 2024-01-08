@@ -64,6 +64,9 @@ class AllSourceData:
     self.snr_min = 5
     self.options = [self.erg_cut, self.armcut, self.geometry, self.save_time, self.init_correction, self.polarigram_bins]
 
+    # Compiling the position finder
+    subprocess.call(f"make -f Makefile PRG=find_detector", shell=True)
+
     # Setting the background files
     self.bkgdata = BkgContainer(self.bkg_param, self.save_time, self.erg_cut)
 
