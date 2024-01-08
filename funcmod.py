@@ -861,6 +861,7 @@ def execute_finder(file, events, geometry, cpp_routine="find_detector"):
       lines = save_file.read().split("\n")
       for line in lines:
         positions.append(line.split(" "))
+        print(line)
     return np.array(positions, dtype=str)
   else:
     return np.array([])
