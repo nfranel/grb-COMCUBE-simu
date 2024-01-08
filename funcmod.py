@@ -851,19 +851,16 @@ def execute_finder(file, events, geometry, cpp_routine="find_detector"):
   """
 
   """
-  if len(events) >= 1:
-    with open(f"{file}.txt", "w") as data_file:
-      for event in events:
-        data_file.write(f"{event[0]} {event[1]} {event[2]}\n")
-    subprocess.call(f"{cpp_routine} -g {geometry} -f {file}", shell=True, stdout=open(os.devnull, 'wb'), stderr=open(os.devnull, 'wb'))
-    positions = []
-    with open(f"{file}save.txt", "r") as save_file:
-      lines = save_file.read().split("\n")[:-1]
-      for line in lines:
-        positions.append(line.split(" "))
-    return np.array(positions, dtype=str)
-  else:
-    return np.array([])
+  with open(f"{file}.txt", "w") as data_file:
+    for event in events:
+      data_file.write(f"{event[0]} {event[1]} {event[2]}\n")
+  subprocess.call(f"{cpp_routine} -g {geometry} -f {file}", shell=True, stdout=open(os.devnull, 'wb'), stderr=open(os.devnull, 'wb'))
+  positions = []
+  with open(f"{file}save.txt", "r") as save_file:
+    lines = save_file.read().split("\n")[:-1]
+    for line in lines:
+      positions.append(line.split(" "))
+  return np.array(positions, dtype=str)
 
 
 def find_detector(pos_firt_compton, pos_sec_compton, pos_single, geometry):
@@ -874,11 +871,21 @@ def find_detector(pos_firt_compton, pos_sec_compton, pos_single, geometry):
   file_fc = f"temp_pos_fc_{pid}"
   file_sc = f"temp_pos_sc_{pid}"
   file_s = f"temp_pos_s_{pid}"
-  pass
-  det_first_compton = execute_finder(file_fc, pos_firt_compton, geometry)
-  det_sec_compton = execute_finder(file_sc, pos_sec_compton, geometry)
-  det_single = execute_finder(file_s, pos_single, geometry)
-  subprocess.call(f"rm {file_fc}* {file_fc}* {file_fc}*", shell=True)
+  if len(pos_firt_compton) >=1:
+    det_first_compton = execute_finder(file_fc, pos_firt_compton, geometry)
+    subprocess.call(f"rm {file_fc}*", shell=True)
+  else:
+    det_first_compton = np.array([])
+  if len(pos_firt_compton) >=1:
+    det_sec_compton = execute_finder(file_sc, pos_sec_compton, geometry)
+    subprocess.call(f"rm {file_sc}*", shell=True)
+  else:
+    det_sec_compton = np.array([])
+  if len(pos_firt_compton) >=1:
+    det_single = execute_finder(file_s, pos_single, geometry)
+    subprocess.call(f"rm {file_s}*", shell=True)
+  else:
+    det_single = np.array([])
   return det_first_compton, det_sec_compton, det_single
 
 
