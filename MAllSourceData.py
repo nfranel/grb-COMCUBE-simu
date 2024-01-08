@@ -46,6 +46,12 @@ class AllSourceData:
     self.muSeff_param = muSeff_param
     self.erg_cut = erg_cut
     self.armcut = armcut
+
+# self.bkg_sim_duration = 3600
+    # Parameters extracted from parfile
+    self.geometry, self.revan_file, self.mimrec_file, self.spectra_path, self.cat_file, self.source_file, self.sim_prefix, self.sttype, self.n_sim, self.sim_duration, self.position_allowed_sim, self.sat_info = read_grbpar(self.grb_param)
+    self.n_sat = len(self.sat_info)
+
     # Different kinds of bins can be made :
     if polarigram_bins in ["fixed", "limited", "optimized"]:
       self.polarigram_bins = polarigram_bins
@@ -53,20 +59,13 @@ class AllSourceData:
       print("Warning : wrong option for the polarigram bins, it should be fixed (default), limited or optimized. Hence the option has been set to default value.")
       self.polarigram_bins = "fixed"
     # Setup of some options
-    self.save_pos = True
     self.save_time = True
     self.init_correction = False
     self.snr_min = 5
-    # self.options = [self.save_pos, self.save_time, self.polarigram_bins, self.armcut, self.init_correction,self.erg_cut]
-    self.options = [self.erg_cut, self.armcut, self.save_pos, self.save_time, self.init_correction, self.polarigram_bins]
-
-# self.bkg_sim_duration = 3600
-    # Parameters extracted from parfile
-    self.geometry, self.revan_file, self.mimrec_file, self.spectra_path, self.cat_file, self.source_file, self.sim_prefix, self.sttype, self.n_sim, self.sim_duration, self.position_allowed_sim, self.sat_info = read_grbpar(self.grb_param)
-    self.n_sat = len(self.sat_info)
+    self.options = [self.erg_cut, self.armcut, self.geometry, self.save_time, self.init_correction, self.polarigram_bins]
 
     # Setting the background files
-    self.bkgdata = BkgContainer(self.bkg_param, self.save_pos, self.save_time, self.erg_cut)
+    self.bkgdata = BkgContainer(self.bkg_param, self.save_time, self.erg_cut)
 
     # Setting the background files
     self.muSeffdata = MuSeffContainer(self.muSeff_param, self.erg_cut, self.armcut)
@@ -74,12 +73,6 @@ class AllSourceData:
     # Log information
     # log = LogData("/pdisk/ESA/test--400km--0-0-0--27sat")
     self.n_sim_simulated, self.n_sim_below_horizon, self.n_sim_in_radbelt = LogData(self.sim_prefix.split("/sim/")[0]).detection_statistics()
-
-    # Setting the background rate detected by each satellite
-    # for sat_ite in range(len(self.sat_info)):
-    #   for count_rates in closest_bkg_rate(self.sat_info[sat_ite][1], self.sat_info[sat_ite][0], self.bkgdata):
-    #     self.sat_info[sat_ite].append(count_rates)
-    # TODO set the bkg information to each sim file because the sats are moving now
 
     # Setting the catalog and the attributes associated
     if self.cat_file == "None":
@@ -136,8 +129,7 @@ class AllSourceData:
     print("    Data analysis options")
     print(" Energy window considered for the analysis :           .erg_cut")
     print(" Data extraction options :                             .options")
-    print("   [save_pos, save_time, corr, erg_cut]")
-    print("    save_pos : to get another fiels from trafiles")
+    print("   [save_time, corr, erg_cut]")
     print("    save_time : to handle the new field with a specific function")
     print("    corr : to correct the polarization angle")
     print(" Whether or not bkg simulated with the source :         .source_with_bkg")
@@ -487,13 +479,13 @@ class AllSourceData:
                 if sat.snr_single >= self.snr_min - 2:
                   sat_reduced_instant_triggers += 1
                 sat_peak_snr = SNR(rescale_cr_to_GBM_pf(sat.single_cr, source.best_fit_mean_flux, source.best_fit_p_flux), sat.single_b_rate)
-                print("rescaled cr : ", rescale_cr_to_GBM_pf(sat.single_cr, source.best_fit_mean_flux, source.best_fit_p_flux))
-                print("initial cr : ", sat.single_cr)
-                print("peak flux : ", source.best_fit_p_flux)
-                print("mean flux : ", source.best_fit_mean_flux)
-                print("mean flux in ergcut :", source.source_fluence / source.source_duration)
-                print("b_rate : ", sat.single_b_rate)
-                print("snr : ", sat_peak_snr)
+                # print("rescaled cr : ", rescale_cr_to_GBM_pf(sat.single_cr, source.best_fit_mean_flux, source.best_fit_p_flux))
+                # print("initial cr : ", sat.single_cr)
+                # print("peak flux : ", source.best_fit_p_flux)
+                # print("mean flux : ", source.best_fit_mean_flux)
+                # print("mean flux in ergcut :", source.source_fluence / source.source_duration)
+                # print("b_rate : ", sat.single_b_rate)
+                # print("snr : ", sat_peak_snr)
                 if sat_peak_snr >= self.snr_min:
                   sat_peak_triggers += 1
                 if sat_peak_snr >= self.snr_min - 2:
@@ -504,17 +496,17 @@ class AllSourceData:
                   sat_reduced_t90_triggers += 1
             # Calculation for the whole constellation
             const_peak_snr = SNR(rescale_cr_to_GBM_pf(sim.const_data.single_cr, source.best_fit_mean_flux, source.best_fit_p_flux), sim.const_data.single_b_rate)
-            print()
-            print("rescaled cr : ", rescale_cr_to_GBM_pf(sim.const_data.single_cr, source.best_fit_mean_flux, source.best_fit_p_flux))
-            print("initial cr : ", sim.const_data.single_cr)
-            print("peak flux : ", source.best_fit_p_flux)
-            print("reduced peak flux : ", source.best_fit_p_flux * source.source_fluence / source.source_duration / source.best_fit_mean_flux)
-            print("mean flux : ", source.best_fit_mean_flux)
-            print("mean flux in ergcut :", source.source_fluence / source.source_duration)
-            print("b_rate : ", sim.const_data.single_b_rate)
-            print("         snr peak : ", const_peak_snr)
-            print("         snr mean : ", sim.const_data.snr_single)
-            print()
+            # print()
+            # print("rescaled cr : ", rescale_cr_to_GBM_pf(sim.const_data.single_cr, source.best_fit_mean_flux, source.best_fit_p_flux))
+            # print("initial cr : ", sim.const_data.single_cr)
+            # print("peak flux : ", source.best_fit_p_flux)
+            # print("reduced peak flux : ", source.best_fit_p_flux * source.source_fluence / source.source_duration / source.best_fit_mean_flux)
+            # print("mean flux : ", source.best_fit_mean_flux)
+            # print("mean flux in ergcut :", source.source_fluence / source.source_duration)
+            # print("b_rate : ", sim.const_data.single_b_rate)
+            # print("         snr peak : ", const_peak_snr)
+            # print("         snr mean : ", sim.const_data.snr_single)
+            # print()
             # Summing for simulated values
             # 1s mean triggers
             if sim.const_data.snr_single >= self.snr_min:

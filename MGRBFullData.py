@@ -21,7 +21,7 @@ class GRBFullData:
   """
 
   def __init__(self, data_list, sat_info, burst_time, sim_duration, num_sat, bkg_data, mu_data, ergcut, armcut,
-               save_pos, save_time, corr, polarigram_bins):
+               geometry, save_time, corr, polarigram_bins):
     """
     -data_list : 1 polarized data file from which extract the data
     """
@@ -49,14 +49,9 @@ class GRBFullData:
     self.compton_ener = []
     self.compton_second = []
     self.single_ener = []
-    if save_pos:
-      self.compton_firstpos = []
-      self.compton_secpos = []
-      self.single_pos = []
-    else:
-      compton_firstpos = []
-      compton_secpos = []
-      single_pos = []
+    compton_firstpos = []
+    compton_secpos = []
+    single_pos = []
     if save_time:
       self.compton_time = []
       self.single_time = []
@@ -109,31 +104,19 @@ class GRBFullData:
           self.compton_ener.append(reading[1])
           if save_time:
             self.compton_time.append(reading[2])
-          if save_pos:
-            self.compton_firstpos.append(reading[3])
-            self.compton_secpos.append(reading[4])
-          else:
-            compton_firstpos.append(reading[3])
-            compton_secpos.append(reading[4])
+          compton_firstpos.append(reading[3])
+          compton_secpos.append(reading[4])
         elif len(reading) == 3:
           self.single_ener.append(reading[0])
           if save_time:
             self.single_time.append(reading[1])
-          if save_pos:
-            self.single_pos.append(reading[2])
-          else:
-            single_pos.append(reading[2])
+          single_pos.append(reading[2])
       self.compton_ener = np.array(self.compton_ener)
       self.compton_second = np.array(self.compton_second)
       self.single_ener = np.array(self.single_ener)
-      if save_pos:
-        self.compton_firstpos = np.array(self.compton_firstpos)
-        self.compton_secpos = np.array(self.compton_secpos)
-        self.single_pos = np.array(self.single_pos)
-      else:
-        compton_firstpos = np.array(compton_firstpos)
-        compton_secpos = np.array(compton_secpos)
-        single_pos = np.array(single_pos)
+      compton_firstpos = np.array(compton_firstpos)
+      compton_secpos = np.array(compton_secpos)
+      single_pos = np.array(single_pos)
       if save_time:
         self.compton_time = np.array(self.compton_time)
         self.single_time = np.array(self.single_time)
@@ -144,10 +127,7 @@ class GRBFullData:
       # Calculating the polar angle with energy values and compton azim and polar scattering angles from the kinematics
       # polar and position angle stored in deg
       self.polar_from_energy = calculate_polar_angle(self.compton_second, self.compton_ener)
-      if save_pos:
-        self.pol, self.polar_from_position = angle(self.compton_secpos - self.compton_firstpos, self.grb_dec_sat_frame, self.grb_ra_sat_frame, source_name, num_sim, num_sat)
-      else:
-        self.pol, self.polar_from_position = angle(compton_secpos - compton_firstpos, self.grb_dec_sat_frame, self.grb_ra_sat_frame, source_name, num_sim, num_sat)
+      self.pol, self.polar_from_position = angle(compton_secpos - compton_firstpos, self.grb_dec_sat_frame, self.grb_ra_sat_frame, source_name, num_sim, num_sat)
 
       # Calculating the arm and extracting the indexes of correct arm events (arm in deg)
       self.arm_pol = self.polar_from_position - self.polar_from_energy
@@ -155,9 +135,8 @@ class GRBFullData:
       # Restriction of the values according to arm cut
       self.compton_ener = self.compton_ener[accepted_arm_pol]
       self.compton_second = self.compton_second[accepted_arm_pol]
-      if save_pos:
-        self.compton_firstpos = self.compton_firstpos[accepted_arm_pol]
-        self.compton_secpos = self.compton_secpos[accepted_arm_pol]
+      compton_firstpos = compton_firstpos[accepted_arm_pol]
+      compton_secpos = compton_secpos[accepted_arm_pol]
       if save_time:
         self.compton_time = self.compton_time[accepted_arm_pol]
       self.polar_from_energy = self.polar_from_energy[accepted_arm_pol]
@@ -175,8 +154,8 @@ class GRBFullData:
       #        Filling the fields with bkg and mu100 files         #
       ##############################################################
       if sat_info is not None:
-        self.compton_b_rate = sat_info[-2]
-        self.single_b_rate = sat_info[-1]
+        # self.compton_b_rate = sat_info[-2]
+        # self.single_b_rate = sat_info[-1]
         self.sat_dec_wf, self.sat_ra_wf, self.compton_b_rate, self.single_b_rate = affect_bkg(sat_info, burst_time, bkg_data)
       self.mu100_ref, self.mu100_err_ref, self.s_eff_compton_ref, self.s_eff_single_ref = closest_mufile(self.grb_dec_sat_frame, self.grb_ra_sat_frame, mu_data)
       # Putting the azimuthal scattering angle between the correct bins for creating histograms
@@ -189,9 +168,14 @@ class GRBFullData:
       # Récupérer la donnée, la traiter et l'enregistrer dans les attributs
       # Pour le compteur le plus efficace est de faire le compteur directement lors de la lecture par geomega
       # et d'enregistrer le résultat obtenu dans le fichier à la fin ou au début, ensuite on somme les single et compton
-      self.calor = 0
-      self.dsssd = 0
-      self.side = 0
+      self.comption_first_detector, self.compton_sec_detector, self.single_detector = find_detector(compton_firstpos, compton_secpos, single_pos, geometry) # TODO testing
+      # TODO filling the values
+      self.compton_calor = 0
+      self.compton_dsssd = 0
+      self.compton_side = 0
+      self.single_calor = 0
+      self.single_dsssd = 0
+      self.single_side = 0
 
 
   # def fit(self, message, fit_bounds=None):

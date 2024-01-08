@@ -2,6 +2,8 @@ import numpy as np
 import gzip
 from scipy.integrate import quad
 from time import time
+import os
+import subprocess
 
 #UTILISER ASTROPY;constant ?
 m_elec = 9.1094e-31 #kg
@@ -843,6 +845,37 @@ def decra2orbitalparam(thetasat, phisat):
   ohm = np.arctan2(-1, np.tan(phisat)) #rad
   omega = np.pi / 2
   return np.deg2rad(inclination), np.deg2rad(ohm), np.deg2rad(omega)
+
+
+def execute_finder(file, events, geometry, cpp_routine="find_detector"):
+  """
+
+  """
+  with open(f"{file}.txt", "w") as data_file:
+    for event in events:
+      data_file.write(f"{event[0]} {event[1]} {event[2]}")
+  subprocess.call(f"{cpp_routine} -g {geometry} -f {file}", shell=True, stdout=open(os.devnull, 'wb'))
+  positions = []
+  with open(f"{file}save.txt", "r") as save_file:
+    lines = save_file.read().split("\n")
+    for line in lines:
+      positions.append(line.split(" "))
+  return np.array(positions, dtype=str)
+
+
+def find_detector(pos_firt_compton, pos_sec_compton, pos_single, geometry):
+  """
+
+  """
+  pid = os.getpid()
+  file_fc = f"temp_pos_fc_{pid}"
+  file_sc = f"temp_pos_sc_{pid}"
+  file_s = f"temp_pos_s_{pid}"
+  pass
+  det_first_compton = execute_finder(file_fc, pos_firt_compton, geometry)
+  det_sec_compton = execute_finder(file_sc, pos_sec_compton, geometry)
+  det_single = execute_finder(file_s, pos_single, geometry)
+  return det_first_compton, det_sec_compton, det_single
 
 
 #######################################################################################################

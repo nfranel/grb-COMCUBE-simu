@@ -15,10 +15,9 @@ class BkgContainer(list):
   Class containing the information for 1 background file
   """
 
-  def __init__(self, bkgparfile, save_pos, save_time, ergcut):
+  def __init__(self, bkgparfile, save_time, ergcut):
     """
     :param bkgparfile : background parameter file
-    :param save_pos : True if the interaction positions are to be saved
     :param save_time : True if the interaction times are to be saved
     :param ergcut : energy cut to apply
     """
@@ -59,9 +58,9 @@ class BkgContainer(list):
     print(" Extraction of bkg data ")
     print("###########################################################################")
     # # Saving the data with a full format
-    # list.__init__(self, self.read_data(f"./bkg/sim_{geom_name}/{saving}", save_pos, save_time, ergcut, data_type="full"))
+    # list.__init__(self, self.read_data(f"./bkg/sim_{geom_name}/{saving}", save_time, ergcut, data_type="full"))
     # Saving the data with a condensed format
-    list.__init__(self, self.read_data(f"./bkg/sim_{geom_name}/{cond_saving}", save_pos, save_time, ergcut, data_type="cond"))
+    list.__init__(self, self.read_data(f"./bkg/sim_{geom_name}/{cond_saving}", save_time, ergcut, data_type="cond"))
     print("=======================================")
     print(" Extraction of bkg data finished in : ", time() - init_time, "seconds")
     print("=======================================")
@@ -163,13 +162,13 @@ class BkgContainer(list):
             fcond.write(f"{len(single_ener) / self.sim_time}\n")
 
 
-  def read_data(self, file, save_pos, save_time, ergcut, data_type="cond"):
+  def read_data(self, file, save_time, ergcut, data_type="cond"):
     """
     Function used to read the bkg txt file
     """
     with open(file, "r") as f:
       files_saved = f.read().split("NewBkg\n")
-    return [BkgData(file_saved, self.sim_time, save_pos, save_time, ergcut, data_type) for file_saved in files_saved[1:]]
+    return [BkgData(file_saved, self.sim_time, save_time, ergcut, data_type) for file_saved in files_saved[1:]]
 
   def save_cond_only(self, file, condensed_file, ergcut):
     """
@@ -213,11 +212,10 @@ class BkgData:
   Class containing the information for 1 background file
   """
 
-  def __init__(self, data, sim_duration, save_pos, save_time, ergcut, data_type="cond"):
+  def __init__(self, data, sim_duration, save_time, ergcut, data_type="cond"):
     """
     :param data : str containing all the data from a background file
     :param sim_duration : duration of the background simulation
-    :param save_pos : True if the interaction positions are to be saved
     :param save_time : True if the interaction times are to be saved
     :param ergcut : energy cut to apply
     """
@@ -236,14 +234,9 @@ class BkgData:
       else:
         self.compton_time = None
         self.single_time = None
-      if save_pos:
-        self.compton_firstpos = np.array([val.split("_") for val in lines[5].split("|")], dtype=float)
-        self.compton_secpos = np.array([val.split("_") for val in lines[6].split("|")], dtype=float)
-        self.single_pos = np.array([val.split("_") for val in lines[9].split("|")], dtype=float)
-      else:
-        self.compton_firstpos = None
-        self.compton_secpos = None
-        self.single_pos = None
+      compton_firstpos = np.array([val.split("_") for val in lines[5].split("|")], dtype=float)
+      compton_secpos = np.array([val.split("_") for val in lines[6].split("|")], dtype=float)
+      single_pos = np.array([val.split("_") for val in lines[9].split("|")], dtype=float)
       if ergcut is not None:
         compton_index = np.where(self.compton_ener >= ergcut[0], np.where(self.compton_ener <= ergcut[1], True, False), False)
         single_index = np.where(self.single_ener >= ergcut[0], np.where(self.single_ener <= ergcut[1], True, False), False)
@@ -253,10 +246,9 @@ class BkgData:
         if save_time:
           self.compton_time = self.compton_time[compton_index]
           self.single_time = self.single_time[single_index]
-        if save_pos:
-          self.compton_firstpos = self.compton_firstpos[compton_index]
-          self.compton_secpos = self.compton_secpos[compton_index]
-          self.single_pos = self.single_pos[single_index]
+        compton_firstpos = compton_firstpos[compton_index]
+        compton_secpos = compton_secpos[compton_index]
+        single_pos = single_pos[single_index]
 
       self.single = len(self.single_ener)
       self.single_cr = self.single / sim_duration
@@ -276,9 +268,10 @@ class BkgData:
       self.single_ener = None
       self.compton_time = None
       self.single_time = None
-      self.compton_firstpos = None
       self.compton_secpos = None
       self.single_pos = None
 
     else:
       print("Extraction impossible, wrong data_type given, only 'cond' and 'full' are possible")
+
+# TODO extract where the interaction is and save it (and extract it then)
