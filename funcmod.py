@@ -851,7 +851,7 @@ def execute_finder(file, events, geometry, cpp_routine="find_detector"):
   """
 
   """
-  if len(event) >= 1:
+  if len(events) >= 1:
     with open(f"{file}.txt", "w") as data_file:
       for event in events:
         data_file.write(f"{event[0]} {event[1]} {event[2]}\n")
