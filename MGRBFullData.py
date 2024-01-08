@@ -168,7 +168,7 @@ class GRBFullData:
       # Récupérer la donnée, la traiter et l'enregistrer dans les attributs
       # Pour le compteur le plus efficace est de faire le compteur directement lors de la lecture par geomega
       # et d'enregistrer le résultat obtenu dans le fichier à la fin ou au début, ensuite on somme les single et compton
-      self.comption_first_detector, self.compton_sec_detector, self.single_detector = find_detector(compton_firstpos, compton_secpos, single_pos, geometry) # TODO testing
+      self.compton_first_detector, self.compton_sec_detector, self.single_detector = find_detector(compton_firstpos, compton_secpos, single_pos, geometry) # TODO testing
       # TODO filling the values
       self.compton_calor = 0
       self.compton_dsssd = 0
