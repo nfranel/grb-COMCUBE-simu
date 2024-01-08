@@ -91,7 +91,7 @@ class LogData:
     print(f"   Number of simulation done : {simulated}")
     print(f"   Number of ignored simulation : {len(self.name) - simulated}")
     print(f"       With {horizon} ignored because the source is bellow the atmosphere")
-    print(f"       With {off} ignored because the satellite if off")
+    print(f"       With {off} ignored because the satellite is switch off")
     return simulated, horizon, off
 
 
