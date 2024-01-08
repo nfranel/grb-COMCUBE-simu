@@ -160,66 +160,130 @@ def trajectory(inc, ohm, nsat, alt, excludefile=None, omega=0, projection="carre
 
     plt.show()
 
+# files = ["./bkg/exclusion/400km/AE8max_400km.out", "./bkg/exclusion/400km/AP8min_400km.out",
+#            "./bkg/exclusion/500km/AE8max_500km.out", "./bkg/exclusion/500km/AP8min_500km.out"]
+
+# for file in files:
+#     trajectory([5, 5, 45], [0, 180, 90], [12, 12, 12], 400, excludefile=file, projection="carre")
+# for alt in [400, 500]:
+#     trajectory([5, 5, 45], [0, 180, 90], [12, 12, 12], alt, excludefile="all", projection="carre")
+
+def calc_duty(inc, ohm, omega, alt):
+    """
+
+    """
+    orbit_period = orbital_period_calc(alt)
+    n_orbit = 1000
+    n_val_per_orbit = 100
+    time_vals = np.linspace(0, n_orbit * orbit_period, n_orbit * n_val_per_orbit)
+    earth_ra_offset = earth_rotation_offset(time_vals)
+    true_anomalies = true_anomaly_calc(time_vals, orbit_period)
+    counter = 0
+    lat_list = []
+    long_list = []
+    for ite in range(len(time_vals)):
+        decsat, rasat = orbitalparam2decra(inc, ohm, omega, nu=true_anomalies[ite])
+        rasat -= earth_ra_offset[ite]
+        lat_list.append(90 - decsat)
+        long_list.append(rasat)
+        if not verif_rad_belts(90 - decsat, rasat, alt):
+            counter += 1
+    print(f"Duty cycle for inc : {inc}, ohm : {ohm}, omega : {omega} for all files at {alt}")
+    print(f"   === {counter / len(time_vals)}")
+
+    fig, ax = plt.subplots(subplot_kw={'projection': ccrs.PlateCarree(central_longitude=0)})
+    ax.set_global()
+
+    colors = ["lightsteelblue", "cornflowerblue", "royalblue", "blue", "navy"]
+    # Creating the lists of sat coordinates
+    ax.scatter(long_list, lat_list, s=1, color=colors[2])
+
+    theta_verif = np.linspace(-90, 90, 181)
+    phi_verif = np.linspace(-180, 180, 360, endpoint=False)
+    plottitle = f"{file.split('/')[-1]} {alt}km, inc : {inc}"
+    cancel_theta = []
+    cancel_phi = []
+    for theta in theta_verif:
+        for phi in phi_verif:
+            # if verif_zone_file(lat, long, file):
+            if verif_rad_belts(theta, phi, alt):
+                cancel_theta.append(theta)
+                cancel_phi.append(phi)
+    cancel_theta = np.array(cancel_theta)
+    cancel_phi = np.array(cancel_phi)
+    ax.scatter(cancel_phi, cancel_theta, s=1, color="red")
+    ax.set(title=plottitle)
+    # Adding the coasts
+    ax.coastlines()
+    plt.show()
+
+
+def calc_partial_duty(inc, ohm, omega, alt, file):
+    """
+
+    """
+    orbit_period = orbital_period_calc(alt)
+    n_orbit = 1000
+    n_val_per_orbit = 100
+    time_vals = np.linspace(0, n_orbit * orbit_period, n_orbit * n_val_per_orbit)
+    earth_ra_offset = earth_rotation_offset(time_vals)
+    true_anomalies = true_anomaly_calc(time_vals, orbit_period)
+    counter = 0
+    lat_list = []
+    long_list = []
+    for ite in range(len(time_vals)):
+        decsat, rasat = orbitalparam2decra(inc, ohm, omega, nu=true_anomalies[ite])
+        rasat -= earth_ra_offset[ite]
+        lat_list.append(90 - decsat)
+        long_list.append(rasat)
+        if not verif_zone_file(90 - decsat, rasat, file):
+        # if not verif_rad_belts(90 - decsat, rasat, alt):
+            counter += 1
+    print(f"Duty cycle for inc : {inc}, ohm : {ohm}, omega : {omega} for all files at {alt}")
+    print(f"   === {counter / len(time_vals)}")
+
+    fig, ax = plt.subplots(subplot_kw={'projection': ccrs.PlateCarree(central_longitude=0)})
+    ax.set_global()
+
+    colors = ["lightsteelblue", "cornflowerblue", "royalblue", "blue", "navy"]
+    # Creating the lists of sat coordinates
+    ax.scatter(long_list, lat_list, s=1, color=colors[2])
+
+    theta_verif = np.linspace(-90, 90, 181)
+    phi_verif = np.linspace(-180, 180, 360, endpoint=False)
+    plottitle = f"All radiation belt {alt}km, inc : {inc}"
+    cancel_theta = []
+    cancel_phi = []
+    for theta in theta_verif:
+        for phi in phi_verif:
+            if verif_zone_file(theta, phi, file):
+            # if verif_rad_belts(theta, phi, alt):
+                cancel_theta.append(theta)
+                cancel_phi.append(phi)
+    cancel_theta = np.array(cancel_theta)
+    cancel_phi = np.array(cancel_phi)
+    ax.scatter(cancel_phi, cancel_theta, s=1, color="red")
+    ax.set(title=plottitle)
+    # Adding the coasts
+    ax.coastlines()
+    plt.show()
+
 files = ["./bkg/exclusion/400km/AE8max_400km.out", "./bkg/exclusion/400km/AP8min_400km.out",
            "./bkg/exclusion/500km/AE8max_500km.out", "./bkg/exclusion/500km/AP8min_500km.out"]
-
 for file in files:
-    trajectory([5, 5, 45], [0, 180, 90], [12, 12, 12], 400, excludefile=file, projection="carre")
-for alt in [400, 500]:
-    trajectory([5, 5, 45], [0, 180, 90], [12, 12, 12], alt, excludefile="all", projection="carre")
+    calc_partial_duty(90, 0, 0, 400, file)
+    # calc_partial_duty(90, 0, 0, 500, file)
 
-# filecomp = ["./bkg/exclusion/400km/AE8max_400km.out", "./bkg/exclusion/400km/AP8min_400km.out",
-#            "./bkg/exclusion/500km/AE8max_500km.out", "./bkg/exclusion/500km/AP8min_500km.out"]
-# for file in filecomp:
-#     trajectory([5, 5, 45], [0, 180, 90], [12, 12, 12], None, excludefile=file, projection="carre")
-
-def calc_duty(inc, ohm, omega):
-    """
-
-    """
-    files = ["./bkg/exclusion/400km/AE8max_a400km_i90deg.out", "./bkg/exclusion/400km/AE8min_a400km_i90deg.out",
-             "./bkg/exclusion/400km/AP8max_a400km_i90deg.out", "./bkg/exclusion/400km/AP8min_a400km_i90deg.out",
-             "./bkg/exclusion/500km/AE8max_a500km_i90deg.out", "./bkg/exclusion/500km/AE8min_a500km_i90deg.out",
-             "./bkg/exclusion/500km/AP8max_a500km_i90deg.out", "./bkg/exclusion/500km/AP8min_a500km_i90deg.out"]
-    for file in files:
-        alt = int(file.split("km/")[0].split("/")[-1])
-        namefile = file.split("_")[0].split("/")[-1]
-        orbit_period = orbital_period_calc(alt)
-        n_orbit = 1000
-        n_val_per_orbit = 100
-        time_vals = np.linspace(0, n_orbit*orbit_period, n_orbit * n_val_per_orbit)
-        earth_ra_offset = earth_rotation_offset(time_vals)
-        true_anomalies = true_anomaly_calc(time_vals, orbit_period)
-        counter = 0
-        for ite in range(len(time_vals)):
-            decsat, rasat = orbitalparam2decra(inc, ohm, omega, nu=true_anomalies[ite])
-            rasat -= earth_ra_offset[ite]
-            if not verif_zone_file(90 - decsat, rasat, file):
-                counter +=1
-        print(f"Duty cycle for inc : {inc}, ohm : {ohm}, omega : {omega} at {alt}km for file {namefile}")
-        print(f"   === {counter/len(time_vals)}")
-    for alt in [400, 500]:
-        file_alt = int(file.split("km/")[0].split("/")[-1])
-        if alt == file_alt:
-            namefile = file.split("_")[0].split("/")[-1]
-            orbit_period = orbital_period_calc(alt)
-            n_orbit = 1000
-            n_val_per_orbit = 100
-            time_vals = np.linspace(0, n_orbit * orbit_period, n_orbit * n_val_per_orbit)
-            earth_ra_offset = earth_rotation_offset(time_vals)
-            true_anomalies = true_anomaly_calc(time_vals, orbit_period)
-            counter = 0
-            for ite in range(len(time_vals)):
-                decsat, rasat = orbitalparam2decra(inc, ohm, omega, nu=true_anomalies[ite])
-                rasat -= earth_ra_offset[ite]
-                if not verif_zone_file(90 - decsat, rasat, file):
-                    counter += 1
-            print(f"Duty cycle for inc : {inc}, ohm : {ohm}, omega : {omega} for all files at {alt}")
-            print(f"   === {counter / len(time_vals)}")
-
-# calc_duty(0, 0, 0)
-# calc_duty(5, 0, 0)
-# calc_duty(45, 0, 0)
-# calc_duty(82.5, 0, 0)
-# calc_duty(83, 0, 0)
+# calc_duty(0, 0, 0, 400)
+# calc_duty(0, 0, 0, 500)
+# calc_duty(5, 0, 0, 400)
+# calc_duty(5, 0, 0, 500)
+# calc_duty(45, 0, 0, 400)
+# calc_duty(45, 0, 0, 500)
+# calc_duty(82.5, 0, 0, 400)
+# calc_duty(82.5, 0, 0, 500)
+# calc_duty(83, 0, 0, 400)
+# calc_duty(83, 0, 0, 500)
+# calc_duty(90, 0, 0, 400)
+# calc_duty(90, 0, 0, 500)
 

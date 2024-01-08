@@ -150,8 +150,7 @@ if __name__ == "__main__":
   if args.parameterfile:
     # Reading the param file
     print(f"Running of {args.parameterfile} parameter file")
-    geometry, revanfile, mimrecfile, source_base, spectra, simtime, latitudes, altitudes = read_bkgpar(
-      args.parameterfile)
+    geometry, revanfile, mimrecfile, source_base, spectra, simtime, latitudes, altitudes = read_bkgpar(args.parameterfile)
     # Creating the required directories
     make_directories(geometry, spectra)
     # Creating the parameter list
