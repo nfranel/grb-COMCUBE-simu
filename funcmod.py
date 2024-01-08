@@ -855,7 +855,6 @@ def execute_finder(file, events, geometry, cpp_routine="find_detector"):
     with open(f"{file}.txt", "w") as data_file:
       for event in events:
         data_file.write(f"{event[0]} {event[1]} {event[2]}\n")
-    print(f"{cpp_routine} -g {geometry} -f {file}")
     subprocess.call(f"{cpp_routine} -g {geometry} -f {file}", shell=True, stdout=open(os.devnull, 'wb'), stderr=open(os.devnull, 'wb'))
     positions = []
     with open(f"{file}save.txt", "r") as save_file:

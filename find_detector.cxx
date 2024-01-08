@@ -277,10 +277,10 @@ bool PosFinder::Analyze(int argc, char** argv)
       cout<<"Details for position "<<m_PosVector<<" cm (no overlaps found) :"<<endl;
       MDVolumeSequence Vol = m_Geometry->GetVolumeSequence(m_PosVector);
       // Next line gives out all the information about the location, works for all location, even out of a sensitive volume
-      cout<<Vol.ToString()<<endl;
+//       cout<<Vol.ToString()<<endl;
       // Next line enable the extraction of the precise location, but it does not work if the location given is not in a sensitive volume !
-      cout<<"  TEST  :  "<<Vol.GetVolumeAt(1)->GetName()<<"/"<<Vol.GetVolumeAt(2)->GetName()<<endl;
-      cout<<"Outside worldvolume "<<m_PosVector<<" cm:"<<endl;
+//       cout<<"  TEST  :  "<<Vol.GetVolumeAt(1)->GetName()<<"/"<<Vol.GetVolumeAt(2)->GetName()<<endl;
+//       cout<<"Outside worldvolume "<<m_PosVector<<" cm:"<<endl;
       save_stream << Vol.GetVolumeAt(1)->GetName() << " " << Vol.GetVolumeAt(2)->GetName() << endl;
     }
     else {
