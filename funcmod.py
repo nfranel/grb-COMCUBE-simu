@@ -851,19 +851,21 @@ def execute_finder(file, events, geometry, cpp_routine="find_detector"):
   """
 
   """
-  with open(f"{file}.txt", "w") as data_file:
-    for event in events:
-      data_file.write(f"{event[0]} {event[1]} {event[2]}")
-  print(f"{cpp_routine} -g {geometry} -f {file}")
-  subprocess.call(f"{cpp_routine} -g {geometry} -f {file}", shell=True, stdout=open(os.devnull, 'wb'))
-  # subprocess.call(f"{cpp_routine} -g {geometry} -f {file}", shell=True, stdout=open(os.devnull, 'wb'))
-  positions = []
-  with open(f"{file}save.txt", "r") as save_file:
-    lines = save_file.read().split("\n")
-    for line in lines:
-      positions.append(line.split(" "))
-
-  return np.array(positions, dtype=str)
+  if len(event) >= 1:
+    with open(f"{file}.txt", "w") as data_file:
+      for event in events:
+        data_file.write(f"{event[0]} {event[1]} {event[2]}\n")
+    print(f"{cpp_routine} -g {geometry} -f {file}")
+    subprocess.call(f"{cpp_routine} -g {geometry} -f {file}", shell=True, stdout=open(os.devnull, 'wb'))
+    # subprocess.call(f"{cpp_routine} -g {geometry} -f {file}", shell=True, stdout=open(os.devnull, 'wb'))
+    positions = []
+    with open(f"{file}save.txt", "r") as save_file:
+      lines = save_file.read().split("\n")
+      for line in lines:
+        positions.append(line.split(" "))
+    return np.array(positions, dtype=str)
+  else:
+    return np.array([])
 
 
 def find_detector(pos_firt_compton, pos_sec_compton, pos_single, geometry):
