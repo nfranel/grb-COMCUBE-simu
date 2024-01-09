@@ -97,7 +97,6 @@ def make_tmp_source(alt, lat, geom, source_model, spectra, simtime):
           f.write(line)
       elif line.startswith(f"{source}.Spectrum"):
         particle_dat = f"{spectra}/source-dat--alt_{alt:.1f}--lat_{lat:.1f}/{particle}_Spec_{alt:.1f}km_{lat:.1f}deg.dat"
-        # print("Particle file : ", particle_dat)
         f.write(f"{source}.Spectrum File {particle_dat}")
       elif line.startswith(f"{source}.Flux"):
         flux = read_flux_from_spectrum(particle_dat)
@@ -126,26 +125,30 @@ def run_bkg(params):
   simfile, trafile = f"{simname}.inc1.id1.sim.gz", f"{simname}.inc1.id1.tra.gz"
   mv_simname = f"{simname.split('/sim/')[0]}/rawsim/{simname.split('/sim/')[-1]}"
   mv_simfile, mv_trafile = f"{mv_simname}.inc1.id1.sim.gz", f"{mv_simname}.inc1.id1.tra.gz"
+
   #   Running the different simulations
   print(f"Running bkg simulation : {simname}")
   # Running cosima
   # subprocess.call(f"cosima -z {sourcefile}; rm -f {sourcefile}", shell=True, stdout=open(os.devnull, 'wb'), stderr=open(os.devnull, 'wb'))
   subprocess.call(f"cosima -z {sourcefile}; rm -f {sourcefile}", shell=True, stdout=open(os.devnull, 'wb'))
+
   # Running revan
   # subprocess.call(f"revan -g {params[2]} -c {params[3]} -f {simfile} -n -a; rm -f {simfile}", shell=True, stdout=open(os.devnull, 'wb'), stderr=open(os.devnull, 'wb'))
   subprocess.call(f"revan -g {params[2]} -c {params[4]} -f {simfile} -n -a", shell=True, stdout=open(os.devnull, 'wb'))
-  subprocess.call(f"mv {simfile} {mv_simfile}", shell=True)
+  # Moving the cosima file in rawsim or removing it
+  # subprocess.call(f"mv {simfile} {mv_simfile}", shell=True)
+  subprocess.call(f"rm -f {simfile}", shell=True)
+
   # Running mimrec
   subprocess.call(f"mimrec -g {params[2]} -c {params[5]} -f {trafile} -x -n", shell=True, stdout=open(os.devnull, 'wb'))
-  subprocess.call(f"mv {trafile} {mv_trafile}", shell=True)
+  # Moving the revan analyzed file in rawsim or removing it
+  # subprocess.call(f"mv {trafile} {mv_trafile}", shell=True)
+  subprocess.call(f"rm -f {trafile}", shell=True)
 
 
 if __name__ == "__main__":
   parser = argparse.ArgumentParser(description="Multi-threaded automated MEGAlib runner. Parse a parameter file (mono-threaded) to generate commands that are executed by cosima and revan in a multi-threaded way.")
   parser.add_argument("-f", "--parameterfile", help="Path to parameter file used to generate commands")
-  # parser.add_argument("-nc", "--nocosima", help="Does not run cosima", action="store_true")
-  # parser.add_argument("-nr", "--norevan", help="Does not run revan", action="store_true")
-  # parser.add_argument("-nm", "--nomimrec", help="Does not run mimrec", action="store_true")
   args = parser.parse_args()
   if args.parameterfile:
     # Reading the param file
@@ -159,11 +162,6 @@ if __name__ == "__main__":
     print(f"{len(parameters)} Commands have been parsed")
     print("===================================================================")
 
-    # Making the different sources spectra :
-    # with mp.Pool() as pool:
-    #   pool.map(make_spectra, parameters)
-    # for params in parameters:
-    #   make_spectra(params[6], params[0], params[1])
     print("===================================================================")
     print("Running the creation of spectra")
     print("===================================================================")

@@ -169,13 +169,26 @@ class GRBFullData:
       # Pour le compteur le plus efficace est de faire le compteur directement lors de la lecture par geomega
       # et d'enregistrer le résultat obtenu dans le fichier à la fin ou au début, ensuite on somme les single et compton
       self.compton_first_detector, self.compton_sec_detector, self.single_detector = find_detector(compton_firstpos, compton_secpos, single_pos, geometry) # TODO testing
-      # TODO filling the values
-      self.compton_calor = 0
-      self.compton_dsssd = 0
-      self.compton_side = 0
-      self.single_calor = 0
-      self.single_dsssd = 0
-      self.single_side = 0
+      hits = np.array([])
+      if self.compton_first_detector > 0:
+        hits = np.concatenate((hits, self.compton_first_detector[:, 1]))
+      if self.compton_sec_detector > 0:
+        hits = np.concatenate((hits, self.compton_sec_detector[:, 1]))
+      if self.single_detector > 0:
+        hits = np.concatenate((hits, self.single_detector[:, 1]))
+      self.calor = 0
+      self.dsssd = 0
+      self.side = 0
+      for hit in hits:
+        if hit == "Calor":
+          self.calor += 1
+        elif hit.startswith("SideDet"):
+          self.side += 1
+        elif hit.startswith("Layer"):
+          self.dsssd += 1
+        else:
+          print("Error, unknown interaction volume")
+      self.total_hits = self.calor + self.dsssd + self.side
 
 
   # def fit(self, message, fit_bounds=None):

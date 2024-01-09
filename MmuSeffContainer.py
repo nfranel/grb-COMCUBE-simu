@@ -45,7 +45,7 @@ class MuSeffContainer(list):
     saving = f"mu-seff-saved_{geom_name}_{self.decs[0]:.0f}-{self.decs[1]:.0f}-{self.decs[2]:.0f}_{self.ras[0]:.0f}-{self.ras[1]:.0f}-{self.ras[2]:.0f}.txt"
     ergname = f"ergcut-{ergcut[0]}-{ergcut[1]}"
     armname = f"armcut-{armcut}"
-    cond_saving = f"condensed-saved_{geom_name}_{self.decs[0]:.0f}-{self.decs[1]:.0f}-{self.decs[2]:.0f}_{self.ras[0]:.0f}-{self.ras[1]:.0f}-{self.ras[2]:.0f}_{ergname}_{armname}.txt"
+    cond_saving = f"condensed-mu-seff-saved_{geom_name}_{self.decs[0]:.0f}-{self.decs[1]:.0f}-{self.decs[2]:.0f}_{self.ras[0]:.0f}-{self.ras[1]:.0f}-{self.ras[2]:.0f}_{ergname}_{armname}.txt"
 
     if not saving in os.listdir(f"./mu100/sim_{geom_name}"):
       init_time = time()

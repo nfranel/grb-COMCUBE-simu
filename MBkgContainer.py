@@ -31,7 +31,7 @@ class BkgContainer(list):
 
     geom_name = geom.split(".geo.setup")[0].split("/")[-1]
     saving = f"bkgsaved_{geom_name}_{np.min(self.lat_range):.0f}-{np.max(self.lat_range):.0f}-{len(self.lat_range):.0f}_{np.min(self.alt_range):.0f}-{np.max(self.alt_range):.0f}-{len(self.alt_range):.0f}.txt"
-    cond_saving = f"cond_bkgsaved_{geom_name}_{np.min(self.lat_range):.0f}-{np.max(self.lat_range):.0f}-{len(self.lat_range):.0f}_{np.min(self.alt_range):.0f}-{np.max(self.alt_range):.0f}-{len(self.alt_range):.0f}_erg-{ergcut[0]}-{ergcut[1]}.txt"
+    cond_saving = f"cond_bkgsaved_{geom_name}_{np.min(self.lat_range):.0f}-{np.max(self.lat_range):.0f}-{len(self.lat_range):.0f}_{np.min(self.alt_range):.0f}-{np.max(self.alt_range):.0f}-{len(self.alt_range):.0f}_ergcut-{ergcut[0]}-{ergcut[1]}.txt"
 
     if not saving in os.listdir(f"./bkg/sim_{geom_name}"):
       init_time = time()
@@ -155,11 +155,42 @@ class BkgContainer(list):
             compton_ener = compton_ener[compton_index]
             single_ener = single_ener[single_index]
 
+            # Détermination des détecteurs d'interaction
+            compton_firstpos = compton_firstpos[compton_index]
+            compton_secpos = compton_secpos[compton_index]
+            single_pos = single_pos[single_index]
+            compton_first_detector, compton_sec_detector, single_detector = find_detector(compton_firstpos, compton_secpos, single_pos, self.geometry)
+            hits = np.array([])
+            if compton_first_detector > 0:
+              hits = np.concatenate((hits, compton_first_detector[:, 1]))
+            if compton_sec_detector > 0:
+              hits = np.concatenate((hits, compton_sec_detector[:, 1]))
+            if single_detector > 0:
+              hits = np.concatenate((hits, single_detector[:, 1]))
+            calor = 0
+            dsssd = 0
+            side = 0
+            for hit in hits:
+              if hit == "Calor":
+                calor += 1
+              elif hit.startswith("SideDet"):
+                side += 1
+              elif hit.startswith("Layer"):
+                dsssd += 1
+              else:
+                print("Error, unknown interaction volume")
+            total_hits = calor + dsssd + side
+
+            # Writing the condensed file
             fcond.write("NewBkg\n")
             fcond.write(f"{decbkg}\n")
             fcond.write(f"{altbkg}\n")
             fcond.write(f"{len(compton_ener) / self.sim_time}\n")
             fcond.write(f"{len(single_ener) / self.sim_time}\n")
+            fcond.write(f"{calor}\n")
+            fcond.write(f"{dsssd}\n")
+            fcond.write(f"{side}\n")
+            fcond.write(f"{total_hits}\n")
 
 
   def read_data(self, file, save_time, ergcut, data_type="cond"):
@@ -193,6 +224,9 @@ class BkgContainer(list):
         # Attributes filled with file reading (or to be used from this moment)
         compton_ener = np.array(lines[3].split("|"), dtype=float)
         single_ener = np.array(lines[7].split("|"), dtype=float)
+        compton_firstpos = np.array([val.split("_") for val in lines[5].split("|")], dtype=float)
+        compton_secpos = np.array([val.split("_") for val in lines[6].split("|")], dtype=float)
+        single_pos = np.array([val.split("_") for val in lines[9].split("|")], dtype=float)
 
         # Applying the ergcut
         compton_index = np.where(compton_ener >= ergcut[0], np.where(compton_ener <= ergcut[1], True, False), False)
@@ -200,11 +234,42 @@ class BkgContainer(list):
         compton_ener = compton_ener[compton_index]
         single_ener = single_ener[single_index]
 
+        # Détermination des détecteurs d'interaction
+        compton_firstpos = compton_firstpos[compton_index]
+        compton_secpos = compton_secpos[compton_index]
+        single_pos = single_pos[single_index]
+        compton_first_detector, compton_sec_detector, single_detector = find_detector(compton_firstpos, compton_secpos,
+                                                                                      single_pos, self.geometry)
+        hits = np.array([])
+        if compton_first_detector > 0:
+          hits = np.concatenate((hits, compton_first_detector[:, 1]))
+        if compton_sec_detector > 0:
+          hits = np.concatenate((hits, compton_sec_detector[:, 1]))
+        if single_detector > 0:
+          hits = np.concatenate((hits, single_detector[:, 1]))
+        calor = 0
+        dsssd = 0
+        side = 0
+        for hit in hits:
+          if hit == "Calor":
+            calor += 1
+          elif hit.startswith("SideDet"):
+            side += 1
+          elif hit.startswith("Layer"):
+            dsssd += 1
+          else:
+            print("Error, unknown interaction volume")
+        total_hits = calor + dsssd + side
+
         fcond.write("NewBkg\n")
         fcond.write(f"{decbkg}\n")
         fcond.write(f"{altbkg}\n")
         fcond.write(f"{len(compton_ener) / self.sim_time}\n")
         fcond.write(f"{len(single_ener) / self.sim_time}\n")
+        fcond.write(f"{calor}\n")
+        fcond.write(f"{dsssd}\n")
+        fcond.write(f"{side}\n")
+        fcond.write(f"{total_hits}\n")
 
 
 class BkgData:
@@ -254,6 +319,29 @@ class BkgData:
       self.single_cr = self.single / sim_duration
       self.compton = len(self.compton_ener)
       self.compton_cr = self.compton / sim_duration
+
+      self.compton_first_detector, self.compton_sec_detector, self.single_detector = find_detector(compton_firstpos, compton_secpos, single_pos, self.geometry)
+      hits = np.array([])
+      if self.compton_first_detector > 0:
+        hits = np.concatenate((hits, self.compton_first_detector[:, 1]))
+      if self.compton_sec_detector > 0:
+        hits = np.concatenate((hits, self.compton_sec_detector[:, 1]))
+      if self.single_detector > 0:
+        hits = np.concatenate((hits, self.single_detector[:, 1]))
+      self.calor = 0
+      self.dsssd = 0
+      self.side = 0
+      for hit in hits:
+        if hit == "Calor":
+          self.calor += 1
+        elif hit.startswith("SideDet"):
+          self.side += 1
+        elif hit.startswith("Layer"):
+          self.dsssd += 1
+        else:
+          print("Error, unknown interaction volume")
+      self.total_hits = self.calor + self.dsssd + self.side
+
     elif data_type == "cond":
       # Extraction of the background values
       lines = data.split("\n")
@@ -261,17 +349,22 @@ class BkgData:
       self.alt = float(lines[1])
       self.compton_cr = float(lines[2])
       self.single_cr = float(lines[3])
+      self.calor = int(lines[4])
+      self.dsssd = int(lines[5])
+      self.side = int(lines[6])
+      self.total_hits = int(lines[7])
 
       # Attributes not filled because only the condensed data are extracted
+      self.single = None
+      self.compton = None
       self.compton_second = None
       self.compton_ener = None
       self.single_ener = None
       self.compton_time = None
       self.single_time = None
-      self.compton_secpos = None
-      self.single_pos = None
+      self.compton_first_detector = None
+      self.compton_sec_detector = None
+      self.single_detector = None
 
     else:
       print("Extraction impossible, wrong data_type given, only 'cond' and 'full' are possible")
-
-# TODO extract where the interaction is and save it (and extract it then)

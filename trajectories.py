@@ -1,7 +1,7 @@
-import matplotlib as mpl
+# import matplotlib as mpl
 import matplotlib.pyplot as plt
 import cartopy.crs as ccrs
-import cartopy.feature as cfeature
+# import cartopy.feature as cfeature
 from funcmod import *
 
 def coor(i, om, omega):

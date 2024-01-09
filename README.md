@@ -1,11 +1,19 @@
 # grb-COMCUBE-simu
 
-requirements : astropy, cartopy
+Python requirements :
+  - numpy, matplotlib, scipy, pandas, argparse, multiprocessing, subprocess, time, os, gzip, inspect, itertools
+  - Special requirements :
+    - astropy, cartopy
+    
+Other requirements :
+  - make
+  - megalib
 
 ############################################################################
+
 This git contains :
 
-- the codes and routines to analyze the data : shape M....py
+- the codes and routines to analyze the data :
   - MAllSourceData.py contains the main class for analysis. Used with python, it reads and analyzes the simulation files
     - stores the simulation results for each source in a list
     - stores mu100 and effective area for different DEC and RA (in satellite frame)
@@ -26,6 +34,15 @@ This git contains :
   - MmuSeffContainer.py contains classes to treat mu100 and effective area for different positions of detection
     - These variables need statistics to be consistent and are considered to vary over detection position but not much over different GRBs  
   - MFit.py contains a class to proceed to polarigram fits
+  - funcmod.py contains many functions used in the codes
+  - catalog.py is used to read and extract the GBM data
+  - fovconst.py is a code to obtain the field of view of a constellation (May need some updates)
+  - trajectories.py is used to obtain the trajectory of a constellation, test exclusion files and obtain duty cycles
+  - maintest.py is a file to test the data analysis, contains an example of how to make an analysis 
+  - Launchers :
+    - launch_bkg_sim.py    simulate the background for different latitudes, altitudes and for a specific satellite geometry 
+    - launch_mu100_sim.py  simulate the mu100 and effective area for different declination and right ascension of detection for a specific satellite geometry
+    - launch_sim_time.py   simulate the GRB simulations
 
 - the folder bkg 
   - contains information about the background 
@@ -51,28 +68,50 @@ This git contains :
 - the folder example that contains some example files (parameter file, source file)
 
 ############################################################################
+
 Necessary to run the simulation
 
-Geometry
-Background condensed file for specific geometry
-Mu100/Seff condensed file for specific geometry
-cfg fileq
-A folder to contain the simulation with :
-  source file
-  parameter file
-  a folder named sim
-  a folder named rawsim
+- Geometry
+- Background condensed file for specific geometry
+- Mu100/Seff condensed file for specific geometry
+- cfg files (for both revan and mimrec)
+- A folder to contain the simulation with :
+  - source file
+  - parameter file
+  - a folder named sim
+  - a folder named rawsim
+
+IMPORTANT : 
+- mu100 and background simulation files have to be made for every satellite model.
+- Some condensed files for background and mu100 are already done on the git. With the files the analysis can be done even if there are no raw simulation data
+- Condensed files are also specific to an energy cut so if the energy cut is not the same as the one used for creating these files results may be wrong
+  - Format for names of background saved files :
+    - regular one : [prefix]_[model]_[decmin]-[decmax]-[number of dec]_[altmin]-[altmax]-[number of alts].txt
+    - condensed one : [prefix]_[model]_[decmin]-[decmax]-[number of dec]_[altmin]-[altmax]-[number of alts]_ergcut-[low energy cut]-[high energy cut].txt
+  - Format for names of mu100 saved files :
+    - regular one : [prefix]_[model]_[decmin]-[decmax]-[number of dec]_[ramin]-[ramax]-[number of ra at equator].txt
+    - condensed one : [prefix]_[model]_[decmin]-[decmax]-[number of dec]_[ramin]-[ramax]-[number of ra at equator]_ergcut-[low energy cut]-[high energy cut].txt
+      
 
 ############################################################################
+
 To run the simulations :
-  Make sure the necessary files and folders are created
-  use python specific_launcher -f specific_parameter_file
+- Make sure the necessary files and folders are created
+- use python specific_launcher -f specific_parameter_file
 
-For background simulations : launch_bkg_sim with param file in bkg folder
-For mu100 simulations : launch_mu100_sim with param file in mu100 folder
-For GRB simulations : launch_sim_time with param file in the folder to contain simulation
-  launch_sim is the old version, not up to date
+
+- For background simulations : 
+  - launch_bkg_sim with param file in bkg folder
+
+- For mu100 simulations : 
+  - launch_mu100_sim with param file in mu100 folder
+
+- For GRB simulations : 
+  - launch_sim_time with param file in the folder to contain simulation
+
+IMPORTANT : in these files there is a possibility to keep the raw simulation files and the revan analyzed files. By default we remove this file to save memory.
 
 ############################################################################
+
 To analyze results :
-The maintest.py file gives an example of how to load data
+- The maintest.py file gives an example of how to load data

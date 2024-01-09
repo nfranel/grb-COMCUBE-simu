@@ -201,13 +201,15 @@ def cosirevan(command):
     # Running cosima
     run(f"cosima -z {source_name}; rm -f {source_name}", __verbose__)
   if command[1]: #run revan
-    # Running revan
-    run(f"revan -g {args.geometry} -c {args.rcf} -f {simfile} -n -a; mv {simfile} {mv_simfile}", __verbose__)
-    # run(f"revan -g {args.geometry} -c {args.rcf} -f {simfile} -n -a; rm -f {simfile}", __verbose__)
+    # Running revan and moving the simulation file to rawsim
+    # run(f"revan -g {args.geometry} -c {args.rcf} -f {simfile} -n -a; mv {simfile} {mv_simfile}", __verbose__)
+    # Running revan and removing the simulation file
+    run(f"revan -g {args.geometry} -c {args.rcf} -f {simfile} -n -a; rm -f {simfile}", __verbose__)
   if command[2]:
-    # Running mimrec
-    run(f"mimrec -g {args.geometry} -c {args.mcf} -f {trafile} -x -n; mv {trafile} {mv_trafile}", __verbose__)
-    # run(f"mimrec -g {args.geometry} -c {args.mcf} -f {trafile} -n -a; rm -f {trafile}", __verbose__)
+    # Running mimrec and moving the revan analyzed file to rawsim
+    # run(f"mimrec -g {args.geometry} -c {args.mcf} -f {trafile} -x -n; mv {trafile} {mv_trafile}", __verbose__)
+    # Running mimrec and removing the revan analyzed file
+    run(f"mimrec -g {args.geometry} -c {args.mcf} -f {trafile} -n -a; rm -f {trafile}", __verbose__)
 
 
 def run(command, __verbose__):

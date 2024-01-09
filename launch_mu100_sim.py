@@ -107,7 +107,7 @@ def make_parameters(decs, ras, geom, source_model, spectra, timepol, timeunpol, 
   return parameters
 
 
-def run_bkg(params):
+def run_mu(params):
   # Making a temporary source file using a source_model
   sourcefile, simname = make_tmp_source(params[0], params[1], params[2], params[3], params[4], params[5], params[6], params[7])
   # Making a generic name for files
@@ -116,23 +116,34 @@ def run_bkg(params):
   mv_simname = f"{simname.split('/sim/')[0]}/rawsim/{simname.split('/sim/')[-1]}"
   mv_simfilepol, mv_trafilepol = f"{mv_simname}pol.inc1.id1.sim.gz", f"{mv_simname}pol.inc1.id1.tra.gz"
   mv_simfileunpol, mv_trafileunpol = f"{mv_simname}unpol.inc1.id1.sim.gz", f"{mv_simname}unpol.inc1.id1.tra.gz"
+
   #   Running the different simulations
   print(f"Running mu100 simulation : {simname}")
   # Running cosima
   # subprocess.call(f"cosima -z {sourcefile}; rm -f {sourcefile}", shell=True, stdout=open(os.devnull, 'wb'), stderr=open(os.devnull, 'wb'))
   subprocess.call(f"cosima -z {sourcefile}; rm -f {sourcefile}", shell=True, stdout=open(os.devnull, 'wb'))
   # subprocess.call(f"cosima -z {sourcefile}", shell=True, stdout=open(os.devnull, 'wb'))
+
   # Running revan
   # subprocess.call(f"revan -g {params[2]} -c {params[3]} -f {simfile} -n -a; rm -f {simfile}", shell=True, stdout=open(os.devnull, 'wb'), stderr=open(os.devnull, 'wb'))
   subprocess.call(f"revan -g {params[2]} -c {params[8]} -f {simfilepol} -n -a", shell=True, stdout=open(os.devnull, 'wb'))
-  subprocess.call(f"mv {simfilepol} {mv_simfilepol}", shell=True)
+  # Moving the cosima pol file in rawsim or removing it
+  # subprocess.call(f"mv {simfilepol} {mv_simfilepol}", shell=True)
+  subprocess.call(f"rm -f {simfilepol}", shell=True)
   subprocess.call(f"revan -g {params[2]} -c {params[8]} -f {simfileunpol} -n -a", shell=True, stdout=open(os.devnull, 'wb'))
-  subprocess.call(f"mv {simfileunpol} {mv_simfileunpol}", shell=True)
+  # Moving the cosima unpol file in rawsim or removing it
+  # subprocess.call(f"mv {simfileunpol} {mv_simfileunpol}", shell=True)
+  subprocess.call(f"rm -f {simfileunpol}", shell=True)
+
   # Running mimrec
   subprocess.call(f"mimrec -g {params[2]} -c {params[9]} -f {trafilepol} -x -n", shell=True, stdout=open(os.devnull, 'wb'))
-  subprocess.call(f"mv {trafilepol} {mv_trafilepol}", shell=True)
+  # Moving the revan analyzed pol file in rawsim or removing it
+  # subprocess.call(f"mv {trafilepol} {mv_trafilepol}", shell=True)
+  subprocess.call(f"rm -f {trafilepol}", shell=True)
   subprocess.call(f"mimrec -g {params[2]} -c {params[9]} -f {trafileunpol} -x -n", shell=True, stdout=open(os.devnull, 'wb'))
-  subprocess.call(f"mv {trafileunpol} {mv_trafileunpol}", shell=True)
+  # Moving the revan analyzed unpol file in rawsim or removing it
+  # subprocess.call(f"mv {trafileunpol} {mv_trafileunpol}", shell=True)
+  subprocess.call(f"rm -f {trafileunpol}", shell=True)
 
 
 if __name__ == "__main__":
@@ -169,7 +180,7 @@ if __name__ == "__main__":
     print("Running the mu100 simulations and extraction")
     print("===================================================================")
     with mp.Pool() as pool:
-      pool.map(run_bkg, parameters)
+      pool.map(run_mu, parameters)
   else:
     print("Missing parameter file or geometry - not running.")
 
