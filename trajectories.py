@@ -197,14 +197,14 @@ def calc_duty(inc, ohm, omega, alt, show=False):
   print(f"Duty cycle for inc : {inc}, ohm : {ohm}, omega : {omega} for all files at {alt}")
   print(f"   === {counter / len(time_vals)}")
 
-  fig, ax = plt.subplots(subplot_kw={'projection': ccrs.PlateCarree(central_longitude=0)})
-  ax.set_global()
-
-  colors = ["lightsteelblue", "cornflowerblue", "royalblue", "blue", "navy"]
-  # Creating the lists of sat coordinates
-  ax.scatter(long_list, lat_list, s=1, color=colors[2])
-
   if show:
+    fig, ax = plt.subplots(subplot_kw={'projection': ccrs.PlateCarree(central_longitude=0)})
+    ax.set_global()
+
+    colors = ["lightsteelblue", "cornflowerblue", "royalblue", "blue", "navy"]
+    # Creating the lists of sat coordinates
+    ax.scatter(long_list, lat_list, s=1, color=colors[2])
+
     theta_verif = np.linspace(-90, 90, 181)
     phi_verif = np.linspace(-180, 180, 360, endpoint=False)
     plottitle = f"All radiation belt {alt}km, inc : {inc}"
@@ -223,6 +223,7 @@ def calc_duty(inc, ohm, omega, alt, show=False):
     # Adding the coasts
     ax.coastlines()
     plt.show()
+  return counter / len(time_vals)
 
 
 def calc_partial_duty(inc, ohm, omega, alt, exclusionfile):
@@ -250,7 +251,7 @@ def calc_partial_duty(inc, ohm, omega, alt, exclusionfile):
     long_list.append(rasat)
     if not verif_zone_file(90 - decsat, rasat, exclusionfile):
       counter += 1
-  print(f"Duty cycle for inc : {inc}, ohm : {ohm}, omega : {omega} for {file.split('/')[-1]}  at {alt}")
+  print(f"Duty cycle for inc : {inc}, ohm : {ohm}, omega : {omega} for {exclusionfile.split('/')[-1]}  at {alt}")
   print(f"   === {counter / len(time_vals)}")
 
   fig, ax = plt.subplots(subplot_kw={'projection': ccrs.PlateCarree(central_longitude=0)})
