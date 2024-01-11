@@ -4,7 +4,7 @@
 # Separating the code in different modules
 
 # Package imports
-import os
+
 # Developped modules imports
 from funcmod import *
 from launch_bkg_sim import read_bkgpar
@@ -14,17 +14,16 @@ class BkgContainer(list):
   """
   Class containing the information for 1 background file
   """
-
   def __init__(self, bkgparfile, save_time, ergcut):
     """
-    :param bkgparfile : background parameter file
-    :param save_time : True if the interaction times are to be saved
-    :param ergcut : energy cut to apply
+    :param bkgparfile: background parameter file
+    :param save_time: True if the interaction times are to be saved
+    :param ergcut: energy cut to apply
     """
     geom, revanf, mimrecf, source_base, spectra, simtime, latitudes, altitudes = read_bkgpar(bkgparfile)
-    self.geometry = geom       # To compare with data/mu100 and make sure everything works with the same softs
-    self.revanfile = revanf    # To compare with data/mu100 and make sure everything works with the same softs
-    self.mimrecfile = mimrecf  # To compare with data/mu100 and make sure everything works with the same softs
+    self.geometry = geom       # TODO compare with data/mu100 and make sure everything works with the same softs
+    self.revanfile = revanf    # compare with data/mu100 and make sure everything works with the same softs
+    self.mimrecfile = mimrecf  # compare with data/mu100 and make sure everything works with the same softs
     self.sim_time = simtime
     self.lat_range = latitudes
     self.alt_range = altitudes
@@ -33,7 +32,7 @@ class BkgContainer(list):
     saving = f"bkgsaved_{geom_name}_{np.min(self.lat_range):.0f}-{np.max(self.lat_range):.0f}-{len(self.lat_range):.0f}_{np.min(self.alt_range):.0f}-{np.max(self.alt_range):.0f}-{len(self.alt_range):.0f}.txt"
     cond_saving = f"cond_bkgsaved_{geom_name}_{np.min(self.lat_range):.0f}-{np.max(self.lat_range):.0f}-{len(self.lat_range):.0f}_{np.min(self.alt_range):.0f}-{np.max(self.alt_range):.0f}-{len(self.alt_range):.0f}_ergcut-{ergcut[0]}-{ergcut[1]}.txt"
 
-    if not saving in os.listdir(f"./bkg/sim_{geom_name}"):
+    if saving not in os.listdir(f"./bkg/sim_{geom_name}"):
       init_time = time()
       print("###########################################################################")
       print(" bkg data not saved : Saving ")
@@ -43,7 +42,7 @@ class BkgContainer(list):
       print(" Saving of bkg data finished in : ", time() - init_time, "seconds")
       print("=======================================")
     else:
-      if not cond_saving in os.listdir(f"./bkg/sim_{geom_name}"):
+      if cond_saving not in os.listdir(f"./bkg/sim_{geom_name}"):
         init_time = time()
         print("###########################################################################")
         print(" bkg condensed data not saved : Saving ")
@@ -65,10 +64,12 @@ class BkgContainer(list):
     print(" Extraction of bkg data finished in : ", time() - init_time, "seconds")
     print("=======================================")
 
-
   def save_data(self, file, condensed_file, ergcut):
     """
     Function used to save the bkg data into a txt file
+    :param file: path of the file containing saved data
+    :param condensed_file: path of the file containing condensed saved data
+    :param ergcut: energy cut used for making the condensed data file
     """
     with open(file, "w") as f:
       with open(condensed_file, "w") as fcond:
@@ -196,14 +197,23 @@ class BkgContainer(list):
   def read_data(self, file, save_time, ergcut, data_type="cond"):
     """
     Function used to read the bkg txt file
+    :param file: path of the file containing the saved data (either full or condensed one)
+    :param save_time: If True saves the interaction time when reading full data (data_type="full")
+    :param ergcut: energy cut used for making the condensed data file
+    :param data_type: Which file should be read
+      If cond, condensed file is read
+      If full, uncondensed file is read and save_time is used
     """
     with open(file, "r") as f:
       files_saved = f.read().split("NewBkg\n")
-    return [BkgData(file_saved, self.sim_time, save_time, ergcut, data_type) for file_saved in files_saved[1:]]
+    return [BkgData(file_saved, self.sim_time, save_time, ergcut, self.geometry, data_type) for file_saved in files_saved[1:]]
 
   def save_cond_only(self, file, condensed_file, ergcut):
     """
-    Function used to save the bkg data into a txt file
+    Function used to save the condensed bkg data into a txt file after extracting uncondensed data
+    :param file: path for the full data file
+    :param condensed_file: path for the condensed data file
+    :param ergcut: energy window that should be applied on the data
     """
     with open(file, "r") as f:
       files_saved = f.read().split("NewBkg\n")
@@ -276,13 +286,16 @@ class BkgData:
   """
   Class containing the information for 1 background file
   """
-
-  def __init__(self, data, sim_duration, save_time, ergcut, data_type="cond"):
+  def __init__(self, data, sim_duration, save_time, ergcut, geometry, data_type="cond"):
     """
-    :param data : str containing all the data from a background file
-    :param sim_duration : duration of the background simulation
-    :param save_time : True if the interaction times are to be saved
-    :param ergcut : energy cut to apply
+    :param data: str containing all the data from a background file
+    :param sim_duration: duration of the background simulation
+    :param save_time: True if the interaction times are to be saved
+    :param ergcut: energy cut to apply
+    :param geometry: geometry used for the simulation
+    :param data_type: Which file should be read
+      If cond, condensed file is read
+      If full, uncondensed file is read and save_time is used
     """
     if data_type == "full":
       # Extraction of the background values
@@ -320,7 +333,7 @@ class BkgData:
       self.compton = len(self.compton_ener)
       self.compton_cr = self.compton / sim_duration
 
-      self.compton_first_detector, self.compton_sec_detector, self.single_detector = find_detector(compton_firstpos, compton_secpos, single_pos, self.geometry)
+      self.compton_first_detector, self.compton_sec_detector, self.single_detector = find_detector(compton_firstpos, compton_secpos, single_pos, geometry)
       hits = np.array([])
       if self.compton_first_detector > 0:
         hits = np.concatenate((hits, self.compton_first_detector[:, 1]))

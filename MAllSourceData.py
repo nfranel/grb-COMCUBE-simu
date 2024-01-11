@@ -26,24 +26,23 @@ class AllSourceData:
   """
   Class containing all the data for a full set of trafiles
   """
-
-  def __init__(self, grb_param, bkg_param, muSeff_param, erg_cut=(100, 460), armcut=180, polarigram_bins="fixed", parallel=False):
+  def __init__(self, grb_param, bkg_param, mu_s_eff_param, erg_cut=(100, 460), armcut=180, polarigram_bins="fixed", parallel=False):
     """
-    Initiate the class AllData using
-    - bkg_prefix : str, the prefix for background files
-    - param_file : str, the path to the parameter file (.par) used for the simulation
-    - erg_cut    : tuple of len 2, the lower and uppuer bounds of the energy window considered
-
-    Extract from the parameters and from the files the information needed for the analysis
-    Makes some basic tests on filenames to reduce the risk of unseen errors
-
-    FAIRE OPTION AVEC PARAM FILE QUI EST UNE LISTE (evite d'avoir a faire un .par si on veut juste étudier 1 seule simu)
-    Ceci est le cas de base pour les simulations, le modifier pour permettre des sources moins habituelles
+    :param grb_param: str, the path to the parameter file (.par) used for the simulation
+    :param bkg_param: str, the path to the parameter file (.par) used for the background simulations
+    :param mu_s_eff_param: str, the path to the parameter file (.par) used for the mu100 simulation
+    :param erg_cut: tuple of len 2, lower and uppuer bounds of the energy window considered
+    :param armcut: int, maximum value accepted for ARM
+    :param polarigram_bins: str, the way the polarigram bins are created
+    :param parallel: False, int ou "all", set the parallel analysis
+      False no parallelization
+      int   number of cores over which the parallelization is made
+      "all" all cores are used
     """
     # General parameters
     self.grb_param = grb_param
     self.bkg_param = bkg_param
-    self.muSeff_param = muSeff_param
+    self.muSeff_param = mu_s_eff_param
     self.erg_cut = erg_cut
     self.armcut = armcut
 
@@ -102,11 +101,10 @@ class AllSourceData:
     # Setting some informations used for obtaining the GRB count rates
     self.cat_duration = 10
     # self.com_duty = 1
-    self.com_duty = self.n_sim_simulated / (self.n_sim_simulated + self.n_sim_in_radbelt)
+    self.com_duty = self.n_sim_simulated / (self.n_sim_simulated + self.n_sim_in_radbelt) # TODO verification
     self.gbm_duty = 0.85
-    ### Implementer une maniere automatique de calculer le fov de comcube
-    self.com_fov = 1  # kept as 1 because GRBs simulated accross all sky and not considered if behind the earth
-    self.gbm_fov = (1 - np.cos(np.deg2rad(horizonAngle(565)))) / 2
+    self.com_fov = 1
+    self.gbm_fov = (1 - np.cos(np.deg2rad(horizon_angle(565)))) / 2
     self.weights = 1 / self.n_sim / self.cat_duration * self.com_duty / self.gbm_duty * self.com_fov / self.gbm_fov
 
   @staticmethod
@@ -149,6 +147,7 @@ class AllSourceData:
     print("    Methods")
     print("======================================================================")
 
+# TODO finish the comments and rework the methods !
   def extract_sources(self, prefix, duration=None):
     """
 
@@ -205,10 +204,6 @@ class AllSourceData:
         for sim_ite, sim in enumerate(source):
           if sim is not None:
             sim.analyze(source.source_duration, source.source_fluence, const_analysis)
-            # if source.source_fluence is None:
-            #   sim.analyze(source.source_duration, source.source_fluence, self.source_with_bkg, fit_bounds, const_analysis)
-            # else:
-            #   sim.analyze(source.source_duration, source.source_fluence, self.source_with_bkg, fit_bounds, const_analysis)
         source.set_probabilities(n_sat=self.n_sat, snr_min=self.snr_min, n_image_min=50)
 
   def make_const(self, const=None):
@@ -481,7 +476,9 @@ class AllSourceData:
                   sat_instant_triggers += 1
                 if sat.snr_single >= self.snr_min - 2:
                   sat_reduced_instant_triggers += 1
-                sat_peak_snr = SNR(rescale_cr_to_GBM_pf(sat.single_cr, source.best_fit_mean_flux, source.best_fit_p_flux), sat.single_b_rate)
+                sat_peak_snr = calc_snr(
+                  rescale_cr_to_GBM_pf(sat.single_cr, source.best_fit_mean_flux, source.best_fit_p_flux),
+                  sat.single_b_rate)
                 # print("rescaled cr : ", rescale_cr_to_GBM_pf(sat.single_cr, source.best_fit_mean_flux, source.best_fit_p_flux))
                 # print("initial cr : ", sat.single_cr)
                 # print("peak flux : ", source.best_fit_p_flux)
@@ -498,7 +495,9 @@ class AllSourceData:
                 if sat.snr_single_t90 >= self.snr_min - 2:
                   sat_reduced_t90_triggers += 1
             # Calculation for the whole constellation
-            const_peak_snr = SNR(rescale_cr_to_GBM_pf(sim.const_data.single_cr, source.best_fit_mean_flux, source.best_fit_p_flux), sim.const_data.single_b_rate)
+            const_peak_snr = calc_snr(
+              rescale_cr_to_GBM_pf(sim.const_data.single_cr, source.best_fit_mean_flux, source.best_fit_p_flux),
+              sim.const_data.single_b_rate)
             # print()
             # print("rescaled cr : ", rescale_cr_to_GBM_pf(sim.const_data.single_cr, source.best_fit_mean_flux, source.best_fit_p_flux))
             # print("initial cr : ", sim.const_data.single_cr)

@@ -7,7 +7,7 @@ Python requirements :
     
 Other requirements :
   - make
-  - megalib
+  - megalib installed and **sourced**
 
 ############################################################################
 
@@ -43,6 +43,9 @@ This git contains :
     - launch_bkg_sim.py    simulate the background for different latitudes, altitudes and for a specific satellite geometry 
     - launch_mu100_sim.py  simulate the mu100 and effective area for different declination and right ascension of detection for a specific satellite geometry
     - launch_sim_time.py   simulate the GRB simulations
+  - find_detector.cxx and Makefile are the c++ program used to obtain the detector of interaction for an event, and its associated makefile. This uses megalib classes and has been done using the standalone example given by megalib.
+    - The makefile compiles this program everytime the analysis is launched using the command "make -f Makefile PRG=find_detector". The executable is created in $(MEGALIB)/bin and is usable using "find_detector" in a terminal if megalib is sourced.
+    - This program uses megalib classes then it is necessary to have megalib sourced while using this analysis tool
 
 - the folder bkg 
   - contains information about the background 

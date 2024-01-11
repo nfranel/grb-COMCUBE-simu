@@ -85,7 +85,8 @@ def gen_commands(args):
           fun = lambda x: band(x, c.flnc_band_ampl[i], c.flnc_band_alpha[i], c.flnc_band_beta[i], c.flnc_band_epeak[i])
           f.write("ampl={}, alpha={}, beta={}, epeak={}keV\n".format(c.flnc_band_ampl[i], c.flnc_band_alpha[i], c.flnc_band_beta[i], c.flnc_band_epeak[i]))
         elif model == "flnc_sbpl":
-          fun = lambda x: sbpl(x, c.flnc_sbpl_ampl[i], c.flnc_sbpl_indx1[i], c.flnc_sbpl_indx2[i], c.flnc_sbpl_brken[i], c.flnc_sbpl_brksc[i], c.flnc_sbpl_pivot[i])
+          fun = lambda x: sbpl(x, c.flnc_sbpl_ampl[i], c.flnc_sbpl_indx1[i], c.flnc_sbpl_indx2[i], c.flnc_sbpl_brken[i],
+                               c.flnc_sbpl_brksc[i], c.flnc_sbpl_pivot[i])
           f.write("ampl={}, index1={}, index2={}, eb={}keV, brksc={}keV, pivot={}keV\n".format(c.flnc_sbpl_ampl[i], c.flnc_sbpl_indx1[i], c.flnc_sbpl_indx2[i], c.flnc_sbpl_brken[i], c.flnc_sbpl_brksc[i], c.flnc_sbpl_pivot[i]))
         else:
           vprint("Could not find best fit model for {} (indicated {}). Aborting this GRB.".format(c.name[i], model), __verbose__, 0)
@@ -97,7 +98,8 @@ def gen_commands(args):
           f.write("DP {} {}\n".format(E, fun(E)))
         f.write("\nEN\n\n")
     for j in range(args.simulationsperevent):
-      dec_grb_world_frame, ra_grb_world_frame = random_GRB_dec_ra(args.position[0], args.position[1], args.position[2], args.position[3])  # deg
+      dec_grb_world_frame, ra_grb_world_frame = random_grb_dec_ra(args.position[0], args.position[1], args.position[2],
+                                                                  args.position[3])  # deg
       rand_time = np.around(np.random.rand()*315567360.0, 4) # Time of the GRB, taken randomly over a 10 years time window
       for k, s in enumerate(args.satellites):
         orbital_period = orbital_period_calc(s[3])
@@ -110,7 +112,7 @@ def gen_commands(args):
           save_log(f"{sim_directory}/simulation_logs.txt", c.name[i], j, k, "Ignored(off)", s[0], s[1], s[2], s[3], rand_time, dec_sat_world_frame, ra_sat_world_frame, dec_grb_world_frame, ra_grb_world_frame, None, None)
         else:
           theta, phi, thetap, phip, polstr = grb_decrapol_worldf2satf(dec_grb_world_frame, ra_grb_world_frame, dec_sat_world_frame, ra_sat_world_frame)[1:]
-          if theta >= horizonAngle(s[3]):#source below horizon
+          if theta >= horizon_angle(s[3]):#source below horizon
             save_log(f"{sim_directory}/simulation_logs.txt", c.name[i], j, k, "Ignored(horizon)", s[0], s[1], s[2], s[3], rand_time, dec_sat_world_frame, ra_sat_world_frame, dec_grb_world_frame, ra_grb_world_frame, theta, phi)
           else:
             # Add command to commands list

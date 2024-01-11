@@ -14,8 +14,18 @@ class AllSimData(list):
   """
   Class containing all the data for 1 GRB (or other source) for a full set of trafiles
   """
-
   def __init__(self, sim_prefix, source_ite, cat_data, n_sim, sat_info, param_sim_duration, bkg_data, mu_data, options):
+    """
+    :param sim_prefix: prefix used for simulations
+    :param source_ite: iteration of the source simulated
+    :param cat_data: GBM catalog used
+    :param n_sim: number of simulation done
+    :param sat_info: orbital information on the satellite
+    :param param_sim_duration: duration of the simulation (fixed of t90)
+    :param bkg_data: list containing the background data
+    :param mu_data: list containing the mu100 data
+    :param options: options for the analysis, defined in AllSourceData
+    """
     temp_list = []
     self.n_sim_det = 0
     if type(cat_data) is list:
@@ -34,8 +44,6 @@ class AllSimData(list):
       self.best_fit_mean_flux = float(getattr(cat_data, f"{getattr(cat_data, 'flnc_best_fitting_model')[source_ite].rstrip()}_phtflux")[source_ite])
       # Retrieving fluence of the source [photons/cm2]
       self.source_fluence = calc_fluence(cat_data, source_ite, options[0]) * self.source_duration
-      # print("pflx", self.best_fit_p_flux)
-      # print(self.best_fit_mean_flux, "  --  " , self.best_fit_mean_flux * self.source_duration, "  -  ", self.source_fluence)
     if param_sim_duration.isdigit():
       sim_duration = float(param_sim_duration)
     elif param_sim_duration == "t90":
@@ -98,7 +106,11 @@ class AllSimData(list):
 
   def set_probabilities(self, n_sat, snr_min=5, n_image_min=50):
     """
+    TODO probably needs some updating, get rid of these and just make a method to print it instead of wasting memory ?
     Calculates detection probability and probability of having a correct compton image
+    :param n_sat: number of satellites
+    :param snr_min: minimum snr to consider a detection
+    :param n_image_min: minimum number of compton event required to reconstruct a compton image
     """
     temp_single_proba_detec = np.zeros(n_sat)
     temp_compton_proba_detec = np.zeros(n_sat)

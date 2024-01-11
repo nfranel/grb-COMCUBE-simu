@@ -1,14 +1,20 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib as mpl
-from funcmod import grb_decra_worldf2satf, horizonAngle, eff_area_compton_func, eff_area_single_func, duty_calc
+from funcmod import grb_decra_worldf2satf, horizon_angle, eff_area_compton_func, eff_area_single_func, duty_calc
 
 def fov_const(parfile, num_val=500, dutymode=True, show=True, save=False):
     """
     Plots a map of the sensibility (s_eff) over the sky
       Polarization gives the sensibility to polarization
       Spectrometry gives the sensibility to spectrometry (capacity of detection)
+    :param parfile:
+    :param num_val:
+    :param dutymode:
+    :param show:
+    :param save:
     """
+    # TODO update this file with new functions
     sat_info = []
     inc_list = []
     with open(parfile) as f:
@@ -17,7 +23,7 @@ def fov_const(parfile, num_val=500, dutymode=True, show=True, save=False):
       if line.startswith("@satellite"):
         temp = [float(e) for e in line.split(" ")[1:]]
         if len(temp) == 3:  # satellite pointing
-          dat = [temp[0], temp[1], horizonAngle(temp[2])]
+          dat = [temp[0], temp[1], horizon_angle(temp[2])]
         else:  # satellite orbital parameters
           inc_list.append(temp[0])
           inclination, ohm, omega = map(np.deg2rad, temp[:3])
@@ -25,9 +31,8 @@ def fov_const(parfile, num_val=500, dutymode=True, show=True, save=False):
           phisat = np.arctan2(
             (np.cos(omega) * np.sin(ohm) + np.sin(omega) * np.cos(inclination) * np.cos(ohm)),
             (np.cos(omega) * np.cos(ohm) - np.sin(omega) * np.cos(inclination) * np.sin(ohm)))  # rad
-          dat = [np.rad2deg(thetasat), np.rad2deg(phisat), horizonAngle(temp[3])]
+          dat = [np.rad2deg(thetasat), np.rad2deg(phisat), horizon_angle(temp[3])]
         sat_info.append(dat)
-#    dat en deg / deg /deg
 
     path = parfile.split("polGBM")[0]
 

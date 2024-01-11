@@ -4,8 +4,8 @@ import matplotlib.colors as colors
 
 # Version 2, Created by Adrien Laviron, updated by Nathan Franel
 
-class Catalog:
 
+class Catalog:
   def __init__(self, data=None, sttype=None):
     """
     Instanciates a catalog
@@ -13,6 +13,7 @@ class Catalog:
     :param sttype: See Catalog.fill
     """
     # Fields added for some clarity (used for making the grb spectra
+    self.flnc_best_fitting_model = None
     self.flnc_plaw_ampl = None
     self.flnc_plaw_index = None
     self.flnc_plaw_pivot = None
@@ -57,7 +58,7 @@ class Catalog:
       if self.sttype[i] == "t":
         self.sttype[i] = "\t"
       if i % 2 == 0:
-        if type(self.sttype[i]) == str and self.sttype[i].startswith('['):
+        if type(self.sttype[i]) is str and self.sttype[i].startswith('['):
           self.sttype[i] = self.sttype[i][1:-1].split(',')
         else:
           self.sttype[i] = int(self.sttype[i])
@@ -91,18 +92,23 @@ class Catalog:
     """
     Fills a Catalog with data
     :param data: string, data file name
-    :param sttype: iterable of len 5: first header event (int), event separator (str), first event (int), item separator (str), last event (int) OR list of the sources wanted (list)
+    :param sttype: iterable of len 5:
+      first header event (int)
+      event separator (str)
+      first event (int)
+      item separator (str)
+      last event (int) OR list of the sources wanted (list)
     """
     self.data = data
     self.sttype = sttype
     self.formatsttype()
     with open(data) as f:
       d = f.read().split(sttype[1])
-    if type(sttype[4]) == int:
+    if type(sttype[4]) is int:
       events = d[sttype[2]:sttype[4]]
       if events[-1] == '':
         events = events[:-1]
-    elif type(sttype[4]) == list:
+    elif type(sttype[4]) is list:
       events = d[sttype[2]:]
       if events[-1] == '':
         events = events[:-1]
@@ -134,11 +140,12 @@ class Catalog:
   def grb_map_plot(self, mode="no_cm"):
     """
     Display the catalog GRBs position in the sky
+    :param mode: no_cm or t90, use t90 to give a color to the pointsbased on the GRB duration
     """
     # Extracting dec and ra from catalog and transforms decimal degrees into degrees into the right frame
-    thetap = [np.sum(np.array(dec.split(" ")).astype(np.float) / [1, 60, 3600]) if len(dec.split("+")) == 2 else np.sum(np.array(dec.split(" ")).astype(np.float) / [1, -60, -3600]) for dec in self.dec]
+    thetap = [np.sum(np.array(dec.split(" ")).astype(float) / [1, 60, 3600]) if len(dec.split("+")) == 2 else np.sum(np.array(dec.split(" ")).astype(float) / [1, -60, -3600]) for dec in self.dec]
     thetap = np.deg2rad(np.array(thetap))
-    phip = [np.sum(np.array(ra.split(" ")).astype(np.float) / [1, 60, 3600]) if len(ra.split("+")) == 2 else np.sum(np.array(ra.split(" ")).astype(np.float) / [1, -60, -3600]) for ra in self.ra]
+    phip = [np.sum(np.array(ra.split(" ")).astype(float) / [1, 60, 3600]) if len(ra.split("+")) == 2 else np.sum(np.array(ra.split(" ")).astype(float) / [1, -60, -3600]) for ra in self.ra]
     phip = np.mod(np.deg2rad(np.array(phip)) + np.pi, 2 * np.pi) - np.pi
 
     plt.subplot(111, projection="aitoff")
@@ -159,8 +166,9 @@ class Catalog:
     """
     Displays the spectral information of the GRBs including the proportion of different best fit models and the
     corresponding parameters
+    :param nbins: number of bins for the histograms of spectra parameters
     """
-    ## Containers for the different model parameters
+    # Containers for the different model parameters
     # Powerlaw model
     plaw_ampl = []
     plaw_index = []
@@ -192,7 +200,6 @@ class Catalog:
         plaw_index.append(self.flnc_plaw_index[ite])
         plaw_pivot.append(self.flnc_plaw_pivot[ite])
 
-
       elif model == "flnc_comp":
         self.tofloat('flnc_comp_ampl')
         self.tofloat('flnc_comp_index')
@@ -203,7 +210,6 @@ class Catalog:
         comp_epeak.append(self.flnc_comp_epeak[ite])
         comp_pivot.append(self.flnc_comp_pivot[ite])
 
-
       elif model == "flnc_band":
         self.tofloat('flnc_band_ampl')
         self.tofloat('flnc_band_alpha')
@@ -213,7 +219,6 @@ class Catalog:
         band_alpha.append(self.flnc_band_alpha[ite])
         band_beta.append(self.flnc_band_beta[ite])
         band_epeak.append(self.flnc_band_epeak[ite])
-
 
       elif model == "flnc_sbpl":
         self.tofloat('flnc_sbpl_ampl')

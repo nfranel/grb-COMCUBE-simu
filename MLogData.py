@@ -6,7 +6,6 @@
 # Package imports
 import numpy as np
 # Developped modules imports
-from catalog import Catalog
 
 
 ############################################################
@@ -16,8 +15,10 @@ class LogData:
   """
   Class containing the data from a log file
   """
-
   def __init__(self, sim_directory):
+    """
+    :param sim_directory: Directory where the simulation data is saved
+    """
     self.sim_directory = sim_directory
     self.keys_description = None
     self.keys = None
@@ -93,13 +94,3 @@ class LogData:
     print(f"       With {horizon} ignored because the source is bellow the atmosphere")
     print(f"       With {off} ignored because the satellite is switch off")
     return simulated, horizon, off
-
-
-# lgrb_cat = "./GBM/longGBM.txt"
-# sgrb_cat = "./GBM/shortGBM.txt"
-#
-# cat = Catalog(lgrb_cat, [4, '\n', 5, '|', 2000])
-# cat.spectral_information()
-#
-# log = LogData("/pdisk/ESA/test--400km--0-0-0--27sat")
-# log.detection_statistics()

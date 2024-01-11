@@ -8,7 +8,6 @@ import matplotlib.pyplot as plt
 import matplotlib as mpl
 # Developped modules imports
 from funcmod import *
-from MFit import Fit
 
 # Ploting adjustments
 mpl.use('Qt5Agg')
@@ -19,11 +18,22 @@ class GRBFullData:
   """
   Class containing the data for 1 GRB, for 1 sim, and 1 satellite
   """
-
   def __init__(self, data_list, sat_info, burst_time, sim_duration, num_sat, bkg_data, mu_data, ergcut, armcut,
                geometry, save_time, corr, polarigram_bins):
     """
-    -data_list : 1 polarized data file from which extract the data
+    :param data_list: list of files to read (should be containing only 1)
+    :param sat_info: orbital information about the satellite detecting the source
+    :param burst_time: time at which the detection was made
+    :param sim_duration: duration of the simulation
+    :param num_sat: number of the satellite detecting the source
+    :param bkg_data: list of background data to affect the correct count rates to this simulation
+    :param mu_data: list of mu100 data to affect the correct mu100 and effective area to this simulation
+    :param ergcut: energy cut to use
+    :param armcut: ARM (Angular Resolution Measurement) cut to use
+    :param geometry: geometry used for the simulation
+    :param save_time: True if the time of interaction should be saved
+    :param corr: True if the polarigrams should be corrected (useful when adding them together for the constellation)
+    :param polarigram_bins: bins for the polarigram
     """
     ##############################################################
     #                   Attributes declaration                   #
@@ -163,11 +173,10 @@ class GRBFullData:
       self.single_cr = self.single / sim_duration
       self.compton = len(self.compton_ener)
       self.compton_cr = self.compton / sim_duration
-      # Sauvegarder les positions dans un fichier
-      # Appeler le programme avec le nom du fichier et la géométrie
-      # Récupérer la donnée, la traiter et l'enregistrer dans les attributs
-      # Pour le compteur le plus efficace est de faire le compteur directement lors de la lecture par geomega
-      # et d'enregistrer le résultat obtenu dans le fichier à la fin ou au début, ensuite on somme les single et compton
+
+      ##############################################################
+      #     Finding the detector of interaction for each event     #
+      ##############################################################
       self.compton_first_detector, self.compton_sec_detector, self.single_detector = find_detector(compton_firstpos, compton_secpos, single_pos, geometry)
       hits = np.array([])
       if self.compton_first_detector > 0:
@@ -191,34 +200,6 @@ class GRBFullData:
       self.total_hits = self.calor + self.dsssd + self.side
       # TODO testing
 
-  # def fit(self, message, fit_bounds=None):
-  #   """
-  #   Fits first a modulation function and then a constant function to the polarigram
-  #   :param message: message to be printed when a fit is not done properly to indicate which simulation has the issue
-  #   :param fit_bounds: Bounds for the fit
-  #   """
-  #   var_x = .5 * (self.bins[1:] + self.bins[:-1])
-  #   binw = self.bins[1:] - self.bins[:-1]
-  #   histo = np.histogram(self.pol, self.bins)[0] / binw
-  #   self.fits = []
-  #   if self.unpol is not None:
-  #     unpol_hist = np.histogram(self.unpol, self.bins)[0] / binw
-  #     if 0. in unpol_hist:
-  #       print(f"Unpolarized data do not allow a fit - {message} : a bin is empty")
-  #       self.fits.append(None)
-  #     else:
-  #       self.polarigram_error = err_calculation(np.histogram(self.pol, self.bins)[0], np.histogram(self.unpol, self.bins)[0], binw)
-  #       if 0. in self.polarigram_error:
-  #         print(f"Polarized data do not allow a fit - {message} : a bin is empty leading to uncorrect fit")
-  #         self.fits.append(None)
-  #       else:
-  #         histo = histo / unpol_hist * np.mean(unpol_hist)
-  #         self.fits.append(Fit(modulation_func, var_x, histo, yerr=self.polarigram_error, bounds=fit_bounds, comment="modulation"))
-  #         self.fits.append(Fit(lambda x, a: a * x / x, var_x, histo, yerr=self.polarigram_error, comment="constant"))
-  #   else:
-  #     self.fits.append(Fit(modulation_func, var_x, histo, bounds=fit_bounds, comment="modulation"))
-  #     self.fits.append(Fit(lambda x, a: a * x / x, var_x, histo, comment="constant"))
-
   def cor(self):
     """
     Calculates the angle to correct for the source sky position and cosima's "RelativeY" polarization definition
@@ -235,8 +216,6 @@ class GRBFullData:
     :param width: float, width of the polarigram in deg, default=360, SHOULD BE 360
     """
     self.pol = self.pol % width + self.bins[0]
-    # if self.unpol is not None:
-    #   self.unpol = self.unpol % width + self.bins[0]
 
   def corr(self):
     """
@@ -247,8 +226,6 @@ class GRBFullData:
     else:
       cor = self.cor()
       self.pol += cor
-      # if self.unpol is not None:
-      #   self.unpol += cor
       self.behave()
       self.azim_angle_corrected = True
 
@@ -259,54 +236,10 @@ class GRBFullData:
     if self.azim_angle_corrected:
       cor = self.cor()
       self.pol -= cor
-      # if self.unpol is not None:
-      #   self.unpol -= cor
       self.behave()
       self.azim_angle_corrected = False
     else:
       print(" Impossible to undo the correction of the azimuthal compton scattering angles : no correction were made")
-
-  # def clf(self):
-  #   """
-  #   Clears the fit list
-  #   """
-  #   self.fits = []
-
-  # def show(self, disp=True, plot=True, plotfit=None, show=True, ret=True):
-  #   """
-  #   Plots and show a polarigram, and also does all the statistical analysis (indev)
-  #   :param disp:      bool,        whether or not to print fit results,                   default=True
-  #   :param plot:      bool,        whether or not to plot the polarigram and fit results, default=True
-  #   :param plotfit:   list of int, which fit(s) to plot (None is none),                   default=[-2]
-  #   :param show:      bool,        whether or not to show fit results,                    default=True
-  #   :param ret:       bool,        whether or not to return the result,                   default=True
-  #   :returns:         couple of np.ndarray or None
-  #   """
-  #   if self.fits is None:
-  #     print("There is no fit to show yet")
-  #   else:
-  #     if plotfit is None:
-  #       plotfit = [-2]
-  #     binw = self.bins[1:] - self.bins[:-1]
-  #     ylabel = "Number of counts (per degree)"
-  #     if self.unpol is not None:
-  #       ylabel = "Corrected number of count"
-  #     if plot:
-  #       plt.step(self.fits[plotfit[0]].x, self.fits[plotfit[0]].y, "g", where="mid")
-  #       plt.errorbar(self.fits[plotfit[0]].x, self.fits[plotfit[0]].y, yerr=self.polarigram_error, fmt='none')
-  #       if plotfit is not None:
-  #         xfit = np.arange(self.bins[0] - binw[0], self.bins[-1] + binw[-1], 1)
-  #         for i in plotfit:
-  #           if disp:
-  #             self.fits[i].disp()
-  #           plt.plot(xfit, self.fits[i].f(xfit, *self.fits[i].popt), "r--")
-  #       plt.xlabel("Azimuthal scatter angle (degree)")
-  #       plt.ylabel(ylabel)
-  #       plt.xlim(-180, 180)
-  #       if show:
-  #         plt.show()
-  #     if ret:
-  #       return self.fits[plotfit[0]].y
 
   @staticmethod
   def get_keys():
@@ -345,8 +278,10 @@ class GRBFullData:
 
   def analyze(self, source_duration, source_fluence):
     """
-    Proceeds to the data analysis to get mu100, pa, compton cr, mdp and snr
-    mdp has physical significance between 0 and 1
+    Proceeds to the data analysis to get s_eff, mdp, snr
+      mdp has physical significance between 0 and 1
+    :param source_duration: duration of the source
+    :param source_fluence: fluence of the source [photons/cm2]
     """
     if source_fluence is None:
       self.s_eff_compton = None
@@ -355,10 +290,10 @@ class GRBFullData:
       self.s_eff_compton = self.compton_cr * source_duration / source_fluence
       self.s_eff_single = self.single_cr * source_duration / source_fluence
 
-    self.mdp = MDP(self.compton_cr * source_duration, self.compton_b_rate * source_duration, self.mu100_ref)
+    self.mdp = calc_mdp(self.compton_cr * source_duration, self.compton_b_rate * source_duration, self.mu100_ref)
     # Calculation of SNR with 1sec of integration
-    snr_compton_val = SNR(self.compton_cr, self.compton_b_rate)
-    snr_single_t90_val = SNR(self.single_cr, self.single_b_rate)
+    snr_compton_val = calc_snr(self.compton_cr, self.compton_b_rate)
+    snr_single_t90_val = calc_snr(self.single_cr, self.single_b_rate)
     # Saving the snr for different integration times
     if snr_compton_val < 0:
       self.snr_compton_t90 = 0

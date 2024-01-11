@@ -5,30 +5,36 @@ from time import time
 import os
 import subprocess
 
-#UTILISER ASTROPY;constant ?
-m_elec = 9.1094e-31 #kg
-c_light = 2.99792458e+8 #m/s
-charge_elem = 1.6021e-19 #C
-m_earth = 5.9722e24 #kg
-R_earth = 6371 #km
-G_const = 6.67430e-11 #m3/kg/s2
-earth_rot_time = 86164 + 98e-3 + 903e-6 + 697e-9 #s
+# TODO USE ASTROPY CONSTANTS
+m_elec = 9.1094e-31  # kg
+c_light = 2.99792458e+8  # m/s
+charge_elem = 1.6021e-19  # C
+m_earth = 5.9722e24  # kg
+R_earth = 6371  # km
+G_const = 6.67430e-11  # m3/kg/s2
+earth_rot_time = 86164 + 98e-3 + 903e-6 + 697e-9  # s
+
 
 def printv(message, verbose):
+  """
+  Print message is verbose is True
+  :param message: message to print
+  :param verbose: whether or not the message is displayed (True or False)
+  """
   if verbose:
     print(message)
 
 
-def horizonAngle(h, EarthRadius=R_earth, AtmosphereHeight=40):
+def horizon_angle(h, earthradius=R_earth, atmosphereheight=40):
   """
   Calculates the angle between the zenith and the horizon for a LEO satellite
   :param h: altitude of the satellite (km)
-  :param EarthRadius: radius of the Earth (km), default=6371
-  :param AtmosphereHeight: height of the atmosphere (km), default=40
+  :param earthradius: radius of the Earth (km), default=6371
+  :param atmosphereheight: height of the atmosphere (km), default=40
   :returns: horizon angle (deg)
   """
-  if h>=AtmosphereHeight:
-    return 90 + np.rad2deg(np.arccos((EarthRadius + AtmosphereHeight) / (EarthRadius + h)))  # deg
+  if h >= atmosphereheight:
+    return 90 + np.rad2deg(np.arccos((earthradius + atmosphereheight) / (earthradius + h)))  # deg
   else:
     return 90
 
@@ -41,51 +47,56 @@ def orbital_period_calc(alt):
   return np.sqrt(4 * np.pi**2 / (G_const * m_earth) * ((R_earth + alt) * 1000)**3)
 
 
-def earth_rotation_offset(time):
+def earth_rotation_offset(time_val):
   """
   Calculates the offset in right ascension due to the earth rotation.
   The earth turns from W to E, so if the satellite orbits from W to E this correction has to be deducted from the
   calculated RA. If not it has to be added.
-  :param time : time at which the rotational offset is calculated in seconds
+  :param time_val : time at which the rotational offset is calculated in seconds
   returns a correction angle in deg
   """
-  return np.mod(360 * time / earth_rot_time, 360)
+  return np.mod(360 * time_val / earth_rot_time, 360)
 
 
-def treatCE(ener):
+def treat_ce(event_ener):
   """
   Function to sum the 2 energy deposits given by trafiles for a compton event
+  :param event_ener: list of information about the energy of an event given by a trafile
   """
-  return np.array([float(ener[0]), float(ener[4])])
+  return np.array([float(event_ener[0]), float(event_ener[4])])
 
 
-def treatPE(ener):
+def treat_pe(event_ener):
   """
   Function to sum the 2 energy deposits given by trafiles for a compton event
+  :param event_ener: list of information about the energy of an event given by a trafile
   """
-  return float(ener)
+  return float(event_ener)
 
 
 def calculate_polar_angle(ener_sec, ener_tot):
   """
-  Function to calculate the polar angle using the energy deposits
+  Function to calculate the polar angle using the energy deposits of a compton event
+    (Most of the time first interaction and final absorption)
   This function is made so that the cos of the angle is >=-1 as it's not possible to take the arccos of a number <-1.
   By construction of cos_value, the value cannot exceed 1.
+  :param ener_sec: Energy of second deposit
+  :param ener_tot: Total energy of deposits
+  # TODO Find the unit for these energies, probably keV
   """
   cos_value = 1 - m_elec * c_light ** 2 / charge_elem / 1000 * (1 / ener_sec - 1 / ener_tot)
   cos_value_filtered = np.where(cos_value < -1, -1, np.where(cos_value > 1, 1, cos_value))
   return np.rad2deg(np.arccos(cos_value_filtered))
 
 
-def inwindow(E, ergcut):
+def inwindow(energy, ergcut):
   """
-  Checks whether E is in the energy window defined by ergcut
-  :param E: energy
-  :param ergcut: (Emin, Emax)
+  Checks whether an energy is in the energy window defined by ergcut
+  :param energy: energy to test
+  :param ergcut: energy window (Emin, Emax)
   :returns: bool
   """
-  # print(E)
-  return E >= ergcut[0] and E <= ergcut[1]
+  return ergcut[0] <= energy <= ergcut[1]
 
 
 def fname2decra(fname):
@@ -93,10 +104,9 @@ def fname2decra(fname):
   Infers dec and RA from file name with the shape :
     {prefix}_{sourcename}_sat{num_sat}_{num_sim}_{dec_world_frame}_{ra_world_frame}.inc{1/2}.id1.extracted.tra
   :param fname: *.tra or *.tra.gz filename
-  :param polmark: str that identifies polarized files, default='inc1'
-  :returns: dec, RA
+  :returns: dec, RA, sourcename, number of the sim, number of the sat
   """
-  data = fname.split("/")[-1] # to get rid of the first part of the prefix (and the potential "_" in it)
+  data = fname.split("/")[-1]  # to get rid of the first part of the prefix (and the potential "_" in it)
   data = data.split("_")
   return float(data[4]), float(".".join(data[5].split(".")[:2])), data[1], int(data[3]), int(data[2].split("sat")[1])
 
@@ -106,8 +116,7 @@ def fname2decratime(fname):
   Infers dec and RA from file name with the shape :
     {prefix}_{sourcename}_sat{num_sat}_{num_sim}_{dec_world_frame}_{ra_world_frame}_{burst_time}.inc{1/2}.id1.extracted.tra
   :param fname: *.tra or *.tra.gz filename
-  :param polmark: str that identifies polarized files, default='inc1'
-  :returns: dec, RA
+  :returns: dec, RA, time at which the burst happened, sourcename, number of the sim, number of the sat
   """
   data = fname.split("/")[-1] # to get rid of the first part of the prefix (and the potential "_" in it)
   data = data.split("_")
@@ -116,8 +125,24 @@ def fname2decratime(fname):
 
 def save_log(filename, name, num_sim, num_sat, status, inc, ohm, omega, alt, random_time, sat_dec_wf, sat_ra_wf, grb_dec_wf, grb_ra_wf, grb_dec_st, grb_ra_sf):
   """
-  Saves all the simulation informations into a log file.
+  Saves all the simulation information into a log file.
   May be used to make sure everything works or to make some plots
+  :param filename: name of the log file to store information
+  :param name: name of the source
+  :param num_sim: number of the sime
+  :param num_sat: number of the sat
+  :param status: status of the simulation - Simulated - Ignored(horizon) - Ignored(off)
+  :param inc: inclination of the satellite's orbite
+  :param ohm: ra of the ascending node of the satellite's orbite
+  :param omega: argument of periapsis of the satellite's orbite
+  :param alt: altitude of the satellite's orbite
+  :param random_time: random time at which the source is simulated
+  :param sat_dec_wf: satellite's dec in world frame
+  :param sat_ra_wf: satellite's ra in world frame
+  :param grb_dec_wf: source's dec in world frame
+  :param grb_ra_wf: source's ra in world frame
+  :param grb_dec_st: source's dec in sat frame
+  :param grb_ra_sf: source's ra in sat frame
   """
   with open(filename, "a") as f:
     f.write(f"{name} | {num_sim} | {num_sat} | {status} | {inc} | {ohm} | {omega} | {alt} | {random_time} | {sat_dec_wf} | {sat_ra_wf} | {grb_dec_wf} | {grb_ra_wf} | {grb_dec_st} | {grb_ra_sf}\n")
@@ -125,9 +150,11 @@ def save_log(filename, name, num_sim, num_sat, status, inc, ohm, omega, alt, ran
 
 def read_grbpar(parfile):
   """
-
+  reads a source's parameter file to get useful information for the analysis
+  :param parfile: path/name of the parameter file
   """
   sat_info = []
+  geometry, revan_file, mimrec_file, spectra_path, cat_file, source_file, sim_prefix, sttype, n_sim, simtime, position_allowed_sim = None, None, None, None, None, None, None, None, None, None, None
   with open(parfile) as f:
     lines = f.read().split("\n")
   for line in lines:
@@ -160,9 +187,13 @@ def read_grbpar(parfile):
 
 
 def read_bkgpar(parfile):
+  """
+  reads a background parameter file to get useful information for the analysis
+  :param parfile: path/name of the parameter file
+  """
+  geom, revanf, mimrecf, source_base, spectra, simtime, latitudes, altitudes = None, None, None, None, None, None, None, None
   with open(parfile, "r") as f:
     lines = f.read().split("\n")
-  geom, revanf, mimrecf, source_base, spectra, simtime, latitudes, altitudes = None, None, None, None, None, None, None, None
   for line in lines:
     if line.startswith("@geometry"):
       geom = line.split(" ")[1]
@@ -187,9 +218,13 @@ def read_bkgpar(parfile):
 
 
 def read_mupar(parfile):
+  """
+  reads a mu100 parameter file to get useful information for the analysis
+  :param parfile: path/name of the parameter file
+  """
+  geom, revanf, mimrecf, source_base, spectra, bandparam, poltime, unpoltime, decs, ras = None, None, None, None, None, None, None, None, None, None
   with open(parfile, "r") as f:
     lines = f.read().split("\n")
-  geom, revanf, mimrecf, source_base, spectra, bandparam, poltime, unpoltime, decs, ras = None, None, None, None, None, None, None, None, None, None
   for line in lines:
     if line.startswith("@geometry"):
       geom = line.split(" ")[1]
@@ -211,19 +246,16 @@ def read_mupar(parfile):
       unpoltime = float(line.split(" ")[1])
     elif line.startswith("@decposition"):
       decs = list(map(int, line.split(" ")[1:]))
-      # decs = np.linspace(decs[0], decs[1], decs[2])
     elif line.startswith("@raposition"):
       ras = list(map(int, line.split(" ")[1:]))
-      # ras = np.linspace(ras[0], ras[1], ras[2])
   return geom, revanf, mimrecf, source_base, spectra, bandparam, poltime, unpoltime, decs, ras
 
 
 def readfile(fname):
   """
-  Reads a .tra or .tra.gz file and returns the extracted information if the event is in the energy range
+  Reads a .tra or .tra.gz file and returns the information for an event, delimited by "SE" in the .tra file
   :param fname: str, name of .tra file
-  :param ergcut: couple (Emin, Emax) or None, energy range in which events have to be to be processed, default=None(=no selection)
-  :returns:     list of 3-uple of float
+  :returns: information on the event
   """
   if fname.endswith(".tra"):
     with open(fname) as f:
@@ -238,16 +270,16 @@ def readfile(fname):
 
 def readevt(event, ergcut=None):
   """
-  Reads an event and returns the information about this event if it's in the energy range
+  Reads the information of an event given by readfile and returns this information in a list if it's in the energy range
   :param event: str, event in a trafile
   :param ergcut: couple (Emin, Emax) or None, energy range in which events have to be to be processed, default=None(=no selection)
-  :returns:     list of 3-uple of float
+  :returns:
+    list of 3-uple of float if this is a single event (energy, time, position)
+    list of 5-uple of float if this is a compton event (first deposit, total energy, time, 1st position, 2nd position)
   """
   lines = event.split("\n")[1:-1]
-  # print(lines)
+  # Treating compton events
   if lines[0] == "ET CO":
-    # print("Extracting")
-    # if lines[3] == "SQ 2":
     second_ener = float(lines[7].split(" ")[1])
     total_ener = second_ener + float(lines[7].split(" ")[5])
     if ergcut is None:
@@ -263,8 +295,7 @@ def readevt(event, ergcut=None):
         return [second_ener, total_ener, time_interaction, first_pos, second_pos]
       else:
         return [None]
-    # else:
-    #   return [None]
+  # Treating single events
   elif lines[0] == "ET PH":
     total_ener = float(lines[3].split(" ")[1])
     if ergcut is None:
@@ -282,47 +313,57 @@ def readevt(event, ergcut=None):
     raise TypeError(f"An event has an unidentified type")
 
 
-def angle(c, theta, phi, source_name, num_sim, num_sat):
+def angle(scatter_vector, grb_dec_sf, grb_ra_sf, source_name, num_sim, num_sat):
   """
-  Calculate the azimuthal Compton angle : Transforms the compton scattered gamma-ray vector (initialy in sat frame) into
-  a new referential corresponding to the direction of the source. In that frame c0 and c1 are the coordinates of
-  the vector in the plan orthogonal to the source direction. The x coordinate is the vector in the plane created by
-  the zenith (z axis) of the instrument and the source direction and y is in the plane of the detector (zcoord=0)
-  (so x is in the plane containing the zworld, source direction, and the axis yprime of the detector)
+  Calculate the azimuthal and polar Compton angles : Transforms the compton scattered gamma-ray vector
+  (initialy in sat frame) into a new referential corresponding to the direction of the source.
+    From [xsat, ysat, zsat] to [xsource, ysource, zsource]
+    In that new frame scatter_vector[0] and scatter_vector[1] are the coordinates of the vector in the plan orthogonal
+    to the source direction.
+  xsource is the vector in the plane created by the zenith (zsat axis) of the instrument and the source direction zsource
+  ysource is constructed by taking it orthogonal to xsource and zsource. This also makes it in the plane of the detector.
+    (also xsource is in the plane containing the zworld, the source direction, and the axis ysat of the detector)
   The way the azimuthal scattering angle is calculated imply that the polarization vector is colinear with x
-  Calculates the polar Compton angle
-  :param c:     3-uple, Compton scattered gamma-ray vector
-  :param theta: float,  source polar angle in sky in deg
-  :param phi:   float,  source azimuthal angle in sky in deg
-  :returns:     float,  angle in deg
+  :param scatter_vector:  array of 3-uple, Compton scattered gamma-ray vector
+  :param grb_dec_sf:      float,  source polar angle seen by satellite [deg]
+  :param grb_ra_sf:       float,  source azimuthal angle seen by satellite [deg]
+  :param source_name:     name of the source
+  :param num_sim:         number of the simulation
+  :param num_sat:         number of the satellite
+  :returns:     2 array, polar and azimuthal compton scattering angles [deg]
   """
-  if len(c) == 0:
+  if len(scatter_vector) == 0:
     print(f"There is no compton event detected for source {source_name}, simulation {num_sim} and satellite {num_sat}")
     return np.array([]), np.array([])
-  theta, phi = np.deg2rad(theta), np.deg2rad(phi)
+  grb_dec_sf, grb_ra_sf = np.deg2rad(grb_dec_sf), np.deg2rad(grb_ra_sf)
+
   # Changing the direction of the vector to be in adequation with MEGAlib's functionning
+  # Megalib changes the direction of the vector in its source code so the same is did here for some coherence
   MEGAlib_direction = True
   if MEGAlib_direction:
-    c = -c
-  # Pluging in some MEGAlib magic
-  c = c / np.reshape(np.linalg.norm(c, axis=1), (len(c), 1))
+    scatter_vector = -scatter_vector
+
+  # Pluging in some MEGAlib magic :
+  # Making the norm of the vector 1 and reshaping it so that numpy operations are done properly
+  scatter_vector = scatter_vector / np.reshape(np.linalg.norm(scatter_vector, axis=1), (len(scatter_vector), 1))
   # Rotation matrix around Z with an angle -phi
-  mat1 = np.array([[np.cos(-phi), - np.sin(-phi), 0],
-                   [np.sin(-phi), np.cos(-phi), 0],
+  mat1 = np.array([[np.cos(-grb_ra_sf), - np.sin(-grb_ra_sf), 0],
+                   [np.sin(-grb_ra_sf), np.cos(-grb_ra_sf), 0],
                    [0, 0, 1]])
   # Rotation matrix around Y with an angle -theta
-  mat2 = np.array([[np.cos(-theta), 0, np.sin(-theta)],
+  mat2 = np.array([[np.cos(-grb_dec_sf), 0, np.sin(-grb_dec_sf)],
                    [0, 1, 0],
-                   [- np.sin(-theta), 0, np.cos(-theta)]])
-  # using matrix products to combine the matrix instead of doing it vector by vector
-  c = np.matmul(c, np.transpose(mat1))
-  c = np.matmul(c, np.transpose(mat2))
+                   [- np.sin(-grb_dec_sf), 0, np.cos(-grb_dec_sf)]])
+  # Using matrix products to combine the matrix instead of doing it vector by vector
+  # Rotations to put the scatter_vector into a frame where z in the source direction and x the polarization vector direction.
+  scatter_vector = np.matmul(scatter_vector, np.transpose(mat1))
+  scatter_vector = np.matmul(scatter_vector, np.transpose(mat2))
   if MEGAlib_direction:
-    polar = 180 - np.rad2deg(np.arccos(c[:, 2]))
+    polar = 180 - np.rad2deg(np.arccos(scatter_vector[:, 2]))
   else:
-    polar = np.rad2deg(np.arccos(c[:, 2]))
+    polar = np.rad2deg(np.arccos(scatter_vector[:, 2]))
   # Figure out a good arctan
-  azim = np.rad2deg(np.arctan2(c[:, 1], c[:, 0]))
+  azim = np.rad2deg(np.arctan2(scatter_vector[:, 1], scatter_vector[:, 0]))
   return azim, polar
 
 
@@ -340,7 +381,12 @@ def modulation_func(x, pa, mu, S):
 
 def set_bins(bin_mode, data=None):
   """
-
+  Create bins for polarigrams
+  :param bin_mode: How the bins are created
+    fixed : 21 equal bins between -180 and 180
+    limited : Each bin has at list 9 events TODO
+    optimized : bins are created so that the fit is optimized TODO + find how to have this optimization
+  :returns:   array with the bins' values
   """
   bins = ""
   if bin_mode == "fixed":
@@ -355,31 +401,34 @@ def set_bins(bin_mode, data=None):
 def err_calculation(pol, unpol, binwidth):
   """
   Calculation of the errorbar of the corrected polarigram according to megalib's way
-  :param pol:      list,             bins for the polarized polarigram
-  :param unpol:    list,             bins for the unpolarized polarigram
-  :param binwidth: list,             bin widths
+  :param pol:      list,   bins for the polarized polarigram
+  :param unpol:    list,   bins for the unpolarized polarigram
+  :param binwidth: list,   bin widths
   """
   nbins = len(pol)
   mean_unpol = np.mean(unpol)
 
   uncertainty = (pol/unpol**2*mean_unpol*np.sqrt(unpol))**2 + (mean_unpol/unpol*np.sqrt(pol))**2
-  # print(uncertainty)
   for ite_j in range(nbins):
     uncertainty += (pol / unpol / nbins * np.sqrt(unpol[ite_j])) ** 2
-    # print(uncertainty)
   error = np.sqrt(uncertainty)
   return error/binwidth
 
 
 def rescale_cr_to_GBM_pf(cr, GBM_mean_flux, GBM_peak_flux):
   """
-
+  Rescales the count rate for a simulation made using a mean flux for the source to obtain an estimation of the count
+  rate that should be obtained during the peak of the burst
+  :param cr: count rate for a simulation of a GRB with a mean flux
+  :param GBM_mean_flux: mean flux given by GBM for a given GRB
+  :param GBM_peak_flux: peak flux given by GBM for this same GRB
+  :returns: float, count rate at peak
   """
   flux_ratio = GBM_peak_flux / GBM_mean_flux
   return cr * flux_ratio
 
 
-def SNR(S, B, C=0):
+def calc_snr(S, B, C=0):
   """
   Calculates the signal to noise ratio of a GRB in a time bin
   :param S: number of counts in the source (background not included)
@@ -390,7 +439,7 @@ def SNR(S, B, C=0):
   return S / np.sqrt(B + C)
 
 
-def MDP(S, B, mu100, nsigma=4.29):
+def calc_mdp(S, B, mu100, nsigma=4.29):
   """
   Calculates the minimum detectable polarization for a burst
   :param S: number of expected counts from the burst
@@ -403,9 +452,14 @@ def MDP(S, B, mu100, nsigma=4.29):
 
 def closest_bkg_rate(sat_dec, sat_ra, bkg_list):
   """
-  Find the closest bkg file for a satellite (in terms of latitude)
+  Find the closest bkg file for a satellite (in terms of latitude, may be updated for longitude too)
   Returns the count rate of this bkg file
-  Warining : for now, only takes into account the dec of backgrounds, can be updated but the way the error is calculated may not be optimal as the surface of the sphere (polar coordinates) is not a plan.
+  Warning : for now, only takes into account the dec of backgrounds, can be updated but the way the error is calculated
+  may not be optimal as the surface of the sphere (polar coordinates) is not a plan.
+  :param sat_dec: declination of the satellite [deg]
+  :param sat_ra: right ascension of the satellite [deg]
+  :param bkg_list: list of all the background files
+  :returns: compton and single event count rates of the closest background file
   """
   if len(bkg_list) == 0:
     return 0.000001
@@ -420,12 +474,17 @@ def closest_bkg_rate(sat_dec, sat_ra, bkg_list):
 
 def affect_bkg(info_sat, burst_time, bkg_list):
   """
-
+  Uses orbital parameters of a satellite to obtain its dec and ra in world frame and to get the expected count rates
+  for compton and single events at this position
+  :param info_sat: information about the satellite orbit
+  :param burst_time: time at which the burst occured
+  :param bkg_list: list of the background files to extract the correct count rates
+  :returns  dec_sat_world_frame, ra_sat_world_frame, compton_cr, single_cr
   """
   orbital_period = orbital_period_calc(info_sat[3])
   earth_ra_offset = earth_rotation_offset(burst_time)
   true_anomaly = true_anomaly_calc(burst_time, orbital_period)
-  dec_sat_world_frame, ra_sat_world_frame = orbitalparam2decra(info_sat[0], info_sat[1], info_sat[2], nu=true_anomaly)  # deg
+  dec_sat_world_frame, ra_sat_world_frame = orbitalparam2decra(info_sat[0], info_sat[1], info_sat[2], nu=true_anomaly)
   ra_sat_world_frame -= earth_ra_offset
   count_rates = closest_bkg_rate(dec_sat_world_frame, ra_sat_world_frame, bkg_list)
   return dec_sat_world_frame, ra_sat_world_frame, count_rates[0], count_rates[1]
@@ -433,9 +492,13 @@ def affect_bkg(info_sat, burst_time, bkg_list):
 
 def closest_mufile(grb_dec_sf, grb_ra_sf, mu_list):
   """
-  Find the closest bkg file for a satellite (in terms of latitude)
-  Returns the count rate of this bkg file
-  Warining : for now, only takes into account the dec of backgrounds, can be updated but the way the error is calculated may not be optimal as the surface of the sphere (polar coordinates) is not a plan.
+  Find the mu100 file closest to a certain direction of detection
+  Warning : for now, only takes into account the dec of backgrounds, can be updated but the way the error is calculated
+  may not be optimal as the surface of the sphere (polar coordinates) is not a plan.
+  :param grb_dec_sf:  declination of the source in satellite frame [deg]
+  :param grb_ra_sf:   right ascension of the source in satellite frame [deg]
+  :param mu_list:     list of all the mu100 files
+  :returns:   mu100, mu100_err, s_eff_compton, s_eff_single
   """
   if len(mu_list) == 0:
     return 0.000001, 0.000001, 0.000001, 0.000001
@@ -447,11 +510,14 @@ def closest_mufile(grb_dec_sf, grb_ra_sf, mu_list):
     return mu_list[index].mu100, mu_list[index].mu100_err, mu_list[index].s_eff_compton, mu_list[index].s_eff_single
 
 
-def calc_fluence(catalog, index, ergCut):
+def calc_fluence(catalog, index, ergcut):
   """
-  Return the number of photons per cm² for a given energy range, averaged over the duration of the sim : ncount/cm²/s
+  Calculates the fluence per unit time of a given source using an energy cut and its spectrum
+  :param catalog: GBM catalog containing sources' information
+  :param index: index of the source in the catalog
+  :param ergcut: energy window over which the fluence is calculated
+  :returns: the number of photons per cm² for a given energy range, averaged over the duration of the sim : ncount/cm²/s
   """
-
   catalog.tofloat('flnc_spectrum_start')
   catalog.tofloat('flnc_spectrum_stop')
   catalog.tofloat('pflx_plaw_ampl')
@@ -491,34 +557,44 @@ def calc_fluence(catalog, index, ergCut):
 
   model = catalog.flnc_best_fitting_model[index].strip()
   if model == "pflx_plaw":
-    func = lambda x: plaw(x, catalog.pflx_plaw_ampl[index], catalog.pflx_plaw_index[index], catalog.pflx_plaw_pivot[index])
+    func = lambda x: plaw(x, catalog.pflx_plaw_ampl[index], catalog.pflx_plaw_index[index],
+                          catalog.pflx_plaw_pivot[index])
   elif model == "pflx_comp":
-    func = lambda x: comp(x, catalog.pflx_comp_ampl[index], catalog.pflx_comp_index[index], catalog.pflx_comp_epeak[index],
-                          catalog.pflx_comp_pivot[index])
+    func = lambda x: comp(x, catalog.pflx_comp_ampl[index], catalog.pflx_comp_index[index],
+                          catalog.pflx_comp_epeak[index], catalog.pflx_comp_pivot[index])
   elif model == "pflx_band":
-    func = lambda x: band(x, catalog.pflx_band_ampl[index], catalog.pflx_band_alpha[index], catalog.pflx_band_beta[index],
-                          catalog.pflx_band_epeak[index])
+    func = lambda x: band(x, catalog.pflx_band_ampl[index], catalog.pflx_band_alpha[index],
+                          catalog.pflx_band_beta[index], catalog.pflx_band_epeak[index])
   elif model == "pflx_sbpl":
-    func = lambda x: sbpl(x, catalog.pflx_sbpl_ampl[index], catalog.pflx_sbpl_indx1[index], catalog.pflx_sbpl_indx2[index],
-                          catalog.pflx_sbpl_brken[index], catalog.pflx_sbpl_brksc[index], catalog.pflx_sbpl_pivot[index])
+    func = lambda x: sbpl(x, catalog.pflx_sbpl_ampl[index], catalog.pflx_sbpl_indx1[index],
+                          catalog.pflx_sbpl_indx2[index], catalog.pflx_sbpl_brken[index],
+                          catalog.pflx_sbpl_brksc[index], catalog.pflx_sbpl_pivot[index])
   elif model == "flnc_plaw":
-    func = lambda x: plaw(x, catalog.flnc_plaw_ampl[index], catalog.flnc_plaw_index[index], catalog.flnc_plaw_pivot[index])
+    func = lambda x: plaw(x, catalog.flnc_plaw_ampl[index], catalog.flnc_plaw_index[index],
+                          catalog.flnc_plaw_pivot[index])
   elif model == "flnc_comp":
-    func = lambda x: comp(x, catalog.flnc_comp_ampl[index], catalog.flnc_comp_index[index], catalog.flnc_comp_epeak[index],
-                          catalog.flnc_comp_pivot[index])
+    func = lambda x: comp(x, catalog.flnc_comp_ampl[index], catalog.flnc_comp_index[index],
+                          catalog.flnc_comp_epeak[index], catalog.flnc_comp_pivot[index])
   elif model == "flnc_band":
-    func = lambda x: band(x, catalog.flnc_band_ampl[index], catalog.flnc_band_alpha[index], catalog.flnc_band_beta[index],
-                          catalog.flnc_band_epeak[index])
+    func = lambda x: band(x, catalog.flnc_band_ampl[index], catalog.flnc_band_alpha[index],
+                          catalog.flnc_band_beta[index], catalog.flnc_band_epeak[index])
   elif model == "flnc_sbpl":
-    func = lambda x: sbpl(x, catalog.flnc_sbpl_ampl[index], catalog.flnc_sbpl_indx1[index], catalog.flnc_sbpl_indx2[index],
-                          catalog.flnc_sbpl_brken[index], catalog.flnc_sbpl_brksc[index], catalog.flnc_sbpl_pivot[index])
+    func = lambda x: sbpl(x, catalog.flnc_sbpl_ampl[index], catalog.flnc_sbpl_indx1[index],
+                          catalog.flnc_sbpl_indx2[index], catalog.flnc_sbpl_brken[index],
+                          catalog.flnc_sbpl_brksc[index], catalog.flnc_sbpl_pivot[index])
   else:
     print("Could not find best fit model for {} (indicated {}). Aborting this GRB.".format(catalog.name[index], model))
     return
-  return quad(func, ergCut[0], ergCut[1])[0]
+  return quad(func, ergcut[0], ergcut[1])[0]
 
 
 def duty_calc(inclination):
+  """
+  Function to estimate a duty cycle according to inclination
+  TODO should be updated
+  :param inclination: inclination of the orbit
+  :returns: the duty cycle
+  """
   print("inc value : ", inclination)
   precise = False
   if precise:
@@ -550,6 +626,7 @@ def eff_area_compton_func(theta, angle_lim, func_type="cos", duty=1.):
   Returns a value of the effective area for polarisation based on a cos function to account for the reception angle relative to the instrument's zenith
   This is an approximation as the cos function does not perfectly fit the data
   If func_type "FoV" computes instead the number of satellites viewing that part of the sky (no sensitivity considered)
+  TODO update it, compare with the values from the mu100 files
   """
   theta, angle_lim = np.deg2rad(theta), np.deg2rad(angle_lim)
   if duty < 0 or duty > 1:
@@ -562,7 +639,7 @@ def eff_area_compton_func(theta, angle_lim, func_type="cos", duty=1.):
       ang_freq = 0.222
       phi0 = 0.76
       y_off_set = 2.5
-      return (np.absolute((ampl) * np.cos(theta * 2 * np.pi * ang_freq - phi0)) + y_off_set) * duty
+      return (np.absolute(ampl * np.cos(theta * 2 * np.pi * ang_freq - phi0)) + y_off_set) * duty
     else:
       return 0
   elif func_type == "FoV":
@@ -577,6 +654,7 @@ def eff_area_single_func(theta, angle_lim, func_type="data", duty=True):
   Returns a value of the effective area for spectrometry based on interpolation from values obtained from different reception angle relative to the instrument's zenith
   This is an approximation as the values used are obtained for monoenergetic simulations - grbs are not and sensitivity of the instrument depends on energy
   If func_type "FoV" computes instead the number of satellites viewing that part of the sky (no sensitivity considered)
+  TODO update it, compare with the values from the mu100 files
   """
   if duty < 0 or duty > 1:
     print("Error estimating the duty time, incorrect value")
@@ -604,16 +682,14 @@ def eff_area_single_func(theta, angle_lim, func_type="data", duty=True):
 #######################################################################################################
 # Functions to manipulate the referential and positions of sat and grbs                               #
 #######################################################################################################
-
-
 def grb_decra_worldf2satf(dec_grb_wf, ra_grb_wf, dec_sat_wf, ra_sat_wf):
   """
-  Converts dec,ra (declination, right ascension) world coordinates into satellite coordinate
-  :param dec: declination (except it is 0 at north pole, 90° at equator and 180° at south pole)
-  :param ra : Right ascension (0->360°)
-  :param s: satellite from infos['satellites']
-  :param unit: unit in which are given dec and ra, default="deg"
-  :returns: theta_sat, phi_sat in rad
+  Converts dec_grb_wf, ra_grb_wf (declination, right ascension) world coordinates into satellite coordinate
+  :param dec_grb_wf: declination of the source in world frame (0° at north pole) [deg]
+  :param ra_grb_wf : Right ascension of the source in world frame (0->360°) [deg]
+  :param dec_sat_wf: declination of the satellite in world frame (0° at north pole) [deg]
+  :param ra_sat_wf : Right ascension of the satellite in world frame (0->360°) [deg]
+  :returns: dec_grb_sf, ra_grb_sf [deg]
   """
   dec_grb_wf, ra_grb_wf, dec_sat_wf, ra_sat_wf = np.deg2rad(dec_grb_wf), np.deg2rad(ra_grb_wf), np.deg2rad(dec_sat_wf), np.deg2rad(ra_sat_wf)
   # source being the direction of the source in world coordinates
@@ -630,20 +706,22 @@ def grb_decra_worldf2satf(dec_grb_wf, ra_grb_wf, dec_sat_wf, ra_sat_wf):
   x_ref_sat = [-np.sin(ra_sat_wf),
                np.cos(ra_sat_wf),
                0]
-  theta = np.arccos(np.dot(source, z_ref_sat))
-  phi = np.mod(np.arctan2(np.dot(source, y_ref_sat), np.dot(source, x_ref_sat)), 2*np.pi)
-  return np.rad2deg(theta), np.rad2deg(phi)
+  dec_grb_sf = np.arccos(np.dot(source, z_ref_sat))
+  ra_grb_sf = np.mod(np.arctan2(np.dot(source, y_ref_sat), np.dot(source, x_ref_sat)), 2*np.pi)
+  return np.rad2deg(dec_grb_sf), np.rad2deg(ra_grb_sf)
 
 
 def grb_decrapol_worldf2satf(dec_grb_wf, ra_grb_wf, dec_sat_wf, ra_sat_wf):
   """
-  Converts dec,ra (declination, right ascension) world coordinates into satellite attitude parameters
-  Polarization angle calculation rely on the fact that the polarization angle in is the plane generated by the direction of the source and the dec=0 direction, as it is the case in mamr.py.
-  :param dec_grb_wf : declination (except it is 0 at north pole, 90° at equator and 180° at south pole)
-  :param ra_grb_wf : Right ascension (0->360°)
-  :param dec_sat_wf : satellite dec in world frame
-  :param ra_sat_wf : satellite ra in world frame
-  :returns: polarization, dec_grb, ra_grb, dec_pol, ra_pol in satellite frame in deg with MEGAlib's RelativeY convention
+  Converts dec_grb_wf, ra_grb_wf (declination, right ascension) world coordinates into satellite coordinate
+  Polarization angle calculation rely on the fact that the polarization angle is in the plane generated by the direction of the source and the dec=0 direction.
+  The polarization angle, dec and ra are defined according to MEGAlib's RelativeY convention :
+    polarization vector in the plan defined by north pole direction, source direction (and also ysat base vector hence the "RelativeY convention")
+  :param dec_grb_wf : declination (except it is 0 at north pole, 90° at equator and 180° at south pole) [deg]
+  :param ra_grb_wf : Right ascension (0->360°) [deg]
+  :param dec_sat_wf : satellite dec in world frame [deg]
+  :param ra_sat_wf : satellite ra in world frame [deg]
+  :returns: pol_angle, dec_grb_sf, ra_grb_sf, dec_pol_sf, ra_pol_sf [deg]
   """
   dec_grb_wf, ra_grb_wf, dec_sat_wf, ra_sat_wf = np.deg2rad(dec_grb_wf), np.deg2rad(ra_grb_wf), np.deg2rad(dec_sat_wf), np.deg2rad(ra_sat_wf)
   # source being the direction of the source
@@ -660,69 +738,95 @@ def grb_decrapol_worldf2satf(dec_grb_wf, ra_grb_wf, dec_sat_wf, ra_sat_wf):
   x_ref_sat = [-np.sin(ra_sat_wf),
                np.cos(ra_sat_wf),
                0]
-  theta = np.arccos(np.dot(source, z_ref_sat))
-  phi = np.mod(np.arctan2(np.dot(source, y_ref_sat), np.dot(source, x_ref_sat)), 2*np.pi)
+  dec_grb_sf = np.arccos(np.dot(source, z_ref_sat))
+  ra_grb_sf = np.mod(np.arctan2(np.dot(source, y_ref_sat), np.dot(source, x_ref_sat)), 2*np.pi)
+
   # Polarization
-  dec_p, ra_p = np.mod(.5 * np.pi - dec_grb_wf, np.pi), ra_grb_wf + np.pi  # polarization direction in world coordinates (towards north or south pole)
+  dec_p, ra_p = np.mod(.5 * np.pi - dec_grb_wf, np.pi), ra_grb_wf + np.pi
   # pol_direction being the polarization vector in world coordinates
   pol_vec = [np.sin(dec_p) * np.cos(ra_p),
              np.sin(dec_p) * np.sin(ra_p),
              np.cos(dec_p)]
-  thetap = np.arccos(np.dot(pol_vec, z_ref_sat))  # polarization direction in satellite coordinates
-  phip = np.arctan2(np.dot(pol_vec, y_ref_sat), np.dot(pol_vec, x_ref_sat))  # idem
+  dec_pol_sf = np.arccos(np.dot(pol_vec, z_ref_sat))
+  ra_pol_sf = np.arctan2(np.dot(pol_vec, y_ref_sat), np.dot(pol_vec, x_ref_sat))
   pol_angle = np.arccos(np.dot(pol_vec, np.cross(source, y_ref_sat)))
-  polstr = f"{np.sin(thetap) * np.cos(phip)} {np.sin(thetap) * np.sin(phip)} {np.cos(thetap)}"
-  return np.rad2deg(pol_angle), np.rad2deg(theta), np.rad2deg(phi), np.rad2deg(thetap), np.rad2deg(phip), polstr
+  polstr = f"{np.sin(dec_pol_sf) * np.cos(ra_pol_sf)} {np.sin(dec_pol_sf) * np.sin(ra_pol_sf)} {np.cos(dec_pol_sf)}"
+  return np.rad2deg(pol_angle), np.rad2deg(dec_grb_sf), np.rad2deg(ra_grb_sf), np.rad2deg(dec_pol_sf), np.rad2deg(ra_pol_sf), polstr
 
 
-def decrasat2world(dec, ra, s):
+def decrasat2world(dec_grb_sf, ra_grb_sf, dec_sat_wf, ra_sat_wf):
   """
-  Converts dec,ra (declination, right ascension) satellite coordinates into world coordinate
-  :param dec: declination (except it is 0 at instrument zenith and 90° at equator)
-  :param ra : Right ascension (0->360°)
-  :param s: satellite from infos['satellites']
-  :param unit: unit in which are given dec and ra, default="deg"
-  :returns: theta_world, phi_world in rad
+  Converts dec_grb_sf, ra_grb_sf (declination, right ascension) satellite coordinates into world coordinate dec_grb_wf, ra_grb_wf
+  :param dec_grb_sf: grb declination in sat frame (0° at instrument zenith) [deg]
+  :param ra_grb_sf : grb right ascension in sat frame (0->360°) [deg]
+  :param dec_sat_wf: sat declination in world frame (0° at instrument zenith) [deg]
+  :param ra_sat_wf : sat right ascension in world frame (0->360°) [deg]
+  :returns: dec_grb_wf, ra_grb_wf [deg]
   """
-  dec, ra = np.deg2rad(dec), np.deg2rad(ra)
-  decsat, rasat = np.deg2rad(s[0]), np.deg2rad(s[1])
-  xworld = [-np.sin(rasat), -np.cos(decsat)*np.cos(rasat), np.sin(decsat)*np.cos(rasat)]
-  yworld = [np.cos(rasat), -np.cos(decsat)*np.sin(rasat), np.sin(decsat)*np.sin(rasat)]
-  zworld = [0, np.sin(decsat), np.cos(decsat)]
-  source = [np.sin(dec)*np.cos(ra), np.sin(dec)*np.sin(ra), np.cos(dec)]
-  theta = np.arccos(np.dot(source, zworld))
-  phi = np.mod(np.arctan2(np.dot(source, yworld), np.dot(source, xworld)), 2*np.pi)
-  return np.deg2rad(theta), np.deg2rad(phi)
+  dec_grb_sf, ra_grb_sf = np.deg2rad(dec_grb_sf), np.deg2rad(ra_grb_sf)
+  dec_sat_wf, ra_sat_wf = np.deg2rad(dec_sat_wf), np.deg2rad(ra_sat_wf)
+  xworld = [-np.sin(ra_sat_wf),
+            -np.cos(dec_sat_wf)*np.cos(ra_sat_wf),
+            np.sin(dec_sat_wf)*np.cos(ra_sat_wf)]
+  yworld = [np.cos(ra_sat_wf),
+            -np.cos(dec_sat_wf)*np.sin(ra_sat_wf),
+            np.sin(dec_sat_wf)*np.sin(ra_sat_wf)]
+  zworld = [0,
+            np.sin(dec_sat_wf),
+            np.cos(dec_sat_wf)]
+  source = [np.sin(dec_grb_sf)*np.cos(ra_grb_sf),
+            np.sin(dec_grb_sf)*np.sin(ra_grb_sf),
+            np.cos(dec_grb_sf)]
+  dec_grb_wf = np.arccos(np.dot(source, zworld))
+  ra_grb_sf = np.mod(np.arctan2(np.dot(source, yworld), np.dot(source, xworld)), 2*np.pi)
+  return np.deg2rad(dec_grb_wf), np.deg2rad(ra_grb_sf)
 
 
 def orbitalparam2decra(inclination, ohm, omega, nu=0):
   """
   Calculates the declination and right ascention of an object knowing its orbital parameters
-  Returned results are in rad and the north direction is at 0° making the equator at 90°
-  :param inclination : inclination of the orbit in deg
-  :param ohm : longitude/ra of the ascending node in deg
-  :param omega :
-  :param nu : true anomalie at epoch t0 (both are equivalent there because of circular orbit)  in deg
+  Returned results are in deg and the north direction is at 0° making the equator at 90°
+  :param inclination : inclination of the orbit [deg]
+  :param ohm : longitude/ra of the ascending node of the orbit [deg]
+  :param omega : argument of periapsis of the orbit [deg]
+  :param nu : true anomalie at epoch t0 [deg]
+  :returns: dec_sat_wf, ra_sat_wf [deg]
   """
   # Puts the angle in rad and changes the omega to take into account the true anomaly
   inclination, ohm, omeganu = np.deg2rad(inclination), np.deg2rad(ohm), np.deg2rad(omega + nu)
   # normalized coordinates in the orbital frame:
   xsat = np.cos(omeganu) * np.cos(ohm) - np.sin(omeganu) * np.cos(inclination) * np.sin(ohm)
   ysat = np.cos(omeganu) * np.sin(ohm) + np.sin(omeganu) * np.cos(inclination) * np.cos(ohm)
-  zsat = np.sin(inclination)*np.sin(omeganu)
-  thetasat = np.arccos(zsat) #rad # taking the arccos makes the dec from 0 to 180° starting at the north pole
-  phisat = np.arctan2(ysat, xsat) #rad
-  return np.rad2deg(thetasat), np.rad2deg(phisat)
+  zsat = np.sin(inclination) * np.sin(omeganu)
+  dec_sat_wf = np.arccos(zsat)
+  ra_sat_wf = np.arctan2(ysat, xsat)
+  return np.rad2deg(dec_sat_wf), np.rad2deg(ra_sat_wf)
 
 
-def true_anomaly_calc(time, period):
+def decra2orbitalparam(dec_sat_wf, ra_sat_wf):
   """
-  Calculates the true anomaly between 0 and 360° for a time time and an orbit of period period
-  :param time : time at which the true anomaly is calculated
+  Calculates the orbital parameters of an object knowing its dec and ra
+    Only works for a value of omega set to pi/2
+  Returned results are in rad
+  :param dec_sat_wf : satellite's dec [deg]
+  :param ra_sat_wf : satellite's ra [deg]
+  :returns: inclination, ohm, omega [deg]
+  """
+  dec_sat_wf, ra_sat_wf = np.deg2rad(dec_sat_wf), np.deg2rad(ra_sat_wf)
+  inclination = np.arcsin(np.cos(dec_sat_wf))
+  ohm = np.arctan2(-1, np.tan(ra_sat_wf))
+  omega = np.pi / 2
+  return np.deg2rad(inclination), np.deg2rad(ohm), np.deg2rad(omega)
+
+
+def true_anomaly_calc(time_val, period):
+  """
+  Calculates the true anomaly between 0 and 360° for a time "time_val" and an orbit of period "period"
+  :param time_val : time at which the true anomaly is calculated
   :param period : period of the orbit
-  Return the true anomaly in deg
+  Return the true anomaly [deg]
   """
-  return np.mod(360 * time / period, 360)
+  return np.mod(360 * time_val / period, 360)
 
 
 def cond_between(val, lim1, lim2):
@@ -733,27 +837,27 @@ def cond_between(val, lim1, lim2):
   :param lim2 : superior limit
   Returns True if the value is in the interval [lim1, lim2]
   """
-  return val >= lim1 and val <= lim2
+  return lim1 <= val <= lim2
 
 
 def verif_zone(theta, phi):
   """
-  Function to verify wether a coordinate is in the exclusion area or not
-  :param theta : latitude (-90 - 90°)
-  :param phi : longitude (-180 - 180°)
-  Returns True when the theta and phi are in an excusion area
+  Function to verify whether a coordinate is in the exclusion area or not
+  :param theta: latitude (-90 - 90°)
+  :param phi: longitude (-180 - 180°)
+  :returns: True when the theta and phi are in an exclusion area
   """
-  ### SAA
+  # SAA
   if cond_between(phi, -60, -10) and cond_between(theta, -45, -15):
     return True
-  ### North pole anomaly
+  # North pole anomaly
   elif cond_between(phi, -80, 70) and cond_between(theta, 50, 70):
     return True
   elif cond_between(phi, -180, -120) and cond_between(theta, 55, 65):
     return True
   elif cond_between(phi, 140, 180) and cond_between(theta, 60, 65):
     return True
-  ### South pole anomaly
+  # South pole anomaly
   elif cond_between(phi, -125, 20) and cond_between(theta, -78, -58):
     return True
   elif cond_between(phi, 0, 90) and cond_between(theta, -58, -47):
@@ -762,24 +866,13 @@ def verif_zone(theta, phi):
     return False
 
 
-def verif_rad_belts(lat, long, alt):
-  """
-
-  """
-  files = ["./bkg/exclusion/400km/AE8max_400km.out", "./bkg/exclusion/400km/AP8min_400km.out",
-           "./bkg/exclusion/500km/AE8max_500km.out", "./bkg/exclusion/500km/AP8min_500km.out"]
-  for file in files:
-    file_alt = int(file.split("km/")[0].split("/")[-1])
-    if alt == file_alt:
-      if verif_zone_file(lat, long, file):
-        return True
-  return False
-
-
 def verif_zone_file(lat, long, file):
   """
-  :param theta : latitude (-90 - 90°)
-  :param phi : longitude (-180 - 180°)
+  Function to verify whether a coordinate is in the exclusion area or not, using an exclusion file
+  :param lat: latitude (-90 - 90°) [deg]
+  :param long: longitude (-180 - 180°) [deg]
+  :param file: exclusion file
+  :returns: True when the latitude and longitude are in an exclusion area
   """
   with open(file, "r") as f:
     lines = f.read().split("\n")
@@ -801,14 +894,9 @@ def verif_zone_file(lat, long, file):
         new_exclusions.append([zone[0], zone[1+ite*2], zone[2+ite*2]])
   new_exclusions = np.array(new_exclusions)
   exclude_lats = new_exclusions[:, 0]
-  # print(exclude_lats)
-  # print(exclusions)
-  # print(new_exclusions)
-  # from time import time
-  # init = time()
   lat_index = []
   for ite in range(len(exclude_lats)):
-    if lat >= exclude_lats[ite] - 0.5 and lat <= exclude_lats[ite] + 0.5:
+    if exclude_lats[ite] - 0.5 <= lat <= exclude_lats[ite] + 0.5:
       lat_index.append(ite)
   for index in lat_index:
     if cond_between(long, new_exclusions[index, 1], new_exclusions[index, 2]):
@@ -816,40 +904,49 @@ def verif_zone_file(lat, long, file):
   return False
 
 
-def random_GRB_dec_ra(dec_min, dec_max, ra_min, ra_max):
+def verif_rad_belts(lat, long, alt):
   """
-  Take a random position for a GRB
-  :param dec_min : minimum dec, if south pole -90 in deg
-  :param dec_max : maximum dec, if north pole 90 in deg
-  :param ra_min : minimum ra in deg
-  :param ra_max : maximum ra in deg
-  returns dec and ra in radiant. The north pole is set as dec = 0   in deg
+  Function to verify whether a coordinate is in the exclusion area of several exclusion files at a certain altitude
+  The exclusion files represent the Earth's radiation belts
+  :param lat: latitude (-90 - 90°) [deg]
+  :param long: longitude (-180 - 180°) [deg]
+  :param alt: altitude of the verification
+  :returns: True when the latitude and longitude are in an exclusion area
+  """
+  files = ["./bkg/exclusion/400km/AE8max_400km.out", "./bkg/exclusion/400km/AP8min_400km.out",
+           "./bkg/exclusion/500km/AE8max_500km.out", "./bkg/exclusion/500km/AP8min_500km.out"]
+  for file in files:
+    file_alt = int(file.split("km/")[0].split("/")[-1])
+    if alt == file_alt:
+      if verif_zone_file(lat, long, file):
+        return True
+  return False
+
+
+def random_grb_dec_ra(dec_min, dec_max, ra_min, ra_max):
+  """
+  Take a random position for a GRB in an area defined by min/max dec and ra
+  :param dec_min : minimum (if south pole -90 in deg) [deg]
+  :param dec_max : maximum (if north pole 90 in deg) [deg]
+  :param ra_min : minimum ra [deg]
+  :param ra_max : maximum ra [deg]
+  :returns: dec and ra. The north pole is set as dec = 0 [deg]
   """
   dec_min, dec_max, ra_min, ra_max = np.deg2rad(dec_min), np.deg2rad(dec_max), np.deg2rad(ra_min), np.deg2rad(ra_max)
-  dec = np.pi / 2 - np.arcsin(np.sin(dec_min) + np.random.rand() * (np.sin(dec_max) - np.sin(dec_min)))  # rad, 0 at north pole
-  ra = ra_min + np.random.rand() * (ra_max - ra_min)  # rad, 0->2pi
+  dec = np.pi / 2 - np.arcsin(np.sin(dec_min) + np.random.rand() * (np.sin(dec_max) - np.sin(dec_min)))
+  ra = ra_min + np.random.rand() * (ra_max - ra_min)
   return np.rad2deg(dec), np.rad2deg(ra)
-
-def decra2orbitalparam(thetasat, phisat):
-  """
-  Calculates the orbital parameters of an object knowing its dec and ra
-  Only works for a value of omega set to pi/2
-  Returned results are in rad
-  :param inclination : inclination of the orbit
-  :param ohm : longitude/ra of the ascending node
-  :param omega : true anomalie at epoch t0 (both are equivalent there because of circular orbit)
-  :param unit: unit in which are given dec and ra, default="deg"
-  """
-  thetasat, phisat = np.deg2rad(thetasat), np.deg2rad(phisat)
-  inclination = np.arcsin(np.cos(thetasat)) #rad
-  ohm = np.arctan2(-1, np.tan(phisat)) #rad
-  omega = np.pi / 2
-  return np.deg2rad(inclination), np.deg2rad(ohm), np.deg2rad(omega)
 
 
 def execute_finder(file, events, geometry, cpp_routine="find_detector"):
   """
-
+  Executes the "find_detector" c++ routine that find the detector of interaction of different position of interaction
+  stored in a file
+  :param file: file name used to create the files
+  :param events: array containing the 3 coordinate of multiple events
+  :param geometry: geometry to use
+  :param cpp_routine: name of the c++ routine
+  :returns: an array containing a list [Instrument unit of the interaction, detector where interaction happened]
   """
   with open(f"{file}.txt", "w") as data_file:
     for event in events:
@@ -865,7 +962,12 @@ def execute_finder(file, events, geometry, cpp_routine="find_detector"):
 
 def find_detector(pos_firt_compton, pos_sec_compton, pos_single, geometry):
   """
-
+  Execute the position finder for different arrays pos_firt_compton, pos_sec_compton, pos_single
+  :param pos_firt_compton: array containing the position of the first compton interaction
+  :param pos_sec_compton: array containing the position of the second compton interaction
+  :param pos_single: array containing the position of the single event interaction
+  :param geometry: geometry to use
+  :returns: 3 arrays containing a list [Instrument unit of the interaction, detector where interaction happened]
   """
   pid = os.getpid()
   file_fc = f"temp_pos_fc_{pid}"
@@ -892,48 +994,48 @@ def find_detector(pos_firt_compton, pos_sec_compton, pos_single, geometry):
 #######################################################################################################
 # Functions to create spectra                                                                         #
 #######################################################################################################
-def plaw(e, A, l, pivot=100):
+def plaw(e, ampl, index_l, pivot=100):
   """
   Power-law spectrum
   :param e: energy (keV)
-  :param A: amplitude (ph/cm2/keV/s)
-  :param l: spectral index
+  :param ampl: amplitude (ph/cm2/keV/s)
+  :param index_l: spectral index
   :param pivot: pivot energy (keV), depends only on the instrument, default=100 keV for Fermi/GBM
   :returns: ph/cm2/keV/s
   """
-  return A * (e / pivot) ** l
+  return ampl * (e / pivot) ** index_l
 
 
-def comp(e, A, l, ep, pivot=100):
+def comp(e, ampl, index_l, ep, pivot=100):
   """
   Comptonized spectrum
   :param e: energy (keV)
-  :param A: amplitude (ph/cm2/keV/s)
-  :param l: spectral index
+  :param ampl: amplitude (ph/cm2/keV/s)
+  :param index_l: spectral index
   :param ep: peak energy (keV)
   :param pivot: pivot energy (keV), depends only on the instrument, default=100 keV for Fermi/GBM
   :returns: ph/cm2/keV/s
   """
-  return A * (e / pivot) ** l * np.exp(-(l + 2) * e / ep)
+  return ampl * (e / pivot) ** index_l * np.exp(-(index_l + 2) * e / ep)
 
 
-def glog(e, A, ec, s):
+def glog(e, ampl, ec, s):
   """
   log10-gaussian spectrum model
   :param e: energy (keV)
-  :param A: amplitude (ph/cm2/keV/s)
+  :param ampl: amplitude (ph/cm2/keV/s)
   :param ec: central energy (keV)
   :param s: distribution width
   :returns: ph/cm2/keV/s
   """
-  return A / np.sqrt(2 * np.pi * s) * np.exp(-.5 * (np.log10(e / ec) / s) ** 2)
+  return ampl / np.sqrt(2 * np.pi * s) * np.exp(-.5 * (np.log10(e / ec) / s) ** 2)
 
 
-def band(e, A, alpha, beta, ep, pivot=100):
+def band(e, ampl, alpha, beta, ep, pivot=100):
   """
   Band spectrum
   :param e: energy (keV)
-  :param A: amplitude (ph/cm2/keV/s)
+  :param ampl: amplitude (ph/cm2/keV/s)
   :param alpha: low-energy spectral index
   :param beta: high-energy spectral index
   :param ep: peak energy (keV)
@@ -942,32 +1044,40 @@ def band(e, A, alpha, beta, ep, pivot=100):
   """
   c = (alpha - beta) * ep / (alpha + 2)
   if e > c:
-    return A * (e / pivot) ** beta * np.exp(beta - alpha) * (c / pivot) ** (alpha - beta)
+    return ampl * (e / pivot) ** beta * np.exp(beta - alpha) * (c / pivot) ** (alpha - beta)
   else:
-    return A * (e / pivot) ** alpha * np.exp(-(alpha + 2) * e / ep)
+    return ampl * (e / pivot) ** alpha * np.exp(-(alpha + 2) * e / ep)
 
 
-def sbpl_sa(e, A, l1, l2, eb, delta, pivot=100):
+def sbpl_sa(e, ampl, l1, l2, eb, delta, pivot=100):
   """
   Smoothly broken power law spectrum
   :param e: energy (keV)
-  :param A: amplitude (ph/cm2/keV/s)
+  :param ampl: amplitude (ph/cm2/keV/s)
+  :param l1: first powerlaw index
+  :param l2: second powerlaw index
+  :param eb: break energy [keV]
+  :param delta: break scale [keV]
+  :param pivot: pivot energy [keV]
   """
   b, m = .5 * (l1 + l2), .5 * (l1 - l2)
   q, qp = np.log10(e / eb / delta), np.log10(pivot / eb / delta)
   a, ap = m * delta * np.log(np.cosh(q)), m * delta * np.log(np.cosh(qp))
-  return A * (e / pivot) ** b * 10 ** (a / ap)
+  return ampl * (e / pivot) ** b * 10 ** (a / ap)
 
 
-def sbpl(e, A, l1, l2, eb, delta, pivot=100):
+def sbpl(e, ampl, l1, l2, eb, delta, pivot=100):
   """
   Smoothly broken power law spectrum
   :param e: energy (keV)
-  :param A: amplitude (ph/cm2/keV/s)
+  :param ampl: amplitude (ph/cm2/keV/s)
+  :param l1: first powerlaw index
+  :param l2: second powerlaw index
+  :param eb: break energy [keV]
+  :param delta: break scale [keV]
+  :param pivot: pivot energy [keV]
   """
   b, m = .5 * (l2 + l1), .5 * (l2 - l1)
   q, qp = np.log10(e / eb) / delta, np.log10(pivot / eb) / delta
   a, ap = m * delta * np.log(np.cosh(q)), m * delta * np.log(np.cosh(qp))
-  return A * (e / pivot) ** b * 10 ** (a - ap)
-
-
+  return ampl * (e / pivot) ** b * 10 ** (a - ap)

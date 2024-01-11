@@ -10,7 +10,7 @@ PhysicsListEMActivateFluorescence    false
 
 # Output formats. StoreScientific added (July 2010)
 StoreCalibrated                      true
-StoreScientific		     	     true 5
+StoreScientific		     	         true 5
 StoreSimulationInfo                  true
 StoreSimulationInfoIonization        false
 DiscretizeHits                       true

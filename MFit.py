@@ -46,7 +46,7 @@ class Fit:
 
   def disp(self):
     """
-    Some statistical magic happens here
+    Prints statistics about the polarization analysis
     """
     if self.comment == "modulation":
       print("\nPolarization analysis:")

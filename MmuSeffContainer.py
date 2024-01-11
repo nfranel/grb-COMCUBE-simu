@@ -4,7 +4,6 @@
 # Separating the code in different modules
 
 # Package imports
-import os
 # import matplotlib.pyplot as plt
 import matplotlib as mpl
 # Developped modules imports
@@ -24,11 +23,12 @@ class MuSeffContainer(list):
 
   def __init__(self, mu100parfile, ergcut=(100, 460), armcut=180):
     """
-    :param mu100parfile : mu100 parameter file
-    :param ergcut : energy cut to apply
+    :param mu100parfile: mu100 parameter file
+    :param ergcut: energy cut to apply
+    :param armcut: ARM cut to apply
     """
     geom, revanf, mimrecf, source_base, spectra, bandparam, poltime, unpoltime, decs, ras = read_mupar(mu100parfile)
-    self.geometry = geom       # To compare with data/mu100 and make sure everything works with the same softs
+    self.geometry = geom       # TODO To compare with data/mu100 and make sure everything works with the same softs
     self.revanfile = revanf    # To compare with data/mu100 and make sure everything works with the same softs
     self.mimrecfile = mimrecf  # To compare with data/mu100 and make sure everything works with the same softs
     self.bandparam = bandparam
@@ -38,7 +38,8 @@ class MuSeffContainer(list):
     self.ras = ras
     self.bins = set_bins("fixed")
     self.ergcut = ergcut
-    func = lambda x: band(x, self.bandparam[0], self.bandparam[1], self.bandparam[2], self.bandparam[3], self.bandparam[4])
+    func = lambda x: band(x, self.bandparam[0], self.bandparam[1], self.bandparam[2], self.bandparam[3],
+                          self.bandparam[4])
     self.fluence = quad(func, self.ergcut[0], self.ergcut[1])[0] * self.poltime
 
     geom_name = geom.split(".geo.setup")[0].split("/")[-1]
@@ -47,7 +48,7 @@ class MuSeffContainer(list):
     armname = f"armcut-{armcut}"
     cond_saving = f"condensed-mu-seff-saved_{geom_name}_{self.decs[0]:.0f}-{self.decs[1]:.0f}-{self.decs[2]:.0f}_{self.ras[0]:.0f}-{self.ras[1]:.0f}-{self.ras[2]:.0f}_{ergname}_{armname}.txt"
 
-    if not saving in os.listdir(f"./mu100/sim_{geom_name}"):
+    if saving not in os.listdir(f"./mu100/sim_{geom_name}"):
       init_time = time()
       print("###########################################################################")
       print(" mu/Seff data not saved : Saving ")
@@ -58,7 +59,7 @@ class MuSeffContainer(list):
       print(" Saving of mu/Seff data finished in : ", time() - init_time, "seconds")
       print("=======================================")
     else:
-      if not cond_saving in os.listdir(f"./mu100/sim_{geom_name}"):
+      if cond_saving not in os.listdir(f"./mu100/sim_{geom_name}"):
         init_time = time()
         print("###########################################################################")
         print(" mu/Seff condensed data not saved : Saving ")
@@ -76,10 +77,10 @@ class MuSeffContainer(list):
     print(" Extraction of mu/Seff data finished in : ", time() - init_time, "seconds")
     print("=======================================")
 
-
   def save_fulldata(self, file):
     """
     Function used to save the mu100/seff data into a txt file
+    :param file: path of the file to save full data
     """
     with open(file, "w") as f:
       f.write("# File containing raw mu100 data for : \n")
@@ -147,7 +148,6 @@ class MuSeffContainer(list):
           f.write("NewPos\n")
           f.write(f"{dec}\n")
           f.write(f"{ra}\n")
-          print("polsname, len(compton_second_pol), dec, ra", polsname, len(compton_second_pol), dec, ra)
           for ite in range(len(compton_second_pol) - 1):
             f.write(f"{compton_second_pol[ite]}|")
           f.write(f"{compton_second_pol[-1]}\n")
@@ -219,6 +219,10 @@ class MuSeffContainer(list):
   def save_condenseddata(self, fullfile, condfile, ergcut, armcut):
     """
     Function used to save the mu100/seff data into a txt file
+    :param fullfile: path of the file where full data is saved
+    :param condfile: path of the file to save condensed data
+    :param ergcut: energy cut to apply
+    :param armcut: ARM cut to apply
     """
     var_x = .5 * (self.bins[1:] + self.bins[:-1])
     binw = self.bins[1:] - self.bins[:-1]
@@ -282,7 +286,6 @@ class MuSeffContainer(list):
         hist_pol = np.histogram(pol, self.bins)[0] / binw
         hist_unpol = np.histogram(unpol, self.bins)[0] / binw
         fit_mod = None
-        # fit_const = None
         if 0. in hist_unpol:
           print(f"Unpolarized data do not allow a fit - {dec}_{ra} : a bin is empty")
         else:
@@ -292,8 +295,6 @@ class MuSeffContainer(list):
           else:
             histo = hist_pol / hist_unpol * np.mean(hist_unpol)
             fit_mod = Fit(modulation_func, var_x, histo, yerr=polarigram_error, comment="modulation")
-            # fit_const = Fit(lambda x, a: a * x / x, var_x, histo, yerr=polarigram_error, comment="constant")
-        # pa, mu100, fit_compton_cr = fit_mod.popt
         pa, mu100 = fit_mod.popt[:2]
         if mu100 < 0:
           pa = (pa + 90) % 180
@@ -302,7 +303,6 @@ class MuSeffContainer(list):
           pa = pa % 180
         pa_err = np.sqrt(fit_mod.pcov[0][0])
         mu100_err = np.sqrt(fit_mod.pcov[1][1])
-        # fit_compton_cr_err = np.sqrt(fit_mod.pcov[2][2])
         fit_goodness = fit_mod.q2 / (len(fit_mod.x) - fit_mod.nparam)
 
         seff_compton = len(pol) / self.fluence
@@ -322,6 +322,7 @@ class MuSeffContainer(list):
   def read_data(self, file):
     """
     Function used to read the bkg txt file
+    :param file: path of the file where condensed data is saved
     """
     with open(file, "r") as f:
       files_saved = f.read().split("NewPos\n")
@@ -332,10 +333,9 @@ class Mu100Data:
   """
   Class containing the data for 1 GRB, for 1 sim, and 1 satellite
   """
-
   def __init__(self, data):
     """
-    -data_list : list of 2 files (pol or pol+unpol) from which extract the data
+    :param data: lines of data in a list extracted from condensed data file
     """
     ##############################################################
     # Attributes filled with file reading

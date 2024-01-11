@@ -13,36 +13,51 @@ import argparse
 from funcmod import band, read_mupar
 
 
-def make_directories(geometry):
+def make_directories(geomfile):
+  """
+  Create the directories in which the simulations are saved
+  :param geomfile: geometry used for the simulations
+  """
   # Creating a directory specific to the geometry
-  geom_name = geometry.split(".geo.setup")[0].split("/")[-1]
-  if not f"sim_{geom_name}" in os.listdir("./mu100"):
+  geom_name = geomfile.split(".geo.setup")[0].split("/")[-1]
+  if f"sim_{geom_name}" not in os.listdir("./mu100"):
     os.mkdir(f"./mu100/sim_{geom_name}")
     # Creating the sim and rawsim repertories if they don't exist
-  if not f"sim" in os.listdir(f"./mu100/sim_{geom_name}"):
+  if f"sim" not in os.listdir(f"./mu100/sim_{geom_name}"):
     os.mkdir(f"./mu100/sim_{geom_name}/sim")
-  if not f"rawsim" in os.listdir(f"./mu100/sim_{geom_name}"):
+  if f"rawsim" not in os.listdir(f"./mu100/sim_{geom_name}"):
     os.mkdir(f"./mu100/sim_{geom_name}/rawsim")
 
 
 def make_spectrum(filepath, bandpar):
   """
-
+  Create a band spectrum representing an average grb
+  :param filepath: name of the file where the spectrum is saved
+  :param bandpar: parameters for band spectrum
   """
   if not (f"{filepath}/Band_spectrum.dat" in os.listdir(filepath)):
-    logE = np.logspace(1, 3, 100)  # energy (log scale)
+    log_energy = np.logspace(1, 3, 100)  # energy (log scale)
     with open(f"{filepath}/Band_spectrum.dat", "w") as f:
       f.write("#model band:  ")
       f.write(f"ampl={bandpar[0]}ph/cm2/keV/s, alpha={bandpar[1]}, beta={bandpar[2]}, epeak={bandpar[3]}keV, epivot={bandpar[4]}keV\n")
       f.write("\nIP LOGLOG\n\n")
-      for E in logE:
+      for E in log_energy:
         f.write(f"DP {E} {band(E, bandpar[0], bandpar[1], bandpar[2], bandpar[3], bandpar[4])}\n")
       f.write("\nEN\n\n")
 
 
-def make_tmp_source(dec, ra, geom, source_model, spectra, timepol, timeunpol, ampl):
+def make_tmp_source(dec, ra, geom, source_model, spectrapath, timepol, timeunpol, ampl):
   """
-
+  Creates a temporary source file based on a model "source model"
+  :param dec: dec for the mu100 simulation
+  :param ra: ra for the mu100 simulation
+  :param geom: geometry used for the mu100 simulation
+  :param source_model: model used to create temporary source files
+  :param spectrapath: path to spectra folder
+  :param timepol: duration of the mu100 polarized simulation
+  :param timeunpol: duration of the mu100 unpolarized simulation
+  :param ampl: flux for the simulations
+  :returns: name of the temporary source file, name of the simulation without the extension
   """
   fname = f"tmp_{os.getpid()}.source"
   geom_name = geometry.split(".geo.setup")[0].split("/")[-1]
@@ -76,7 +91,7 @@ def make_tmp_source(dec, ra, geom, source_model, spectra, timepol, timeunpol, am
       elif line.startswith(f"{source}.Beam") and (source == "GRBsource" or source == "GRBsourcenp"):
         f.write(f"{source}.Beam FarFieldPointSource {dec} {ra}")
       elif line.startswith(f"{source}.Spectrum") and (source == "GRBsource" or source == "GRBsourcenp"):
-        f.write(f"{source}.Spectrum File {spectra}/Band_spectrum.dat")
+        f.write(f"{source}.Spectrum File {spectrapath}/Band_spectrum.dat")
       elif line.startswith(f"{source}.Flux") and (source == "GRBsource" or source == "GRBsourcenp"):
         f.write(f"{source}.Flux {ampl}")
       else:
@@ -85,31 +100,48 @@ def make_tmp_source(dec, ra, geom, source_model, spectra, timepol, timeunpol, am
   return fname, sname
 
 
-def make_ra_list(ras, dec):
+def make_ra_list(ra_list, dec):
   """
-
+  Creates a list of right ascension for a specific dec : equator has more items than the poles (that have only 1)
+  :param ra_list: list containing minimum ra, maximum ra and number of ra at equator [deg]
+  :param dec: dec [deg]
   """
-  if dec == 0:
+  if dec == 0 or dec == 180:
     new_ra = [0.0]
   else:
-    new_ra = np.around(np.linspace(ras[0], ras[1], np.max([4, int(np.sin(np.deg2rad(dec)) * ras[2])]), endpoint=False), 1)
+    new_ra = np.around(np.linspace(ra_list[0], ra_list[1], np.max([4, int(np.sin(np.deg2rad(dec)) * ra_list[2])]), endpoint=False), 1)
   return new_ra
 
 
-def make_parameters(decs, ras, geom, source_model, spectra, timepol, timeunpol, ampl, rcffile, mimfile):
+def make_parameters(dec_list, ra_list, geomfile, source_model, spectrapath, timepol, timeunpol, ampl, rcffile, mimfile):
   """
-
+  Creates a lists of parameters for several altitudes and latitudes
+  :param dec_list: decs for the mu100 simulation
+  :param ra_list: ras for the mu100 simulation
+  :param geomfile: geometry used for the mu100 simulation
+  :param source_model: model used to create temporary source files
+  :param spectrapath: path to spectra folder
+  :param timepol: duration of the mu100 polarized simulation
+  :param timeunpol: duration of the mu100 unpolarized simulation
+  :param ampl: flux for the simulations
+  :param rcffile: revan configuration file to treat raw simulations
+  :param mimfile: mimrec configuration file to extract simulations treated with revan
   """
-  parameters = []
-  for dec in np.linspace(decs[0], decs[1], decs[2]):
-    for ra in make_ra_list(ras, dec):
-      parameters.append((dec, ra, geom, source_model, spectra, timepol, timeunpol, ampl, rcffile, mimfile))
-  return parameters
+  parameters_container = []
+  for dec in np.linspace(dec_list[0], dec_list[1], dec_list[2]):
+    for ra in make_ra_list(ra_list, dec):
+      parameters_container.append((dec, ra, geomfile, source_model, spectrapath, timepol, timeunpol, ampl, rcffile, mimfile))
+  return parameters_container
 
 
 def run_mu(params):
+  """
+  Runs the cosima, revan and mimrec programs and either move to rawsim or remove the .sim.gz and .tra.gz files
+  :param params: list of parameters to run the simulation
+  """
   # Making a temporary source file using a source_model
-  sourcefile, simname = make_tmp_source(params[0], params[1], params[2], params[3], params[4], params[5], params[6], params[7])
+  sourcefile, simname = make_tmp_source(params[0], params[1], params[2], params[3], params[4], params[5], params[6],
+                                        params[7])
   # Making a generic name for files
   simfilepol, trafilepol = f"{simname}pol.inc1.id1.sim.gz", f"{simname}pol.inc1.id1.tra.gz"
   simfileunpol, trafileunpol = f"{simname}unpol.inc1.id1.sim.gz", f"{simname}unpol.inc1.id1.tra.gz"
@@ -162,7 +194,8 @@ if __name__ == "__main__":
     # Creating the required directories
     make_directories(geometry)
     # Creating the parameter list
-    parameters = make_parameters(decs, ras, geometry, source_base, spectra, poltime, unpoltime, bandparam[0], revanfile, mimrecfile)
+    parameters = make_parameters(decs, ras, geometry, source_base, spectra, poltime, unpoltime, bandparam[0], revanfile,
+                                 mimrecfile)
     print("===================================================================")
     print(f"{len(parameters)} Commands have been parsed")
     print("===================================================================")
@@ -183,4 +216,3 @@ if __name__ == "__main__":
       pool.map(run_mu, parameters)
   else:
     print("Missing parameter file or geometry - not running.")
-

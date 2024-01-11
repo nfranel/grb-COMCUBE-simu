@@ -14,8 +14,16 @@ class AllSatData(list):
   """
   Class containing all the data for 1 simulation of 1 GRB (or other source) for a full set of trafiles
   """
-
   def __init__(self, source_prefix, num_sim, sat_info, sim_duration, bkg_data, mu_data, options):
+    """
+    :param source_prefix: prefix used for simulations + source name
+    :param num_sim: number of the simulation
+    :param sat_info: orbital information on the satellite
+    :param sim_duration: duration of the simulation
+    :param bkg_data: list containing the background data
+    :param mu_data: list containing the mu100 data
+    :param options: options for the analysis, defined in AllSourceData
+    """
     temp_list = []
     # Attributes relative to the simulations without any analysis
     self.n_sat_receiving = 0
@@ -25,7 +33,7 @@ class AllSatData(list):
     self.grb_burst_time = None
     self.loading_count = 0
     for num_sat in range(self.n_sat):
-      flist = subprocess.getoutput("ls {}_sat{}_{:04d}_*.inc1.id1.extracted.tra".format(source_prefix, num_sat, num_sim)).split("\n")
+      flist = subprocess.getoutput(f"ls {source_prefix}_sat{num_sat}_{num_sim:04d}_*.inc1.id1.extracted.tra").split("\n")
       if not flist[0].startswith("ls: cannot access") and self.dec_world_frame is None:
         self.dec_world_frame, self.ra_world_frame, self.grb_burst_time = fname2decratime(flist[0])[:3]
       if len(flist) == 1:
@@ -57,9 +65,12 @@ class AllSatData(list):
 
   def analyze(self, source_duration, source_fluence, const_analysis):
     """
-    Proceed to the analysis of polarigrams for all satellites and constellation (unless specified)
+    Proceed to the analysis for all satellites and constellation (unless specified)
+    :param source_duration: duration of the source
+    :param source_fluence: fluence of the source
+    :param const_analysis: whether the constellation should be analyzed
     """
-    # First step of the analyze, to obtain the polarigrams, and values for polarization and snr
+    # First step of the analyzis, to obtain the polarigrams, and values for polarization and snr
     for sat_ite, sat in enumerate(self):
       if sat is not None:
         sat.analyze(source_duration, source_fluence)
@@ -69,6 +80,12 @@ class AllSatData(list):
       print("Constellation not set : please use make_const method if you want to analyze the constellation's results")
 
   def make_const(self, options, const=None):
+    """
+    Creates a constellation of several satellites by putting together the results
+    :param options: options for the analysis, defined in AllSourceData
+    :param const: array with the number of the satellite to put in the constellation
+      If None all satellites are considered
+    """
     if const is None:
       const = np.array(range(self.n_sat))
     considered_sat = const[np.where(np.array(self) == None, False, True)]
@@ -135,10 +152,12 @@ class AllSatData(list):
           if temp_denom != 0:
             setattr(self.const_data, item, temp_num / temp_denom)
 
-
   def verif_const(self, message="", const=None):
     """
     Method to check that the constellation has been done properly
+    :param message: message to be printed (usually the number of the satellite and the one of the simulation)
+    :param const: array with the number of the satellite to put in the constellation
+      If None all satellites are considered
     """
     if const is None:
       const = np.array(range(self.n_sat))

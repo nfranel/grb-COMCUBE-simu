@@ -177,45 +177,6 @@ bool PosFinder::ParseCommandLine(int argc, char** argv)
 
 ////////////////////////////////////////////////////////////////////////////////
 
-// OLD VERSION
-// //! Do whatever analysis is necessary
-// bool PosFinder::Analyze(int argc, char** argv)
-// {
-//   if (m_Interrupt == true) return false;
-//   // Load geometry:
-//   m_Geometry = new MDGeometryQuest();
-//   if (m_Geometry->ScanSetupFile(m_GeometryFileName) == true) {
-//     cout<<"Geometry "<<m_Geometry->GetName()<<" loaded!"<<endl;
-//     //m_Geometry->ActivateNoising(false);
-//     //m_Geometry->SetGlobalFailureRate(0.0);
-//   } else {
-//     cout<<"Loading of geometry "<<m_Geometry->GetName()<<" failed!!"<<endl;
-//     return false;
-//   }
-//   // First a goody: Check for overlaps:
-//   vector<MDVolume*> OverlappingVolumes;
-//   m_Geometry->GetWorldVolume()->FindOverlaps(m_PosVector, OverlappingVolumes);
-//   cout<<endl;
-//   if (OverlappingVolumes.size() == 0) {
-//     cout<<"Outside worldvolume "<<m_PosVector<<" cm:"<<endl;
-//   }
-//   else if (OverlappingVolumes.size() == 1) {
-//     cout<<"Details for position "<<m_PosVector<<" cm (no overlaps found) :"<<endl;
-//     MDVolumeSequence Vol = m_Geometry->GetVolumeSequence(m_PosVector);
-//     // Next line gives out all the information about the location, works for all location, even out of a sensitive volume
-//     cout<<Vol.ToString()<<endl;
-//     // Next line enable the extraction of the precise location, but it does not work if the location given is not in a sensitive volume !
-//     cout<<"  TEST  :  "<<Vol.GetVolumeAt(1)->GetName()<<"/"<<Vol.GetVolumeAt(2)->GetName()<<endl;
-//   }
-//   else {
-//     cout<<"Following volumes overlap at position "<<m_PosVector<<" cm:"<<endl;
-//     for (unsigned int i = 0; i < OverlappingVolumes.size(); ++i) {
-//       cout<<OverlappingVolumes[i]->GetName()<<endl;
-//     }
-//   }
-//   return true;
-// }
-
 //! Do whatever analysis is necessary
 bool PosFinder::Analyze(int argc, char** argv)
 {
@@ -230,8 +191,6 @@ bool PosFinder::Analyze(int argc, char** argv)
   m_Geometry = new MDGeometryQuest();
   if (m_Geometry->ScanSetupFile(m_GeometryFileName) == true) {
     cout<<"Geometry "<<m_Geometry->GetName()<<" loaded!"<<endl;
-    //m_Geometry->ActivateNoising(false);
-    //m_Geometry->SetGlobalFailureRate(0.0);
   } else {
     cout<<"Loading of geometry "<<m_Geometry->GetName()<<" failed!!"<<endl;
     return false;
@@ -251,16 +210,17 @@ bool PosFinder::Analyze(int argc, char** argv)
   // Reading the file, making the analysis for each line and saving the result
   while (getline(file_stream, line)) {
     cout << "Line : " << line << endl;
-    // Utiliser un stringstream pour extraire les variables
+    // Using a stremstring to extract the positions from the line
     std::istringstream iss(line);
 
-    // Extraire les variables de la ligne
+    // Extraction of the position from the line
     if (iss >> xpos >> ypos >> zpos) {
-        // Faire quelque chose avec les variables, par exemple les afficher
-        std::cout << "xpos : " << xpos << std::endl;
-        std::cout << "ypos : " << ypos << std::endl;
-        std::cout << "zpos : " << zpos << std::endl;
-    } else {
+//         // Displaying the positions
+//         std::cout << "xpos : " << xpos << std::endl;
+//         std::cout << "ypos : " << ypos << std::endl;
+//         std::cout << "zpos : " << zpos << std::endl;
+    }
+    else {
         std::cerr << "Erreur lors de l'extraction des variables depuis la ligne." << std::endl;
     }
     m_PosVector = MVector(xpos, ypos, zpos);
@@ -291,9 +251,8 @@ bool PosFinder::Analyze(int argc, char** argv)
       }
     }
   }
-//       cout<<"Saving the position vector: "<<m_PosVector<<endl;
 
-  // Fermeture des fichiers
+  // Closing the files
   file_stream.close();
   save_stream.close();
   return true;
@@ -325,7 +284,6 @@ void CatchSignal(int a)
 
 ////////////////////////////////////////////////////////////////////////////////
 
-
 //! Main program
 int main(int argc, char** argv)
 {
@@ -354,6 +312,5 @@ int main(int argc, char** argv)
 
   return 0;
 }
-
 
 ////////////////////////////////////////////////////////////////////////////////

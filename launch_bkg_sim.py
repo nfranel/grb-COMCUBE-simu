@@ -6,46 +6,53 @@
 # Package imports
 import subprocess
 import os
-import numpy as np
 import multiprocessing as mp
 import argparse
 # Developped modules imports
 from funcmod import read_bkgpar
 
 
-def make_directories(geometry, spectra):
+def make_directories(geomfile, spectrapath):
+  """
+  Create the directories in which the simulations are saved
+  :param geomfile: geometry used for the simulations
+  :param spectrapath: path of the folder in which the background spectra are saved
+  """
   # Creating the bkg_source_spectra repertory if it doesn't exist
-  if not spectra.split("/")[-1] in os.listdir("./bkg"):
-    os.mkdir(spectra)
+  if not spectrapath.split("/")[-1] in os.listdir("./bkg"):
+    os.mkdir(spectrapath)
   # Creating a directory specific to the geometry
-  geom_name = geometry.split(".geo.setup")[0].split("/")[-1]
-  if not f"sim_{geom_name}" in os.listdir("./bkg"):
+  geom_name = geomfile.split(".geo.setup")[0].split("/")[-1]
+  if f"sim_{geom_name}" not in os.listdir("./bkg"):
     os.mkdir(f"./bkg/sim_{geom_name}")
     # Creating the sim and rawsim repertories if they don't exist
-  if not f"sim" in os.listdir(f"./bkg/sim_{geom_name}"):
+  if f"sim" not in os.listdir(f"./bkg/sim_{geom_name}"):
     os.mkdir(f"./bkg/sim_{geom_name}/sim")
-  if not f"rawsim" in os.listdir(f"./bkg/sim_{geom_name}"):
+  if f"rawsim" not in os.listdir(f"./bkg/sim_{geom_name}"):
     os.mkdir(f"./bkg/sim_{geom_name}/rawsim")
 
 
 def make_spectra(params):
   """
-
+  Create background spectra of different particles for different altitudes and latitudes
+  :param params: parameters from the parameter file
   """
-  spectra, alt, lat = params[6], params[0], params[1]
-  if not f"source-dat--alt_{alt:.1f}--lat_{lat:.1f}" in os.listdir(spectra):
-    os.mkdir(f"{spectra}/source-dat--alt_{alt:.1f}--lat_{lat:.1f}")
+  spectrapath, alt, lat = params[6], params[0], params[1]
+  if f"source-dat--alt_{alt:.1f}--lat_{lat:.1f}" not in os.listdir(spectrapath):
+    os.mkdir(f"{spectrapath}/source-dat--alt_{alt:.1f}--lat_{lat:.1f}")
   os.chdir("./bkg")
   subprocess.call(f"python CreateBackgroundSpectrumMEGAlib.py -i {lat} -a {alt}", shell=True)
   source_spectra = subprocess.getoutput(f"ls *_Spec_{alt:.1f}km_{lat:.1f}deg.dat").split("\n")
   os.chdir("..")
   for spectrum in source_spectra:
-    subprocess.call(f"mv ./bkg/{spectrum} {spectra}/source-dat--alt_{alt:.1f}--lat_{lat:.1f}", shell=True)
+    subprocess.call(f"mv ./bkg/{spectrum} {spectrapath}/source-dat--alt_{alt:.1f}--lat_{lat:.1f}", shell=True)
 
 
 def read_flux_from_spectrum(file):
   """
-
+  Reads the flux writen in the spectrum file and returns the value
+  :param file: spectrum file
+  :returns: Flux [/cm^2/s]
   """
   with open(file, "r") as f:
     lines = f.read().split("\n")
@@ -58,13 +65,20 @@ def read_flux_from_spectrum(file):
     line = lines[line_ite]
 
 
-def make_tmp_source(alt, lat, geom, source_model, spectra, simtime):
+def make_tmp_source(alt, lat, geom, source_model, spectrapath, simduration):
   """
-
+  Creates a temporary source file based on a model "source model"
+  :param alt: altitude for the background simulation
+  :param lat: latitude for the background simulation
+  :param geom: geometry used for the background simulation
+  :param source_model: model used to create temporary source files
+  :param spectrapath: path to spectra folder
+  :param simduration: duration of the background simulation
+  :returns: name of the temporary source file, name of the simulation without the extension
   """
   fname = f"tmp_{os.getpid()}.source"
   geom_name = geometry.split(".geo.setup")[0].split("/")[-1]
-  sname = f"./bkg/sim_{geom_name}/sim/bkg_{alt:.1f}_{lat:.1f}_{simtime:.0f}s"
+  sname = f"./bkg/sim_{geom_name}/sim/bkg_{alt:.1f}_{lat:.1f}_{simduration:.0f}s"
   source_list = ["SecondaryElectrons", "AtmosphericNeutrons", "AlbedoPhotons", "SecondaryPositrons", "SecondaryProtonsUpward", "SecondaryProtonsDownward", "PrimaryElectrons", "CosmicPhotons", "PrimaryPositrons", "PrimaryProtons"]
   with open(source_model) as f:
     lines = f.read().split("\n")
@@ -82,7 +96,7 @@ def make_tmp_source(alt, lat, geom, source_model, spectra, simtime):
       elif line.startswith(f"{run}.FileName"):
         f.write(f"{run}.FileName {sname}")
       elif line.startswith(f"{run}.Time"):
-        f.write(f"{run}.Time {simtime}")
+        f.write(f"{run}.Time {simduration}")
       elif line.startswith(f"{run}.Source"):
         source = line.split(" ")[-1]
         particle = source.split("Source")[0]
@@ -96,7 +110,7 @@ def make_tmp_source(alt, lat, geom, source_model, spectra, simtime):
         else:
           f.write(line)
       elif line.startswith(f"{source}.Spectrum"):
-        particle_dat = f"{spectra}/source-dat--alt_{alt:.1f}--lat_{lat:.1f}/{particle}_Spec_{alt:.1f}km_{lat:.1f}deg.dat"
+        particle_dat = f"{spectrapath}/source-dat--alt_{alt:.1f}--lat_{lat:.1f}/{particle}_Spec_{alt:.1f}km_{lat:.1f}deg.dat"
         f.write(f"{source}.Spectrum File {particle_dat}")
       elif line.startswith(f"{source}.Flux"):
         flux = read_flux_from_spectrum(particle_dat)
@@ -107,18 +121,30 @@ def make_tmp_source(alt, lat, geom, source_model, spectra, simtime):
   return fname, sname
 
 
-def make_parameters(alts, lats, geomfile, source_model, rcffile, mimfile, spectra, simtime):
+def make_parameters(alts, lats, geomfile, source_model, rcffile, mimfile, spectrapath, simduration):
   """
-
+  Creates a lists of parameters for several altitudes and latitudes
+  :param alts: altitudes for the background simulation
+  :param lats: latitudes for the background simulation
+  :param geomfile: geometry used for the background simulation
+  :param source_model: model used to create temporary source files
+  :param rcffile: revan configuration file to treat raw simulations
+  :param mimfile: mimrec configuration file to extract simulations treated with revan
+  :param spectrapath: path to spectra folder
+  :param simduration: duration of the background simulation
   """
-  parameters = []
+  parameters_container = []
   for alt in alts:
     for lat in lats:
-      parameters.append((alt, lat, geomfile, source_model, rcffile, mimfile, spectra, simtime))
-  return parameters
+      parameters_container.append((alt, lat, geomfile, source_model, rcffile, mimfile, spectrapath, simduration))
+  return parameters_container
 
 
 def run_bkg(params):
+  """
+  Runs the cosima, revan and mimrec programs and either move to rawsim or remove the .sim.gz and .tra.gz files
+  :param params: list of parameters to run the simulation
+  """
   # Making a temporary source file using a source_model
   sourcefile, simname = make_tmp_source(params[0], params[1], params[2], params[3], params[6], params[7])
   # Making a generic name for files
@@ -174,4 +200,3 @@ if __name__ == "__main__":
       pool.map(run_bkg, parameters)
   else:
     print("Missing parameter file or geometry - not running.")
-
