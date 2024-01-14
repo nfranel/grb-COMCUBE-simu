@@ -119,6 +119,15 @@ class BkgContainer(list):
                 single_time.append(reading[1])
                 single_pos.append(reading[2])
 
+            compton_second = np.array(compton_second)
+            compton_ener = np.array(compton_ener)
+            compton_time = np.array(compton_time)
+            compton_firstpos = np.array(compton_firstpos)
+            compton_secpos = np.array(compton_secpos)
+            single_ener = np.array(single_ener)
+            single_time = np.array(single_time)
+            single_pos = np.array(single_pos)
+
             f.write("NewBkg\n")
             f.write(f"{decbkg}\n")
             f.write(f"{altbkg}\n")
