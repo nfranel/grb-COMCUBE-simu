@@ -284,10 +284,18 @@ files = ["./bkg/exclusion/400km/AE8max_400km.out", "./bkg/exclusion/400km/AP8min
          "./bkg/exclusion/500km/AE8max_500km.out", "./bkg/exclusion/500km/AP8min_500km.out"]
 # for file in files:
 #   calc_partial_duty(90, 0, 0, 400, file)
+# calc_duty(90, 0, 0, 400)
 
 incl = np.linspace(0, 90, 46)
+duty_list = []
 for incli in incl:
-  calc_duty(incli, 0, 0, 400)
+  duty_list.append(calc_duty(incli, 0, 0, 500))
+plt.figure()
+plt.plot(incl, duty_list)
+plt.grid()
+plt.xticks(np.arange(0, 91, 5))
+plt.yticks(np.linspace(0.8, 1, 21))
+plt.show()
 
 # calc_duty(0, 0, 0, 400)
 # calc_duty(0, 0, 0, 500)
