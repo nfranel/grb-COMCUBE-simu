@@ -31,9 +31,9 @@ class BkgContainer(list):
     geom_name = geom.split(".geo.setup")[0].split("/")[-1]
     saving = f"bkgsaved_{geom_name}_{np.min(self.lat_range):.0f}-{np.max(self.lat_range):.0f}-{len(self.lat_range):.0f}_{np.min(self.alt_range):.0f}-{np.max(self.alt_range):.0f}-{len(self.alt_range):.0f}.txt"
     cond_saving = f"cond_bkgsaved_{geom_name}_{np.min(self.lat_range):.0f}-{np.max(self.lat_range):.0f}-{len(self.lat_range):.0f}_{np.min(self.alt_range):.0f}-{np.max(self.alt_range):.0f}-{len(self.alt_range):.0f}_ergcut-{ergcut[0]}-{ergcut[1]}.txt"
-    print("geom_name", geom_name)
-    print("saving", saving)
-    print("cond_saving", cond_saving)
+    # print("geom_name", geom_name)
+    # print("saving", saving)
+    # print("cond_saving", cond_saving)
     if saving not in os.listdir(f"./bkg/sim_{geom_name}"):
       init_time = time()
       print("###########################################################################")
@@ -162,7 +162,6 @@ class BkgContainer(list):
             string = f"{single_pos[-1][0]}_{single_pos[-1][1]}_{single_pos[-1][2]}"
             f.write(f"{string}\n")
 
-            print(type(compton_ener))
             compton_index = np.where(compton_ener >= ergcut[0], np.where(compton_ener <= ergcut[1], True, False), False)
             single_index = np.where(single_ener >= ergcut[0], np.where(single_ener <= ergcut[1], True, False), False)
             compton_ener = compton_ener[compton_index]
@@ -174,11 +173,11 @@ class BkgContainer(list):
             single_pos = single_pos[single_index]
             compton_first_detector, compton_sec_detector, single_detector = find_detector(compton_firstpos, compton_secpos, single_pos, self.geometry)
             hits = np.array([])
-            if compton_first_detector > 0:
+            if len(compton_first_detector) > 0:
               hits = np.concatenate((hits, compton_first_detector[:, 1]))
-            if compton_sec_detector > 0:
+            if len(compton_sec_detector) > 0:
               hits = np.concatenate((hits, compton_sec_detector[:, 1]))
-            if single_detector > 0:
+            if len(single_detector) > 0:
               hits = np.concatenate((hits, single_detector[:, 1]))
             calor = 0
             dsssd = 0
