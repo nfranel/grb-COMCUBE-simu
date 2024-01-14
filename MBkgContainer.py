@@ -153,6 +153,7 @@ class BkgContainer(list):
             string = f"{single_pos[-1][0]}_{single_pos[-1][1]}_{single_pos[-1][2]}"
             f.write(f"{string}\n")
 
+            print(type(compton_ener))
             compton_index = np.where(compton_ener >= ergcut[0], np.where(compton_ener <= ergcut[1], True, False), False)
             single_index = np.where(single_ener >= ergcut[0], np.where(single_ener <= ergcut[1], True, False), False)
             compton_ener = compton_ener[compton_index]
