@@ -621,7 +621,7 @@ def duty_calc(inclination):
       return 0.5
 
 
-def eff_area_func(dec_wf, ra_wf, dec_sat_wf, ra_sat_wf, sat_alt, mu100_list, func_type="single"):
+def eff_area_func(dec_wf, ra_wf, dec_sat_wf, ra_sat_wf, sat_alt, mu100_list):
   """
   Returns a value of the effective area for single event, compton event or 1 if the satellite is in sight for a direction dec_wt, ra_wf
   The value is obtained from mu100 files
@@ -630,13 +630,9 @@ def eff_area_func(dec_wf, ra_wf, dec_sat_wf, ra_sat_wf, sat_alt, mu100_list, fun
   """
   dec_sf, ra_sf = grb_decra_worldf2satf(dec_wf, ra_wf, dec_sat_wf, ra_sat_wf)
   angle_lim = horizon_angle(sat_alt)
+  seff_compton, seff_single = closest_mufile(dec_sf, ra_sf, mu100_list)[-2:]
   if dec_sf < angle_lim:
-    if func_type == "compton":
-      return closest_mufile(dec_sf, ra_sf, mu100_list)[-2]
-    elif func_type == "single":
-      return closest_mufile(dec_sf, ra_sf, mu100_list)[-1]
-    elif func_type == "FoV":
-      return 1
+    return seff_compton, seff_single, 1
 
 
 def eff_area_compton_func(theta, angle_lim, func_type="cos", duty=1.):
