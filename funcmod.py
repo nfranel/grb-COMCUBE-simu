@@ -631,7 +631,7 @@ def eff_area_func(dec_wf, ra_wf, dec_sat_wf, ra_sat_wf, sat_alt, mu100_list):
   dec_sf, ra_sf = grb_decra_worldf2satf(dec_wf, ra_wf, dec_sat_wf, ra_sat_wf)
   angle_lim = horizon_angle(sat_alt)
   if dec_sf < angle_lim:
-    seff_compton, seff_single = closest_mufile(dec_sf, ra_sf, mu100_list)[-2:] # TODO weird results
+    # seff_compton, seff_single = closest_mufile(dec_sf, ra_sf, mu100_list)[-2:] # TODO weird results
 
     ampl = 1
     ang_freq = 0.222
