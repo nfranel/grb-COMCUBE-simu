@@ -633,6 +633,8 @@ def eff_area_func(dec_wf, ra_wf, dec_sat_wf, ra_sat_wf, sat_alt, mu100_list):
   seff_compton, seff_single = closest_mufile(dec_sf, ra_sf, mu100_list)[-2:]
   if dec_sf < angle_lim:
     return seff_compton, seff_single, 1
+  else:
+    return 0, 0, 0
 
 
 def eff_area_compton_func(theta, angle_lim, func_type="cos", duty=1.):
