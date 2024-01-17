@@ -46,7 +46,7 @@
 @simulationsperevent 1
 @simtime t90
 @position -90 90 0 360
-@satellite 0 -90 0 550
+@satellite 0 -90 0 500
 
 
 

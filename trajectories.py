@@ -104,7 +104,7 @@ def trajectory(inc, ohm, nsat, alt, excludefile=None, omega=0, projection="carre
   phi_list = []
   theta_line = []
   phi_line = []
-  colors = ["lightsteelblue", "cornflowerblue", "royalblue", "blue", "navy"]
+  colors = ["royalblue", "blue", "navy", "lightsteelblue", "cornflowerblue"]
   # Creating the lists of sat coordinates
   for ite_orbit in range(len(inc)):
     temp_theta = []
@@ -166,8 +166,9 @@ def trajectory(inc, ohm, nsat, alt, excludefile=None, omega=0, projection="carre
 # for file in files:
 #     trajectory([5, 5, 45], [0, 180, 90], [12, 12, 12], 400, excludefile=file, projection="carre")
 # for alt in [400, 500]:
-#     trajectory([5, 5, 45], [0, 180, 90], [12, 12, 12], alt, excludefile="all", projection="carre")
+#     trajectory([5, 5, 45], [0, 180, 90], [9, 9, 9], alt, excludefile="all", projection="carre")
 
+trajectory([0], [0], [27], 500, excludefile="all", projection="carre")
 
 def calc_duty(inc, ohm, omega, alt, show=False):
   """
@@ -280,22 +281,22 @@ def calc_partial_duty(inc, ohm, omega, alt, exclusionfile):
   plt.show()
 
 
-files = ["./bkg/exclusion/400km/AE8max_400km.out", "./bkg/exclusion/400km/AP8min_400km.out",
-         "./bkg/exclusion/500km/AE8max_500km.out", "./bkg/exclusion/500km/AP8min_500km.out"]
-# for file in files:
-#   calc_partial_duty(90, 0, 0, 400, file)
-# calc_duty(90, 0, 0, 400)
-
-incl = np.linspace(0, 90, 46)
-duty_list = []
-for incli in incl:
-  duty_list.append(calc_duty(incli, 0, 0, 500))
-plt.figure()
-plt.plot(incl, duty_list)
-plt.grid()
-plt.xticks(np.arange(0, 91, 5))
-plt.yticks(np.linspace(0.8, 1, 21))
-plt.show()
+# files = ["./bkg/exclusion/400km/AE8max_400km.out", "./bkg/exclusion/400km/AP8min_400km.out",
+#          "./bkg/exclusion/500km/AE8max_500km.out", "./bkg/exclusion/500km/AP8min_500km.out"]
+# # for file in files:
+# #   calc_partial_duty(90, 0, 0, 400, file)
+# # calc_duty(90, 0, 0, 400)
+#
+# incl = np.linspace(0, 90, 46)
+# duty_list = []
+# for incli in incl:
+#   duty_list.append(calc_duty(incli, 0, 0, 500))
+# plt.figure()
+# plt.plot(incl, duty_list)
+# plt.grid()
+# plt.xticks(np.arange(0, 91, 5))
+# plt.yticks(np.linspace(0.8, 1, 21))
+# plt.show()
 
 # calc_duty(0, 0, 0, 400)
 # calc_duty(0, 0, 0, 500)
