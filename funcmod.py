@@ -625,74 +625,35 @@ def eff_area_func(dec_wf, ra_wf, dec_sat_wf, ra_sat_wf, sat_alt, mu100_list):
   """
   Returns a value of the effective area for single event, compton event or 1 if the satellite is in sight for a direction dec_wt, ra_wf
   The value is obtained from mu100 files
-  :param :
+  :param : TODO
   :returns:
   """
   dec_sf, ra_sf = grb_decra_worldf2satf(dec_wf, ra_wf, dec_sat_wf, ra_sat_wf)
   angle_lim = horizon_angle(sat_alt)
-  seff_compton, seff_single = closest_mufile(dec_sf, ra_sf, mu100_list)[-2:]
   if dec_sf < angle_lim:
+    seff_compton, seff_single = closest_mufile(dec_sf, ra_sf, mu100_list)[-2:] # TODO weird results
+
+    ampl = 1
+    ang_freq = 0.222
+    phi0 = 0.76
+    y_off_set = 2.5
+    seff_compton = np.absolute(ampl * np.cos(dec_sf * 2 * np.pi * ang_freq - phi0)) + y_off_set
+
+
+    angles = np.array([0, 10, 20, 30, 40, 50, 60, 70, 80, 89, 91, 100, 110])
+    eff_area = np.array([137.4, 148.5, 158.4, 161.9, 157.4, 150.4, 133.5, 112.8, 87.5, 63.6, 64.7, 71.8, 77.3])
+    interpo_ite = 1
+    if dec_sf > angles[-1]:
+      seff_single = eff_area[-2] + (eff_area[-1] - eff_area[-2]) / (angles[-1] - angles[-2]) * (dec_sf - angles[-2])
+    else:
+      while dec_sf > angles[interpo_ite]:
+        interpo_ite += 1
+      seff_single = eff_area[interpo_ite - 1] + (eff_area[interpo_ite] - eff_area[interpo_ite - 1]) / (
+                angles[interpo_ite] - angles[interpo_ite - 1]) * (dec_sf - angles[interpo_ite - 1])
+
     return seff_compton, seff_single, 1
   else:
     return 0, 0, 0
-
-
-def eff_area_compton_func(theta, angle_lim, func_type="cos", duty=1.):
-  """
-  Returns a value of the effective area for polarisation based on a cos function to account for the reception angle relative to the instrument's zenith
-  This is an approximation as the cos function does not perfectly fit the data
-  If func_type "FoV" computes instead the number of satellites viewing that part of the sky (no sensitivity considered)
-  TODO update it, compare with the values from the mu100 files
-  """
-  theta, angle_lim = np.deg2rad(theta), np.deg2rad(angle_lim)
-  if duty < 0 or duty > 1:
-    print("Error estimating the duty time, incorrect value")
-    return 0
-  if func_type == "cos":
-    if theta < angle_lim:
-      # ampl = 5.5
-      ampl = 1
-      ang_freq = 0.222
-      phi0 = 0.76
-      y_off_set = 2.5
-      return (np.absolute(ampl * np.cos(theta * 2 * np.pi * ang_freq - phi0)) + y_off_set) * duty
-    else:
-      return 0
-  elif func_type == "FoV":
-    if theta < angle_lim:
-      return 1 * duty
-    else:
-      return 0
-
-
-def eff_area_single_func(theta, angle_lim, func_type="data", duty=True):
-  """
-  Returns a value of the effective area for spectrometry based on interpolation from values obtained from different reception angle relative to the instrument's zenith
-  This is an approximation as the values used are obtained for monoenergetic simulations - grbs are not and sensitivity of the instrument depends on energy
-  If func_type "FoV" computes instead the number of satellites viewing that part of the sky (no sensitivity considered)
-  TODO update it, compare with the values from the mu100 files
-  """
-  if duty < 0 or duty > 1:
-    print("Error estimating the duty time, incorrect value")
-    return 0
-  if func_type == "data":
-    if theta < angle_lim:
-      angles = np.array([0, 10, 20, 30, 40, 50, 60, 70, 80, 89, 91, 100, 110])
-      eff_area = np.array([137.4, 148.5, 158.4, 161.9, 157.4, 150.4, 133.5, 112.8, 87.5, 63.6, 64.7, 71.8, 77.3])
-      interpo_ite = 1
-      if theta > angles[-1]:
-        return (eff_area[-2] + (eff_area[-1] - eff_area[-2]) / (angles[-1] - angles[-2]) * (theta - angles[-2])) * duty
-      else:
-        while theta > angles[interpo_ite]:
-          interpo_ite += 1
-        return (eff_area[interpo_ite - 1] + (eff_area[interpo_ite] - eff_area[interpo_ite - 1]) / (angles[interpo_ite] - angles[interpo_ite - 1]) * (theta - angles[interpo_ite - 1])) * duty
-    else:
-      return 0
-  elif func_type == "FoV":
-    if theta < angle_lim:
-      return 1 * duty
-    else:
-      return 0
 
 
 #######################################################################################################
