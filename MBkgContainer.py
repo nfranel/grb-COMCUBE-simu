@@ -312,6 +312,7 @@ class BkgData:
       # Extraction of the background values
       lines = data.split("\n")
       self.dec = float(lines[0])
+      # self.ra TODO
       self.alt = float(lines[1])
       # Attributes filled with file reading (or to be used from this moment)
       self.compton_second = np.array(lines[2].split("|"), dtype=float)

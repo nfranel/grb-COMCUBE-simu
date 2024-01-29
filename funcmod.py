@@ -450,7 +450,7 @@ def calc_mdp(S, B, mu100, nsigma=4.29):
   return nsigma * np.sqrt(S + B) / (mu100 * S)
 
 
-def closest_bkg_rate(sat_dec, sat_ra, bkg_list):
+def closest_bkg_values(sat_dec, sat_ra, sat_alt, bkg_list):
   """
   Find the closest bkg file for a satellite (in terms of latitude, may be updated for longitude too)
   Returns the count rate of this bkg file
@@ -458,18 +458,26 @@ def closest_bkg_rate(sat_dec, sat_ra, bkg_list):
   may not be optimal as the surface of the sphere (polar coordinates) is not a plan.
   :param sat_dec: declination of the satellite [deg]
   :param sat_ra: right ascension of the satellite [deg]
+    :param sat_alt: altitude of the satellite [km]
+
   :param bkg_list: list of all the background files
   :returns: compton and single event count rates of the closest background file
   """
   if len(bkg_list) == 0:
     return 0.000001
   else:
-    dec_error = np.array([(bkg.dec - sat_dec) ** 2 for bkg in bkg_list])
-    # ra_error = np.array([(bkg.ra - sat_ra) ** 2 for bkg in bkg_list])
-    ra_error = np.array([0 for bkg in bkg_list])
+    bkg_selec = []
+    for bkg in bkg_list:
+      if bkg.alt == sat_alt:
+        bkg_selec.append(bkg)
+    if bkg_selec == []:
+      raise FileNotFoundError("No background file were loaded for the given altitude.")
+    dec_error = np.array([(bkg.dec - sat_dec) ** 2 for bkg in bkg_selec])
+    # ra_error = np.array([(bkg.ra - sat_ra) ** 2 for bkg in bkg_selec])
+    ra_error = np.array([0 for bkg in bkg_selec])
     total_error = np.sqrt(dec_error + ra_error)
     index = np.argmin(total_error)
-    return [bkg_list[index].compton_cr, bkg_list[index].single_cr]
+    return [bkg_selec[index].compton_cr, bkg_selec[index].single_cr, bkg_selec[index].calor, bkg_selec[index].dsssd, bkg_selec[index].side, bkg_selec[index].total_hits]
 
 
 def affect_bkg(info_sat, burst_time, bkg_list):
@@ -486,7 +494,7 @@ def affect_bkg(info_sat, burst_time, bkg_list):
   true_anomaly = true_anomaly_calc(burst_time, orbital_period)
   dec_sat_world_frame, ra_sat_world_frame = orbitalparam2decra(info_sat[0], info_sat[1], info_sat[2], nu=true_anomaly)
   ra_sat_world_frame -= earth_ra_offset
-  count_rates = closest_bkg_rate(dec_sat_world_frame, ra_sat_world_frame, bkg_list)
+  count_rates = closest_bkg_values(dec_sat_world_frame, ra_sat_world_frame, info_sat[3], bkg_list)[:2]
   return dec_sat_world_frame, ra_sat_world_frame, count_rates[0], count_rates[1]
 
 

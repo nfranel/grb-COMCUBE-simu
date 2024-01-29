@@ -38,8 +38,7 @@ class MuSeffContainer(list):
     self.ras = ras
     self.bins = set_bins("fixed")
     self.ergcut = ergcut
-    func = lambda x: band(x, self.bandparam[0], self.bandparam[1], self.bandparam[2], self.bandparam[3],
-                          self.bandparam[4])
+    func = lambda x: band(x, self.bandparam[0], self.bandparam[1], self.bandparam[2], self.bandparam[3], self.bandparam[4])
     self.fluence = quad(func, self.ergcut[0], self.ergcut[1])[0] * self.poltime
 
     geom_name = geom.split(".geo.setup")[0].split("/")[-1]
