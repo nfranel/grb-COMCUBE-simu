@@ -62,7 +62,7 @@ def bkg_data_map(field, bkgdata, altitude, dec_range=np.linspace(0, 180, 181), r
     for col, long in enumerate(ra_range):
       # Geodetic to apex, scalar input
       mag_lat, mag_lon = apex15.convert(lat, long, 'geo', 'apex', height=altitude)
-      print("{:.12f}, {:.12f}".format(mag_lat, mag_lon))
+      print(f"init : {lat:.12f}, {long:.12f}              final : {mag_lat:.12f}, {mag_lon:.12f}")
       bkg_values = closest_bkg_values(lat, long, altitude, bkgdata)
       field_list[row][col] = bkg_values[field_index]
 

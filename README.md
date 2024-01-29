@@ -1,5 +1,7 @@
 # grb-COMCUBE-simu
 
+# TODO add information on visualitation.py and 
+
 Python requirements :
   - numpy, matplotlib, scipy, pandas, argparse, multiprocessing, subprocess, time, os, gzip, inspect, itertools
   - Special requirements :
@@ -8,6 +10,7 @@ Python requirements :
 Other requirements :
   - make
   - megalib installed and **sourced**
+  - pip, intall apexpy (pip install apexpy)
 
 ############################################################################
 
