@@ -4,6 +4,7 @@ from scipy.integrate import quad
 from time import time
 import os
 import subprocess
+from apexpy import Apex
 
 # TODO USE ASTROPY CONSTANTS
 m_elec = 9.1094e-31  # kg
@@ -480,6 +481,19 @@ def closest_bkg_values(sat_dec, sat_ra, sat_alt, bkg_list):
     return [bkg_selec[index].compton_cr, bkg_selec[index].single_cr, bkg_selec[index].calor, bkg_selec[index].dsssd, bkg_selec[index].side, bkg_selec[index].total_hits]
 
 
+def geo_to_mag(dec_wf, ra_wf, altitude):
+  """
+  Converts the geographic declination and right ascension into geomagnetic declination and right ascension
+  :param dec_wf: geographic declination in world frame
+  :param ra_wf: geographic right ascension in world frame
+  :param altitude: altitude of the point
+  :returns: geomagnetic declination and right ascension
+  """
+  apex15 = Apex(date=2025)
+  mag_lat, mag_lon = apex15.convert(90 - dec_wf, ra_wf, 'geo', 'apex', height=altitude)
+  return 90 - mag_lat, mag_lon
+
+
 def affect_bkg(info_sat, burst_time, bkg_list):
   """
   Uses orbital parameters of a satellite to obtain its dec and ra in world frame and to get the expected count rates
@@ -494,7 +508,8 @@ def affect_bkg(info_sat, burst_time, bkg_list):
   true_anomaly = true_anomaly_calc(burst_time, orbital_period)
   dec_sat_world_frame, ra_sat_world_frame = orbitalparam2decra(info_sat[0], info_sat[1], info_sat[2], nu=true_anomaly)
   ra_sat_world_frame -= earth_ra_offset
-  count_rates = closest_bkg_values(dec_sat_world_frame, ra_sat_world_frame, info_sat[3], bkg_list)[:2]
+  mag_dec_sat_world_frame, mag_ra_sat_world_frame = geo_to_mag(dec_sat_world_frame, ra_sat_world_frame, info_sat[3])
+  count_rates = closest_bkg_values(mag_dec_sat_world_frame, mag_ra_sat_world_frame, info_sat[3], bkg_list)[:2]
   return dec_sat_world_frame, ra_sat_world_frame, count_rates[0], count_rates[1]
 
 
