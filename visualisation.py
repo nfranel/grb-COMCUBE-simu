@@ -77,7 +77,7 @@ def bkg_data_map(field, bkgdata, altitude, dec_range=np.linspace(0, 180, 181), r
   plt.show()
 
 
-def magnetic_latitude_convert(altitude, lat_range=np.linspace(90, -90, 19), lon_range=np.linspace(-180, 180, 361)):
+def magnetic_latitude_convert(altitude, lat_range=np.linspace(90, -90, 19), lon_range=np.linspace(0, 360, 361)):
   """
   TODO testing !!!
   :param altitude: altitude for the background
@@ -91,8 +91,10 @@ def magnetic_latitude_convert(altitude, lat_range=np.linspace(90, -90, 19), lon_
       geo_lat[ite_lat, ite_lon], geo_lon[ite_lat, ite_lon] = apex15.convert(mag_lat, mag_lon, 'apex', 'geo', height=altitude)
 
   fig, ax = plt.subplots(subplot_kw={'projection': ccrs.PlateCarree(central_longitude=0)})
-  for ite_lat in range(len(lat_range)):
-    ax.scatter(geo_lon[ite_lat], geo_lat[ite_lat], color='navy', s=1)
+  # for ite_lat in range(len(lat_range)):
+  #   ax.scatter(geo_lon[ite_lat], geo_lat[ite_lat], color='navy', s=1)
+  z_val = np.matmul(np.ones((len(lat_range), 1)), lon_range)
+  ax.contour(geo_lon, geo_lat, z_val)
   ax.coastlines()
   ax.set(xlabel="Longitude (deg)", ylabel="Latitude (deg)", title=f"Lines of constant geomagnetic latitudes")
   plt.show()
