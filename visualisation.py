@@ -104,7 +104,9 @@ def magnetic_latitude_convert(altitude, lat_range=np.linspace(90, -90, 181), lon
     for ite_lon, lon in enumerate(lon_range):
       mag_lat[ite_lat, ite_lon] = apex15.convert(lat, lon, 'geo', 'apex', height=altitude)[0]
   fig, ax = plt.subplots(subplot_kw={'projection': ccrs.PlateCarree(central_longitude=0)})
-  ax.contour(x_lat, y_lat, mag_lat)
+  p1 = ax.contour(x_lat, y_lat, mag_lat)
+  cbar = fig.colorbar(p1)
+  cbar.set_label(f"Geomagnetic latitudes (deg)", rotation=270, labelpad=20)
   ax.coastlines()
   ax.set(xlabel="Longitude (deg)", ylabel="Latitude (deg)", title=f"Lines of constant geomagnetic latitudes")
   plt.show()
