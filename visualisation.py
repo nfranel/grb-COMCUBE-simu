@@ -75,13 +75,6 @@ def bkg_data_map(field, bkgdata, altitude, dec_range=np.linspace(0, 180, 181), r
   plt.show()
 
 
-def bkg_data_map():
-  """
-
-  """
-  pass
-
-
 def coverage_maps():
   """
 
