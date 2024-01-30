@@ -85,7 +85,7 @@ def magnetic_latitude_convert(altitude, lat_range=np.linspace(90, -90, 37), lon_
   :param lon_range: range of longitudes for the map
   """
   apex15 = Apex(date=2025)
-  geo_lat, geo_lon = np.zeros((len(lat_range), len(lon_range)))
+  geo_lat, geo_lon = np.zeros((len(lat_range), len(lon_range))), np.zeros((len(lat_range), len(lon_range)))
   for ite_lat, mag_lat in enumerate(lat_range):
     for ite_lon, mag_lon in enumerate(lon_range):
       geo_lat[ite_lat, ite_lon], geo_lon[ite_lat, ite_lon] = apex15.convert(mag_lat, mag_lon, 'apex', 'geo', height=altitude)
