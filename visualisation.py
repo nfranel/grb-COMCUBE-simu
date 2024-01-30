@@ -77,6 +77,26 @@ def bkg_data_map(field, bkgdata, altitude, dec_range=np.linspace(0, 180, 181), r
   plt.show()
 
 
+def magnetic_latitude_convert(altitude, lat_range=np.linspace(90, -90, 37), lon_range=np.linspace(0, 360, 361)):
+  """
+  TODO testing !!!
+  :param altitude: altitude for the background
+  :param lat_range: range of latitudes for the map
+  :param lon_range: range of longitudes for the map
+  """
+  apex15 = Apex(date=2025)
+  geo_lat, geo_lon = np.zeros((len(lat_range), len(lon_range)))
+  for ite_lat, mag_lat in enumerate(lat_range):
+    for ite_lon, mag_lon in enumerate(lon_range):
+      geo_lat[ite_lat, ite_lon], geo_lon[ite_lat, ite_lon] = apex15.convert(mag_lat, mag_lon, 'apex', 'geo', height=altitude)
+
+  fig, ax = plt.subplots(subplot_kw={'projection': ccrs.PlateCarree(central_longitude=0)})
+  for ite_lat in range(len(lat_range)):
+    ax.plot(geo_lon[ite_lat], geo_lat[ite_lat])
+  ax.coastlines()
+  ax.set(xlabel="Longitude (deg)", ylabel="Latitude (deg)", title=f"Lines of constant geomagnetic latitudes")
+  plt.show()
+
 def coverage_maps():
   """
 
