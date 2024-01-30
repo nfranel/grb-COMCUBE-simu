@@ -92,7 +92,7 @@ def magnetic_latitude_convert(altitude, lat_range=np.linspace(90, -90, 19), lon_
 
   fig, ax = plt.subplots(subplot_kw={'projection': ccrs.PlateCarree(central_longitude=0)})
   for ite_lat in range(len(lat_range)):
-    ax.plot(geo_lon[ite_lat], geo_lat[ite_lat], color='black')
+    ax.scatter(geo_lon[ite_lat], geo_lat[ite_lat], color='navy', s=1)
   ax.coastlines()
   ax.set(xlabel="Longitude (deg)", ylabel="Latitude (deg)", title=f"Lines of constant geomagnetic latitudes")
   plt.show()
