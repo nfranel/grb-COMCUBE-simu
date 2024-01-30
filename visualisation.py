@@ -98,7 +98,7 @@ def magnetic_latitude_convert(altitude, lat_range=np.linspace(90, -90, 19), lon_
   # ax.set(xlabel="Longitude (deg)", ylabel="Latitude (deg)", title=f"Lines of constant geomagnetic latitudes")
   # plt.show()
   # WITH CONTOUR
-  x_lat, y_lat = np.meshgrid(lat_range, lon_range)
+  x_lat, y_lat = np.meshgrid(lon_range, lat_range)
   mag_lat = np.zeros((len(lat_range), len(lon_range)))
   for ite_lat, lat in enumerate(lat_range):
     for ite_lon, lon in enumerate(lon_range):
