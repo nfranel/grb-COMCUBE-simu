@@ -108,7 +108,7 @@ def magnetic_latitude_convert(altitude, lat_range=np.linspace(90, -90, 721), lon
   p1 = ax.contour(x_lat, y_lat, mag_lat, levels=levels)
   cbar = fig.colorbar(p1)
   cbar.set_label(f"Geomagnetic latitudes (deg)", rotation=270, labelpad=20)
-  # cbar.set_ticks()
+  cbar.set_ticks(levels)
   ax.coastlines()
   ax.set(xlabel="Longitude (deg)", ylabel="Latitude (deg)", title=f"Lines of constant geomagnetic latitudes")
   plt.show()
