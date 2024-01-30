@@ -85,16 +85,26 @@ def magnetic_latitude_convert(altitude, lat_range=np.linspace(90, -90, 19), lon_
   :param lon_range: range of longitudes for the map
   """
   apex15 = Apex(date=2025)
-  geo_lat, geo_lon = np.zeros((len(lat_range), len(lon_range))), np.zeros((len(lat_range), len(lon_range)))
-  for ite_lat, mag_lat in enumerate(lat_range):
-    for ite_lon, mag_lon in enumerate(lon_range):
-      geo_lat[ite_lat, ite_lon], geo_lon[ite_lat, ite_lon] = apex15.convert(mag_lat, mag_lon, 'apex', 'geo', height=altitude)
-
-  fig, ax = plt.subplots(subplot_kw={'projection': ccrs.PlateCarree(central_longitude=0)})
+  # WITH SCATTER
+  # geo_lat, geo_lon = np.zeros((len(lat_range), len(lon_range))), np.zeros((len(lat_range), len(lon_range)))
+  # for ite_lat, mag_lat in enumerate(lat_range):
+  #   for ite_lon, mag_lon in enumerate(lon_range):
+  #     geo_lat[ite_lat, ite_lon], geo_lon[ite_lat, ite_lon] = apex15.convert(mag_lat, mag_lon, 'apex', 'geo', height=altitude)
+  #
+  # fig, ax = plt.subplots(subplot_kw={'projection': ccrs.PlateCarree(central_longitude=0)})
   # for ite_lat in range(len(lat_range)):
   #   ax.scatter(geo_lon[ite_lat], geo_lat[ite_lat], color='navy', s=1)
-  z_val = np.matmul(np.reshape(lat_range, (len(lat_range), 1)), np.ones((1, len(lon_range))))
-  ax.contour(geo_lon, geo_lat, z_val)
+  # ax.coastlines()
+  # ax.set(xlabel="Longitude (deg)", ylabel="Latitude (deg)", title=f"Lines of constant geomagnetic latitudes")
+  # plt.show()
+  # WITH CONTOUR
+  x_lat, y_lat = np.meshgrid(lat_range, lon_range)
+  mag_lat = np.zeros((len(lat_range), len(lon_range)))
+  for ite_lat, lat in enumerate(lat_range):
+    for ite_lon, lon in enumerate(lon_range):
+      mag_lat[ite_lat, ite_lon] = apex15.convert(lat, lon, 'geo', 'apex', height=altitude)[0]
+  fig, ax = plt.subplots(subplot_kw={'projection': ccrs.PlateCarree(central_longitude=0)})
+  ax.contour(x_lat, y_lat, mag_lat)
   ax.coastlines()
   ax.set(xlabel="Longitude (deg)", ylabel="Latitude (deg)", title=f"Lines of constant geomagnetic latitudes")
   plt.show()
