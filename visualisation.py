@@ -77,7 +77,7 @@ def bkg_data_map(field, bkgdata, altitude, dec_range=np.linspace(0, 180, 181), r
   plt.show()
 
 
-def magnetic_latitude_convert(altitude, lat_range=np.linspace(90, -90, 19), lon_range=np.linspace(0, 360, 361)):
+def magnetic_latitude_convert(altitude, lat_range=np.linspace(90, -90, 181), lon_range=np.linspace(0, 360, 361)):
   """
   TODO testing !!!
   :param altitude: altitude for the background
