@@ -498,6 +498,8 @@ def affect_bkg(info_sat, burst_time, bkg_list):
   """
   Uses orbital parameters of a satellite to obtain its dec and ra in world frame and to get the expected count rates
   for compton and single events at this position
+  dec is calculated so that it is from 0 to 180°
+  ra is calculated so that it is from 0 to 360°
   :param info_sat: information about the satellite orbit
   :param burst_time: time at which the burst occured
   :param bkg_list: list of the background files to extract the correct count rates
@@ -507,7 +509,7 @@ def affect_bkg(info_sat, burst_time, bkg_list):
   earth_ra_offset = earth_rotation_offset(burst_time)
   true_anomaly = true_anomaly_calc(burst_time, orbital_period)
   dec_sat_world_frame, ra_sat_world_frame = orbitalparam2decra(info_sat[0], info_sat[1], info_sat[2], nu=true_anomaly)
-  ra_sat_world_frame -= earth_ra_offset
+  ra_sat_world_frame = np.mod(ra_sat_world_frame - earth_ra_offset, 360)
   mag_dec_sat_world_frame, mag_ra_sat_world_frame = geo_to_mag(dec_sat_world_frame, ra_sat_world_frame, info_sat[3])
   count_rates = closest_bkg_values(mag_dec_sat_world_frame, mag_ra_sat_world_frame, info_sat[3], bkg_list)[:2]
   return dec_sat_world_frame, ra_sat_world_frame, count_rates[0], count_rates[1]
