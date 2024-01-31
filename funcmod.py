@@ -805,6 +805,23 @@ def orbitalparam2decra(inclination, ohm, omega, nu=0):
   return np.rad2deg(dec_sat_wf), np.rad2deg(ra_sat_wf)
 
 
+def sat_info_2_decra(info_sat, burst_time):
+  """
+  Uses orbital parameters of a satellite in the for of "info_sat" to obtain its dec and ra in world frame
+  dec is calculated so that it is from 0 to 180°
+  ra is calculated so that it is from 0 to 360°
+  :param info_sat: information about the satellite orbit
+  :param burst_time: time at which the burst occured
+  :returns  dec_sat_world_frame, ra_sat_world_frame
+  """
+  orbital_period = orbital_period_calc(info_sat[3])
+  earth_ra_offset = earth_rotation_offset(burst_time)
+  true_anomaly = true_anomaly_calc(burst_time, orbital_period)
+  dec_sat_world_frame, ra_sat_world_frame = orbitalparam2decra(info_sat[0], info_sat[1], info_sat[2], nu=true_anomaly)
+  ra_sat_world_frame = np.mod(ra_sat_world_frame - earth_ra_offset, 360)
+  return np.rad2deg(dec_sat_world_frame), np.rad2deg(ra_sat_world_frame)
+
+
 def decra2orbitalparam(dec_sat_wf, ra_sat_wf):
   """
   Calculates the orbital parameters of an object knowing its dec and ra

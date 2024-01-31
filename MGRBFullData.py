@@ -103,12 +103,14 @@ class GRBFullData:
       self.n_sat_detect = 0
     else:
       dec_world_frame, ra_world_frame, source_name, num_sim, num_sat = fname2decra(data_list[0])
-      self.expected_pa, self.grb_dec_sat_frame, self.grb_ra_sat_frame = grb_decrapol_worldf2satf(dec_world_frame, ra_world_frame, sat_info[0], sat_info[1])[:3]
+      dec_sat_wf, ra_sat_wf = sat_info_2_decra(sat_info, burst_time)
+      self.expected_pa, self.grb_dec_sat_frame, self.grb_ra_sat_frame = grb_decrapol_worldf2satf(dec_world_frame, ra_world_frame, dec_sat_wf, ra_sat_wf)[:3]
       print("==========================================================================")
-      print(f"data_list, sat_info, burst_time, sim_duration, num_sat, ergcut, armcut, geometry, save_time, corr, polarigram_bins   :\n {data_list}, {sat_info}, {burst_time}, {sim_duration}, {num_sat}, {ergcut}, {armcut}, {geometry}, {save_time}, {corr}, {polarigram_bins}")
-      # print(f"source_name, num_sim, num_sat : {source_name}, {num_sim}, {num_sat}")
-      # print(f" dec_world_frame, ra_world_frame : {dec_world_frame:.6f}, {ra_world_frame:.6f}")
-      # print(f"self.grb_dec_sat_frame, self.grb_ra_sat_frame : {self.grb_dec_sat_frame:.6f}, {self.grb_ra_sat_frame:.6f}")
+      # print(f"data_list, sat_info, burst_time, sim_duration, num_sat, ergcut, armcut, geometry, save_time, corr, polarigram_bins   :\n {data_list}, {sat_info}, {burst_time}, {sim_duration}, {num_sat}, {ergcut}, {armcut}, {geometry}, {save_time}, {corr}, {polarigram_bins}")
+      if source_name == "GRB080714086":
+        print(f"source_name, num_sim, num_sat : {source_name}, {num_sim}, {num_sat}")
+        print(f" dec_world_frame, ra_world_frame : {dec_world_frame:.6f}, {ra_world_frame:.6f}")
+        print(f"self.grb_dec_sat_frame, self.grb_ra_sat_frame : {self.grb_dec_sat_frame:.6f}, {self.grb_ra_sat_frame:.6f}")
       # Extracting the data from first file
       data_pol = readfile(data_list[0])
       for event in data_pol:
