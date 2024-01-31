@@ -105,9 +105,7 @@ class GRBFullData:
       dec_world_frame, ra_world_frame, source_name, num_sim, num_sat = fname2decra(data_list[0])
       self.expected_pa, self.grb_dec_sat_frame, self.grb_ra_sat_frame = grb_decrapol_worldf2satf(dec_world_frame, ra_world_frame, sat_info[0], sat_info[1])[:3]
       print("==========================================================================")
-      print("==========================================================================")
-      print(f"data_list, sat_info, burst_time, sim_duration, num_sat, bkg_data, mu_data, ergcut, armcut, geometry, save_time, corr, polarigram_bins   :\n {data_list}, {sat_info}, {burst_time}, {sim_duration}, {num_sat}, {bkg_data}, {mu_data}, {ergcut}, {armcut}, {geometry}, {save_time}, {corr}, {polarigram_bins}")
-
+      print(f"data_list, sat_info, burst_time, sim_duration, num_sat, ergcut, armcut, geometry, save_time, corr, polarigram_bins   :\n {data_list}, {sat_info}, {burst_time}, {sim_duration}, {num_sat}, {ergcut}, {armcut}, {geometry}, {save_time}, {corr}, {polarigram_bins}")
       # print(f"source_name, num_sim, num_sat : {source_name}, {num_sim}, {num_sat}")
       # print(f" dec_world_frame, ra_world_frame : {dec_world_frame:.6f}, {ra_world_frame:.6f}")
       # print(f"self.grb_dec_sat_frame, self.grb_ra_sat_frame : {self.grb_dec_sat_frame:.6f}, {self.grb_ra_sat_frame:.6f}")
