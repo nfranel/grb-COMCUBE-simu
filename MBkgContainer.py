@@ -262,7 +262,6 @@ class BkgContainer(list):
         compton_first_detector, compton_sec_detector, single_detector = find_detector(compton_firstpos, compton_secpos,
                                                                                       single_pos, self.geometry)
         hits = np.array([])
-        print(compton_first_detector)
         if len(compton_first_detector) > 0:
           hits = np.concatenate((hits, compton_first_detector[:, 1]))
         if len(compton_sec_detector) > 0:
