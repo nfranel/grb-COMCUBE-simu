@@ -73,7 +73,7 @@ class AllSourceData:
     self.muSeffdata = MuSeffContainer(self.muSeff_param, self.erg_cut, self.armcut)
 
     # Log information
-    # log = LogData("/pdisk/ESA/test--400km--0-0-0--27sat")
+    # log = LogData("/pdisk/ESA/test--400km--0-0-0--27sat") TODO Check if necessary
     self.n_sim_simulated, self.n_sim_below_horizon, self.n_sim_in_radbelt = LogData(self.sim_prefix.split("/sim/")[0]).detection_statistics()
 
     # Setting the catalog and the attributes associated

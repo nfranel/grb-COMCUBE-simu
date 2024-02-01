@@ -811,6 +811,7 @@ def sat_info_2_decra(info_sat, burst_time):
   dec is calculated so that it is from 0 to 180°
   ra is calculated so that it is from 0 to 360°
   :param info_sat: information about the satellite orbit
+    [inclination, RA of ascending node, argument of periapsis, altitude]
   :param burst_time: time at which the burst occured
   :returns  dec_sat_world_frame, ra_sat_world_frame
   """

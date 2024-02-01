@@ -168,7 +168,7 @@ def trajectory(inc, ohm, nsat, alt, excludefile=None, omega=0, projection="carre
 # for alt in [400, 500]:
 #     trajectory([5, 5, 45], [0, 180, 90], [9, 9, 9], alt, excludefile="all", projection="carre")
 
-trajectory([0], [0], [27], 500, excludefile="all", projection="carre")
+# trajectory([0], [0], [27], 500, excludefile="all", projection="carre")
 
 def calc_duty(inc, ohm, omega, alt, show=False):
   """
