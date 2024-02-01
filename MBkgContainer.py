@@ -263,11 +263,11 @@ class BkgContainer(list):
                                                                                       single_pos, self.geometry)
         hits = np.array([])
         print(compton_first_detector)
-        if compton_first_detector > 0:
+        if len(compton_first_detector) > 0:
           hits = np.concatenate((hits, compton_first_detector[:, 1]))
-        if compton_sec_detector > 0:
+        if len(compton_sec_detector) > 0:
           hits = np.concatenate((hits, compton_sec_detector[:, 1]))
-        if single_detector > 0:
+        if len(single_detector) > 0:
           hits = np.concatenate((hits, single_detector[:, 1]))
         calor = 0
         dsssd = 0
@@ -348,11 +348,11 @@ class BkgData:
 
       self.compton_first_detector, self.compton_sec_detector, self.single_detector = find_detector(compton_firstpos, compton_secpos, single_pos, geometry)
       hits = np.array([])
-      if self.compton_first_detector > 0:
+      if len(self.compton_first_detector) > 0:
         hits = np.concatenate((hits, self.compton_first_detector[:, 1]))
-      if self.compton_sec_detector > 0:
+      if len(self.compton_sec_detector) > 0:
         hits = np.concatenate((hits, self.compton_sec_detector[:, 1]))
-      if self.single_detector > 0:
+      if len(self.single_detector) > 0:
         hits = np.concatenate((hits, self.single_detector[:, 1]))
       self.calor = 0
       self.dsssd = 0
