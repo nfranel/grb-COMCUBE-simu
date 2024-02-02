@@ -976,9 +976,9 @@ def random_grb_dec_ra(lat_min, lat_max, lon_min, lon_max):
   :returns: dec and ra. [0, 180] & [0, 360]
   """
   # Variable domain verification verif on ra_max is done without function to make things easier in the param file
-  dec_verif(lat_min)
-  dec_verif(lat_max)
-  ra_verif(lon_max)
+  lat_verif(lat_min)
+  lat_verif(lat_max)
+  lon_verif(lon_max)
   if not -180 <= lon_min <= 180:
     raise ValueError("Longitude has a wrong value")
   lat_min, lat_max, lon_min, lon_max = np.deg2rad(lat_min), np.deg2rad(lat_max), np.deg2rad(lon_min), np.deg2rad(lon_max)
