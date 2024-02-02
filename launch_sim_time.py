@@ -211,7 +211,7 @@ def cosirevan(command):
     # Running mimrec and moving the revan analyzed file to rawsim
     # run(f"mimrec -g {args.geometry} -c {args.mcf} -f {trafile} -x -n; mv {trafile} {mv_trafile}", __verbose__)
     # Running mimrec and removing the revan analyzed file
-    run(f"mimrec -g {args.geometry} -c {args.mcf} -f {trafile} -n -a; rm -f {trafile}", __verbose__)
+    run(f"mimrec -g {args.geometry} -c {args.mcf} -f {trafile} -x -n; rm -f {trafile}", __verbose__)
 
 
 def run(command, __verbose__):
