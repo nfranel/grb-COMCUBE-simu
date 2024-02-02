@@ -30,6 +30,7 @@ class LogData:
     self.ohm = []
     self.omega = []
     self.alt = []
+    self.rand_time = []
     self.sat_decwf = []
     self.sat_rawf = []
     self.grb_decwf = []
@@ -58,12 +59,13 @@ class LogData:
       self.ohm.append(data[5])
       self.omega.append(data[6])
       self.alt.append(data[7])
-      self.sat_decwf.append(data[8])
-      self.sat_rawf.append(data[9])
-      self.grb_decwf.append(data[10])
-      self.grb_rawf.append(data[11])
-      self.grb_decsf.append(data[12])
-      self.grb_rasf.append(data[13])
+      self.rand_time.append(data[8])
+      self.sat_decwf.append(data[9])
+      self.sat_rawf.append(data[10])
+      self.grb_decwf.append(data[11])
+      self.grb_rawf.append(data[12])
+      self.grb_decsf.append(data[13])
+      self.grb_rasf.append(data[14])
     # Changing the lists into np arrays
     self.name = np.array(self.name)
     self.sim_num = np.array(self.sim_num)
@@ -73,6 +75,7 @@ class LogData:
     self.ohm = np.array(self.ohm)
     self.omega = np.array(self.omega)
     self.alt = np.array(self.alt)
+    self.rand_time = np.array(self.rand_time)
     self.sat_decwf = np.array(self.sat_decwf)
     self.sat_rawf = np.array(self.sat_rawf)
     self.grb_decwf = np.array(self.grb_decwf)
