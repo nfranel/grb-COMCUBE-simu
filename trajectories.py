@@ -137,6 +137,7 @@ def trajectory(inc, ohm, nsat, alt, excludefile=None, omega=0, projection="carre
       cancel_phi = []
       for theta in theta_verif:
         for phi in phi_verif:
+          # TODO not correct because of changes on verif_rad_belts
           if verif_rad_belts(theta, phi, alt):
             cancel_theta.append(theta)
             cancel_phi.append(phi)
@@ -185,16 +186,24 @@ def calc_duty(inc, ohm, omega, alt, show=False):
   time_vals = np.linspace(0, n_orbit * orbit_period, n_orbit * n_val_per_orbit)
   earth_ra_offset = earth_rotation_offset(time_vals)
   true_anomalies = true_anomaly_calc(time_vals, orbit_period)
+
   counter = 0
   lat_list = []
   long_list = []
+  lat_list_rej = []
+  long_list_rej = []
+  countrej = 0
   for ite in range(len(time_vals)):
     decsat, rasat = orbitalparam2decra(inc, ohm, omega, nu=true_anomalies[ite])
-    rasat -= earth_ra_offset[ite]
-    lat_list.append(90 - decsat)
-    long_list.append(rasat)
-    if not verif_rad_belts(90 - decsat, rasat, alt):
+    rasat = np.mod(rasat - earth_ra_offset[ite], 360)
+    if not verif_rad_belts(decsat, rasat, alt):
+      lat_list.append(90 - decsat)
+      long_list.append(rasat)
       counter += 1
+    else:
+      lat_list_rej.append(90 - decsat)
+      long_list_rej.append(rasat)
+      countrej += 1
   print(f"Duty cycle for inc : {inc}, ohm : {ohm}, omega : {omega} for all files at {alt}")
   print(f"   === {counter / len(time_vals)}")
 
@@ -202,27 +211,30 @@ def calc_duty(inc, ohm, omega, alt, show=False):
     fig, ax = plt.subplots(subplot_kw={'projection': ccrs.PlateCarree(central_longitude=0)})
     ax.set_global()
 
-    colors = ["lightsteelblue", "cornflowerblue", "royalblue", "blue", "navy"]
-    # Creating the lists of sat coordinates
-    ax.scatter(long_list, lat_list, s=1, color=colors[2])
-
-    theta_verif = np.linspace(-90, 90, 181)
-    phi_verif = np.linspace(-180, 180, 360, endpoint=False)
+    dec_points = np.linspace(0, 180, 181)
+    ra_points = np.linspace(0, 360, 360, endpoint=False)
     plottitle = f"All radiation belt {alt}km, inc : {inc}"
-    cancel_theta = []
-    cancel_phi = []
-    for theta in theta_verif:
-      for phi in phi_verif:
-        # if verif_zone_file(lat, long, file):
-        if verif_rad_belts(theta, phi, alt):
-          cancel_theta.append(theta)
-          cancel_phi.append(phi)
-    cancel_theta = np.array(cancel_theta)
-    cancel_phi = np.array(cancel_phi)
-    ax.scatter(cancel_phi, cancel_theta, s=1, color="red")
+    cancel_dec = []
+    cancel_ra = []
+    for dec_p in dec_points:
+      for ra_p in ra_points:
+        if verif_rad_belts(dec_p, ra_p, alt):
+          cancel_dec.append(dec_p)
+          cancel_ra.append(ra_p)
+    cancel_dec = 90 - np.array(cancel_dec)
+    cancel_ra = np.array(cancel_ra)
+    ax.scatter(cancel_ra, cancel_dec, s=1, color="red")
     ax.set(title=plottitle)
     # Adding the coasts
     ax.coastlines()
+    print(cancel_dec)
+    print(cancel_ra)
+
+    colors = ["lightsteelblue", "cornflowerblue", "royalblue", "blue", "navy"]
+    # Creating the lists of sat coordinates
+    ax.scatter(long_list, lat_list, s=1, color=colors[2])
+    ax.scatter(long_list_rej, lat_list_rej, s=1, color="black")
+
     plt.show()
   return counter / len(time_vals)
 
@@ -285,8 +297,19 @@ def calc_partial_duty(inc, ohm, omega, alt, exclusionfile):
 #          "./bkg/exclusion/500km/AE8max_500km.out", "./bkg/exclusion/500km/AP8min_500km.out"]
 # # for file in files:
 # #   calc_partial_duty(90, 0, 0, 400, file)
-# # calc_duty(90, 0, 0, 400)
-#
+inc = 40
+showfig = False
+calc_duty(inc, 0, 0, 500, show=showfig)
+calc_duty(inc, 45, 0, 500, show=showfig)
+calc_duty(inc, 90, 0, 500, show=showfig)
+calc_duty(inc, 135, 0, 500, show=showfig)
+calc_duty(inc, 180, 0, 500, show=showfig)
+# calc_duty(inc, 225, 0, 500, show=showfig)
+# calc_duty(inc, 270, 0, 500, show=showfig)
+# calc_duty(inc, 315, 0, 500, show=showfig)
+# calc_duty(inc, 360, 0, 500, show=showfig)
+# calc_duty(inc, 720, 0, 500, show=showfig)
+
 # incl = np.linspace(0, 90, 46)
 # duty_list = []
 # for incli in incl:

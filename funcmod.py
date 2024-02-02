@@ -314,7 +314,7 @@ def readevt(event, ergcut=None):
     raise TypeError(f"An event has an unidentified type")
 
 
-def angle(scatter_vector, grb_dec_sf, grb_ra_sf, source_name, num_sim, num_sat):
+def angle(scatter_vector, grb_dec_sf, grb_ra_sf, source_name, num_sim, num_sat):  # TODO : limits on variables
   """
   Calculate the azimuthal and polar Compton angles : Transforms the compton scattered gamma-ray vector
   (initialy in sat frame) into a new referential corresponding to the direction of the source.
@@ -451,14 +451,14 @@ def calc_mdp(S, B, mu100, nsigma=4.29):
   return nsigma * np.sqrt(S + B) / (mu100 * S)
 
 
-def closest_bkg_values(sat_dec, sat_ra, sat_alt, bkg_list):
+def closest_bkg_values(sat_dec, sat_ra, sat_alt, bkg_list):  # TODO : limits on variables
   """
   Find the closest bkg file for a satellite (in terms of latitude, may be updated for longitude too)
   Returns the count rate of this bkg file
   Warning : for now, only takes into account the dec of backgrounds, can be updated but the way the error is calculated
   may not be optimal as the surface of the sphere (polar coordinates) is not a plan.
-  :param sat_dec: declination of the satellite [deg]
-  :param sat_ra: right ascension of the satellite [deg]
+  :param sat_dec: declination of the satellite [deg] [0 - 180]
+  :param sat_ra: right ascension of the satellite [deg] [0 - 360]
     :param sat_alt: altitude of the satellite [km]
 
   :param bkg_list: list of all the background files
@@ -481,11 +481,11 @@ def closest_bkg_values(sat_dec, sat_ra, sat_alt, bkg_list):
     return [bkg_selec[index].compton_cr, bkg_selec[index].single_cr, bkg_selec[index].calor, bkg_selec[index].dsssd, bkg_selec[index].side, bkg_selec[index].total_hits]
 
 
-def geo_to_mag(dec_wf, ra_wf, altitude):
+def geo_to_mag(dec_wf, ra_wf, altitude):  # TODO : limits on variables
   """
   Converts the geographic declination and right ascension into geomagnetic declination and right ascension
-  :param dec_wf: geographic declination in world frame
-  :param ra_wf: geographic right ascension in world frame
+  :param dec_wf: geographic declination in world frame [0 to 180°]
+  :param ra_wf: geographic right ascension in world frame [0 to 360°]
   :param altitude: altitude of the point
   :returns: geomagnetic declination and right ascension
   """
@@ -515,13 +515,13 @@ def affect_bkg(info_sat, burst_time, bkg_list):
   return dec_sat_world_frame, ra_sat_world_frame, count_rates[0], count_rates[1]
 
 
-def closest_mufile(grb_dec_sf, grb_ra_sf, mu_list):
+def closest_mufile(grb_dec_sf, grb_ra_sf, mu_list):  # TODO : limits on variables
   """
   Find the mu100 file closest to a certain direction of detection
   Warning : for now, only takes into account the dec of backgrounds, can be updated but the way the error is calculated
   may not be optimal as the surface of the sphere (polar coordinates) is not a plan.
-  :param grb_dec_sf:  declination of the source in satellite frame [deg]
-  :param grb_ra_sf:   right ascension of the source in satellite frame [deg]
+  :param grb_dec_sf:  declination of the source in satellite frame [deg] [0 - 180]
+  :param grb_ra_sf:   right ascension of the source in satellite frame [deg] [0 - 360]
   :param mu_list:     list of all the mu100 files
   :returns:   mu100, mu100_err, s_eff_compton, s_eff_single
   """
@@ -613,10 +613,9 @@ def calc_fluence(catalog, index, ergcut):
   return quad(func, ergcut[0], ergcut[1])[0]
 
 
-def duty_calc(inclination):
+def duty_calc(inclination):  # TODO : limits on variables CHANGE IT WITH THE NEW
   """
   Function to estimate a duty cycle according to inclination
-  TODO should be updated
   :param inclination: inclination of the orbit
   :returns: the duty cycle
   """
@@ -646,7 +645,7 @@ def duty_calc(inclination):
       return 0.5
 
 
-def eff_area_func(dec_wf, ra_wf, dec_sat_wf, ra_sat_wf, sat_alt, mu100_list):
+def eff_area_func(dec_wf, ra_wf, dec_sat_wf, ra_sat_wf, sat_alt, mu100_list):  # TODO : limits on variables
   """
   Returns a value of the effective area for single event, compton event or 1 if the satellite is in sight for a direction dec_wt, ra_wf
   The value is obtained from mu100 files
@@ -684,7 +683,7 @@ def eff_area_func(dec_wf, ra_wf, dec_sat_wf, ra_sat_wf, sat_alt, mu100_list):
 #######################################################################################################
 # Functions to manipulate the referential and positions of sat and grbs                               #
 #######################################################################################################
-def grb_decra_worldf2satf(dec_grb_wf, ra_grb_wf, dec_sat_wf, ra_sat_wf):
+def grb_decra_worldf2satf(dec_grb_wf, ra_grb_wf, dec_sat_wf, ra_sat_wf):  # TODO : limits on variables
   """
   Converts dec_grb_wf, ra_grb_wf (declination, right ascension) world coordinates into satellite coordinate
   :param dec_grb_wf: declination of the source in world frame (0° at north pole) [deg]
@@ -725,6 +724,11 @@ def grb_decrapol_worldf2satf(dec_grb_wf, ra_grb_wf, dec_sat_wf, ra_sat_wf):
   :param ra_sat_wf : satellite ra in world frame [deg]
   :returns: pol_angle, dec_grb_sf, ra_grb_sf, dec_pol_sf, ra_pol_sf [deg]
   """
+  # Variable domain verification verif on ra_max is done without function to make things easier in the param file
+  dec_verif(dec_grb_wf)
+  dec_verif(dec_sat_wf)
+  ra_verif(ra_grb_wf)
+  ra_verif(ra_sat_wf)
   dec_grb_wf, ra_grb_wf, dec_sat_wf, ra_sat_wf = np.deg2rad(dec_grb_wf), np.deg2rad(ra_grb_wf), np.deg2rad(dec_sat_wf), np.deg2rad(ra_sat_wf)
   # source being the direction of the source
   source = [np.sin(dec_grb_wf)*np.cos(ra_grb_wf),
@@ -756,7 +760,7 @@ def grb_decrapol_worldf2satf(dec_grb_wf, ra_grb_wf, dec_sat_wf, ra_sat_wf):
   return np.rad2deg(pol_angle), np.rad2deg(dec_grb_sf), np.rad2deg(ra_grb_sf), np.rad2deg(dec_pol_sf), np.rad2deg(ra_pol_sf), polstr
 
 
-def decrasat2world(dec_grb_sf, ra_grb_sf, dec_sat_wf, ra_sat_wf):
+def decrasat2world(dec_grb_sf, ra_grb_sf, dec_sat_wf, ra_sat_wf):  # TODO : limits on variables
   """
   Converts dec_grb_sf, ra_grb_sf (declination, right ascension) satellite coordinates into world coordinate dec_grb_wf, ra_grb_wf
   :param dec_grb_sf: grb declination in sat frame (0° at instrument zenith) [deg]
@@ -784,7 +788,7 @@ def decrasat2world(dec_grb_sf, ra_grb_sf, dec_sat_wf, ra_sat_wf):
   return np.deg2rad(dec_grb_wf), np.deg2rad(ra_grb_sf)
 
 
-def orbitalparam2decra(inclination, ohm, omega, nu=0):
+def orbitalparam2decra(inclination, ohm, omega, nu=0):  # TODO : limits on variables
   """
   Calculates the declination and right ascention of an object knowing its orbital parameters
   Returned results are in deg and the north direction is at 0° making the equator at 90°
@@ -794,6 +798,8 @@ def orbitalparam2decra(inclination, ohm, omega, nu=0):
   :param nu : true anomalie at epoch t0 [deg]
   :returns: dec_sat_wf, ra_sat_wf [deg]
   """
+  # Variable domain verification verif on ra_max is done without function to make things easier in the param file
+  # TODO
   # Puts the angle in rad and changes the omega to take into account the true anomaly
   inclination, ohm, omeganu = np.deg2rad(inclination), np.deg2rad(ohm), np.deg2rad(omega + nu)
   # normalized coordinates in the orbital frame:
@@ -823,7 +829,7 @@ def sat_info_2_decra(info_sat, burst_time):
   return np.rad2deg(dec_sat_world_frame), np.rad2deg(ra_sat_world_frame)
 
 
-def decra2orbitalparam(dec_sat_wf, ra_sat_wf):
+def decra2orbitalparam(dec_sat_wf, ra_sat_wf):  # TODO : limits on variables
   """
   Calculates the orbital parameters of an object knowing its dec and ra
     Only works for a value of omega set to pi/2
@@ -860,27 +866,27 @@ def cond_between(val, lim1, lim2):
   return lim1 <= val <= lim2
 
 
-def verif_zone(theta, phi):
+def verif_zone(lat, lon):  # TODO : limits on variables
   """
   Function to verify whether a coordinate is in the exclusion area or not
-  :param theta: latitude (-90 - 90°)
-  :param phi: longitude (-180 - 180°)
+  :param lat: latitude (-90 - 90°)
+  :param lon: longitude (-180 - 180°)
   :returns: True when the theta and phi are in an exclusion area
   """
   # SAA
-  if cond_between(phi, -60, -10) and cond_between(theta, -45, -15):
+  if cond_between(lon, -60, -10) and cond_between(lat, -45, -15):
     return True
   # North pole anomaly
-  elif cond_between(phi, -80, 70) and cond_between(theta, 50, 70):
+  elif cond_between(lon, -80, 70) and cond_between(lat, 50, 70):
     return True
-  elif cond_between(phi, -180, -120) and cond_between(theta, 55, 65):
+  elif cond_between(lon, -180, -120) and cond_between(lat, 55, 65):
     return True
-  elif cond_between(phi, 140, 180) and cond_between(theta, 60, 65):
+  elif cond_between(lon, 140, 180) and cond_between(lat, 60, 65):
     return True
   # South pole anomaly
-  elif cond_between(phi, -125, 20) and cond_between(theta, -78, -58):
+  elif cond_between(lon, -125, 20) and cond_between(lat, -78, -58):
     return True
-  elif cond_between(phi, 0, 90) and cond_between(theta, -58, -47):
+  elif cond_between(lon, 0, 90) and cond_between(lat, -58, -47):
     return True
   else:
     return False
@@ -894,6 +900,8 @@ def verif_zone_file(lat, long, file):
   :param file: exclusion file
   :returns: True when the latitude and longitude are in an exclusion area
   """
+  lat_verif(lat)
+  lon_verif(long)
   with open(file, "r") as f:
     lines = f.read().split("\n")
   exclusions = []
@@ -924,21 +932,36 @@ def verif_zone_file(lat, long, file):
   return False
 
 
-def verif_rad_belts(lat, long, alt):
+def ra2lon(ra):
+  """
+  Change a coordinate in ra to its longitude
+  :param ra: earth right ascension [0 - 360]
+  :returns: longitude  [-180 - 180]
+  """
+  ra_verif(ra)
+  if ra <= 180:
+    return ra
+  else:
+    return ra - 360
+
+
+def verif_rad_belts(dec, ra, alt):
   """
   Function to verify whether a coordinate is in the exclusion area of several exclusion files at a certain altitude
   The exclusion files represent the Earth's radiation belts
-  :param lat: latitude (-90 - 90°) [deg]
-  :param long: longitude (-180 - 180°) [deg]
+  :param dec: earth declination (0 - 180°) [deg]
+  :param ra: earth ra (0 - 360°) [deg]
   :param alt: altitude of the verification
   :returns: True when the latitude and longitude are in an exclusion area
   """
+  dec_verif(dec)
+  ra_verif(ra)
   files = ["./bkg/exclusion/400km/AE8max_400km.out", "./bkg/exclusion/400km/AP8min_400km.out",
            "./bkg/exclusion/500km/AE8max_500km.out", "./bkg/exclusion/500km/AP8min_500km.out"]
   for file in files:
     file_alt = int(file.split("km/")[0].split("/")[-1])
     if alt == file_alt:
-      if verif_zone_file(lat, long, file):
+      if verif_zone_file(90 - dec, ra2lon(ra), file):
         return True
   return False
 
@@ -946,12 +969,18 @@ def verif_rad_belts(lat, long, alt):
 def random_grb_dec_ra(dec_min, dec_max, ra_min, ra_max):
   """
   Take a random position for a GRB in an area defined by min/max dec and ra
-  :param dec_min : minimum (if south pole -90 in deg) [deg]
-  :param dec_max : maximum (if north pole 90 in deg) [deg]
-  :param ra_min : minimum ra [deg]
-  :param ra_max : maximum ra [deg]
+  :param dec_min : minimum (if south pole -90 in deg) [deg] [0, 180]
+  :param dec_max : maximum (if north pole 90 in deg) [deg] [0, 180]
+  :param ra_min : minimum ra [deg] [0, 360[
+  :param ra_max : maximum ra [deg] [0, 360[
   :returns: dec and ra. The north pole is set as dec = 0 [deg]
   """
+  # Variable domain verification verif on ra_max is done without function to make things easier in the param file
+  dec_verif(dec_min)
+  dec_verif(dec_max)
+  ra_verif(ra_min)
+  if not 0 <= ra_max < 360:
+    raise ValueError("Right ascension has a wrong value")
   dec_min, dec_max, ra_min, ra_max = np.deg2rad(dec_min), np.deg2rad(dec_max), np.deg2rad(ra_min), np.deg2rad(ra_max)
   dec = np.pi / 2 - np.arcsin(np.sin(dec_min) + np.random.rand() * (np.sin(dec_max) - np.sin(dec_min)))
   ra = ra_min + np.random.rand() * (ra_max - ra_min)
@@ -1010,6 +1039,44 @@ def find_detector(pos_firt_compton, pos_sec_compton, pos_single, geometry):
     det_single = np.array([])
   return det_first_compton, det_sec_compton, det_single
 
+
+# Variable domain verification verif on ra_max is done without function to make things easier in the param file
+def dec_verif(dec):
+  """
+  Raises an error if dec is not in the domain [0, 180]
+  :param dec:
+  """
+  if not 0 <= dec <= 180:
+    raise ValueError("Declination has a wrong value")
+
+
+def ra_verif(ra):
+  """
+  Raises an error if ra is not in the domain [0, 360[
+  :param ra:
+  """
+  if not 0 <= ra < 360:
+    raise ValueError("Right ascension has a wrong value")
+
+
+def lat_verif(lat):
+  """
+  Raises an error if lat is not in the domain [-90, 90]
+  :param lat:
+  """
+  if not -90 <= lat <= 90:
+    raise ValueError("verif_rad_belts : Latitude has a wrong value")
+
+
+def lon_verif(lon):
+  """
+  Raises an error if lon is not in the domain ]-180, 180]
+  :param lon:
+  """
+  if not -180 < lon <= 180:
+    raise ValueError("Longitude has a wrong value")
+
+# TODO verif for inclination , etc
 
 #######################################################################################################
 # Functions to create spectra                                                                         #
