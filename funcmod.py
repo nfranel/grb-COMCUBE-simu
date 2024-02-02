@@ -979,7 +979,7 @@ def random_grb_dec_ra(dec_min, dec_max, ra_min, ra_max):
   dec_verif(dec_min)
   dec_verif(dec_max)
   ra_verif(ra_min)
-  if not 0 <= ra_max < 360:
+  if not 0 <= ra_max <= 360:
     raise ValueError("Right ascension has a wrong value")
   dec_min, dec_max, ra_min, ra_max = np.deg2rad(dec_min), np.deg2rad(dec_max), np.deg2rad(ra_min), np.deg2rad(ra_max)
   dec = np.pi / 2 - np.arcsin(np.sin(dec_min) + np.random.rand() * (np.sin(dec_max) - np.sin(dec_min)))
