@@ -966,24 +966,24 @@ def verif_rad_belts(dec, ra, alt):
   return False
 
 
-def random_grb_dec_ra(dec_min, dec_max, ra_min, ra_max):
+def random_grb_dec_ra(lat_min, lat_max, lon_min, lon_max):
   """
   Take a random position for a GRB in an area defined by min/max dec and ra
-  :param dec_min : minimum (if south pole -90 in deg) [deg] [0, 180]
-  :param dec_max : maximum (if north pole 90 in deg) [deg] [0, 180]
-  :param ra_min : minimum ra [deg] [0, 360[
-  :param ra_max : maximum ra [deg] [0, 360[
-  :returns: dec and ra. The north pole is set as dec = 0 [deg]
+  :param lat_min : minimum latitude [deg] [-90, 90]
+  :param lat_max : maximum latitude [deg] [-90, 90]
+  :param lon_min : minimum longitude [deg] [-180, 180[
+  :param lon_max : maximum longitude [deg] [-180, 180[
+  :returns: dec and ra. [0, 180] & [0, 360]
   """
   # Variable domain verification verif on ra_max is done without function to make things easier in the param file
-  dec_verif(dec_min)
-  dec_verif(dec_max)
-  ra_verif(ra_min)
-  if not 0 <= ra_max <= 360:
-    raise ValueError("Right ascension has a wrong value")
-  dec_min, dec_max, ra_min, ra_max = np.deg2rad(dec_min), np.deg2rad(dec_max), np.deg2rad(ra_min), np.deg2rad(ra_max)
-  dec = np.pi / 2 - np.arcsin(np.sin(dec_min) + np.random.rand() * (np.sin(dec_max) - np.sin(dec_min)))
-  ra = ra_min + np.random.rand() * (ra_max - ra_min)
+  dec_verif(lat_min)
+  dec_verif(lat_max)
+  ra_verif(lon_max)
+  if not -180 <= lon_min <= 180:
+    raise ValueError("Longitude has a wrong value")
+  lat_min, lat_max, lon_min, lon_max = np.deg2rad(lat_min), np.deg2rad(lat_max), np.deg2rad(lon_min), np.deg2rad(lon_max)
+  dec = np.pi / 2 - np.arcsin(np.sin(lat_min) + np.random.rand() * (np.sin(lat_max) - np.sin(lat_min)))
+  ra = np.mod(lon_min + np.random.rand() * (lon_max - lon_min), 2 * np.pi)
   return np.rad2deg(dec), np.rad2deg(ra)
 
 

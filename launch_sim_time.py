@@ -98,8 +98,7 @@ def gen_commands(args):
           f.write("DP {} {}\n".format(E, fun(E)))
         f.write("\nEN\n\n")
     for j in range(args.simulationsperevent):
-      dec_grb_world_frame, ra_grb_world_frame = random_grb_dec_ra(args.position[0], args.position[1], args.position[2],
-                                                                  args.position[3])  # deg
+      dec_grb_world_frame, ra_grb_world_frame = random_grb_dec_ra(args.position[0], args.position[1], args.position[2], args.position[3])  # deg
       rand_time = np.around(np.random.rand()*315567360.0, 4) # Time of the GRB, taken randomly over a 10 years time window
       for k, s in enumerate(args.satellites):
         orbital_period = orbital_period_calc(s[3])
