@@ -10,7 +10,7 @@ import numpy as np
 import multiprocessing as mp
 import argparse
 # Developped modules imports
-from funcmod import band, read_mupar
+from funcmod import band, read_mupar, quad
 
 
 def make_directories(geomfile):
@@ -46,7 +46,7 @@ def make_spectrum(filepath, bandpar):
       f.write("\nEN\n\n")
 
 
-def make_tmp_source(dec, ra, geom, source_model, spectrapath, timepol, timeunpol, ampl):
+def make_tmp_source(dec, ra, geom, source_model, spectrapath, timepol, timeunpol, flux):
   """
   Creates a temporary source file based on a model "source model"
   :param dec: dec for the mu100 simulation
@@ -56,7 +56,7 @@ def make_tmp_source(dec, ra, geom, source_model, spectrapath, timepol, timeunpol
   :param spectrapath: path to spectra folder
   :param timepol: duration of the mu100 polarized simulation
   :param timeunpol: duration of the mu100 unpolarized simulation
-  :param ampl: flux for the simulations
+  :param flux: flux for the simulations
   :returns: name of the temporary source file, name of the simulation without the extension
   """
   fname = f"tmp_{os.getpid()}.source"
@@ -93,7 +93,7 @@ def make_tmp_source(dec, ra, geom, source_model, spectrapath, timepol, timeunpol
       elif line.startswith(f"{source}.Spectrum") and (source == "GRBsource" or source == "GRBsourcenp"):
         f.write(f"{source}.Spectrum File {spectrapath}/Band_spectrum.dat")
       elif line.startswith(f"{source}.Flux") and (source == "GRBsource" or source == "GRBsourcenp"):
-        f.write(f"{source}.Flux {ampl}")
+        f.write(f"{source}.Flux {flux}")
       else:
         f.write(line)
       f.write("\n")
@@ -113,7 +113,7 @@ def make_ra_list(ra_list, dec):
   return new_ra
 
 
-def make_parameters(dec_list, ra_list, geomfile, source_model, spectrapath, timepol, timeunpol, ampl, rcffile, mimfile):
+def make_parameters(dec_list, ra_list, geomfile, source_model, spectrapath, timepol, timeunpol, flux, rcffile, mimfile):
   """
   Creates a lists of parameters for several altitudes and latitudes
   :param dec_list: decs for the mu100 simulation
@@ -123,14 +123,14 @@ def make_parameters(dec_list, ra_list, geomfile, source_model, spectrapath, time
   :param spectrapath: path to spectra folder
   :param timepol: duration of the mu100 polarized simulation
   :param timeunpol: duration of the mu100 unpolarized simulation
-  :param ampl: flux for the simulations
+  :param flux: flux for the simulations
   :param rcffile: revan configuration file to treat raw simulations
   :param mimfile: mimrec configuration file to extract simulations treated with revan
   """
   parameters_container = []
   for dec in np.linspace(dec_list[0], dec_list[1], dec_list[2]):
     for ra in make_ra_list(ra_list, dec):
-      parameters_container.append((dec, ra, geomfile, source_model, spectrapath, timepol, timeunpol, ampl, rcffile, mimfile))
+      parameters_container.append((dec, ra, geomfile, source_model, spectrapath, timepol, timeunpol, flux, rcffile, mimfile))
   return parameters_container
 
 
@@ -142,6 +142,7 @@ def run_mu(params):
   # Making a temporary source file using a source_model
   sourcefile, simname = make_tmp_source(params[0], params[1], params[2], params[3], params[4], params[5], params[6],
                                         params[7])
+  stop
   # Making a generic name for files
   simfilepol, trafilepol = f"{simname}pol.inc1.id1.sim.gz", f"{simname}pol.inc1.id1.tra.gz"
   simfileunpol, trafileunpol = f"{simname}unpol.inc1.id1.sim.gz", f"{simname}unpol.inc1.id1.tra.gz"
@@ -193,8 +194,11 @@ if __name__ == "__main__":
 
     # Creating the required directories
     make_directories(geometry)
+    # Calculating the flux corresponding to the spectrum, ampl is taken so that flux = 10cm²/s
+    func = lambda x: band(x, bandparam[0], bandparam[1], bandparam[2], bandparam[3], bandparam[4])
+    band_flux = quad(func, 10, 1000)[0]
     # Creating the parameter list
-    parameters = make_parameters(decs, ras, geometry, source_base, spectra, poltime, unpoltime, bandparam[0], revanfile,
+    parameters = make_parameters(decs, ras, geometry, source_base, spectra, poltime, unpoltime, band_flux, revanfile,
                                  mimrecfile)
     print("===================================================================")
     print(f"{len(parameters)} Commands have been parsed")

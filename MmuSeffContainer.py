@@ -101,49 +101,52 @@ class MuSeffContainer(list):
           polsname = f"./mu100/sim_{geom_name}/sim/mu100_{dec:.1f}_{ra:.1f}pol.inc1.id1.extracted.tra"
           unpolsname = f"./mu100/sim_{geom_name}/sim/mu100_{dec:.1f}_{ra:.1f}unpol.inc1.id1.extracted.tra"
           # print("====== files loaded ======")
-          # print(polsname, unpolsname)
           datapol = readfile(polsname)
           dataunpol = readfile(unpolsname)
           compton_second_pol = []
           compton_second_unpol = []
           compton_ener_pol = []
           compton_ener_unpol = []
-          # compton_time_pol = []
-          # compton_time_unpol = []
           compton_firstpos_pol = []
           compton_firstpos_unpol = []
           compton_secpos_pol = []
           compton_secpos_unpol = []
           single_ener_pol = []
-          # single_ener_unpol = []
-          # single_time_pol = []
-          # single_time_unpol = []
-          # single_pos_pol = []
-          # single_pos_unpol = []
           for event_pol in datapol:
             reading_pol = readevt(event_pol, None)
             if len(reading_pol) == 5:
               compton_second_pol.append(reading_pol[0])
               compton_ener_pol.append(reading_pol[1])
-              # compton_time_pol.append(reading_pol[2])
               compton_firstpos_pol.append(reading_pol[3])
               compton_secpos_pol.append(reading_pol[4])
             elif len(reading_pol) == 3:
               single_ener_pol.append(reading_pol[0])
-              # single_time_pol.append(reading_pol[1])
-              # single_pos_pol.append(reading_pol[2])
           for event_unpol in dataunpol:
             reading_unpol = readevt(event_unpol, None)
             if len(reading_unpol) == 5:
               compton_second_unpol.append(reading_unpol[0])
               compton_ener_unpol.append(reading_unpol[1])
-              # compton_time_unpol.append(reading_unpol[2])
               compton_firstpos_unpol.append(reading_unpol[3])
               compton_secpos_unpol.append(reading_unpol[4])
-            # elif len(reading_unpol) == 3:
-            #   single_ener_unpol.append(reading_unpol[0])
-              # single_time_unpol.append(reading_unpol[1])
-              # single_pos_unpol.append(reading_unpol[2])
+
+          # ergcut = (10, 1000)
+          # bandparam = [10.0, -0.8, -2.2, 200.0, 100.0]
+          # func = lambda x: band(x, bandparam[0], bandparam[1], bandparam[2], bandparam[3], bandparam[4])
+          # fluence = quad(func, ergcut[0], ergcut[1])[0] * 300
+          # print(fluence)
+          #
+          # compton_ener_pol = np.array(compton_ener_pol)
+          # compton_ener_unpol = np.array(compton_ener_unpol)
+          # single_ener_pol = np.array(single_ener_pol)
+          #
+          # compton_pol_index = np.where(compton_ener_pol >= ergcut[0], np.where(compton_ener_pol <= ergcut[1], True, False), False)
+          # compton_unpol_index = np.where(compton_ener_unpol >= ergcut[0], np.where(compton_ener_unpol <= ergcut[1], True, False), False)
+          # single_index = np.where(single_ener_pol >= ergcut[0], np.where(single_ener_pol <= ergcut[1], True, False), False)
+          #
+          # print(len(compton_ener_pol[compton_pol_index]))
+          # print(len(compton_ener_unpol[compton_unpol_index]))
+          # print(len(single_ener_pol[single_index]))
+
           f.write("NewPos\n")
           f.write(f"{dec}\n")
           f.write(f"{ra}\n")
@@ -160,13 +163,6 @@ class MuSeffContainer(list):
           for ite in range(len(compton_ener_unpol) - 1):
             f.write(f"{compton_ener_unpol[ite]}|")
           f.write(f"{compton_ener_unpol[-1]}\n")
-
-          # for ite in range(len(compton_time_pol) - 1):
-          #   f.write(f"{compton_time_pol[ite]}|")
-          # f.write(f"{compton_time_pol[-1]}\n")
-          # for ite in range(len(compton_time_unpol) - 1):
-          #   f.write(f"{compton_time_unpol[ite]}|")
-          # f.write(f"{compton_time_unpol[-1]}\n")
 
           for ite in range(len(compton_firstpos_pol) - 1):
             string = f"{compton_firstpos_pol[ite][0]}_{compton_firstpos_pol[ite][1]}_{compton_firstpos_pol[ite][2]}"
@@ -193,27 +189,6 @@ class MuSeffContainer(list):
           for ite in range(len(single_ener_pol) - 1):
             f.write(f"{single_ener_pol[ite]}|")
           f.write(f"{single_ener_pol[-1]}\n")
-          # for ite in range(len(single_ener_unpol) - 1):
-          #   f.write(f"{single_ener_unpol[ite]}|")
-          # f.write(f"{single_ener_unpol[-1]}\n")
-
-          # for ite in range(len(single_time_pol) - 1):
-          #   f.write(f"{single_time_pol[ite]}|")
-          # f.write(f"{single_time_pol[-1]}\n")
-          # for ite in range(len(single_time_unpol) - 1):
-          #   f.write(f"{single_time_unpol[ite]}|")
-          # f.write(f"{single_time_unpol[-1]}\n")
-
-          # for ite in range(len(single_pos_pol) - 1):
-          #   string = f"{single_pos_pol[ite][0]}_{single_pos_pol[ite][1]}_{single_pos_pol[ite][2]}"
-          #   f.write(f"{string}|")
-          # string = f"{single_pos_pol[-1][0]}_{single_pos_pol[-1][1]}_{single_pos_pol[-1][2]}"
-          # f.write(f"{string}\n")
-          # for ite in range(len(single_pos_unpol) - 1):
-          #   string = f"{single_pos_unpol[ite][0]}_{single_pos_unpol[ite][1]}_{single_pos_unpol[ite][2]}"
-          #   f.write(f"{string}|")
-          # string = f"{single_pos_unpol[-1][0]}_{single_pos_unpol[-1][1]}_{single_pos_unpol[-1][2]}"
-          # f.write(f"{string}\n")
 
   def save_condenseddata(self, fullfile, condfile, ergcut, armcut):
     """
