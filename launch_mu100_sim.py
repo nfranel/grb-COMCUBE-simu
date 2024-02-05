@@ -142,7 +142,6 @@ def run_mu(params):
   # Making a temporary source file using a source_model
   sourcefile, simname = make_tmp_source(params[0], params[1], params[2], params[3], params[4], params[5], params[6],
                                         params[7])
-  stop
   # Making a generic name for files
   simfilepol, trafilepol = f"{simname}pol.inc1.id1.sim.gz", f"{simname}pol.inc1.id1.tra.gz"
   simfileunpol, trafileunpol = f"{simname}unpol.inc1.id1.sim.gz", f"{simname}unpol.inc1.id1.tra.gz"
