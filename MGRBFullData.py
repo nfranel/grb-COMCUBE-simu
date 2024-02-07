@@ -291,7 +291,8 @@ class GRBFullData:
       self.s_eff_compton = self.compton_cr * source_duration / source_fluence
       self.s_eff_single = self.single_cr * source_duration / source_fluence
 
-    print(f"self.grb_dec_sat_frame, self.grb_ra_sat_frame, self.mu100_ref, self.mu100_err_ref, self.s_eff_compton_ref, self.s_eff_single_ref : {self.grb_dec_sat_frame}, {self.grb_ra_sat_frame}, {self.mu100_ref}, {self.mu100_err_ref}, {self.s_eff_compton_ref}, {self.s_eff_single_ref}")
+    if self.mu100_ref == None:
+      print(f"self.grb_dec_sat_frame, self.grb_ra_sat_frame, self.mu100_ref, self.mu100_err_ref, self.s_eff_compton_ref, self.s_eff_single_ref : {self.grb_dec_sat_frame}, {self.grb_ra_sat_frame}, {self.mu100_ref}, {self.mu100_err_ref}, {self.s_eff_compton_ref}, {self.s_eff_single_ref}")
     self.mdp = calc_mdp(self.compton_cr * source_duration, self.compton_b_rate * source_duration, self.mu100_ref)
     # Calculation of SNR with 1sec of integration
     snr_compton_val = calc_snr(self.compton_cr, self.compton_b_rate)

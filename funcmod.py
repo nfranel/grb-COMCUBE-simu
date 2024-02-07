@@ -449,7 +449,8 @@ def calc_mdp(S, B, mu100, nsigma=4.29):
   :param mu100: modulation factor
   :param nsigma: significance of the result in number of sigmas, default=4.29 for 99% CL
   """
-  print(f"S, B, mu100, nsigma : {S}, {B}, {mu100}, {nsigma}")
+  if mu100 == None:
+    print(f"S, B, mu100, nsigma : {S}, {B}, {mu100}, {nsigma}")
   return nsigma * np.sqrt(S + B) / (mu100 * S)
 
 
