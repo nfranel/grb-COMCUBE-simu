@@ -174,7 +174,9 @@ class GRBFullData:
       self.single_cr = self.single / sim_duration
       self.compton = len(self.compton_ener)
       self.compton_cr = self.compton / sim_duration
-      print(f"self.grb_dec_sat_frame, self.grb_ra_sat_frame, self.mu100_ref, self.mu100_err_ref, self.s_eff_compton_ref, self.s_eff_single_ref : {self.grb_dec_sat_frame}, {self.grb_ra_sat_frame}, {self.mu100_ref}, {self.mu100_err_ref}, {self.s_eff_compton_ref}, {self.s_eff_single_ref}")
+      if self.mu100_ref == None:
+        print(f"self.grb_dec_sat_frame, self.grb_ra_sat_frame, self.mu100_ref, self.mu100_err_ref, self.s_eff_compton_ref, self.s_eff_single_ref : {self.grb_dec_sat_frame}, {self.grb_ra_sat_frame}, {self.mu100_ref}, {self.mu100_err_ref}, {self.s_eff_compton_ref}, {self.s_eff_single_ref}")
+        stop
       ##############################################################
       #     Finding the detector of interaction for each event     #
       ##############################################################
