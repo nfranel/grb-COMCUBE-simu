@@ -157,6 +157,8 @@ class AllSatData(list):
             print("a mu100 is set without being calculated")
             print()
             print()
+            for num_sat in considered_sat:
+              print(getattr(self[num_sat], item), self[num_sat].compton)
 
   def verif_const(self, message="", const=None):
     """
