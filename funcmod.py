@@ -44,6 +44,7 @@ def orbital_period_calc(alt):
   """
   Calculates the orbital period of a satellite at a specific altitude
   :param alt : altitude of the orbit
+  :returns: duration of orbital period in [seconds]
   """
   return np.sqrt(4 * np.pi**2 / (G_const * m_earth) * ((R_earth + alt) * 1000)**3)
 
@@ -821,14 +822,14 @@ def sat_info_2_decra(info_sat, burst_time):
   :param info_sat: information about the satellite orbit
     [inclination, RA of ascending node, argument of periapsis, altitude]
   :param burst_time: time at which the burst occured
-  :returns  dec_sat_world_frame, ra_sat_world_frame
+  :returns  dec_sat_world_frame, ra_sat_world_frame [deg] [deg]
   """
   orbital_period = orbital_period_calc(info_sat[3])
   earth_ra_offset = earth_rotation_offset(burst_time)
   true_anomaly = true_anomaly_calc(burst_time, orbital_period)
   dec_sat_world_frame, ra_sat_world_frame = orbitalparam2decra(info_sat[0], info_sat[1], info_sat[2], nu=true_anomaly)
   ra_sat_world_frame = np.mod(ra_sat_world_frame - earth_ra_offset, 360)
-  return np.rad2deg(dec_sat_world_frame), np.rad2deg(ra_sat_world_frame)
+  return dec_sat_world_frame, ra_sat_world_frame
 
 
 def decra2orbitalparam(dec_sat_wf, ra_sat_wf):  # TODO : limits on variables
