@@ -66,8 +66,12 @@ class LogData:
       self.sat_rawf.append(float(data[10]))
       self.grb_decwf.append(float(data[11]))
       self.grb_rawf.append(float(data[12]))
-      self.grb_decsf.append(float(data[13]))
-      self.grb_rasf.append(float(data[14]))
+      if data[3] == 'Ignored(off)':
+        self.grb_decsf.append(data[13])
+        self.grb_rasf.append(data[14])
+      else:
+        self.grb_decsf.append(float(data[13]))
+        self.grb_rasf.append(float(data[14]))
     # Changing the lists into np arrays
     self.name = np.array(self.name)
     self.sim_num = np.array(self.sim_num)
