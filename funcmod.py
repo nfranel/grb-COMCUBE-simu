@@ -726,6 +726,7 @@ def grb_decrapol_worldf2satf(dec_grb_wf, ra_grb_wf, dec_sat_wf, ra_sat_wf):
   """
   # Variable domain verification verif on ra_max is done without function to make things easier in the param file
   print(f"dec_grb_wf, dec_sat_wf : {dec_grb_wf}, {dec_sat_wf}")
+  print(f"ra_grb_wf, ra_sat_wf : {ra_grb_wf}, {ra_sat_wf}")
   dec_verif(dec_grb_wf)
   dec_verif(dec_sat_wf)
   ra_verif(ra_grb_wf)
