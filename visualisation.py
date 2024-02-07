@@ -113,6 +113,75 @@ def magnetic_latitude_convert(altitude, lat_range=np.linspace(90, -90, 721), lon
   ax.set(xlabel="Longitude (deg)", ylabel="Latitude (deg)", title=f"Lines of constant geomagnetic latitudes")
   plt.show()
 
+
+def calc_duty(inc, ohm, omega, alt, show=False):
+  """
+  Calculates the duty cycle caused by the radiation belts
+  :param inc: inclination of the orbit [deg]
+  :param ohm: longitude/ra of the ascending node of the orbit [deg]
+  :param omega: argument of periapsis of the orbit [deg]
+  :param alt: altitude of the orbit
+  :param show: If True shows the trajectory of a satellite on this orbit and the exclusion zones
+  """
+  orbit_period = orbital_period_calc(alt)
+  n_orbit = 1000
+  n_val_per_orbit = 100
+  time_vals = np.linspace(0, n_orbit * orbit_period, n_orbit * n_val_per_orbit)
+  earth_ra_offset = earth_rotation_offset(time_vals)
+  true_anomalies = true_anomaly_calc(time_vals, orbit_period)
+
+  counter = 0
+  lat_list = []
+  long_list = []
+  lat_list_rej = []
+  long_list_rej = []
+  countrej = 0
+  for ite in range(len(time_vals)):
+    decsat, rasat = orbitalparam2decra(inc, ohm, omega, nu=true_anomalies[ite])
+    rasat = np.mod(rasat - earth_ra_offset[ite], 360)
+    if not verif_rad_belts(decsat, rasat, alt):
+      lat_list.append(90 - decsat)
+      long_list.append(rasat)
+      counter += 1
+    else:
+      lat_list_rej.append(90 - decsat)
+      long_list_rej.append(rasat)
+      countrej += 1
+  print(f"Duty cycle for inc : {inc}, ohm : {ohm}, omega : {omega} for all files at {alt}")
+  print(f"   === {counter / len(time_vals)}")
+
+  if show:
+    fig, ax = plt.subplots(subplot_kw={'projection': ccrs.PlateCarree(central_longitude=0)})
+    ax.set_global()
+
+    dec_points = np.linspace(0, 180, 181)
+    ra_points = np.linspace(0, 360, 360, endpoint=False)
+    plottitle = f"All radiation belt {alt}km, inc : {inc}"
+    cancel_dec = []
+    cancel_ra = []
+    for dec_p in dec_points:
+      for ra_p in ra_points:
+        if verif_rad_belts(dec_p, ra_p, alt):
+          cancel_dec.append(dec_p)
+          cancel_ra.append(ra_p)
+    cancel_dec = 90 - np.array(cancel_dec)
+    cancel_ra = np.array(cancel_ra)
+    ax.scatter(cancel_ra, cancel_dec, s=1, color="red")
+    ax.set(title=plottitle)
+    # Adding the coasts
+    ax.coastlines()
+    print(cancel_dec)
+    print(cancel_ra)
+
+    colors = ["lightsteelblue", "cornflowerblue", "royalblue", "blue", "navy"]
+    # Creating the lists of sat coordinates
+    ax.scatter(long_list, lat_list, s=1, color=colors[2])
+    ax.scatter(long_list_rej, lat_list_rej, s=1, color="black")
+
+    plt.show()
+  return counter / len(time_vals)
+
+
 def coverage_maps():
   """
 

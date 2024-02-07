@@ -299,27 +299,26 @@ def calc_partial_duty(inc, ohm, omega, alt, exclusionfile):
 # #   calc_partial_duty(90, 0, 0, 400, file)
 inc = 40
 showfig = False
-calc_duty(inc, 0, 0, 500, show=showfig)
-calc_duty(inc, 45, 0, 500, show=showfig)
-calc_duty(inc, 90, 0, 500, show=showfig)
-calc_duty(inc, 135, 0, 500, show=showfig)
-calc_duty(inc, 180, 0, 500, show=showfig)
-# calc_duty(inc, 225, 0, 500, show=showfig)
-# calc_duty(inc, 270, 0, 500, show=showfig)
-# calc_duty(inc, 315, 0, 500, show=showfig)
-# calc_duty(inc, 360, 0, 500, show=showfig)
-# calc_duty(inc, 720, 0, 500, show=showfig)
+# calc_duty(inc, 0, 0, 500, show=showfig)
+# calc_duty(inc, 45, 0, 500, show=showfig)
+# calc_duty(inc, 90, 0, 500, show=showfig)
+# calc_duty(inc, 135, 0, 500, show=showfig)
+# calc_duty(inc, 180, 0, 500, show=showfig)
+# calc_duty(0, 0, 0, 500, show=showfig)
+# calc_duty(5, 0, 0, 500, show=showfig)
+# calc_duty(45, 0, 0, 500, show=showfig)
+# calc_duty(83, 0, 0, 500, show=showfig)
 
-# incl = np.linspace(0, 90, 46)
-# duty_list = []
-# for incli in incl:
-#   duty_list.append(calc_duty(incli, 0, 0, 500))
-# plt.figure()
-# plt.plot(incl, duty_list)
-# plt.grid()
-# plt.xticks(np.arange(0, 91, 5))
-# plt.yticks(np.linspace(0.8, 1, 21))
-# plt.show()
+incl = np.linspace(0, 90, 46)
+duty_list = []
+for incli in incl:
+  duty_list.append(calc_duty(incli, 0, 0, 500))
+fig, ax = plt.subplots()
+ax.plot(incl, duty_list)
+ax.set(xticks=np.arange(0, 91, 5), yticks=np.linspace(0.8, 1, 21), title="Variation of duty cycle with inclination")
+ax.grid()
+ax.legend()
+plt.show()
 
 # calc_duty(0, 0, 0, 400)
 # calc_duty(0, 0, 0, 500)

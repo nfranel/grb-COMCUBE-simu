@@ -592,7 +592,7 @@ class AllSourceData:
                 if sim.const_data.mdp is not None:
                   if sim.const_data.mdp <= mdp_threshold:
                     mdp_list.append(sim.const_data.mdp * 100)
-    fig, ax = plt.subplots(1, 1)
+    fig, ax = plt.subplots(1, 1, figsize=(10, 6))
     ax.hist(mdp_list, bins=n_bins, cumulative=cumul, histtype="step", weights=[self.weights] * len(mdp_list),
             label=f"Number of GRBs with MDP < {mdp_threshold * 100}% : {len(mdp_list)} over {number_detected} detections")
     if cumul == 1:
