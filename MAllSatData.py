@@ -151,6 +151,12 @@ class AllSatData(list):
             temp_denom += self[num_sat].compton
           if temp_denom != 0:
             setattr(self.const_data, item, temp_num / temp_denom)
+          else:
+            print()
+            print()
+            print("a mu100 is set without being calculated")
+            print()
+            print()
 
   def verif_const(self, message="", const=None):
     """

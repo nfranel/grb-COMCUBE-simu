@@ -182,6 +182,34 @@ def calc_duty(inc, ohm, omega, alt, show=False):
   return counter / len(time_vals)
 
 
+def pers_plot(xdata, ydata, title, xlabel, ylabel, figsize=(10, 6), xscale="linear", yscale="linear", xticks=None, yticks=None, xlim=None, ylim=None, projection=None, legend=True, grid=True, save=False):
+  """
+
+  """
+  pass
+
+
+def pers_scatter(xdata, ydata, title, xlabel, ylabel, figsize=(10, 6), s=2, xscale="linear", yscale="linear", xticks=None, yticks=None, xlim=None, ylim=None, projection=None, legend=True, grid=True, save=False):
+  """
+
+  """
+  pass
+
+
+def pers_hist():
+  """
+
+  """
+  pass
+
+
+def pers_duohist():
+  """
+
+  """
+  pass
+
+
 def coverage_maps():
   """
 

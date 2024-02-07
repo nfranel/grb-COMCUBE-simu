@@ -313,9 +313,9 @@ incl = np.linspace(0, 90, 46)
 duty_list = []
 for incli in incl:
   duty_list.append(calc_duty(incli, 0, 0, 500))
-fig, ax = plt.subplots()
+fig, ax = plt.subplots(figsize=(10, 6))
 ax.plot(incl, duty_list)
-ax.set(xticks=np.arange(0, 91, 5), yticks=np.linspace(0.8, 1, 21), title="Variation of duty cycle with inclination")
+ax.set(xticks=np.arange(0, 91, 5), yticks=np.arange(max(duty_list), min(duty_list), -0.02), title="Variation of duty cycle with inclination", xlabel=None, ylabel="Inclination (°)")
 ax.grid()
 ax.legend()
 plt.show()
