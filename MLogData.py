@@ -50,6 +50,7 @@ class LogData:
     self.keys_description = lines[2]
     self.keys = lines[3]
     for line in lines[6:-1]:
+      print(data)
       data = line.split(" | ")
       self.name.append(data[0])
       self.sim_num.append(int(data[1]))
