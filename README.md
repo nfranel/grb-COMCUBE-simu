@@ -11,6 +11,10 @@ Other requirements :
   - make
   - megalib installed and **sourced**
   - pip, intall apexpy (pip install apexpy)
+  - GBM data tools :
+    - Download the GBM data tools installation package https://fermi.gsfc.nasa.gov/ssc/data/analysis/gbm/
+    - pip3 install <path_to_tar>/gbm_data_tools-1.1.1.tar.gz
+      - Sometimes the archive has been decompressed while downloaded but the .gz is not remove, to correct the issue just remove the .gz
 
 ############################################################################
 
