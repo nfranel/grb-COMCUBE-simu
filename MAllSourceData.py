@@ -101,7 +101,7 @@ class AllSourceData:
     # Setting some informations used for obtaining the GRB count rates
     self.cat_duration = 10
     # self.com_duty = 1
-    self.com_duty = self.n_sim_simulated / (self.n_sim_simulated + self.n_sim_in_radbelt) # TODO verification
+    self.com_duty = self.n_sim_simulated / (self.n_sim_simulated + self.n_sim_in_radbelt)  # TODO verification
     self.gbm_duty = 0.85
     self.com_fov = 1
     self.gbm_fov = (1 - np.cos(np.deg2rad(horizon_angle(565)))) / 2

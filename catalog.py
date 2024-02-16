@@ -12,7 +12,8 @@ class Catalog:
     :param data: None or string, data to put in the catalog
     :param sttype: See Catalog.fill
     """
-    # Fields added for some clarity (used for making the grb spectra
+    # Fields added for some clarity
+    # Spectra parameters
     self.flnc_best_fitting_model = None
     self.flnc_plaw_ampl = None
     self.flnc_plaw_index = None
@@ -31,6 +32,19 @@ class Catalog:
     self.flnc_sbpl_brken = None
     self.flnc_sbpl_brksc = None
     self.flnc_sbpl_pivot = None
+    # Lightcurve calculation attributes
+    self.t90_start = None
+    self.duration_energy_low = None
+    self.duration_energy_high = None
+    self.back_interval_low_start = None
+    self.back_interval_low_stop = None
+    self.back_interval_high_start = None
+    self.back_interval_high_stop = None
+    self.bcat_detector_mask = None
+    self.scat_detector_mask = None
+    self.flnc_spectrum_start = None
+    self.flnc_spectrum_stop = None
+
     # Catalog attributes
     self.name = None
     self.t90 = None
