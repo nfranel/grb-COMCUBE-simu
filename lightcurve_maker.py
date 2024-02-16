@@ -112,7 +112,7 @@ def save_LC(rates, centroids, fullname):
     f.write("EN")
 
 
-def make_tte_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_mask, bin_size=0.0625, ener_range=(10, 1000), show=False, directory="../fermi_lc/"):
+def make_tte_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_mask, bin_size=0.0625, ener_range=(10, 1000), show=False, directory="./sources/"):
   """
 
   """
@@ -168,7 +168,7 @@ def make_tte_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_mas
       subprocess.call(f"rm -f {directory}{file}", shell=True)
     return True
 
-def make_cspec_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_mask, ener_range=(10, 1000), show=False, directory="../fermi_lc/"):
+def make_cspec_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_mask, ener_range=(10, 1000), show=False, directory="./sources/"):
   """
 
   """
@@ -218,7 +218,7 @@ def make_cspec_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_m
     subprocess.call(f"rm -f {directory}{file}", shell=True)
 
 
-def create_lc(cat, GRB_ite, bin_size="auto", ener_range=(10, 1000), show=False, directory="../fermi_lc/"):
+def create_lc(cat, GRB_ite, bin_size="auto", ener_range=(10, 1000), show=False, directory="./sources/"):
   """
 
   """
