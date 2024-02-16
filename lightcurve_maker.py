@@ -116,12 +116,14 @@ def make_tte_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_mas
   """
 
   """
+  if not directory.endswith("/"):
+    directory += "/"
   # Files to load :
   # initialize the Trigger data finder with a trigger number
   trig_finder = TriggerFtp(name.split("GRB")[1])
   files = trig_finder.ls_tte()
   nai_files = files[2:]
-  # trig_finder.get_tte(directory)
+  trig_finder.get_tte(directory)
   ttes = []
   for file_ite in range(len(nai_files)):
     if lc_detector_mask[file_ite] == "1":
@@ -130,6 +132,8 @@ def make_tte_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_mas
   t_low_rangemax = max([tte.time_range[0] for tte in ttes])
   t_high_rangemin = min([tte.time_range[1] for tte in ttes])
   if t_low_rangemax > bkg_range[0][0] or t_high_rangemin < bkg_range[1][1]:
+    for file in files:
+      subprocess.call(f"rm -f {directory}{file}", shell=True)
     return False
   else:
     tte_total = ttes[0].merge(ttes)
@@ -160,18 +164,22 @@ def make_tte_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_mas
       plt.close(fig)
     fig.savefig(f"sources/LC_plots/LightCurve_{name}.png")
     save_LC(substracted_rates, lc_select.centroids, f"sources/Light_Curves/LightCurve_{name}.dat")
+    for file in files:
+      subprocess.call(f"rm -f {directory}{file}", shell=True)
     return True
 
 def make_cspec_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_mask, ener_range=(10, 1000), show=False, directory="../fermi_lc/"):
   """
 
   """
+  if not directory.endswith("/"):
+    directory += "/"
   # Files to load :
   # initialize the Trigger data finder with a trigger number
   trig_finder = TriggerFtp(name.split("GRB")[1])
   files = trig_finder.ls_cspec()
   nai_files = files[2:]
-  # trig_finder.get_cspec(directory)
+  trig_finder.get_cspec(directory)
   cspecs = []
   for file_ite in range(len(nai_files)):
     if lc_detector_mask[file_ite] == "1":
@@ -206,6 +214,8 @@ def make_cspec_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_m
     plt.close(fig)
   fig.savefig(f"sources/LC_plots/LightCurve_{name}.png")
   save_LC(substracted_rates, lc_select_list[0].centroids, f"sources/Light_Curves/LightCurve_{name}.dat")
+  for file in files:
+    subprocess.call(f"rm -f {directory}{file}", shell=True)
 
 
 def create_lc(cat, GRB_ite, bin_size="auto", ener_range=(10, 1000), show=False, directory="../fermi_lc/"):
