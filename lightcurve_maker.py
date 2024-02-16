@@ -264,10 +264,10 @@ def create_lc(cat, GRB_ite, bin_size="auto", ener_range=(10, 1000), show=False, 
 
 
 bkg_min = []
-for ite in range(10):
+for ite in range(len(cat_all.name)):
   bkg_min.append(create_lc(cat_all, ite, bin_size="auto", show=False))
-for ite in range(10):
-  print(cat_all.name[ite], cat_all.t90[ite], cat_all.t90_start[ite], bkg_min[ite], cat_all.back_interval_low_start[ite], cat_all.back_interval_high_stop[ite])
+# for ite in range(10):
+#   print(cat_all.name[ite], cat_all.t90[ite], cat_all.t90_start[ite], bkg_min[ite], cat_all.back_interval_low_start[ite], cat_all.back_interval_high_stop[ite])
 
 #
 # create_lc(cat_all, 0, bin_size=1.024, show=False)
