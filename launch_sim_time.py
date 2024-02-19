@@ -258,7 +258,7 @@ if __name__ == "__main__":
     vprint("Running of {} parameter file with output prefix {}".format(args.parameterfile, args.prefix), __verbose__, 0)
     args = gen_commands(args)
     vprint("{} Commands have been parsed".format(len(args.commands)), __verbose__, 0)
-    # run_sims(args.commands)
+    run_sims(args.commands)
   else:
     vprint("Missing parameter file or geometry - not running.", __verbose__, 0)
 
