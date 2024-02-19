@@ -135,7 +135,7 @@ def make_tte_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_mas
   if t_low_rangemax > bkg_range[0][0] or t_high_rangemin < bkg_range[1][1]:
     for file in files:
       subprocess.call(f"rm -f {directory}{file}", shell=True)
-    return False
+    return 1
   else:
     tte_total = ttes[0].merge(ttes)
 
@@ -145,12 +145,22 @@ def make_tte_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_mas
 
     try:
       backfitter = BackgroundFitter.from_phaii(pha, Polynomial, bkg_range)
-      backfitter.fit(order=1)
+      try:
+        backfitter.fit(order=1)
+      except RuntimeError:
+        for file in files:
+          subprocess.call(f"rm -f {directory}{file}", shell=True)
+        return name
     except np.linalg.LinAlgError:
       bkg_range = [(bkg_range[0][0] - 5, bkg_range[0][1]), (bkg_range[1][0], bkg_range[1][1] + 5)]
       if t_low_rangemax < bkg_range[0][0] and t_high_rangemin > bkg_range[1][1]:
         backfitter = BackgroundFitter.from_phaii(pha, Polynomial, bkg_range)
-        backfitter.fit(order=1)
+        try:
+          backfitter.fit(order=1)
+        except RuntimeError:
+          for file in files:
+            subprocess.call(f"rm -f {directory}{file}", shell=True)
+          return name
       else:
         raise ValueError("Need to find another value for the background")
     # print(np.mean(backfitter.statistic / backfitter.dof))
@@ -175,7 +185,7 @@ def make_tte_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_mas
     save_LC(substracted_rates, lc_select.centroids, f"sources/Light_Curves/LightCurve_{name}.dat")
     for file in files:
       subprocess.call(f"rm -f {directory}{file}", shell=True)
-    return True
+    return 0
 
 def make_cspec_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_mask, ener_range=(10, 1000), show=False, directory="./sources/"):
   """
@@ -198,13 +208,21 @@ def make_cspec_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_m
   lc_select_list = [lc.slice(start_t90, end_t90) for lc in lc_list]
 
   backfitter_list = [BackgroundFitter.from_phaii(cspec, Polynomial, bkg_range) for cspec in cspecs]
-  [backfitter.fit(order=1) for backfitter in backfitter_list]
+  print(start_t90, end_t90, time_range, bkg_range, lc_detector_mask)
+  try:
+    for backfitter in backfitter_list:
+      backfitter.fit(order=1)
+  except RuntimeError:
+    for file in files:
+      subprocess.call(f"rm -f {directory}{file}", shell=True)
+    return name
+
   # print([np.mean(backfitter.statistic / backfitter.dof) for backfitter in backfitter_list])
   bkgd_model_list = [backfitter.interpolate_bins(lc_list[0].lo_edges, lc_list[0].hi_edges) for backfitter in backfitter_list]
   bkgd_lc_list = [bkgd_model.integrate_energy(ener_range[0], ener_range[1]) for bkgd_model in bkgd_model_list]
 
   source_rates_select_list = np.array([lc.rates for lc in lc_select_list])
-  source_rates = np.sum(np.vstack(np.array([lc.rates for lc in lc_list])), axis=0)
+  # source_rates = np.sum(np.vstack(np.array([lc.rates for lc in lc_list])), axis=0)
   bkgd_rates = np.sum(np.vstack(np.array([lc.rates for lc in bkgd_lc_list])), axis=0)
 
   source_rates_select = np.sum(np.vstack(source_rates_select_list), axis=0)
@@ -225,6 +243,7 @@ def make_cspec_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_m
   save_LC(substracted_rates, lc_select_list[0].centroids, f"sources/Light_Curves/LightCurve_{name}.dat")
   for file in files:
     subprocess.call(f"rm -f {directory}{file}", shell=True)
+  return 0
 
 
 def create_lc(cat, GRB_ite, bin_size="auto", ener_range=(10, 1000), show=False, directory="./sources/"):
@@ -265,17 +284,19 @@ def create_lc(cat, GRB_ite, bin_size="auto", ener_range=(10, 1000), show=False, 
   time_range = (bk_time_low_start, bk_time_high_stop)
 
   tte_works = make_tte_lc(GRBname, start_t90, end_t90, time_range, bkg_range, lc_detector_mask, bin_size=bin_size, ener_range=ener_range, show=show, directory=directory)
-  if tte_works:
-    return True
+  if tte_works == 0:
+    return 0
+  elif tte_works == 1:
+    return make_cspec_lc(GRBname, start_t90, end_t90, time_range, bkg_range, lc_detector_mask, ener_range=ener_range, show=show, directory=directory)
   else:
-    make_cspec_lc(GRBname, start_t90, end_t90, time_range, bkg_range, lc_detector_mask, ener_range=ener_range, show=show, directory=directory)
-    return False
+    return tte_works
 
-
-bkg_min = []
+unfit = []
 for ite in range(15, len(cat_all.name)):
-  print("Number : ", ite)
-  create_lc(cat_all, ite, bin_size="auto", show=False)
+# for ite in range(15, 18):
+  ret = create_lc(cat_all, ite, bin_size="auto", show=False)
+  if ret != 0:
+    unfit.append((cat_all.name[ite], ite))
 # for ite in range(10):
 #   print(cat_all.name[ite], cat_all.t90[ite], cat_all.t90_start[ite], bkg_min[ite], cat_all.back_interval_low_start[ite], cat_all.back_interval_high_stop[ite])
 
