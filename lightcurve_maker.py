@@ -189,7 +189,7 @@ def make_cspec_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_m
   lc_select_list = [lc.slice(start_t90, end_t90) for lc in lc_list]
 
   backfitter_list = [BackgroundFitter.from_phaii(cspec, Polynomial, bkg_range) for cspec in cspecs]
-  [backfitter.fit(order=1) for backfitter in backfitter_list]
+  [backfitter.fit(order=2) for backfitter in backfitter_list]
   # print([np.mean(backfitter.statistic / backfitter.dof) for backfitter in backfitter_list])
   bkgd_model_list = [backfitter.interpolate_bins(lc_list[0].lo_edges, lc_list[0].hi_edges) for backfitter in backfitter_list]
   bkgd_lc_list = [bkgd_model.integrate_energy(ener_range[0], ener_range[1]) for bkgd_model in bkgd_model_list]
