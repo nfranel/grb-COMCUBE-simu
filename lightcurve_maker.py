@@ -4,6 +4,7 @@ from gbm.plot import Lightcurve, Spectrum
 import matplotlib.pyplot as plt
 from gbm.background import BackgroundFitter
 from gbm.background.binned import Polynomial
+from gbm.background.unbinned import NaivePoisson
 import gbm
 from gbm.finder import TriggerFtp
 
@@ -123,7 +124,7 @@ def make_tte_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_mas
   trig_finder = TriggerFtp(name.split("GRB")[1])
   files = trig_finder.ls_tte()
   nai_files = files[2:]
-  trig_finder.get_tte(directory)
+  # trig_finder.get_tte(directory)
   ttes = []
   for file_ite in range(len(nai_files)):
     if lc_detector_mask[file_ite] == "1":
@@ -142,8 +143,16 @@ def make_tte_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_mas
     lc = pha.to_lightcurve(time_range=time_range, energy_range=ener_range)
     lc_select = lc.slice(start_t90, end_t90)
 
-    backfitter = BackgroundFitter.from_phaii(pha, Polynomial, bkg_range)
-    backfitter.fit(order=1)
+    try:
+      backfitter = BackgroundFitter.from_phaii(pha, Polynomial, bkg_range)
+      backfitter.fit(order=1)
+    except np.linalg.LinAlgError:
+      bkg_range = [(bkg_range[0][0] - 5, bkg_range[0][1]), (bkg_range[1][0], bkg_range[1][1] + 5)]
+      if t_low_rangemax > bkg_range[0][0] or t_high_rangemin < bkg_range[1][1]:
+        backfitter = BackgroundFitter.from_phaii(pha, Polynomial, bkg_range)
+        backfitter.fit(order=1)
+      else:
+        raise ValueError("Need to find another value for the background")
     # print(np.mean(backfitter.statistic / backfitter.dof))
     bkgd_model = backfitter.interpolate_bins(lc.lo_edges, lc.hi_edges)
     lc_bkgd = bkgd_model.integrate_energy(ener_range[0], ener_range[1])
@@ -164,8 +173,8 @@ def make_tte_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_mas
       plt.close(fig)
     fig.savefig(f"sources/LC_plots/LightCurve_{name}.png")
     save_LC(substracted_rates, lc_select.centroids, f"sources/Light_Curves/LightCurve_{name}.dat")
-    for file in files:
-      subprocess.call(f"rm -f {directory}{file}", shell=True)
+    # for file in files:
+    #   subprocess.call(f"rm -f {directory}{file}", shell=True)
     return True
 
 def make_cspec_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_mask, ener_range=(10, 1000), show=False, directory="./sources/"):
@@ -189,7 +198,7 @@ def make_cspec_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_m
   lc_select_list = [lc.slice(start_t90, end_t90) for lc in lc_list]
 
   backfitter_list = [BackgroundFitter.from_phaii(cspec, Polynomial, bkg_range) for cspec in cspecs]
-  [backfitter.fit(order=2) for backfitter in backfitter_list]
+  [backfitter.fit(order=1) for backfitter in backfitter_list]
   # print([np.mean(backfitter.statistic / backfitter.dof) for backfitter in backfitter_list])
   bkgd_model_list = [backfitter.interpolate_bins(lc_list[0].lo_edges, lc_list[0].hi_edges) for backfitter in backfitter_list]
   bkgd_lc_list = [bkgd_model.integrate_energy(ener_range[0], ener_range[1]) for bkgd_model in bkgd_model_list]
@@ -264,7 +273,7 @@ def create_lc(cat, GRB_ite, bin_size="auto", ener_range=(10, 1000), show=False, 
 
 
 bkg_min = []
-for ite in range(15, 16):#len(cat_all.name)):
+for ite in range(15, len(cat_all.name)):
   print("Number : ", ite)
   create_lc(cat_all, ite, bin_size="auto", show=False)
 # for ite in range(10):
