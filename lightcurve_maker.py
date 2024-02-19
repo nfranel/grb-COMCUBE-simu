@@ -124,7 +124,7 @@ def make_tte_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_mas
   trig_finder = TriggerFtp(name.split("GRB")[1])
   files = trig_finder.ls_tte()
   nai_files = files[2:]
-  # trig_finder.get_tte(directory)
+  trig_finder.get_tte(directory)
   ttes = []
   for file_ite in range(len(nai_files)):
     if lc_detector_mask[file_ite] == "1":
@@ -173,8 +173,8 @@ def make_tte_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_mas
       plt.close(fig)
     fig.savefig(f"sources/LC_plots/LightCurve_{name}.png")
     save_LC(substracted_rates, lc_select.centroids, f"sources/Light_Curves/LightCurve_{name}.dat")
-    # for file in files:
-    #   subprocess.call(f"rm -f {directory}{file}", shell=True)
+    for file in files:
+      subprocess.call(f"rm -f {directory}{file}", shell=True)
     return True
 
 def make_cspec_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_mask, ener_range=(10, 1000), show=False, directory="./sources/"):
