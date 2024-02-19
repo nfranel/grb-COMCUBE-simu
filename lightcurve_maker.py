@@ -148,7 +148,7 @@ def make_tte_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_mas
       backfitter.fit(order=1)
     except np.linalg.LinAlgError:
       bkg_range = [(bkg_range[0][0] - 5, bkg_range[0][1]), (bkg_range[1][0], bkg_range[1][1] + 5)]
-      if t_low_rangemax > bkg_range[0][0] or t_high_rangemin < bkg_range[1][1]:
+      if t_low_rangemax < bkg_range[0][0] and t_high_rangemin > bkg_range[1][1]:
         backfitter = BackgroundFitter.from_phaii(pha, Polynomial, bkg_range)
         backfitter.fit(order=1)
       else:
