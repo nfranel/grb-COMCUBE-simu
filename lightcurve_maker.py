@@ -264,7 +264,7 @@ def create_lc(cat, GRB_ite, bin_size="auto", ener_range=(10, 1000), show=False, 
 
 
 bkg_min = []
-for ite in range(15, 16)#len(cat_all.name)):
+for ite in range(15, 16):#len(cat_all.name)):
   print("Number : ", ite)
   create_lc(cat_all, ite, bin_size="auto", show=False)
 # for ite in range(10):
