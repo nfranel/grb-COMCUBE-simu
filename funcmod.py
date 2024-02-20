@@ -985,7 +985,11 @@ def random_grb_dec_ra(lat_min, lat_max, lon_min, lon_max):
   lat_min, lat_max, lon_min, lon_max = np.deg2rad(lat_min), np.deg2rad(lat_max), np.deg2rad(lon_min), np.deg2rad(lon_max)
   dec = np.pi / 2 - np.arcsin(np.sin(lat_min) + np.random.rand() * (np.sin(lat_max) - np.sin(lat_min)))
   ra = np.mod(lon_min + np.random.rand() * (lon_max - lon_min), 2 * np.pi)
-  return np.rad2deg(dec), np.rad2deg(ra)
+  dec, ra = np.rad2deg(dec), np.rad2deg(ra)
+  # correcting some issue with the rounding of ra
+  if f"{ra:.1f}" == 360.0:
+    ra = 0.0
+  return dec, ra
 
 
 def execute_finder(file, events, geometry, cpp_routine="find_detector"):
