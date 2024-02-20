@@ -12,6 +12,9 @@ import numpy as np
 from catalog import Catalog
 import subprocess
 import time
+import multiprocessing as mp
+from itertools import repeat
+
 
 def bin_selector(lc, tstart, tstop, minedges, maxedges):
   """
@@ -117,43 +120,52 @@ def make_tte_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_mas
   """
 
   """
+  #####################################################################################################################
+  # Loading tte files and extracting some information
+  #####################################################################################################################
   if not directory.endswith("/"):
     directory += "/"
   # Files to load :
   # initialize the Trigger data finder with a trigger number
   trig_finder = TriggerFtp(name.split("GRB")[1])
   files = trig_finder.ls_tte()
-  nai_files = files[2:]
-  trig_finder.get_tte(directory)
-  ttes = []
-  for file_ite in range(len(nai_files)):
-    if lc_detector_mask[file_ite] == "1":
-      ttes.append(TTE.open(f"{directory}{nai_files[file_ite]}"))
-
-  t_low_rangemax = max([tte.time_range[0] for tte in ttes])
-  t_high_rangemin = min([tte.time_range[1] for tte in ttes])
-  if t_low_rangemax > bkg_range[0][0] or t_high_rangemin < bkg_range[1][1]:
-    for file in files:
-      subprocess.call(f"rm -f {directory}{file}", shell=True)
-    return 1
+  if files == []:
+    cfiles = trig_finder.ls_cspec()
+    if cfiles != []:
+      return make_cspec_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_mask, ener_range=ener_range, show=show, directory=directory)
+    else:
+      return name
   else:
-    tte_total = ttes[0].merge(ttes)
+    nai_files = files[2:]
+    trig_finder.get_tte(directory)
+    ttes = []
+    for file_ite in range(len(nai_files)):
+      if lc_detector_mask[file_ite] == "1":
+        ttes.append(TTE.open(f"{directory}{nai_files[file_ite]}"))
+    t_low_rangemax = max([tte.time_range[0] for tte in ttes])
+    t_high_rangemin = min([tte.time_range[1] for tte in ttes])
 
-    pha = tte_total.to_phaii(bin_by_time, bin_size, time_ref=start_t90)
-    lc = pha.to_lightcurve(time_range=time_range, energy_range=ener_range)
-    lc_select = lc.slice(start_t90, end_t90)
+    #####################################################################################################################
+    # Checking if the lc needs to used cspec files and running make_cspec_lc if so
+    #####################################################################################################################
+    if t_low_rangemax > bkg_range[0][0] or t_high_rangemin < bkg_range[1][1]:
+      for file in files:
+        subprocess.call(f"rm -f {directory}{file}", shell=True)
+      return make_cspec_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_mask, ener_range=ener_range, show=show, directory=directory)
+    else:
+      tte_total = ttes[0].merge(ttes)
 
-    try:
-      backfitter = BackgroundFitter.from_phaii(pha, Polynomial, bkg_range)
+      ###################################################################################################################
+      # Creating the light curve objets after merging
+      ###################################################################################################################
+      pha = tte_total.to_phaii(bin_by_time, bin_size, time_ref=start_t90)
+      lc = pha.to_lightcurve(time_range=time_range, energy_range=ener_range)
+      lc_select = lc.slice(start_t90, end_t90)
+
+      ###################################################################################################################
+      # Creating background
+      ###################################################################################################################
       try:
-        backfitter.fit(order=1)
-      except RuntimeError:
-        for file in files:
-          subprocess.call(f"rm -f {directory}{file}", shell=True)
-        return name
-    except np.linalg.LinAlgError:
-      bkg_range = [(bkg_range[0][0] - 5, bkg_range[0][1]), (bkg_range[1][0], bkg_range[1][1] + 5)]
-      if t_low_rangemax < bkg_range[0][0] and t_high_rangemin > bkg_range[1][1]:
         backfitter = BackgroundFitter.from_phaii(pha, Polynomial, bkg_range)
         try:
           backfitter.fit(order=1)
@@ -161,36 +173,57 @@ def make_tte_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_mas
           for file in files:
             subprocess.call(f"rm -f {directory}{file}", shell=True)
           return name
+      except np.linalg.LinAlgError:
+        bkg_range = [(bkg_range[0][0] - 5, bkg_range[0][1]), (bkg_range[1][0], bkg_range[1][1] + 5)]
+        if t_low_rangemax < bkg_range[0][0] and t_high_rangemin > bkg_range[1][1]:
+          backfitter = BackgroundFitter.from_phaii(pha, Polynomial, bkg_range)
+          try:
+            backfitter.fit(order=1)
+          except RuntimeError:
+            for file in files:
+              subprocess.call(f"rm -f {directory}{file}", shell=True)
+            return name
+        else:
+          raise ValueError("Need to find another value for the background")
+      # print(np.mean(backfitter.statistic / backfitter.dof))
+      bkgd_model = backfitter.interpolate_bins(lc.lo_edges, lc.hi_edges)
+      lc_bkgd = bkgd_model.integrate_energy(ener_range[0], ener_range[1])
+
+      ###################################################################################################################
+      # Correcting the rates and selecting the good bins
+      ###################################################################################################################
+      rates_bkg_select_total = bin_selector(lc_bkgd, start_t90, end_t90, lc_bkgd.tstart, lc_bkgd.tstop)
+      substracted_rates = substract_bkg(lc_select.rates, rates_bkg_select_total)
+
+      ###################################################################################################################
+      # Ploting if requested and saving the figure and light curves
+      ###################################################################################################################
+      fig, ax = plt.subplots(figsize=(10, 6))
+      ax.step(lc_select.centroids, substracted_rates)
+      ax.set(xlabel="Time(s)", ylabel="Count rate (count/s)", title=f"Light curve {name} with tte")
+      ax.axvline(start_t90, color="black")
+      ax.axvline(end_t90, color="black")
+      if show:
+        plt.show()
       else:
-        raise ValueError("Need to find another value for the background")
-    # print(np.mean(backfitter.statistic / backfitter.dof))
-    bkgd_model = backfitter.interpolate_bins(lc.lo_edges, lc.hi_edges)
-    lc_bkgd = bkgd_model.integrate_energy(ener_range[0], ener_range[1])
+        plt.close(fig)
+      fig.savefig(f"sources/LC_plots/LightCurve_{name}.png")
+      save_LC(substracted_rates, lc_select.centroids, f"sources/Light_Curves/LightCurve_{name}.dat")
 
-    # # selecting the good bins for saving
-    rates_bkg_select_total = bin_selector(lc_bkgd, start_t90, end_t90, lc_bkgd.tstart, lc_bkgd.tstop)
-
-    substracted_rates = substract_bkg(lc_select.rates, rates_bkg_select_total)
-
-    fig, ax = plt.subplots(figsize=(10, 6))
-    ax.step(lc_select.centroids, substracted_rates)
-    ax.set(xlabel="Time(s)", ylabel="Count rate (count/s)", title=f"Light curve {name} with tte")
-    ax.axvline(start_t90, color="black")
-    ax.axvline(end_t90, color="black")
-    if show:
-      plt.show()
-    else:
-      plt.close(fig)
-    fig.savefig(f"sources/LC_plots/LightCurve_{name}.png")
-    save_LC(substracted_rates, lc_select.centroids, f"sources/Light_Curves/LightCurve_{name}.dat")
-    for file in files:
-      subprocess.call(f"rm -f {directory}{file}", shell=True)
-    return 0
+      ###################################################################################################################
+      # removing the files
+      ###################################################################################################################
+      for file in files:
+        subprocess.call(f"rm -f {directory}{file}", shell=True)
+      return 0
 
 def make_cspec_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_mask, ener_range=(10, 1000), show=False, directory="./sources/"):
   """
 
   """
+  #####################################################################################################################
+  # Loading tte files and extracting some information
+  #####################################################################################################################
   if not directory.endswith("/"):
     directory += "/"
   # Files to load :
@@ -204,11 +237,16 @@ def make_cspec_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_m
     if lc_detector_mask[file_ite] == "1":
       cspecs.append(Cspec.open(f"{directory}{nai_files[file_ite]}"))
 
+  #####################################################################################################################
+  # Creating the light curve objets
+  #####################################################################################################################
   lc_list = [cspec.to_lightcurve(time_range=time_range, energy_range=ener_range) for cspec in cspecs]
   lc_select_list = [lc.slice(start_t90, end_t90) for lc in lc_list]
 
+  #####################################################################################################################
+  # Creating background
+  #####################################################################################################################
   backfitter_list = [BackgroundFitter.from_phaii(cspec, Polynomial, bkg_range) for cspec in cspecs]
-  print(start_t90, end_t90, time_range, bkg_range, lc_detector_mask)
   try:
     for backfitter in backfitter_list:
       backfitter.fit(order=1)
@@ -216,11 +254,13 @@ def make_cspec_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_m
     for file in files:
       subprocess.call(f"rm -f {directory}{file}", shell=True)
     return name
-
   # print([np.mean(backfitter.statistic / backfitter.dof) for backfitter in backfitter_list])
   bkgd_model_list = [backfitter.interpolate_bins(lc_list[0].lo_edges, lc_list[0].hi_edges) for backfitter in backfitter_list]
   bkgd_lc_list = [bkgd_model.integrate_energy(ener_range[0], ener_range[1]) for bkgd_model in bkgd_model_list]
 
+  #####################################################################################################################
+  # Correcting and combining the rates and selecting the good bins
+  #####################################################################################################################
   source_rates_select_list = np.array([lc.rates for lc in lc_select_list])
   # source_rates = np.sum(np.vstack(np.array([lc.rates for lc in lc_list])), axis=0)
   bkgd_rates = np.sum(np.vstack(np.array([lc.rates for lc in bkgd_lc_list])), axis=0)
@@ -230,6 +270,9 @@ def make_cspec_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_m
 
   substracted_rates = substract_bkg(source_rates_select, bkgd_rates_select)
 
+  #####################################################################################################################
+  # Creating background
+  #####################################################################################################################
   fig, ax = plt.subplots(figsize=(10, 6))
   ax.step(lc_select_list[0].centroids, substracted_rates)
   ax.set(xlabel="Time(s)", ylabel="Count rate (count/s)", title=f"Light curve {name} with cspec")
@@ -241,6 +284,10 @@ def make_cspec_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_m
     plt.close(fig)
   fig.savefig(f"sources/LC_plots/LightCurve_{name}.png")
   save_LC(substracted_rates, lc_select_list[0].centroids, f"sources/Light_Curves/LightCurve_{name}.dat")
+
+  #####################################################################################################################
+  # removing the files
+  #####################################################################################################################
   for file in files:
     subprocess.call(f"rm -f {directory}{file}", shell=True)
   return 0
@@ -283,20 +330,26 @@ def create_lc(cat, GRB_ite, bin_size="auto", ener_range=(10, 1000), show=False, 
   bkg_range = [(bk_time_low_start, bk_time_low_stop), (bk_time_high_start, bk_time_high_stop)]
   time_range = (bk_time_low_start, bk_time_high_stop)
 
-  tte_works = make_tte_lc(GRBname, start_t90, end_t90, time_range, bkg_range, lc_detector_mask, bin_size=bin_size, ener_range=ener_range, show=show, directory=directory)
-  if tte_works == 0:
-    return 0
-  elif tte_works == 1:
-    return make_cspec_lc(GRBname, start_t90, end_t90, time_range, bkg_range, lc_detector_mask, ener_range=ener_range, show=show, directory=directory)
-  else:
-    return tte_works
+  print(f"Running {GRBname}, ite : {GRB_ite}")
+  return make_tte_lc(GRBname, start_t90, end_t90, time_range, bkg_range, lc_detector_mask, bin_size=bin_size, ener_range=ener_range, show=show, directory=directory)
+  # tte_works = make_tte_lc(GRBname, start_t90, end_t90, time_range, bkg_range, lc_detector_mask, bin_size=bin_size, ener_range=ener_range, show=show, directory=directory)
+  # if tte_works == 0:
+  #   return 0
+  # elif tte_works == 1:
+  #   return
+  # else:
+  #   return tte_works
 
 unfit = []
 for ite in range(15, len(cat_all.name)):
-# for ite in range(15, 18):
+# for ite in range(589, 591):
   ret = create_lc(cat_all, ite, bin_size="auto", show=False)
   if ret != 0:
     unfit.append((cat_all.name[ite], ite))
+
+# with mp.Pool() as pool:
+#   ret = pool.starmap(create_lc, zip(repeat(cat_all), range(15, 18)))
+
 # for ite in range(10):
 #   print(cat_all.name[ite], cat_all.t90[ite], cat_all.t90_start[ite], bkg_min[ite], cat_all.back_interval_low_start[ite], cat_all.back_interval_high_stop[ite])
 
