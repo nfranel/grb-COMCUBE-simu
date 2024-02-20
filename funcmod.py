@@ -981,7 +981,7 @@ def random_grb_dec_ra(lat_min, lat_max, lon_min, lon_max):
   lat_verif(lat_max)
   lon_verif(lon_max)
   if not -180 <= lon_min <= 180:
-    raise ValueError("Longitude has a wrong value")
+    raise ValueError(f"Longitude has a wrong value : -180 <= {lon_min} <= 180")
   lat_min, lat_max, lon_min, lon_max = np.deg2rad(lat_min), np.deg2rad(lat_max), np.deg2rad(lon_min), np.deg2rad(lon_max)
   dec = np.pi / 2 - np.arcsin(np.sin(lat_min) + np.random.rand() * (np.sin(lat_max) - np.sin(lat_min)))
   ra = np.mod(lon_min + np.random.rand() * (lon_max - lon_min), 2 * np.pi)
@@ -1048,7 +1048,7 @@ def dec_verif(dec):
   :param dec:
   """
   if not 0 <= dec <= 180:
-    raise ValueError("Declination has a wrong value")
+    raise ValueError(f"Declination has a wrong value : 0 <= {dec} <= 180")
 
 
 def ra_verif(ra):
@@ -1057,7 +1057,7 @@ def ra_verif(ra):
   :param ra:
   """
   if not 0 <= ra < 360:
-    raise ValueError("Right ascension has a wrong value")
+    raise ValueError(f"Right ascension has a wrong value : 0 <= {ra} < 360")
 
 
 def lat_verif(lat):
@@ -1066,7 +1066,7 @@ def lat_verif(lat):
   :param lat:
   """
   if not -90 <= lat <= 90:
-    raise ValueError("verif_rad_belts : Latitude has a wrong value")
+    raise ValueError(f"verif_rad_belts : Latitude has a wrong value : -90 <= {lat} <= 90")
 
 
 def lon_verif(lon):
@@ -1075,7 +1075,7 @@ def lon_verif(lon):
   :param lon:
   """
   if not -180 < lon <= 180:
-    raise ValueError("Longitude has a wrong value")
+    raise ValueError(f"Longitude has a wrong value : -180 < {lon} <= 180")
 
 # TODO verif for inclination , etc
 
