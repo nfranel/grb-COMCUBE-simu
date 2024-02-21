@@ -169,7 +169,7 @@ def make_tte_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_mas
         backfitter = BackgroundFitter.from_phaii(pha, Polynomial, bkg_range)
         try:
           backfitter.fit(order=1)
-        except RuntimeError:
+        except (RuntimeError, np.linalg.LinAlgError):
           for file in files:
             subprocess.call(f"rm -f {directory}{file}", shell=True)
           return name
@@ -179,10 +179,11 @@ def make_tte_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_mas
           backfitter = BackgroundFitter.from_phaii(pha, Polynomial, bkg_range)
           try:
             backfitter.fit(order=1)
-          except RuntimeError:
+          except (RuntimeError, np.linalg.LinAlgError):
             for file in files:
               subprocess.call(f"rm -f {directory}{file}", shell=True)
             return name
+
         else:
           raise ValueError("Need to find another value for the background")
       # print(np.mean(backfitter.statistic / backfitter.dof))
@@ -250,7 +251,7 @@ def make_cspec_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_m
   try:
     for backfitter in backfitter_list:
       backfitter.fit(order=1)
-  except RuntimeError:
+  except (RuntimeError, np.linalg.LinAlgError):
     for file in files:
       subprocess.call(f"rm -f {directory}{file}", shell=True)
     return name
@@ -341,7 +342,7 @@ def create_lc(cat, GRB_ite, bin_size="auto", ener_range=(10, 1000), show=False, 
   #   return tte_works
 
 unfit = []
-for ite in range(15, len(cat_all.name)):
+for ite in range(768, 769):
 # for ite in range(589, 591):
   ret = create_lc(cat_all, ite, bin_size="auto", show=False)
   if ret != 0:
