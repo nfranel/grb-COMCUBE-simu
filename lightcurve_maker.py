@@ -342,12 +342,12 @@ def create_lc(cat, GRB_ite, bin_size="auto", ener_range=(10, 1000), show=False, 
   #   return tte_works
 
 unfit = []
-for ite in range(768, 769):
+for ite in range(0, len(cat_all.name)):
 # for ite in range(589, 591):
   ret = create_lc(cat_all, ite, bin_size="auto", show=False)
   if ret != 0:
     unfit.append((cat_all.name[ite], ite))
-
+print(ret)
 # with mp.Pool() as pool:
 #   ret = pool.starmap(create_lc, zip(repeat(cat_all), range(15, 18)))
 
