@@ -50,52 +50,39 @@ def gen_commands(args):
     f.write("name | sim_num | sat_num | status | inc | ohm | omega | alt | rand_time | sat_decwf | sat_rawf | grb_decwf | grb_rawf | grb_decsf | grb_rasf")
     f.write("Angles in degrees and altitude in km\n")
     f.write("========================================================================\n")
-  def gen_grb(i): #Generate a single GRB command
-    #generate spectrum file here if not already done
-    if not(args.spectrafilepath.endswith("/")) and os.name == "posix": args.spectrafilepath += "/"
+  def gen_grb(i): # Generate a single GRB command
+    # generate spectrum file here if not already done
+    if not (args.spectrafilepath.endswith("/")) and os.name == "posix":
+      args.spectrafilepath += "/"
     spectrumfile = "{}{}_spectrum.dat".format(args.spectrafilepath, c.name[i])
     model = getattr(c, "flnc_best_fitting_model")[i].strip()
     pfluxmodel = getattr(c, 'pflx_best_fitting_model')[i].strip()
     pht_mflx = getattr(c, f"{model}_phtflux")[i]
     pht_pflx = getattr(c, f"{pfluxmodel}_phtflux")[i]
-    if not(spectrumfile in os.listdir(args.spectrafilepath)):
-      logE = np.logspace(1, 3, 100)#energy (log scale)
+    if not (spectrumfile in os.listdir(args.spectrafilepath)):
+      logE = np.logspace(1, 3, 100)  # energy (log scale)
       with open(spectrumfile, "w") as f:
         f.write("#model {}:  ".format(model))
-        # Commented as we do not simulate grbs with the peak flux
-        # if model == "pflx_plaw":
-        #   fun = lambda x: plaw(x, c.pflx_plaw_ampl[i], c.pflx_plaw_index[i], c.pflx_plaw_pivot[i])
-        #   f.write("ampl={}, index={}, pivot={}keV\n".format(c.pflx_plaw_ampl[i], c.pflx_plaw_index[i], c.pflx_plaw_pivot[i]))
-        # elif model == "pflx_comp":
-        #   fun = lambda x: comp(x, c.pflx_comp_ampl[i], c.pflx_comp_index[i], c.pflx_comp_epeak[i], c.pflx_comp_pivot[i])
-        #   f.write("ampl={}, index={}, epeak={}keV, pivot={}keV\n".format(c.pflx_comp_ampl[i], c.pflx_comp_index[i], c.pflx_comp_epeak[i], c.pflx_comp_pivot[i]))
-        # elif model == "pflx_band":
-        #   fun = lambda x: band(x, c.pflx_band_ampl[i], c.pflx_band_alpha[i], c.pflx_band_beta[i], c.pflx_band_epeak[i])
-        #   f.write("ampl={}, alpha={}, beta={}, epeak={}keV\n".format(c.pflx_band_ampl[i], c.pflx_band_alpha[i], c.pflx_band_beta[i], c.pflx_band_epeak[i]))
-        # elif model == "pflx_sbpl":
-        #   fun = lambda x: sbpl(x, c.pflx_sbpl_ampl[i], c.pflx_sbpl_indx1[i], c.pflx_sbpl_indx2[i], c.pflx_sbpl_brken[i], c.pflx_sbpl_brksc[i], c.pflx_sbpl_pivot[i])
-        #   f.write("ampl={}, index1={}, index2={}, eb={}keV, brksc={}keV, pivot={}keV\n".format(c.pflx_sbpl_ampl[i], c.pflx_sbpl_indx1[i], c.pflx_sbpl_indx2[i], c.pflx_sbpl_brken[i], c.pflx_sbpl_brksc[i], c.pflx_sbpl_pivot[i]))
         if model == "flnc_plaw":
           fun = lambda x: plaw(x, c.flnc_plaw_ampl[i], c.flnc_plaw_index[i], c.flnc_plaw_pivot[i])
-          f.write("ampl={}, index={}, pivot={}keV\n".format(c.flnc_plaw_ampl[i], c.flnc_plaw_index[i], c.flnc_plaw_pivot[i]))
+          f.write(f"ampl={c.flnc_plaw_ampl[i]}, index={c.flnc_plaw_index[i]}, pivot={c.flnc_plaw_pivot[i]}keV\n")
         elif model == "flnc_comp":
           fun = lambda x: comp(x, c.flnc_comp_ampl[i], c.flnc_comp_index[i], c.flnc_comp_epeak[i], c.flnc_comp_pivot[i])
-          f.write("ampl={}, index={}, epeak={}keV, pivot={}keV\n".format(c.flnc_comp_ampl[i], c.flnc_comp_index[i], c.flnc_comp_epeak[i], c.flnc_comp_pivot[i]))
+          f.write(f"ampl={c.flnc_comp_ampl[i]}, index={c.flnc_comp_index[i]}, epeak={c.flnc_comp_epeak[i]}keV, pivot={c.flnc_comp_pivot[i]}keV\n")
         elif model == "flnc_band":
           fun = lambda x: band(x, c.flnc_band_ampl[i], c.flnc_band_alpha[i], c.flnc_band_beta[i], c.flnc_band_epeak[i])
-          f.write("ampl={}, alpha={}, beta={}, epeak={}keV\n".format(c.flnc_band_ampl[i], c.flnc_band_alpha[i], c.flnc_band_beta[i], c.flnc_band_epeak[i]))
+          f.write(f"ampl={c.flnc_band_ampl[i]}, alpha={c.flnc_band_alpha[i]}, beta={c.flnc_band_beta[i]}, epeak={c.flnc_band_epeak[i]}keV\n")
         elif model == "flnc_sbpl":
-          fun = lambda x: sbpl(x, c.flnc_sbpl_ampl[i], c.flnc_sbpl_indx1[i], c.flnc_sbpl_indx2[i], c.flnc_sbpl_brken[i],
-                               c.flnc_sbpl_brksc[i], c.flnc_sbpl_pivot[i])
-          f.write("ampl={}, index1={}, index2={}, eb={}keV, brksc={}keV, pivot={}keV\n".format(c.flnc_sbpl_ampl[i], c.flnc_sbpl_indx1[i], c.flnc_sbpl_indx2[i], c.flnc_sbpl_brken[i], c.flnc_sbpl_brksc[i], c.flnc_sbpl_pivot[i]))
+          fun = lambda x: sbpl(x, c.flnc_sbpl_ampl[i], c.flnc_sbpl_indx1[i], c.flnc_sbpl_indx2[i], c.flnc_sbpl_brken[i], c.flnc_sbpl_brksc[i], c.flnc_sbpl_pivot[i])
+          f.write(f"ampl={c.flnc_sbpl_ampl[i]}, index1={c.flnc_sbpl_indx1[i]}, index2={c.flnc_sbpl_indx2[i]}, eb={c.flnc_sbpl_brken[i]}keV, brksc={c.flnc_sbpl_brksc[i]}keV, pivot={c.flnc_sbpl_pivot[i]}keV\n")
         else:
-          vprint("Could not find best fit model for {} (indicated {}). Aborting this GRB.".format(c.name[i], model), __verbose__, 0)
+          vprint(f"Could not find best fit model for {c.name[i]} (indicated {model}). Aborting this GRB.", __verbose__, 0)
           return
-        f.write("# Measured mean flux: {} ph/cm2/s in the 10-1000 keV band\n".format(pht_mflx))
-        f.write("# Measured peak flux: {} ph/cm2/s in the 10-1000 keV band\n".format(pht_pflx))
+        f.write(f"# Measured mean flux: {pht_mflx} ph/cm2/s in the 10-1000 keV band\n")
+        f.write(f"# Measured peak flux: {pht_pflx} ph/cm2/s in the 10-1000 keV band\n")
         f.write("\nIP LOGLOG\n\n")
         for E in logE:
-          f.write("DP {} {}\n".format(E, fun(E)))
+          f.write(f"DP {E} {fun(E)}\n")
         f.write("\nEN\n\n")
     for j in range(args.simulationsperevent):
       dec_grb_world_frame, ra_grb_world_frame = random_grb_dec_ra(args.position[0], args.position[1], args.position[2], args.position[3])  # deg
@@ -116,12 +103,18 @@ def gen_commands(args):
             # Add command to commands list
             if args.simtime.isdigit():
               simtime = float(args.simtime)
+              lc_bool = False
             elif args.simtime == "t90":
               simtime = float(c.t90[i])
+              lc_bool = False
+            elif args.simtime == "lc":
+              simtime = float(c.t90[i])
+              lc_bool = True
             else:
               simtime = None
+              lc_bool = False
               vprint("simtime in parameter file unknown. Check parameter file.", __verbose__, 0)
-            args.commands.append((not(args.nocosima), not(args.norevan), not(args.nomimrec), c.name[i], k, spectrumfile, pht_mflx, simtime, polstr, j, f"{dec_grb_world_frame:.1f}_{ra_grb_world_frame:.1f}_{rand_time:.4f}", theta, phi))
+            args.commands.append((not(args.nocosima), not(args.norevan), not(args.nomimrec), c.name[i], k, spectrumfile, pht_mflx, simtime, lc_bool, polstr, j, f"{dec_grb_world_frame:.1f}_{ra_grb_world_frame:.1f}_{rand_time:.4f}", theta, phi))
             save_log(f"{sim_directory}/simulation_logs.txt", c.name[i], j, k, "Simulated", s[0], s[1], s[2], s[3], rand_time, dec_sat_world_frame, ra_sat_world_frame, dec_grb_world_frame, ra_grb_world_frame, theta, phi)
   for i in range(len(c)):
     gen_grb(i)
@@ -174,14 +167,16 @@ def maketmpsf(command, args, pid):
       elif line.startswith(f"{source}.Spectrum") and (source=="GRBsource" or source=="GRBsourcenp"):
         f.write(f"{source}.Spectrum File {command[5]}")
       elif line.startswith(f"{source}.Polarization") and (source=="GRBsource" or source=="GRBsourcenp"):
-        f.write(f"{source}.Polarization Absolute 1. {command[8]}")
+        f.write(f"{source}.Polarization Absolute 1. {command[9]}")
       elif line.startswith(f"{source}.Flux") and (source=="GRBsource" or source=="GRBsourcenp"):
         f.write(f"{source}.Flux {command[6]}")
+        if command[8]:
+          f.write(f"{source}.Lightcurve File true ./sources/Light_Curves/LightCurve_{command[3]}.dat")
       else:
         f.write(line)
       f.write("\n")
   return fname
-
+! verifier le tmp file
 
 # MEGAlib interface functions
 
