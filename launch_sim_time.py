@@ -176,10 +176,9 @@ def maketmpsf(command, args, pid):
         f.write(line)
       f.write("\n")
   return fname
-! verifier le tmp file
+
 
 # MEGAlib interface functions
-
 def cosirevan(command):
   """
   Launches cosima and/or revan
