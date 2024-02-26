@@ -8,9 +8,10 @@
 
 import numpy as np
 import pandas as pd
+import scipy.integrate
 
-from scipy.integrate import quad
-
+from scipy.integrate import quad, trapezoid, simpson, IntegrationWarning
+import warnings
 import argparse
 
 from LEOBackgroundGenerator import LEOBackgroundGenerator as LEO
@@ -88,8 +89,15 @@ for i in range(0, len(Megalibfunc)):
 
     Energies = np.logspace(Elow, Ehigh, num=100, endpoint=True, base=10.0)
     Output = f"{Particle[i]}_Spec_{Altitude:.1f}km_{Inclination:.1f}deg.dat"
-    IntSpectrum, err = quad(Megalibfunc[i], 10**Elow, 10**Ehigh)
-    print(Particle[i], IntSpectrum*fac[i], " #/cm^2/s", err)
+    try:
+      warnings.simplefilter("error", category=IntegrationWarning)
+      IntSpectrum, err = quad(Megalibfunc[i], 10**Elow, 10**Ehigh)
+      print(Particle[i], IntSpectrum * fac[i], " #/cm^2/s", err)
+    except IntegrationWarning:
+      IntEner = np.logspace(Elow, Ehigh, 10000001)
+      IntFlu = Megalibfunc[i](IntEner)
+      IntSpectrum = simpson(IntFlu, IntEner)
+      print(Particle[i], IntSpectrum * fac[i], " #/cm^2/s")
     with open(Output, 'w') as f:
         print('# %s spectrum ' % Particle[i], file=f)
         print('# Format: DP <energy in keV> <shape of differential spectrum [XX/keV]>', file=f)

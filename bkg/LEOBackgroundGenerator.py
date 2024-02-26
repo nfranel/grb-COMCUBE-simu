@@ -547,7 +547,7 @@ class LEOBackgroundGenerator:
         redfac = 1./(1.+(Rigidity/self.AvGeomagCutOff)**-6.0)
 
         ff = np.asarray(E, dtype=float)
-        ff = f(E)*redfac*np.heaviside((E-1000), 1)
+        ff = f(E)*redfac*np.heaviside((E-1000.),1)
         return ff
 #
 
@@ -600,7 +600,7 @@ class LEOBackgroundGenerator:
         redfac = 1./(1.+(Rigidity/self.AvGeomagCutOff)**-6.0)
 
         ff = np.asarray(E, dtype=float)
-        ff = f(E)*redfac*np.heaviside((E-1000),1)
+        ff = f(E)*redfac*np.heaviside((E-1000.),1)
         return ff
 #
 
@@ -736,7 +736,7 @@ class LEOBackgroundGenerator:
         redfac = 1./(1.+(Rigidity/self.AvGeomagCutOff)**(-12.0))
 
         ff = np.asarray(E, dtype=float)
-        ff = f(E)*redfac*np.heaviside((E-1000),1)
+        ff = f(E)*redfac*np.heaviside((E-1000.),1)
         return ff
 #
 
@@ -792,5 +792,5 @@ class LEOBackgroundGenerator:
         redfac = 1./(1.+(Rigidity/self.AvGeomagCutOff)**(-12.0))
 
         ff = np.asarray(E, dtype=float)
-        ff = f(E)*redfac*np.heaviside((E-1000),1)
+        ff = f(E)*redfac*np.heaviside((E-1000.),1)
         return ff
