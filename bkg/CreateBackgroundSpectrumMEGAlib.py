@@ -96,7 +96,7 @@ for i in range(0, len(Megalibfunc)):
     except IntegrationWarning:
       IntEner = np.logspace(Elow, Ehigh, 10000001)
       IntFlu = Megalibfunc[i](IntEner)
-      IntSpectrum = simpson(IntFlu, IntEner)
+      IntSpectrum = simpson(IntFlu, x=IntEner)
       print(Particle[i], IntSpectrum * fac[i], " #/cm^2/s")
     with open(Output, 'w') as f:
         print('# %s spectrum ' % Particle[i], file=f)
