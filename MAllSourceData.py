@@ -46,10 +46,11 @@ class AllSourceData:
     self.erg_cut = erg_cut
     self.armcut = armcut
 
-# self.bkg_sim_duration = 3600
     # Parameters extracted from parfile
     self.geometry, self.revan_file, self.mimrec_file, self.spectra_path, self.cat_file, self.source_file, self.sim_prefix, self.sttype, self.n_sim, self.sim_duration, self.position_allowed_sim, self.sat_info = read_grbpar(self.grb_param)
     self.n_sat = len(self.sat_info)
+
+    self.result_prefix = self.grb_param.split("/polGBM.par")[0].split("/")[-1]
 
     # Different kinds of bins can be made :
     if polarigram_bins in ["fixed", "limited", "optimized"]:
@@ -63,7 +64,8 @@ class AllSourceData:
     self.snr_min = 5
     self.options = [self.erg_cut, self.armcut, self.geometry, self.save_time, self.init_correction, self.polarigram_bins]
 
-    # Compiling the position finder
+    # Compiling the position finder (sourcing megalib beforehand)
+    subprocess.call("megalib", shell=True)
     subprocess.call(f"make -f Makefile PRG=find_detector", shell=True)
 
     # Setting the background files
@@ -86,7 +88,7 @@ class AllSourceData:
       self.namelist = cat_data.name
       self.n_source = len(self.namelist)
 
-    # Extracting the informations from the simulation files
+    # Extracting the information from the simulation files
     if parallel == 'all':
       print("Parallel extraction of the data with all threads")
       with mp.Pool() as pool:
@@ -101,7 +103,7 @@ class AllSourceData:
     # Setting some informations used for obtaining the GRB count rates
     self.cat_duration = 10
     # self.com_duty = 1
-    self.com_duty = self.n_sim_simulated / (self.n_sim_simulated + self.n_sim_in_radbelt)  # TODO verification
+    self.com_duty = self.n_sim_simulated / (self.n_sim_simulated + self.n_sim_in_radbelt)
     self.gbm_duty = 0.85
     self.com_fov = 1
     self.gbm_fov = (1 - np.cos(np.deg2rad(horizon_angle(565)))) / 2
@@ -133,7 +135,6 @@ class AllSourceData:
     print("   [save_time, corr, erg_cut]")
     print("    save_time : to handle the new field with a specific function")
     print("    corr : to correct the polarization angle")
-    print(" Whether or not bkg simulated with the source :         .source_with_bkg")
     print("======================================================================")
     print("    Data and simulation information")
     print(" Information on satellites' position :   .sat_info")
@@ -150,19 +151,23 @@ class AllSourceData:
 # TODO finish the comments and rework the methods !
   def extract_sources(self, prefix, duration=None):
     """
-
+    Function used when the simulations are not comming from GBM GRB data (ex Crab nebula, etc)
+    :param prefix: Prefix used for the simulation file
+    :param duration: Specific duration given to the source (option used for tests so far)
+    :returns: a list containing a list of the source names and a list of their duration
+              (Here the duration is always the same, may be changed)
     """
     if duration is None:
       if self.sim_duration.isdigit():
         duration = float(self.sim_duration)
-      elif self.sim_duration == "t90":
+      elif self.sim_duration == "t90" or self.sim_duration == "lc":
         duration = None
-        print("Warning : impossible to load the t90 as sim duration is no catalog is given.")
+        print("Warning : impossible to load the t90 as no catalog is given.")
       else:
         duration = None
         print("Warning : unusual sim duration, please check the parameter file.")
 
-    flist = subprocess.getoutput("ls {}_*".format(prefix)).split("\n")
+    flist = subprocess.getoutput(f"ls {prefix}_*").split("\n")
     source_names = []
     if len(flist) >= 1 and not flist[0].startswith("ls: cannot access"):
       temp_sourcelist = []
@@ -173,7 +178,7 @@ class AllSourceData:
 
   def azi_angle_corr(self):
     """
-
+    Method to apply the angle correction to all polarigrams (So that they are in a same referential)
     """
     for source in self.alldata:
       if source is not None:
@@ -185,7 +190,7 @@ class AllSourceData:
 
   def azi_angle_anticorr(self):
     """
-
+    Method to remove the angle correction to all polarigrams
     """
     for source in self.alldata:
       if source is not None:
@@ -195,9 +200,11 @@ class AllSourceData:
               if sat is not None:
                 sat.anticorr()
 
-  def analyze(self, fit_bounds=None, const_analysis=True):
+  def analyze(self, const_analysis=True):
     """
     Proceed to the analysis of polarigrams for all satellites and constellation (unless specified) for all data
+    and calculates some probabilities
+    :param const_analysis: True if the analysis is done both on the sat data and on the constellation data
     """
     for source_ite, source in enumerate(self.alldata):
       if source is not None:
@@ -210,7 +217,8 @@ class AllSourceData:
     """
     This function is used to combine results from different satellites
     Results are then stored in the key const_data
-    The polarigrams have to be corrected to combine the polarigrams
+    ! The polarigrams have to be corrected to combine the polarigrams !
+    :param const: Which satellite are considered for the constellation if none, all of them are
     """
     if not self.init_correction:
       self.azi_angle_corr()
@@ -223,60 +231,23 @@ class AllSourceData:
       self.azi_angle_anticorr()
 
   def verif_const(self, const=None):
+    """
+    This function makes a quick verification of the way the data are combined to create the constellation
+    :param const: Which satellite are considered for the constellation if none, all of them are
+    """
     for source_ite, source in enumerate(self.alldata):
       if source is not None:
         for sim_ite, sim in enumerate(source):
           if sim is not None:
             sim.verif_const(message=f"for source {source_ite} and sim {sim_ite}", const=const)
 
-  def effective_area(self, sat=0):
-    """
-    sat is the number of the satellite considered
-    This method is supposed to be working with a set of 40 satellites with a lot of simulations
-    The results obtained with this method are meaningful only is there is no background simulated
-    """
-    if self.source_with_bkg:
-      print(
-        "WARNING : The source has been simulated with a background, the calculation has not been done as this would lead to biased results")
-    else:
-      list_dec = []
-      list_s_eff_compton = []
-      list_s_eff_single = []
-      list_fluence = []
-      for source in self.alldata:
-        if source is not None:
-          temp_dec = []
-          temp_s_eff_compton = []
-          temp_s_eff_single = []
-          for num_sim, sim in enumerate(source):
-            if sim is not None:
-              if sim[sat] is None:
-                print(
-                  f"The satellite {sat} selected didn't detect the source '{source.source_name}' for the simulation number {num_sim}.")
-              else:
-                temp_dec.append(sim[sat].dec_sat_frame)
-                temp_s_eff_compton.append(sim[sat].s_eff_compton)
-                temp_s_eff_single.append(sim[sat].s_eff_single)
-          list_dec.append(temp_dec)
-          list_s_eff_compton.append(temp_s_eff_compton)
-          list_s_eff_single.append(temp_s_eff_single)
-          list_fluence.append(source.source_fluence)
-
-      figure, ax = plt.subplots(2, 2, figsize=(16, 12))
-      figure.suptitle("Effective area as a function of detection angle")
-      for graph in range(4):
-        for ite in range(graph * 10, min(graph * 10 + 10, len(list_dec))):
-          ax[int(graph / 2)][graph % 2].scatter(list_dec[ite], list_s_eff_compton[ite],
-                                                label=f"Fluence : {np.around(list_fluence[ite], decimals=1)} ph/cm²")
-        ax[int(graph / 2)][graph % 2].set(xlabel="GRB zenith angle (rad)",
-                                          ylabel="Effective area for polarimetry (cm²)")  # , yscale="linear")
-        ax[int(graph / 2)][graph % 2].legend()
-      plt.show()
 
   def source_search(self, source_name, verbose=True):
     """
     Search among the sources simulated if one has the correct name
-    returns the position of the source(s) in the list and displays other information unless specified if it's there
+    :param source_name: The name of the source searched
+    :param verbose: verbosity to print the results or just return the index of the source in the catalog
+    :returns: the position of the source(s) in the list and displays other information unless specified if it's there
     """
     printv("================================================", verbose)
     printv("==            Searching the source            ==", verbose)
@@ -298,7 +269,9 @@ class AllSourceData:
 
   def source_information(self, source_id, verbose=True):
     """
-
+    Give information about a given source. If source_id is a name then proceeds to a source search beforehand
+    :param source_id: The index or name of the source we want to know about
+    :param verbose: verbosity to print the results if false nothing is shown
     """
     if type(source_id) is int:
       source_ite = source_id
@@ -322,7 +295,7 @@ class AllSourceData:
         return None
     else:
       printv(f"The source id doesn't match any known structure, use the position of the source in the list or its name.", verbose)
-      return
+      return None
     printv(f"The source {self.namelist[source_ite]} is at position {source_ite} in the data list", verbose)
     printv("==  General information about the source simulated  ==", verbose)
     printv(f" - Source duration : {source.source_duration} s", verbose)
@@ -343,102 +316,137 @@ class AllSourceData:
             printv(f" - Satellite {sat_ite} do not see the source.", verbose)
       else:
         printv(f" - For simulation {sim_ite} not in the field of view.", verbose)
-    return
+    return None
 
-  def fov_const(self, num_val=500, mode="polarization", show=True, save=False):
+  def fov_const(self, num_val=500, show=True, save=False):
     """
-    Plots a map of the sensibility (s_eff_compton) over the sky
-    Mode is the mode used to obtain the sensibility :
-      Polarization gives the sensibility to polarization
-      Spectrometry gives the sensibility to spectrometry (capacity of detection)
+    Plots a map of the sensibility over the sky for number of sat in sight, single events and compton events
+    :param num_val: number of value to
     """
-    phi_world = np.linspace(0, 360, num_val)
+    phi_world = np.linspace(0, 360, num_val, endpoint=False)
     # theta will be converted in sat coord with grb_decra_worldf2satf, which takes dec in world coord with 0 being north pole and 180 the south pole !
     theta_world = np.linspace(0, 180, num_val)
-    detection_pola = np.zeros((self.n_sat, num_val, num_val))
-    detection_spectro = np.zeros((self.n_sat, num_val, num_val))
+    detection = np.zeros((self.n_sat, num_val, num_val))
+    detection_compton = np.zeros((self.n_sat, num_val, num_val))
+    detection_single = np.zeros((self.n_sat, num_val, num_val))
 
-    for ite in range(self.n_sat):
-      detection_pola[ite] = np.array([[eff_area_compton_func(grb_decra_worldf2satf(theta, phi, self.sat_info[ite][0],
-                                                                                   self.sat_info[ite][1])[0], self.sat_info[ite][2], func_type="cos") for phi in phi_world] for theta in theta_world])
-      detection_spectro[ite] = np.array([[eff_area_single_func(grb_decra_worldf2satf(theta, phi, self.sat_info[ite][0],
-                                                                                     self.sat_info[ite][1])[0], self.sat_info[ite][2], func_type="data") for phi in phi_world] for theta in theta_world])
+    # for ite in range(self.n_sat):
+    #   detection_pola[ite] = np.array([[eff_area_compton_func(grb_decra_worldf2satf(theta, phi, self.sat_info[ite][0], self.sat_info[ite][1])[0], self.sat_info[ite][2], func_type="cos") for phi in phi_world] for theta in theta_world])
+    #   detection_spectro[ite] = np.array([[eff_area_single_func(grb_decra_worldf2satf(theta, phi, self.sat_info[ite][0], self.sat_info[ite][1])[0], self.sat_info[ite][2], func_type="data") for phi in phi_world] for theta in theta_world])
 
-    detec_sum_pola = np.sum(detection_pola, axis=0)
-    detec_sum_spectro = np.sum(detection_spectro, axis=0)
+    for ite, info_sat in enumerate(self.sat_info):
+      for ite_theta, theta in enumerate(theta_world):
+        for ite_phi, phi in enumerate(phi_world):
+          detection_compton[ite][ite_theta][ite_phi], detection_single[ite][ite_theta][ite_phi], detection[ite][ite_theta][ite_phi] = eff_area_func(theta, phi, info_sat, self.muSeffdata)
+    detec_sum = np.sum(detection, axis=0)
+    detec_sum_compton = np.sum(detection_compton, axis=0)
+    detec_sum_single = np.sum(detection_single, axis=0)
 
     phi_plot, theta_plot = np.meshgrid(phi_world, theta_world)
-    detec_min_pola = int(np.min(detec_sum_pola))
-    detec_max_pola = int(np.max(detec_sum_pola))
-    detec_min_spectro = int(np.min(detec_sum_spectro))
-    detec_max_spectro = int(np.max(detec_sum_spectro))
-    cmap_pola = mpl.cm.Greens_r
-    cmap_spectro = mpl.cm.Oranges_r
+    detec_min = int(np.min(detec_sum))
+    detec_max = int(np.max(detec_sum))
+    detec_min_compton = int(np.min(detec_sum_compton))
+    detec_max_compton = int(np.max(detec_sum_compton))
+    detec_min_single = int(np.min(detec_sum_single))
+    detec_max_single = int(np.max(detec_sum_single))
+    cmap_det = mpl.cm.Blues_r
+    cmap_compton = mpl.cm.Greens_r
+    cmap_single = mpl.cm.Oranges_r
 
-    # Eff_area plots for polarimetry
-    # levels_pola = range(int(detec_min_pola / 2) * 2, detec_max_pola + 1)
-    levels_pola = range(int(detec_min_pola), int(detec_max_pola) + 1, int((int(detec_max_pola) + 1 - int(detec_min_pola)) / 15))
+    ##################################################################################################################
+    # Map for number of satellite in sight
+    ##################################################################################################################
+    levels = range(detec_min, detec_max + 1, max(1, int(detec_max + 1 - detec_min) / 15))
 
-    plt.subplot(projection=None)
-    h1 = plt.pcolormesh(phi_plot, np.pi / 2 - theta_plot, detec_sum_pola, cmap=cmap_pola)
+    plt.subplot(projection=None, figsize=(10, 6))
+    h1 = plt.pcolormesh(phi_plot, np.pi / 2 - theta_plot, detec_sum, cmap=cmap_det)
     plt.axis('scaled')
     plt.xlabel("Right ascention (rad)")
     plt.ylabel("Declination (rad)")
-    cbar = plt.colorbar(ticks=levels_pola)
-    cbar.set_label("Effective area at for polarisation (cm²)", rotation=270, labelpad=20)
-    plt.savefig("figtest")
+    cbar = plt.colorbar(ticks=levels)
+    cbar.set_label("Number of satellite in sight", rotation=270, labelpad=20)
     if save:
-      plt.savefig("eff_area_noproj_pola")
+      plt.savefig(f"{self.result_prefix}_n_sight")
     if show:
       plt.show()
 
-    plt.subplot(projection="mollweide")
-    h1 = plt.pcolormesh(phi_plot - np.pi, np.pi / 2 - theta_plot, detec_sum_pola, cmap=cmap_pola)
-    plt.grid(alpha=0.4)
-    plt.xlabel("Right ascention (rad)")
-    plt.ylabel("Declination (rad)")
-    cbar = plt.colorbar(ticks=levels_pola)
-    cbar.set_label("Effective area for polarisation (cm²)", rotation=270, labelpad=20)
-    if save:
-      plt.savefig("eff_area_proj_pola")
-    if show:
-      plt.show()
-
-    # Eff_area plots for spectroscopy
-    # levels_spectro = range(int(detec_min_spectro / 2) * 2, detec_max_spectro + 1)
-    levels_spectro = range(int(detec_min_spectro), int(detec_max_spectro) + 1,
-                           int((int(detec_max_spectro) + 1 - int(detec_min_spectro)) / 15))
-
-    plt.subplot(projection=None)
-    h1 = plt.pcolormesh(phi_plot, np.pi / 2 - theta_plot, detec_sum_spectro, cmap=cmap_spectro)
+    plt.subplot(projection="mollweide", figsize=(10, 6))
+    h2 = plt.pcolormesh(phi_plot, np.pi / 2 - theta_plot, detec_sum, cmap=cmap_det)
     plt.axis('scaled')
     plt.xlabel("Right ascention (rad)")
     plt.ylabel("Declination (rad)")
-    cbar = plt.colorbar(ticks=levels_spectro)
-    cbar.set_label("Effective area for spectrometry (cm²)", rotation=270, labelpad=20)
+    cbar = plt.colorbar(ticks=levels)
+    cbar.set_label("Number of satellite in sight", rotation=270, labelpad=20)
     if save:
-      plt.savefig("eff_area_noproj_spectro")
+      plt.savefig(f"{self.result_prefix}_n_sight_proj")
     if show:
       plt.show()
 
-    plt.subplot(projection="mollweide")
-    h1 = plt.pcolormesh(phi_plot - np.pi, np.pi / 2 - theta_plot, detec_sum_spectro, cmap=cmap_spectro)
-    plt.grid(alpha=0.4)
+    ##################################################################################################################
+    # Map of constellation's compton effective area
+    ##################################################################################################################
+    levels_compton = range(detec_min_compton, detec_max_compton + 1, max(1, int(detec_max_compton + 1 - detec_min_compton) / 15))
+
+    plt.subplot(projection=None, figsize=(10, 6))
+    h3 = plt.pcolormesh(phi_plot, np.pi / 2 - theta_plot, detec_sum_compton, cmap=cmap_compton)
+    plt.axis('scaled')
     plt.xlabel("Right ascention (rad)")
     plt.ylabel("Declination (rad)")
-    cbar = plt.colorbar(ticks=levels_spectro)
-    cbar.set_label("Effective area for spectrometry (cm²)", rotation=270, labelpad=20)
+    cbar = plt.colorbar(ticks=levels_compton)
+    cbar.set_label("Effective area at for compton events (cm²)", rotation=270, labelpad=20)
     if save:
-      plt.savefig("eff_area_proj_spectro")
+      plt.savefig(f"{self.result_prefix}_compton_seff")
     if show:
       plt.show()
 
-    print(f"La surface efficace moyenne pour la polarisation est de {np.mean(np.mean(detec_sum_pola, axis=1))} cm²")
-    print(f"La surface efficace moyenne pour la spectrométrie est de {np.mean(np.mean(detec_sum_spectro, axis=1))} cm²")
+    plt.subplot(projection="mollweide", figsize=(10, 6))
+    h4 = plt.pcolormesh(phi_plot, np.pi / 2 - theta_plot, detec_sum_compton, cmap=cmap_compton)
+    plt.axis('scaled')
+    plt.xlabel("Right ascention (rad)")
+    plt.ylabel("Declination (rad)")
+    cbar = plt.colorbar(ticks=levels_compton)
+    cbar.set_label("Effective area at for compton events (cm²)", rotation=270, labelpad=20)
+    if save:
+      plt.savefig(f"{self.result_prefix}_compton_seff_proj")
+    if show:
+      plt.show()
+
+    ##################################################################################################################
+    # Map of constellation's compton effective area
+    ##################################################################################################################
+    levels_single = range(detec_min_single, detec_max_single + 1, max(1, int(detec_max_single + 1 - detec_min_single) / 15))
+
+    plt.subplot(projection=None, figsize=(10, 6))
+    h5 = plt.pcolormesh(phi_plot, np.pi / 2 - theta_plot, detec_sum_single, cmap=cmap_single)
+    plt.axis('scaled')
+    plt.xlabel("Right ascention (rad)")
+    plt.ylabel("Declination (rad)")
+    cbar = plt.colorbar(ticks=levels_single)
+    cbar.set_label("Effective area for single events (cm²)", rotation=270, labelpad=20)
+    if save:
+      plt.savefig(f"{self.result_prefix}_single_seff")
+    if show:
+      plt.show()
+
+    plt.subplot(projection="mollweide", figsize=(10, 6))
+    h6 = plt.pcolormesh(phi_plot, np.pi / 2 - theta_plot, detec_sum_single, cmap=cmap_single)
+    plt.axis('scaled')
+    plt.xlabel("Right ascention (rad)")
+    plt.ylabel("Declination (rad)")
+    cbar = plt.colorbar(ticks=levels_single)
+    cbar.set_label("Effective area for single events (cm²)", rotation=270, labelpad=20)
+    if save:
+      plt.savefig(f"{self.result_prefix}_single_seff")
+    if show:
+      plt.show()
+
+    print(f"The mean number of satellite in sight is :       {np.mean(detec_sum):.4f} satellites")
+    print(f"The mean effective area for compton events is :  {np.mean(detec_sum_compton):.4f} cm²")
+    print(f"The mean effective area for single events is :   {np.mean(detec_sum_single):.4f} cm²")
 
   def count_triggers(self):
     """
-
+    Function to count and print the number of triggers using different criterions
     """
     total_in_view = 0
     # Setting 1s mean triggers counter
@@ -479,13 +487,6 @@ class AllSourceData:
                 sat_peak_snr = calc_snr(
                   rescale_cr_to_GBM_pf(sat.single_cr, source.best_fit_mean_flux, source.best_fit_p_flux),
                   sat.single_b_rate)
-                # print("rescaled cr : ", rescale_cr_to_GBM_pf(sat.single_cr, source.best_fit_mean_flux, source.best_fit_p_flux))
-                # print("initial cr : ", sat.single_cr)
-                # print("peak flux : ", source.best_fit_p_flux)
-                # print("mean flux : ", source.best_fit_mean_flux)
-                # print("mean flux in ergcut :", source.source_fluence / source.source_duration)
-                # print("b_rate : ", sat.single_b_rate)
-                # print("snr : ", sat_peak_snr)
                 if sat_peak_snr >= self.snr_min:
                   sat_peak_triggers += 1
                 if sat_peak_snr >= self.snr_min - 2:
@@ -498,18 +499,6 @@ class AllSourceData:
             const_peak_snr = calc_snr(
               rescale_cr_to_GBM_pf(sim.const_data.single_cr, source.best_fit_mean_flux, source.best_fit_p_flux),
               sim.const_data.single_b_rate)
-            # print()
-            # print("rescaled cr : ", rescale_cr_to_GBM_pf(sim.const_data.single_cr, source.best_fit_mean_flux, source.best_fit_p_flux))
-            # print("initial cr : ", sim.const_data.single_cr)
-            # print("peak flux : ", source.best_fit_p_flux)
-            # print("reduced peak flux : ", source.best_fit_p_flux * source.source_fluence / source.source_duration / source.best_fit_mean_flux)
-            # print("mean flux : ", source.best_fit_mean_flux)
-            # print("mean flux in ergcut :", source.source_fluence / source.source_duration)
-            # print("b_rate : ", sim.const_data.single_b_rate)
-            # print("         snr peak : ", const_peak_snr)
-            # print("         snr mean : ", sim.const_data.snr_single)
-            # print()
-            # Summing for simulated values
             # 1s mean triggers
             if sim.const_data.snr_single >= self.snr_min:
               single_instant_trigger_by_const += 1
@@ -534,24 +523,26 @@ class AllSourceData:
 
     print("The number of trigger for single events for the different technics are the following :")
     print(" == Integration time for the trigger : 1s, mean flux == ")
-    print(f"   For a {self.snr_min} sigma trigger with the number of hits summed over the constellation : {single_instant_trigger_by_const} triggers")
-    print(f"   For a {self.snr_min} sigma trigger on at least one of the satellites : {single_instant_trigger_by_sat} triggers")
-    print(f"   For a {self.snr_min-2} sigma trigger in at least 3 satellites of the constellation : {single_instant_trigger_by_comparison} triggers")
-    print(" == Integration time for the trigger : T90, mean flux == ")
-    print(f"   For a {self.snr_min} sigma trigger with the number of hits summed over the constellation : {single_t90_trigger_by_const} triggers")
-    print(f"   For a {self.snr_min} sigma trigger on at least one of the satellites : {single_t90_trigger_by_sat} triggers")
-    print(f"   For a {self.snr_min-2} sigma trigger in at least 3 satellites of the constellation : {single_t90_trigger_by_comparison} triggers")
+    print(f"   For a {self.snr_min} sigma trigger with the number of hits summed over the constellation :  {single_instant_trigger_by_const:.2f} triggers")
+    print(f"   For a {self.snr_min} sigma trigger on at least one of the satellites :                      {single_instant_trigger_by_sat:.2f} triggers")
+    print(f"   For a {self.snr_min-2} sigma trigger in at least 3 satellites of the constellation :        {single_instant_trigger_by_comparison:.2f} triggers")
+    # print(" == Integration time for the trigger : T90, mean flux == ")
+    # print(f"   For a {self.snr_min} sigma trigger with the number of hits summed over the constellation : {single_t90_trigger_by_const} triggers")
+    # print(f"   For a {self.snr_min} sigma trigger on at least one of the satellites : {single_t90_trigger_by_sat} triggers")
+    # print(f"   For a {self.snr_min-2} sigma trigger in at least 3 satellites of the constellation : {single_t90_trigger_by_comparison} triggers")
     print("The number of trigger using GBM pflux for an energy range between 10keV and 1MeV are the following :")
     print(" == Integration time for the trigger : 1s, peak flux == ")
-    print(f"   For a {self.snr_min} sigma trigger with the number of hits summed over the constellation : {single_peak_trigger_by_const} triggers")
-    print(f"   For a {self.snr_min} sigma trigger on at least one of the satellites : {single_peak_trigger_by_sat} triggers")
-    print(f"   For a {self.snr_min-2} sigma trigger in at least 3 satellites of the constellation : {single_peak_trigger_by_comparison} triggers")
+    print(f"   For a {self.snr_min} sigma trigger with the number of hits summed over the constellation :  {single_peak_trigger_by_const:.2f} triggers")
+    print(f"   For a {self.snr_min} sigma trigger on at least one of the satellites :                      {single_peak_trigger_by_sat:.2f} triggers")
+    print(f"   For a {self.snr_min-2} sigma trigger in at least 3 satellites of the constellation :        {single_peak_trigger_by_comparison:.2f} triggers")
     print("=============================================")
     print(f" Over the {total_in_view} GRBs simulated in the constellation field of view")
 
   def grb_map_plot(self, mode="no_cm"):
     """
-    Display the catalog GRBs position in the sky using the corresponding function in catalogext
+    Display the catalog GRBs position in the sky using the corresponding function in catalog.py
+    :param mode: mode to give colormap options to the plot
+      mode can be "no_cm" or "t90"
     """
     cat_data = Catalog(self.cat_file, self.sttype)
     cat_data.grb_map_plot(mode)
@@ -564,9 +555,15 @@ class AllSourceData:
     cat_data = Catalog(self.cat_file, self.sttype)
     cat_data.spectral_information()
 
-  def mdp_histogram(self, selected_sat="const", mdp_threshold=1, cumul=1, n_bins=30, x_scale='linear', y_scale="log"):
+  def mdp_histogram(self, selected_sat="const", mdp_limit=1, cumul=1, n_bins=30, x_scale='linear', y_scale="log"):
     """
     Display and histogram representing the number of grb of a certain mdp per year
+    :param selected_sat: int or string, which sat is selected, if "const" the constellation is selected
+    :param mdp_limit: limit in mdp (mdp more than 1 is not physical so should be between 0 and 1)
+    :param cumul: int, 1 for a cumulative histogram, 0 for a usual one, -1 for an inverse cumulative one
+    :param n_bins: number of bins in the histogram
+    :param x_scale: scale for x-axis
+    :param y_scale: scale for y-axis
     """
     if self.cat_file.endswith("longGBM.txt"):
       grb_type = "lGRB"
@@ -584,17 +581,18 @@ class AllSourceData:
               if sim[selected_sat] is not None:
                 number_detected += 1
                 if sim[selected_sat].mdp is not None:
-                  if sim[selected_sat].mdp <= mdp_threshold:
+                  if sim[selected_sat].mdp <= mdp_limit:
                     mdp_list.append(sim[selected_sat].mdp * 100)
             elif selected_sat == "const":
               if sim.const_data is not None:
                 number_detected += 1
                 if sim.const_data.mdp is not None:
-                  if sim.const_data.mdp <= mdp_threshold:
+                  if sim.const_data.mdp <= mdp_limit:
                     mdp_list.append(sim.const_data.mdp * 100)
+
     fig, ax = plt.subplots(1, 1, figsize=(10, 6))
     ax.hist(mdp_list, bins=n_bins, cumulative=cumul, histtype="step", weights=[self.weights] * len(mdp_list),
-            label=f"Number of GRBs with MDP < {mdp_threshold * 100}% : {len(mdp_list)} over {number_detected} detections")
+            label=f"Number of GRBs with MDP < {mdp_limit * 100}% : {len(mdp_list)} over {number_detected} detections")
     if cumul == 1:
       ax.set(xlabel="MPD (%)", ylabel="Number of detection per year", xscale=x_scale, yscale=y_scale,
              title=f"Cumulative distribution of the MDP - {grb_type}")
@@ -611,6 +609,12 @@ class AllSourceData:
   def snr_histogram(self, snr_type="compton", selected_sat="const", cumul=0, n_bins=30, x_scale="log", y_scale="log"):
     """
     Display and histogram representing the number of grb that have at least a certain snr per year
+    :param snr_type: "compton" or "single" to consider either compton events or single events
+    :param selected_sat: int or string, which sat is selected, if "const" the constellation is selected
+    :param cumul: int, 1 for a cumulative histogram, 0 for a usual one, -1 for an inverse cumulative one
+    :param n_bins: number of bins in the histogram
+    :param x_scale: scale for x-axis
+    :param y_scale: scale for y-axis
     """
     if self.cat_file.endswith("longGBM.txt"):
       grb_type = "lGRB"
@@ -641,7 +645,7 @@ class AllSourceData:
               elif snr_type == "single":
                 snr_list.append(sim[selected_sat].snr_single_t90)
 
-    fig, ax = plt.subplots(1, 1)
+    fig, ax = plt.subplots(1, 1, figsize=(10, 6))
     if x_scale == "log":
       if min(snr_list) < 1:
         inf_limit = int(np.log10(min(snr_list))) - 1
@@ -670,7 +674,14 @@ class AllSourceData:
   def hits_energy_histogram(self, num_grb, num_sim, energy_type="both", selected_sat="const", n_bins=30,
                             x_scale='log', y_scale='linear'):
     """
-
+    Plots the energy spectrum for a detection by 1 sat or by the constellation
+    :param num_grb: index of the GRB
+    :param num_sim: index of the simulation (its number)
+    :param energy_type: "both", "compton" or "single", to select which event is considered
+    :param selected_sat: int or string, which sat is selected, if "const" the constellation is selected
+    :param n_bins: number of bins in the histogram
+    :param x_scale: scale for x-axis
+    :param y_scale: scale for y-axis
     """
     hits_energy = []
     if selected_sat == "const":
