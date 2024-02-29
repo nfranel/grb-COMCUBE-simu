@@ -4,7 +4,6 @@ from gbm.plot import Lightcurve, Spectrum
 import matplotlib.pyplot as plt
 from gbm.background import BackgroundFitter
 from gbm.background.binned import Polynomial
-from gbm.background.unbinned import NaivePoisson
 import gbm
 from gbm.finder import TriggerFtp
 
@@ -14,7 +13,6 @@ import subprocess
 import time
 import multiprocessing as mp
 from itertools import repeat
-
 
 def bin_selector(lc, tstart, tstop, minedges, maxedges):
   """
@@ -53,7 +51,7 @@ def substract_bkg(lc_rates, bkg_rates):
   return np.where(rates >= 0, rates, 0)
 
 
-def rm_ttes(tte_list, directory):
+def rm_files(tte_list, directory):
   """
   Removes a downloaded tte file
   :param tte_list: list of the tte file names
@@ -116,7 +114,7 @@ def save_LC(rates, centroids, fullname):
     f.write("EN")
 
 
-def make_tte_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_mask, bin_size=0.0625, ener_range=(10, 1000), show=False, directory="./sources/"):
+def make_tte_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_mask, bin_size=0.1, ener_range=(10, 1000), show=False, directory="./sources/"):
   """
 
   """
@@ -149,8 +147,7 @@ def make_tte_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_mas
     # Checking if the lc needs to used cspec files and running make_cspec_lc if so
     #####################################################################################################################
     if t_low_rangemax > bkg_range[0][0] or t_high_rangemin < bkg_range[1][1]:
-      for file in files:
-        subprocess.call(f"rm -f {directory}{file}", shell=True)
+      rm_files(files, directory)
       return make_cspec_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_mask, ener_range=ener_range, show=show, directory=directory)
     else:
       tte_total = ttes[0].merge(ttes)
@@ -162,6 +159,31 @@ def make_tte_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_mas
       lc = pha.to_lightcurve(time_range=time_range, energy_range=ener_range)
       lc_select = lc.slice(start_t90, end_t90)
 
+      # fig, ax = plt.subplots(figsize=(10, 6))
+      # ax.step(lc.centroids, lc.rates)
+      # ax.set(xlabel="Time(s)", ylabel="Count rate (count/s)", title=f"Light curve check {name} with tte")
+      # ax.axvline(start_t90, color="black")
+      # ax.axvline(end_t90, color="black")
+      # ax.axvline(bkg_range[0][0], color="red")
+      # ax.axvline(bkg_range[0][1], color="red")
+      # ax.axvline(bkg_range[1][0], color="red")
+      # ax.axvline(bkg_range[1][1], color="red")
+      # low_mean = np.mean(lc.rates[np.where(lc.centroids < bkg_range[0][1], True, False)])
+      # high_mean = np.mean(lc.rates[np.where(lc.centroids > bkg_range[1][0], True, False)])
+      # bkg_rate = (high_mean - low_mean) / (bkg_range[1][0] - bkg_range[0][1]) * (lc.centroids - bkg_range[0][1]) + low_mean
+      # ax.step(lc.centroids, bkg_rate, color="green")
+      # ax.axhline(low_mean, color="blue")
+      # ax.axhline(high_mean, color="red")
+      # for val_ite, val in enumerate(lc.rates):
+      #   if lc.centroids[val_ite] < start_t90:
+      #     ratio = val / low_mean
+      #   else:
+      #     ratio = val / high_mean
+      #   if ratio < 0.5:
+      #     ax.axvline(lc.centroids[val_ite], color="green")
+      # if show:
+      #   plt.show()
+
       ###################################################################################################################
       # Creating background
       ###################################################################################################################
@@ -169,36 +191,53 @@ def make_tte_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_mas
         backfitter = BackgroundFitter.from_phaii(pha, Polynomial, bkg_range)
         try:
           backfitter.fit(order=1)
+          bkgd_model = backfitter.interpolate_bins(lc.lo_edges, lc.hi_edges)
+          lc_bkgd = bkgd_model.integrate_energy(ener_range[0], ener_range[1])
         except (RuntimeError, np.linalg.LinAlgError):
-          for file in files:
-            subprocess.call(f"rm -f {directory}{file}", shell=True)
-          return name
+          low_mean = np.mean(lc.rates[np.where(lc.centroids < bkg_range[0][1], True, False)])
+          high_mean = np.mean(lc.rates[np.where(lc.centroids > bkg_range[1][0], True, False)])
+          lc_bkgd = (high_mean - low_mean) / (bkg_range[1][0] - bkg_range[0][1]) * (lc.centroids - bkg_range[0][1]) + low_mean
       except np.linalg.LinAlgError:
         bkg_range = [(bkg_range[0][0] - 5, bkg_range[0][1]), (bkg_range[1][0], bkg_range[1][1] + 5)]
         if t_low_rangemax < bkg_range[0][0] and t_high_rangemin > bkg_range[1][1]:
           backfitter = BackgroundFitter.from_phaii(pha, Polynomial, bkg_range)
           try:
             backfitter.fit(order=1)
+            bkgd_model = backfitter.interpolate_bins(lc.lo_edges, lc.hi_edges)
+            lc_bkgd = bkgd_model.integrate_energy(ener_range[0], ener_range[1])
           except (RuntimeError, np.linalg.LinAlgError):
-            for file in files:
-              subprocess.call(f"rm -f {directory}{file}", shell=True)
-            return name
-
+            # rm_files(files, directory)
+            low_mean = np.mean(lc.rates[np.where(lc.centroids < bkg_range[0][1], True, False)])
+            high_mean = np.mean(lc.rates[np.where(lc.centroids > bkg_range[1][0], True, False)])
+            lc_bkgd = (high_mean - low_mean) / (bkg_range[1][0] - bkg_range[0][1]) * (lc.centroids - bkg_range[0][1]) + low_mean
         else:
           raise ValueError("Need to find another value for the background")
-      # print(np.mean(backfitter.statistic / backfitter.dof))
-      bkgd_model = backfitter.interpolate_bins(lc.lo_edges, lc.hi_edges)
-      lc_bkgd = bkgd_model.integrate_energy(ener_range[0], ener_range[1])
 
       ###################################################################################################################
       # Correcting the rates and selecting the good bins
       ###################################################################################################################
-      rates_bkg_select_total = bin_selector(lc_bkgd, start_t90, end_t90, lc_bkgd.tstart, lc_bkgd.tstop)
+      rates_bkg_select_total = bin_selector(lc_bkgd, start_t90, end_t90, lc.lo_edges, lc.hi_edges)
       substracted_rates = substract_bkg(lc_select.rates, rates_bkg_select_total)
 
       ###################################################################################################################
       # Ploting if requested and saving the figure and light curves
       ###################################################################################################################
+      fig, ax = plt.subplots(figsize=(10, 6))
+      ax.step(lc.centroids, lc.rates)
+      ax.set(xlabel="Time(s)", ylabel="Count rate (count/s)", title=f"Light curve check {name} with tte")
+      ax.axvline(start_t90, color="black")
+      ax.axvline(end_t90, color="black")
+      ax.axvline(bkg_range[0][0], color="red")
+      ax.axvline(bkg_range[0][1], color="red")
+      ax.axvline(bkg_range[1][0], color="red")
+      ax.axvline(bkg_range[1][1], color="red")
+      if type(lc_bkgd) is gbm.data.primitives.TimeBins or type(lc) is gbm.background.background.BackgroundRates:
+        ax.step(lc.centroids, lc_bkgd.rates, color="green")
+      elif type(lc_bkgd) is np.ndarray:
+        ax.step(lc.centroids, lc_bkgd, color="green")
+      if show:
+        plt.show()
+
       fig, ax = plt.subplots(figsize=(10, 6))
       ax.step(lc_select.centroids, substracted_rates)
       ax.set(xlabel="Time(s)", ylabel="Count rate (count/s)", title=f"Light curve {name} with tte")
@@ -214,8 +253,7 @@ def make_tte_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_mas
       ###################################################################################################################
       # removing the files
       ###################################################################################################################
-      for file in files:
-        subprocess.call(f"rm -f {directory}{file}", shell=True)
+      rm_files(files, directory)
       return 0
 
 def make_cspec_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_mask, ener_range=(10, 1000), show=False, directory="./sources/"):
@@ -244,6 +282,35 @@ def make_cspec_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_m
   lc_list = [cspec.to_lightcurve(time_range=time_range, energy_range=ener_range) for cspec in cspecs]
   lc_select_list = [lc.slice(start_t90, end_t90) for lc in lc_list]
 
+  source_rates = np.sum(np.vstack(np.array([lc.rates for lc in lc_list])), axis=0)
+  source_rates_select_list = np.array([lc.rates for lc in lc_select_list])
+  source_rates_select = np.sum(np.vstack(source_rates_select_list), axis=0)
+
+  # fig, ax = plt.subplots(figsize=(10, 6))
+  # ax.step(lc_list[0].centroids, source_rates)
+  # ax.set(xlabel="Time(s)", ylabel="Count rate (count/s)", title=f"Light curve check {name} with cspec")
+  # ax.axvline(start_t90, color="black")
+  # ax.axvline(end_t90, color="black")
+  # ax.axvline(bkg_range[0][0], color="red")
+  # ax.axvline(bkg_range[0][1], color="red")
+  # ax.axvline(bkg_range[1][0], color="red")
+  # ax.axvline(bkg_range[1][1], color="red")
+  # low_mean = np.mean(source_rates[np.where(lc_list[0].centroids < bkg_range[0][1], True, False)])
+  # high_mean = np.mean(source_rates[np.where(lc_list[0].centroids > bkg_range[1][0], True, False)])
+  # bkg_rate = (high_mean - low_mean) / (bkg_range[1][0] - bkg_range[0][1]) * (lc_list[0].centroids - bkg_range[0][1]) + low_mean
+  # ax.step(lc_list[0].centroids, bkg_rate, color="green")
+  # ax.axhline(low_mean, color="blue")
+  # ax.axhline(high_mean, color="red")
+  # for val_ite, val in enumerate(source_rates):
+  #   if lc_list[0].centroids[val_ite] < start_t90:
+  #     ratio = val / low_mean
+  #   else:
+  #     ratio = val / high_mean
+  #   if ratio < 0.5:
+  #     ax.axvline(lc_list[0].centroids[val_ite], color="green")
+  # if show:
+  #   plt.show()
+
   #####################################################################################################################
   # Creating background
   #####################################################################################################################
@@ -251,29 +318,37 @@ def make_cspec_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_m
   try:
     for backfitter in backfitter_list:
       backfitter.fit(order=1)
+    bkgd_model_list = [backfitter.interpolate_bins(lc_list[0].lo_edges, lc_list[0].hi_edges) for backfitter in backfitter_list]
+    bkgd_lc_list = [bkgd_model.integrate_energy(ener_range[0], ener_range[1]) for bkgd_model in bkgd_model_list]
+
+    bkgd_rates = np.sum(np.vstack(np.array([lc.rates for lc in bkgd_lc_list])), axis=0)
   except (RuntimeError, np.linalg.LinAlgError):
-    for file in files:
-      subprocess.call(f"rm -f {directory}{file}", shell=True)
-    return name
-  # print([np.mean(backfitter.statistic / backfitter.dof) for backfitter in backfitter_list])
-  bkgd_model_list = [backfitter.interpolate_bins(lc_list[0].lo_edges, lc_list[0].hi_edges) for backfitter in backfitter_list]
-  bkgd_lc_list = [bkgd_model.integrate_energy(ener_range[0], ener_range[1]) for bkgd_model in bkgd_model_list]
+    low_mean = np.mean(source_rates[np.where(lc_list[0].centroids < bkg_range[0][1], True, False)])
+    high_mean = np.mean(source_rates[np.where(lc_list[0].centroids > bkg_range[1][0], True, False)])
+    bkgd_rates = (high_mean - low_mean) / (bkg_range[1][0] - bkg_range[0][1]) * (lc_list[0].centroids - bkg_range[0][1]) + low_mean
 
   #####################################################################################################################
   # Correcting and combining the rates and selecting the good bins
   #####################################################################################################################
-  source_rates_select_list = np.array([lc.rates for lc in lc_select_list])
-  # source_rates = np.sum(np.vstack(np.array([lc.rates for lc in lc_list])), axis=0)
-  bkgd_rates = np.sum(np.vstack(np.array([lc.rates for lc in bkgd_lc_list])), axis=0)
-
-  source_rates_select = np.sum(np.vstack(source_rates_select_list), axis=0)
   bkgd_rates_select = bin_selector(bkgd_rates, start_t90, end_t90, lc_list[0].lo_edges, lc_list[0].hi_edges)
-
   substracted_rates = substract_bkg(source_rates_select, bkgd_rates_select)
 
   #####################################################################################################################
   # Creating background
   #####################################################################################################################
+  fig, ax = plt.subplots(figsize=(10, 6))
+  ax.step(lc_list[0].centroids, source_rates)
+  ax.set(xlabel="Time(s)", ylabel="Count rate (count/s)", title=f"Light curve check {name} with cspec")
+  ax.axvline(start_t90, color="black")
+  ax.axvline(end_t90, color="black")
+  ax.axvline(bkg_range[0][0], color="red")
+  ax.axvline(bkg_range[0][1], color="red")
+  ax.axvline(bkg_range[1][0], color="red")
+  ax.axvline(bkg_range[1][1], color="red")
+  ax.step(lc_list[0].centroids, bkgd_rates, color="green")
+  if show:
+    plt.show()
+
   fig, ax = plt.subplots(figsize=(10, 6))
   ax.step(lc_select_list[0].centroids, substracted_rates)
   ax.set(xlabel="Time(s)", ylabel="Count rate (count/s)", title=f"Light curve {name} with cspec")
@@ -289,8 +364,7 @@ def make_cspec_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_m
   #####################################################################################################################
   # removing the files
   #####################################################################################################################
-  for file in files:
-    subprocess.call(f"rm -f {directory}{file}", shell=True)
+  rm_files(files, directory)
   return 0
 
 
@@ -333,29 +407,33 @@ def create_lc(cat, GRB_ite, bin_size="auto", ener_range=(10, 1000), show=False, 
 
   print(f"Running {GRBname}, ite : {GRB_ite}")
   return make_tte_lc(GRBname, start_t90, end_t90, time_range, bkg_range, lc_detector_mask, bin_size=bin_size, ener_range=ener_range, show=show, directory=directory)
-  # tte_works = make_tte_lc(GRBname, start_t90, end_t90, time_range, bkg_range, lc_detector_mask, bin_size=bin_size, ener_range=ener_range, show=show, directory=directory)
-  # if tte_works == 0:
-  #   return 0
-  # elif tte_works == 1:
-  #   return
-  # else:
-  #   return tte_works
 
-unfit = []
-for ite in range(0, len(cat_all.name)):
-# for ite in range(589, 591):
-  ret = create_lc(cat_all, ite, bin_size="auto", show=False)
-  if ret != 0:
-    unfit.append((cat_all.name[ite], ite))
-print(ret)
-# with mp.Pool() as pool:
-#   ret = pool.starmap(create_lc, zip(repeat(cat_all), range(15, 18)))
+# unfit = []
+# for ite in range(0, len(cat_all.name)):
+# # for ite in range(589, 591):
+#   ret = create_lc(cat_all, ite, bin_size="auto", show=False)
+#   if ret != 0:
+#     unfit.append((cat_all.name[ite], ite))
+# print(ret)
 
-# for ite in range(10):
-#   print(cat_all.name[ite], cat_all.t90[ite], cat_all.t90_start[ite], bkg_min[ite], cat_all.back_interval_low_start[ite], cat_all.back_interval_high_stop[ite])
-
+# lc_list = subprocess.getoutput("ls ./sources/Light_Curves/").split("\n")
+# lc_names = [name.split(".dat")[0].split("LightCurve_")[1] for name in lc_list]
+# names = cat_all.name
 #
-# create_lc(cat_all, 0, bin_size=1.024, show=False)
+# not_ready_name = []
+# not_ready_ite = []
+# for cat_ite, name in enumerate(names):
+#   if name not in lc_names:
+#     not_ready_name.append(name)
+#     not_ready_ite.append(cat_ite)
 
+failed = ['GRB080804456', 'GRB090514734', 'GRB091024380', 'GRB101015558', 'GRB110928180', 'GRB120713226', 'GRB120719146', 'GRB120727681', 'GRB120728434', 'GRB120728934', 'GRB120801920', 'GRB120811649', 'GRB120819048', 'GRB120820585', 'GRB120831901', 'GRB120908873', 'GRB120908938', 'GRB120915000', 'GRB120921877', 'GRB120922939', 'GRB121027038', 'GRB121029350', 'GRB121116459', 'GRB121117018', 'GRB121123421', 'GRB121125356', 'GRB121125469', 'GRB130515056', 'GRB130925173', 'GRB131006367']
+failed_ite = [17, 200, 327, 549, 768, 943, 947, 948, 949, 950, 952, 955, 960, 961, 968, 971, 972, 978, 986, 987, 1000, 1002, 1009, 1010, 1016, 1019, 1020, 1114, 1203, 1209]
 
+ret_list = []
+for ite in [0, 1, 17]:
+  ret = create_lc(cat_all, ite, bin_size="auto", show=True)
+  ret_list.append(ret)
+
+len(ret_list)
 
