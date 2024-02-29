@@ -13,6 +13,12 @@ class Catalog:
     :param sttype: See Catalog.fill
     """
     # Fields added for some clarity
+    # Peak parameters
+    self.pflx_best_fitting_model = None
+    self.pflx_plaw_phtflux = None
+    self.pflx_comp_phtflux = None
+    self.pflx_band_phtflux = None
+    self.pflx_sbpl_phtflux = None
     # Spectra parameters
     self.flnc_best_fitting_model = None
     self.flnc_plaw_ampl = None

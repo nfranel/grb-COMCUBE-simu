@@ -483,9 +483,10 @@ class AllSourceData:
                   sat_instant_triggers += 1
                 if sat.snr_single >= self.snr_min - 2:
                   sat_reduced_instant_triggers += 1
-                sat_peak_snr = calc_snr(
-                  rescale_cr_to_GBM_pf(sat.single_cr, source.best_fit_mean_flux, source.best_fit_p_flux),
-                  sat.single_b_rate)
+                if source.best_fit_p_flux is None:
+                  sat_peak_snr = sat.snr_single
+                else:
+                  sat_peak_snr = calc_snr(rescale_cr_to_GBM_pf(sat.single_cr, source.best_fit_mean_flux, source.best_fit_p_flux), sat.single_b_rate)
                 if sat_peak_snr >= self.snr_min:
                   sat_peak_triggers += 1
                 if sat_peak_snr >= self.snr_min - 2:
@@ -495,9 +496,10 @@ class AllSourceData:
                 if sat.snr_single_t90 >= self.snr_min - 2:
                   sat_reduced_t90_triggers += 1
             # Calculation for the whole constellation
-            const_peak_snr = calc_snr(
-              rescale_cr_to_GBM_pf(sim.const_data.single_cr, source.best_fit_mean_flux, source.best_fit_p_flux),
-              sim.const_data.single_b_rate)
+            if source.best_fit_p_flux is None:
+              const_peak_snr = sim.const_data.snr_single
+            else:
+              const_peak_snr = calc_snr(rescale_cr_to_GBM_pf(sim.const_data.single_cr, source.best_fit_mean_flux, source.best_fit_p_flux), sim.const_data.single_b_rate)
             # 1s mean triggers
             if sim.const_data.snr_single >= self.snr_min:
               single_instant_trigger_by_const += 1
@@ -784,7 +786,7 @@ class AllSourceData:
       snr_min = self.snr_min
     hist_pflux = []
     for source in self.alldata:
-      if source is not None:
+      if source is not None and source.best_fit_p_flux is not None:
         for sim in source:
           if sim is not None:
             if selected_sat == "const":
@@ -833,7 +835,7 @@ class AllSourceData:
     det_prob_fov_list = []
     det_prob_sky_list = []
     for source in self.alldata:
-      if source is not None:
+      if source is not None and source.best_fit_p_flux is not None:
         p_flux_list.append(source.best_fit_p_flux)
         if selected_sat == "const":
           det_prob_fov_list.append(source.const_single_proba_detec_fov)
@@ -861,7 +863,7 @@ class AllSourceData:
     comp_im_prob_fov_list = []
     comp_im_prob_sky_list = []
     for source in self.alldata:
-      if source is not None:
+      if source is not None and source.best_fit_p_flux is not None:
         p_flux_list.append(source.best_fit_p_flux)
         if selected_sat == "const":
           comp_im_prob_fov_list.append(source.const_proba_compton_image_fov)
@@ -1021,7 +1023,7 @@ class AllSourceData:
     mdp_count = 0
     no_detec_flux = []
     for source_ite, source in enumerate(self.alldata):
-      if source is not None:
+      if source is not None and source.best_fit_p_flux is not None:
         for sim in source:
           if sim is not None:
             if selected_sat == "const":
@@ -1190,7 +1192,7 @@ class AllSourceData:
     snr_count = 0
     no_detec_flux = []
     for source_ite, source in enumerate(self.alldata):
-      if source is not None:
+      if source is not None and source.best_fit_p_flux is not None:
         for sim in source:
           if sim is not None:
             if selected_sat == "const":
