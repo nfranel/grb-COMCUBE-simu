@@ -431,7 +431,7 @@ failed = ['GRB080804456', 'GRB090514734', 'GRB091024380', 'GRB101015558', 'GRB11
 failed_ite = [17, 200, 327, 549, 768, 943, 947, 948, 949, 950, 952, 955, 960, 961, 968, 971, 972, 978, 986, 987, 1000, 1002, 1009, 1010, 1016, 1019, 1020, 1114, 1203, 1209]
 
 ret_list = []
-for ite in [0, 1, 17]:
+for ite in failed_ite:
   ret = create_lc(cat_all, ite, bin_size="auto", show=True)
   ret_list.append(ret)
 
