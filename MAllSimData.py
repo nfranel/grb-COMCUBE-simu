@@ -40,7 +40,7 @@ class AllSimData(list):
       self.source_duration = float(cat_data.t90[source_ite])
       # Retrieving pflux and mean flux : the photon flux at the peak flux (or mean photon flux) of the burst [photons/cm2/s]
       self.best_fit_model = getattr(cat_data, "flnc_best_fitting_model")[source_ite].rstrip()
-      if cat_data.pflx_best_fitting_model is None:
+      if f"{getattr(cat_data, 'pflx_best_fitting_model')[source_ite].rstrip()}" == "":
         self.best_fit_p_flux = None
       else:
         self.best_fit_p_flux = float(getattr(cat_data, f"{getattr(cat_data, 'pflx_best_fitting_model')[source_ite].rstrip()}_phtflux")[source_ite])
