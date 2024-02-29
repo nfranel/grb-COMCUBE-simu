@@ -222,21 +222,21 @@ def make_tte_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_mas
       ###################################################################################################################
       # Ploting if requested and saving the figure and light curves
       ###################################################################################################################
-      fig, ax = plt.subplots(figsize=(10, 6))
-      ax.step(lc.centroids, lc.rates)
-      ax.set(xlabel="Time(s)", ylabel="Count rate (count/s)", title=f"Light curve check {name} with tte")
-      ax.axvline(start_t90, color="black")
-      ax.axvline(end_t90, color="black")
-      ax.axvline(bkg_range[0][0], color="red")
-      ax.axvline(bkg_range[0][1], color="red")
-      ax.axvline(bkg_range[1][0], color="red")
-      ax.axvline(bkg_range[1][1], color="red")
-      if type(lc_bkgd) is gbm.data.primitives.TimeBins or type(lc) is gbm.background.background.BackgroundRates:
-        ax.step(lc.centroids, lc_bkgd.rates, color="green")
-      elif type(lc_bkgd) is np.ndarray:
-        ax.step(lc.centroids, lc_bkgd, color="green")
-      if show:
-        plt.show()
+      # fig, ax = plt.subplots(figsize=(10, 6))
+      # ax.step(lc.centroids, lc.rates)
+      # ax.set(xlabel="Time(s)", ylabel="Count rate (count/s)", title=f"Light curve check {name} with tte")
+      # ax.axvline(start_t90, color="black")
+      # ax.axvline(end_t90, color="black")
+      # ax.axvline(bkg_range[0][0], color="red")
+      # ax.axvline(bkg_range[0][1], color="red")
+      # ax.axvline(bkg_range[1][0], color="red")
+      # ax.axvline(bkg_range[1][1], color="red")
+      # if type(lc_bkgd) is gbm.data.primitives.TimeBins or type(lc) is gbm.background.background.BackgroundRates:
+      #   ax.step(lc.centroids, lc_bkgd.rates, color="green")
+      # elif type(lc_bkgd) is np.ndarray:
+      #   ax.step(lc.centroids, lc_bkgd, color="green")
+      # if show:
+      #   plt.show()
 
       fig, ax = plt.subplots(figsize=(10, 6))
       ax.step(lc_select.centroids, substracted_rates)
@@ -336,18 +336,18 @@ def make_cspec_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_m
   #####################################################################################################################
   # Creating background
   #####################################################################################################################
-  fig, ax = plt.subplots(figsize=(10, 6))
-  ax.step(lc_list[0].centroids, source_rates)
-  ax.set(xlabel="Time(s)", ylabel="Count rate (count/s)", title=f"Light curve check {name} with cspec")
-  ax.axvline(start_t90, color="black")
-  ax.axvline(end_t90, color="black")
-  ax.axvline(bkg_range[0][0], color="red")
-  ax.axvline(bkg_range[0][1], color="red")
-  ax.axvline(bkg_range[1][0], color="red")
-  ax.axvline(bkg_range[1][1], color="red")
-  ax.step(lc_list[0].centroids, bkgd_rates, color="green")
-  if show:
-    plt.show()
+  # fig, ax = plt.subplots(figsize=(10, 6))
+  # ax.step(lc_list[0].centroids, source_rates)
+  # ax.set(xlabel="Time(s)", ylabel="Count rate (count/s)", title=f"Light curve check {name} with cspec")
+  # ax.axvline(start_t90, color="black")
+  # ax.axvline(end_t90, color="black")
+  # ax.axvline(bkg_range[0][0], color="red")
+  # ax.axvline(bkg_range[0][1], color="red")
+  # ax.axvline(bkg_range[1][0], color="red")
+  # ax.axvline(bkg_range[1][1], color="red")
+  # ax.step(lc_list[0].centroids, bkgd_rates, color="green")
+  # if show:
+  #   plt.show()
 
   fig, ax = plt.subplots(figsize=(10, 6))
   ax.step(lc_select_list[0].centroids, substracted_rates)
@@ -432,7 +432,7 @@ failed_ite = [17, 200, 327, 549, 768, 943, 947, 948, 949, 950, 952, 955, 960, 96
 
 ret_list = []
 for ite in failed_ite:
-  ret = create_lc(cat_all, ite, bin_size="auto", show=True)
+  ret = create_lc(cat_all, ite, bin_size="auto", show=False)
   ret_list.append(ret)
 
 len(ret_list)
