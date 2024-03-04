@@ -49,7 +49,7 @@ class AllSimData(list):
       self.source_fluence = calc_fluence(cat_data, source_ite, options[0]) * self.source_duration
     if param_sim_duration.isdigit():
       sim_duration = float(param_sim_duration)
-    elif param_sim_duration == "t90" or param_sim_duration == "cl":
+    elif param_sim_duration == "t90" or param_sim_duration == "lc":
       sim_duration = self.source_duration
     else:
       sim_duration = None
