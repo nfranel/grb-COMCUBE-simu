@@ -25,7 +25,7 @@
       -> 4 n 5 | 2000
       -> 4 n 5 | [GRB140320092,GRB150828901,GRB100302061,GRB141122956,GRB120506128,GRB100326294,GRB160917921,GRB140429975,GRB150425617,GRB090428441,GRB150721732,GRB080805496,GRB130514560,GRB140521184,GRB121231445,GRB110904531,GRB090513916,GRB160515819,GRB130811186,GRB090912660,GRB091209001,GRB100224112,GRB170114833,GRB130630272,GRB140423356,GRB141222691,GRB081221681,GRB110921912,GRB130131511,GRB180427442,GRB170921168,GRB130925173,GRB140810782,GRB150330828,GRB150627183,GRB090902462,GRB170409112,GRB160821857,GRB160625945,GRB130427324]
 #@simulationsperevent: Number of simulations to make
-#@simtime            : Duration of simulation, either t90 or a number for a fixed value
+#@simtime            : Duration of simulation, either lc for using a lightcurve, t90 or a number for a fixed value
 #@position           : latitude min, latitude max, longitude min, longitude max (latitude from -90 to 90°) in deg to define in which sky area the grbs are randomly produced
 #@satellite          : orbital parameters i, ohm, omega (orbit inclination, longitude of ascending node and true anomaly) in deg and altitude in km (may be used several times for different satellites)
 
@@ -44,7 +44,7 @@
 
 @sttype 4 n 5 | 2000
 @simulationsperevent 1
-@simtime t90
+@simtime lc
 @position -90 90 -180 180
 @satellite 0 -90 0 500
 

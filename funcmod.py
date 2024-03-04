@@ -646,35 +646,48 @@ def duty_calc(inclination):  # TODO : limits on variables CHANGE IT WITH THE NEW
       return 0.5
 
 
-def eff_area_func(dec_wf, ra_wf, dec_sat_wf, ra_sat_wf, sat_alt, mu100_list):  # TODO : limits on variables
+# def eff_area_func(dec_wf, ra_wf, dec_sat_wf, ra_sat_wf, sat_alt, mu100_list):  # TODO : limits on variables
+def eff_area_func(dec_wf, ra_wf, info_sat, mu100_list):  # TODO : limits on variables
   """
   Returns a value of the effective area for single event, compton event or 1 if the satellite is in sight for a direction dec_wt, ra_wf
   The value is obtained from mu100 files
-  :param : TODO
+  :param dec_wf: dec for which the function is used
+  :param ra_wf: ra for which the function is used
+  :param info_sat: orbital information about the satellite
+  :param mu100_list: Data contained in the mu100 files
   :returns:
   """
+  dec_verif(dec_wf)
+  ra_verif(ra_wf)
+
+  # extracting satellite information
+  sat_alt = info_sat[3]
+  # Turning the orbital parameters into dec and ra in world frame, burst_time taken = 0 for convenience
+  dec_sat_wf, ra_sat_wf = sat_info_2_decra(info_sat, burst_time=0)
+
   dec_sf, ra_sf = grb_decra_worldf2satf(dec_wf, ra_wf, dec_sat_wf, ra_sat_wf)
+
   angle_lim = horizon_angle(sat_alt)
   if dec_sf < angle_lim:
-    # seff_compton, seff_single = closest_mufile(dec_sf, ra_sf, mu100_list)[-2:] # TODO weird results
+    seff_compton, seff_single = closest_mufile(dec_sf, ra_sf, mu100_list)[-2:]  # TODO test !
 
-    ampl = 1
-    ang_freq = 0.222
-    phi0 = 0.76
-    y_off_set = 2.5
-    seff_compton = np.absolute(ampl * np.cos(dec_sf * 2 * np.pi * ang_freq - phi0)) + y_off_set
-
-
-    angles = np.array([0, 10, 20, 30, 40, 50, 60, 70, 80, 89, 91, 100, 110])
-    eff_area = np.array([137.4, 148.5, 158.4, 161.9, 157.4, 150.4, 133.5, 112.8, 87.5, 63.6, 64.7, 71.8, 77.3])
-    interpo_ite = 1
-    if dec_sf > angles[-1]:
-      seff_single = eff_area[-2] + (eff_area[-1] - eff_area[-2]) / (angles[-1] - angles[-2]) * (dec_sf - angles[-2])
-    else:
-      while dec_sf > angles[interpo_ite]:
-        interpo_ite += 1
-      seff_single = eff_area[interpo_ite - 1] + (eff_area[interpo_ite] - eff_area[interpo_ite - 1]) / (
-                angles[interpo_ite] - angles[interpo_ite - 1]) * (dec_sf - angles[interpo_ite - 1])
+    # ampl = 1
+    # ang_freq = 0.222
+    # phi0 = 0.76
+    # y_off_set = 2.5
+    # seff_compton = np.absolute(ampl * np.cos(dec_sf * 2 * np.pi * ang_freq - phi0)) + y_off_set
+    #
+    #
+    # angles = np.array([0, 10, 20, 30, 40, 50, 60, 70, 80, 89, 91, 100, 110])
+    # eff_area = np.array([137.4, 148.5, 158.4, 161.9, 157.4, 150.4, 133.5, 112.8, 87.5, 63.6, 64.7, 71.8, 77.3])
+    # interpo_ite = 1
+    # if dec_sf > angles[-1]:
+    #   seff_single = eff_area[-2] + (eff_area[-1] - eff_area[-2]) / (angles[-1] - angles[-2]) * (dec_sf - angles[-2])
+    # else:
+    #   while dec_sf > angles[interpo_ite]:
+    #     interpo_ite += 1
+    #   seff_single = eff_area[interpo_ite - 1] + (eff_area[interpo_ite] - eff_area[interpo_ite - 1]) / (
+    #             angles[interpo_ite] - angles[interpo_ite - 1]) * (dec_sf - angles[interpo_ite - 1])
 
     return seff_compton, seff_single, 1
   else:

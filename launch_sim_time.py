@@ -86,18 +86,18 @@ def gen_commands(args):
         f.write("\nEN\n\n")
     for j in range(args.simulationsperevent):
       dec_grb_world_frame, ra_grb_world_frame = random_grb_dec_ra(args.position[0], args.position[1], args.position[2], args.position[3])  # deg
-      rand_time = np.around(np.random.rand()*315567360.0, 4) # Time of the GRB, taken randomly over a 10 years time window
+      rand_time = np.around(np.random.rand()*315567360.0, 4)  # Time of the GRB, taken randomly over a 10 years time window
       for k, s in enumerate(args.satellites):
         orbital_period = orbital_period_calc(s[3])
         earth_ra_offset = earth_rotation_offset(rand_time)
         true_anomaly = true_anomaly_calc(rand_time, orbital_period)
         dec_sat_world_frame, ra_sat_world_frame = orbitalparam2decra(s[0], s[1], s[2], nu=true_anomaly)  # deg
         ra_sat_world_frame = np.mod(ra_sat_world_frame - earth_ra_offset, 360)
-        if verif_rad_belts(dec_sat_world_frame, ra_sat_world_frame, s[3]):  # checks if the sat is in the switch off zone
+        if verif_rad_belts(dec_sat_world_frame, ra_sat_world_frame, s[3]):  # checks if sat is in the switch off zone
           save_log(f"{sim_directory}/simulation_logs.txt", c.name[i], j, k, "Ignored(off)", s[0], s[1], s[2], s[3], rand_time, dec_sat_world_frame, ra_sat_world_frame, dec_grb_world_frame, ra_grb_world_frame, None, None)
         else:
           theta, phi, thetap, phip, polstr = grb_decrapol_worldf2satf(dec_grb_world_frame, ra_grb_world_frame, dec_sat_world_frame, ra_sat_world_frame)[1:]
-          if theta >= horizon_angle(s[3]):#source below horizon
+          if theta >= horizon_angle(s[3]):  # Source below horizon
             save_log(f"{sim_directory}/simulation_logs.txt", c.name[i], j, k, "Ignored(horizon)", s[0], s[1], s[2], s[3], rand_time, dec_sat_world_frame, ra_sat_world_frame, dec_grb_world_frame, ra_grb_world_frame, theta, phi)
           else:
             # Add command to commands list
@@ -137,8 +137,9 @@ def maketmpsf(command, args, pid):
   with open(args.csf) as f:
     lines = f.read().split("\n")
   with open(fname, "w") as f:
-    run, source = "", "" # So that the test with startswith may be done even if run and source are not initialized yet
+    run, source = "", ""  # So that the test with startswith may be done even if run and source are not initialized yet
     for line in lines:
+      print(line)
       if line.startswith("Geometry"):
         f.write(f"Geometry {args.geometry}")
       elif line.startswith("PhysicsListEM "):
@@ -162,13 +163,13 @@ def maketmpsf(command, args, pid):
         f.write(f"{run}.FileName {sname}")
       elif line.startswith(f"{run}.Time"):
         f.write(f"{run}.Time {command[7]}")
-      elif line.startswith(f"{source}.Beam") and (source=="GRBsource" or source=="GRBsourcenp"):
+      elif line.startswith(f"{source}.Beam") and (source == "GRBsource" or source == "GRBsourcenp"):
         f.write(f"{source}.Beam FarFieldPointSource {command[-2]} {command[-1]}")
-      elif line.startswith(f"{source}.Spectrum") and (source=="GRBsource" or source=="GRBsourcenp"):
+      elif line.startswith(f"{source}.Spectrum") and (source == "GRBsource" or source == "GRBsourcenp"):
         f.write(f"{source}.Spectrum File {command[5]}")
-      elif line.startswith(f"{source}.Polarization") and (source=="GRBsource" or source=="GRBsourcenp"):
+      elif line.startswith(f"{source}.Polarization") and (source == "GRBsource" or source == "GRBsourcenp"):
         f.write(f"{source}.Polarization Absolute 1. {command[9]}")
-      elif line.startswith(f"{source}.Flux") and (source=="GRBsource" or source=="GRBsourcenp"):
+      elif line.startswith(f"{source}.Flux") and (source == "GRBsource" or source == "GRBsourcenp"):
         f.write(f"{source}.Flux {command[6]}")
         if command[8]:
           f.write(f"{source}.Lightcurve File true ./sources/Light_Curves/LightCurve_{command[3]}.dat")
@@ -194,7 +195,7 @@ def cosirevan(command):
   if command[0]:
     # Running cosima
     run(f"cosima -z {source_name}; rm -f {source_name}", __verbose__)
-  if command[1]: #run revan
+  if command[1]:
     # Running revan and moving the simulation file to rawsim
     # run(f"revan -g {args.geometry} -c {args.rcf} -f {simfile} -n -a; mv {simfile} {mv_simfile}", __verbose__)
     # Running revan and removing the simulation file
