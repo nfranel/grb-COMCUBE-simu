@@ -173,7 +173,7 @@ def maketmpsf(command, args, pid):
       elif line.startswith(f"{source}.Flux") and (source == "GRBsource" or source == "GRBsourcenp"):
         f.write(f"{source}.Flux {command[6]}")
         if command[8]:
-          f.write(f"{source}.Lightcurve File true ./sources/Light_Curves/LightCurve_{command[3]}.dat")
+          f.write(f"\n{source}.Lightcurve File true ./sources/Light_Curves/LightCurve_{command[3]}.dat")
       else:
         f.write(line)
       f.write("\n")
