@@ -139,8 +139,6 @@ def maketmpsf(command, args, pid):
   with open(fname, "w") as f:
     run, source = "", ""  # So that the test with startswith may be done even if run and source are not initialized yet
     for line in lines:
-      if "\n" in line:
-        print("ICIIIII : ", line)
       if line.startswith("Geometry"):
         f.write(f"Geometry {args.geometry}")
       elif line.startswith("PhysicsListEM "):
