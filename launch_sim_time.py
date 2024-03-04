@@ -56,9 +56,13 @@ def gen_commands(args):
       args.spectrafilepath += "/"
     spectrumfile = "{}{}_spectrum.dat".format(args.spectrafilepath, c.name[i])
     model = getattr(c, "flnc_best_fitting_model")[i].strip()
-    pfluxmodel = getattr(c, 'pflx_best_fitting_model')[i].strip()
     pht_mflx = getattr(c, f"{model}_phtflux")[i]
-    pht_pflx = getattr(c, f"{pfluxmodel}_phtflux")[i]
+    pfluxmodel = getattr(c, 'pflx_best_fitting_model')[i].strip()
+    if pfluxmodel == "":
+      pht_pflx = "No value fitted"
+    else:
+      pht_pflx = getattr(c, f"{pfluxmodel}_phtflux")[i]
+    # Creation of spectra if they have not been created yet
     if not (spectrumfile in os.listdir(args.spectrafilepath)):
       logE = np.logspace(1, 3, 100)  # energy (log scale)
       with open(spectrumfile, "w") as f:
