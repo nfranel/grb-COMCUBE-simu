@@ -177,7 +177,7 @@ def maketmpsf(command, args, pid):
       else:
         f.write(line)
       f.write("\n")
-      stop :)
+      stop
   return fname
 
 
