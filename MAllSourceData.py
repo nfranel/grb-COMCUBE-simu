@@ -570,6 +570,8 @@ class AllSourceData:
       grb_type = "lGRB"
     elif self.cat_file.endswith("shortGRB.txt"):
       grb_type = "sGRB"
+    elif self.cat_file.endswith("allGRB.txt"):
+      grb_type = "all GRB"
     else:
       grb_type = "undefined source"
     number_detected = 0
@@ -621,6 +623,8 @@ class AllSourceData:
       grb_type = "lGRB"
     elif self.cat_file.endswith("shortGRB.txt"):
       grb_type = "sGRB"
+    elif self.cat_file.endswith("allGRB.txt"):
+      grb_type = "all GRB"
     else:
       grb_type = "undefined source"
     if snr_type == "compton":
@@ -821,7 +825,7 @@ class AllSourceData:
     else:
       hist_bins = n_bins
     distrib, ax1 = plt.subplots(1, 1, figsize=(8, 6))
-    distrib.suptitle("Peak flux distribution of detected long GRB")
+    distrib.suptitle("Peak flux distribution of detected GRB")
     ax1.hist(hist_pflux, bins=hist_bins, cumulative=False, histtype="step", weights=[self.weights/(4*np.pi)] * len(hist_pflux))
     ax1.set(xlabel="Peak flux (photons/cm2/s)", ylabel="Number of detection per year per steradian", xscale=x_scale, yscale=y_scale)
     # ax1.legend()
@@ -845,7 +849,7 @@ class AllSourceData:
           det_prob_sky_list.append(source.proba_detec_sky[selected_sat])
 
     distrib, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 6))
-    distrib.suptitle("Detection probability vs peak flux of detected long GRB - GRB in the whole sky (left) and only in the FoV (right)")
+    distrib.suptitle("Detection probability vs peak flux of detected GRB - GRB in the whole sky (left) and only in the FoV (right)")
     ax1.scatter(p_flux_list, det_prob_sky_list, s=2, label='Detection probability over the whole sky')
     ax2.scatter(p_flux_list, det_prob_fov_list, s=2, label='Detection probability over the field of view')
 
@@ -873,7 +877,7 @@ class AllSourceData:
           comp_im_prob_sky_list.append(source.proba_compton_image_sky[selected_sat])
     distrib, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 6))
     distrib.suptitle(
-      "Compton Image probability vs peak flux of detected long GRB - GRB in the whole sky (left) and only in the FoV (right)")
+      "Compton Image probability vs peak flux of detected GRB - GRB in the whole sky (left) and only in the FoV (right)")
     ax1.scatter(p_flux_list, comp_im_prob_sky_list, s=2, label='Compton image probability over the whole sky')
     ax2.scatter(p_flux_list, comp_im_prob_fov_list, s=2, label='Compton image probability over the field of view')
 
