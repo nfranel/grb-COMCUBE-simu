@@ -9,6 +9,8 @@ import multiprocessing as mp
 from itertools import repeat
 import matplotlib.pyplot as plt
 import matplotlib as mpl
+import numpy as np
+
 # Developped modules imports
 from funcmod import *
 from catalog import Catalog
@@ -525,7 +527,7 @@ class AllSourceData:
     print("The number of trigger for single events for the different technics are the following :")
     print(" == Integration time for the trigger : 1s, mean flux == ")
     print(f"   For a {self.snr_min} sigma trigger with the number of hits summed over the constellation :  {single_instant_trigger_by_const:.2f} triggers")
-    print(f"   For a {self.snr_min} sigma trigger on at least one of the satellites :                      {single_instant_trigger_by_sat:.2f} triggers")
+    # print(f"   For a {self.snr_min} sigma trigger on at least one of the satellites :                      {single_instant_trigger_by_sat:.2f} triggers")
     print(f"   For a {self.snr_min-2} sigma trigger in at least 3 satellites of the constellation :        {single_instant_trigger_by_comparison:.2f} triggers")
     # print(" == Integration time for the trigger : T90, mean flux == ")
     # print(f"   For a {self.snr_min} sigma trigger with the number of hits summed over the constellation : {single_t90_trigger_by_const} triggers")
@@ -534,10 +536,57 @@ class AllSourceData:
     print("The number of trigger using GBM pflux for an energy range between 10keV and 1MeV are the following :")
     print(" == Integration time for the trigger : 1s, peak flux == ")
     print(f"   For a {self.snr_min} sigma trigger with the number of hits summed over the constellation :  {single_peak_trigger_by_const:.2f} triggers")
-    print(f"   For a {self.snr_min} sigma trigger on at least one of the satellites :                      {single_peak_trigger_by_sat:.2f} triggers")
+    # print(f"   For a {self.snr_min} sigma trigger on at least one of the satellites :                      {single_peak_trigger_by_sat:.2f} triggers")
     print(f"   For a {self.snr_min-2} sigma trigger in at least 3 satellites of the constellation :        {single_peak_trigger_by_comparison:.2f} triggers")
     print("=============================================")
     print(f" Over the {total_in_view} GRBs simulated in the constellation field of view")
+
+    print("================================================================================================")
+    print("== Triggers according to GBM method")
+    print("================================================================================================")
+    # bin_widths = [0.01, 0.05, 0.1, 0.25, 0.5, 1, 2, 10]
+    bin_widths = [0.064, 0.256, 1.024]
+    sat_trigger_counter = 0
+    const_trigger_counter = 0
+    for source in self.alldata:
+      if source is not None:
+        for ite_sim, sim in enumerate(source):
+          if sim is not None:
+            total_in_view += 1
+            # Getting the snrs for all satellites and the constellation
+            list_bins = [np.linspace(0, source.source_duration, int(source.source_duration / width) + 1) for width in bin_widths]
+            centroid_bins = [(list_bin[1:] + list_bin[:-1]) / 2 for list_bin in list_bins]
+            sat_snr_list = []
+            sat_trigg = 0
+            for sat_ite, sat in enumerate(sim):
+              if sat is not None:
+                temp_hist = [np.histogram(np.concatenate((sat.compton_time, sat.single_time)), bins=list_bin) for list_bin in list_bins]
+                arg_max_bin = [np.argmax(val_hist) for val_hist in temp_hist]
+                for index1, arg_max in enumerate(arg_max_bin):
+                  for index2 in range(index1 + 1, len(arg_max_bin)):
+                    if not compatibility_test(centroid_bins[index1], bin_widths[index1], centroid_bins[index2], bin_widths[index2]):
+                      print(f"Incompatibility between bins {bin_widths[index1]} and {bin_widths[index2]} for {source.source_name}, sim {ite_sim} and sat {sat_ite}")
+                      print(f"     Centroids of the incompatible bins : {centroid_bins[index1]} and {centroid_bins[index2]}")
+                snr_list = [calc_snr(temp_hist[index], (sat.single_b_rate + sat.compton_b_rate) * bin_widths[index])for index in arg_max_bin]
+                sat_snr_list.append(snr_list)
+                if max(snr_list) > 3:
+                  sat_trigg += 1
+            if sim.const_data is not None:
+              temp_hist = [np.histogram(np.concatenate((sim.const_data.compton_time, sim.const_data.single_time)), bins=list_bin) for list_bin in list_bins]
+              arg_max_bin = [np.argmax(val_hist) for val_hist in temp_hist]
+              for index1, arg_max in enumerate(arg_max_bin):
+                for index2 in range(index1 + 1, len(arg_max_bin)):
+                  if not compatibility_test(centroid_bins[index1], bin_widths[index1], centroid_bins[index2], bin_widths[index2]):
+                    print(f"Incompatibility between bins {bin_widths[index1]} and {bin_widths[index2]} for {source.source_name}, sim {ite_sim} and constellation")
+                    print(f"     Centroids of the incompatible bins : {centroid_bins[index1]} and {centroid_bins[index2]}")
+              const_snr = [calc_snr(temp_hist[index], (sim.const_data.single_b_rate + sim.const_data.compton_b_rate) * bin_widths[index]) for index in arg_max_bin]
+            else:
+              const_snr = 0
+            if sat_trigg >= 4:
+              sat_trigger_counter += 1
+            if const_snr >= 6:
+              const_trigger_counter += 1
+
 
   def grb_map_plot(self, mode="no_cm"):
     """
@@ -1341,7 +1390,7 @@ class AllSourceData:
                     no_detec[1].append(sim[selected_sat].snr_compton_t90)
                   count += 1
 
-      distrib, ax1 = plt.subplots(1, 1, figsize=(8, 6))
+      distrib, ax1 = plt.subplots(1, 1, figsize=(10, 6))
       distrib.suptitle(title)
       if print_rejected:
         ax1.scatter(no_detec[0], no_detec[1], label="Markers for rejected GRB")

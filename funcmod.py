@@ -1186,3 +1186,19 @@ def sbpl(e, ampl, l1, l2, eb, delta, pivot=100):
   q, qp = np.log10(e / eb) / delta, np.log10(pivot / eb) / delta
   a, ap = m * delta * np.log(np.cosh(q)), m * delta * np.log(np.cosh(qp))
   return ampl * (e / pivot) ** b * 10 ** (a - ap)
+
+
+
+
+# To put in a separate class for triggers
+def compatibility_test(val1, bin_w1, val2, bin_w2):
+  """
+  Checks if the 2 intervals are compatible
+  :param val1: Center of interval 1
+  :param bin_w1: Amplitude of the interval 1 (=1bin)
+  :param val2: Center of interval 2
+  :param bin_w2: Amplitude of the interval 2 (=1bin)
+  """
+  min1, max1 = val1 - bin_w1, val1 + bin_w1
+  min2, max2 = val2 - bin_w2, val2 + bin_w2
+  return not (max2 < min1 or min2 > max1)
