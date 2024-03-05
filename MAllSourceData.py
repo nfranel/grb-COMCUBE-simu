@@ -586,6 +586,10 @@ class AllSourceData:
               sat_trigger_counter += 1
             if const_snr >= 6:
               const_trigger_counter += 1
+    print(f"   For a 6 sigma trigger with the number of hits summed over the constellation :  {single_peak_trigger_by_const:.2f} triggers")
+    print(f"   For a 3 sigma trigger in at least 4 satellites of the constellation :        {single_peak_trigger_by_comparison:.2f} triggers")
+    print("=============================================")
+    print(f" Over the {total_in_view} GRBs simulated in the constellation field of view")
 
 
   def grb_map_plot(self, mode="no_cm"):
