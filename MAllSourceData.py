@@ -545,6 +545,8 @@ class AllSourceData:
     print("== Triggers according to GBM method")
     print("================================================================================================")
     # bin_widths = [0.01, 0.05, 0.1, 0.25, 0.5, 1, 2, 10]
+    all_cat = Catalog(self.cat_file, self.sttype)
+    total_in_view = 0
     bin_widths = [0.064, 0.256, 1.024]
     sat_trigger_counter = 0
     const_trigger_counter = 0
@@ -554,43 +556,55 @@ class AllSourceData:
           if sim is not None:
             total_in_view += 1
             # Getting the snrs for all satellites and the constellation
-            list_bins = [np.linspace(0, source.source_duration, int(source.source_duration / width) + 1) for width in bin_widths]
+            list_bins = [np.arange(0, source.source_duration + width, width) for width in bin_widths]
             centroid_bins = [(list_bin[1:] + list_bin[:-1]) / 2 for list_bin in list_bins]
             sat_snr_list = []
             sat_trigg = 0
             for sat_ite, sat in enumerate(sim):
               if sat is not None:
-                temp_hist = [np.histogram(np.concatenate((sat.compton_time, sat.single_time)), bins=list_bin) for list_bin in list_bins]
-                arg_max_bin = [np.argmax(val_hist) for val_hist in temp_hist]
-                for index1, arg_max in enumerate(arg_max_bin):
-                  for index2 in range(index1 + 1, len(arg_max_bin)):
-                    if not compatibility_test(centroid_bins[index1], bin_widths[index1], centroid_bins[index2], bin_widths[index2]):
-                      print(f"Incompatibility between bins {bin_widths[index1]} and {bin_widths[index2]} for {source.source_name}, sim {ite_sim} and sat {sat_ite}")
-                      print(f"     Centroids of the incompatible bins : {centroid_bins[index1]} and {centroid_bins[index2]}")
-                snr_list = [calc_snr(temp_hist[index], (sat.single_b_rate + sat.compton_b_rate) * bin_widths[index])for index in arg_max_bin]
-                sat_snr_list.append(snr_list)
-                if max(snr_list) > 3:
-                  sat_trigg += 1
+                if len(np.concatenate((sat.compton_time, sat.single_time))) == 0:
+                  sat_trigg += 0
+                else:
+                  temp_hist = [np.histogram(np.concatenate((sat.compton_time, sat.single_time)), bins=list_bin)[0] for list_bin in list_bins]
+                  arg_max_bin = [np.argmax(val_hist) for val_hist in temp_hist]
+                  # for index1, arg_max1 in enumerate(arg_max_bin):
+                  #   for index2, arg_max2 in enumerate(arg_max_bin[index1 + 1:]):
+                  #     if not compatibility_test(centroid_bins[index1][arg_max1], bin_widths[index1], centroid_bins[index1 + 1 + index2][arg_max2], bin_widths[index1 + 1 + index2]):
+                  # print(f"Incompatibility between bins {bin_widths[index1]} and {bin_widths[index2]} for {source.source_name}, sim {ite_sim} and sat {sat_ite}")
+                  # print(f"     Centroids of the incompatible bins : {centroid_bins[index1][arg_max1]} and {centroid_bins[index1 + 1 + index2][arg_max2]}")
+                  snr_list = [calc_snr(temp_hist[index][arg_max_bin[index]], (sat.single_b_rate + sat.compton_b_rate) * bin_widths[index]) for index in range(len(arg_max_bin))]
+                  sat_snr_list.append(snr_list)
+                  if max(snr_list) > 3:
+                    sat_trigg += 1
             if sim.const_data is not None:
-              temp_hist = [np.histogram(np.concatenate((sim.const_data.compton_time, sim.const_data.single_time)), bins=list_bin) for list_bin in list_bins]
-              arg_max_bin = [np.argmax(val_hist) for val_hist in temp_hist]
-              for index1, arg_max in enumerate(arg_max_bin):
-                for index2 in range(index1 + 1, len(arg_max_bin)):
-                  if not compatibility_test(centroid_bins[index1], bin_widths[index1], centroid_bins[index2], bin_widths[index2]):
-                    print(f"Incompatibility between bins {bin_widths[index1]} and {bin_widths[index2]} for {source.source_name}, sim {ite_sim} and constellation")
-                    print(f"     Centroids of the incompatible bins : {centroid_bins[index1]} and {centroid_bins[index2]}")
-              const_snr = [calc_snr(temp_hist[index], (sim.const_data.single_b_rate + sim.const_data.compton_b_rate) * bin_widths[index]) for index in arg_max_bin]
+              if len(np.concatenate((sim.const_data.compton_time, sim.const_data.single_time))) == 0:
+                const_snr = [0]
+              else:
+                temp_hist = [np.histogram(np.concatenate((sim.const_data.compton_time, sim.const_data.single_time)), bins=list_bin)[0] for list_bin in list_bins]
+                arg_max_bin = [np.argmax(val_hist) for val_hist in temp_hist]
+                # for index1, arg_max1 in enumerate(arg_max_bin):
+                #   for index2, arg_max2 in enumerate(arg_max_bin[index1 + 1:]):
+                #     if not compatibility_test(centroid_bins[index1][arg_max1], bin_widths[index1], centroid_bins[index1 + 1 + index2][arg_max2], bin_widths[index1 + 1 + index2]):
+                # print(f"Incompatibility between bins {bin_widths[index1]} and {bin_widths[index2]} for {source.source_name}, sim {ite_sim} and constellation")
+                # print(f"     Centroids of the incompatible bins : {centroid_bins[index1][arg_max1]} and {centroid_bins[index1 + 1 + index2][arg_max2]}")
+                const_snr = [calc_snr(temp_hist[index][arg_max_bin[index]], (sim.const_data.single_b_rate + sim.const_data.compton_b_rate) * bin_widths[index]) for index in range(len(arg_max_bin))]
             else:
-              const_snr = 0
+              const_snr = [0]
             if sat_trigg >= 4:
               sat_trigger_counter += 1
-            if const_snr >= 6:
+            if max(const_snr) >= 6:
               const_trigger_counter += 1
-    print(f"   For a 6 sigma trigger with the number of hits summed over the constellation :  {single_peak_trigger_by_const:.2f} triggers")
-    print(f"   For a 3 sigma trigger in at least 4 satellites of the constellation :        {single_peak_trigger_by_comparison:.2f} triggers")
+            else:
+              for ite, name in enumerate(all_cat.name):
+                if name == source.source_name:
+                  ener_fluence = float(all_cat.fluence[ite])
+              print(max(const_snr), source.source_duration, sim.dec_world_frame, ener_fluence)
+    print(
+      f"   For a 6 sigma trigger with the number of hits summed over the constellation :  {const_trigger_counter:.2f} triggers")
+    print(
+      f"   For a 3 sigma trigger in at least 4 satellites of the constellation :        {sat_trigger_counter:.2f} triggers")
     print("=============================================")
     print(f" Over the {total_in_view} GRBs simulated in the constellation field of view")
-
 
   def grb_map_plot(self, mode="no_cm"):
     """
