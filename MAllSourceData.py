@@ -213,7 +213,7 @@ class AllSourceData:
       if source is not None:
         for sim in source:
           if sim is not None:
-            sim.make_const(self.options, source.source_duration, source.source_fluence, const=const)
+            sim.make_const(self.options, source.source_duration, source.source_fluence, off_sats, self.options, const=const)
     if not self.init_correction:
       self.azi_angle_anticorr()
 
