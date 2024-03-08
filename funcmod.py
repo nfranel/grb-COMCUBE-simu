@@ -453,7 +453,10 @@ def calc_mdp(S, B, mu100, nsigma=4.29):
   :param mu100: modulation factor
   :param nsigma: significance of the result in number of sigmas, default=4.29 for 99% CL
   """
-  return nsigma * np.sqrt(S + B) / (mu100 * S)
+  if S == 0:
+    return np.inf
+  else:
+    return nsigma * np.sqrt(S + B) / (mu100 * S)
 
 
 def closest_bkg_values(sat_dec, sat_ra, sat_alt, bkg_list):  # TODO : limits on variables
