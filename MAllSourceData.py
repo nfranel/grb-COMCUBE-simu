@@ -202,6 +202,7 @@ class AllSourceData:
     off_sats[0] = np.random.randint(self.n_sat)
     off_sats[1] = np.random.randint(self.n_sat)
     off_sats[2] = np.random.randint(self.n_sat)
+    print(off_sats[0], type(off_sats[0]))
     while off_sats[2] == off_sats[1]:
       off_sats[2] = np.random.randint(self.n_sat)
     ###################################################################################################################
