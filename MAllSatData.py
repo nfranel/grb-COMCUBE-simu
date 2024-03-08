@@ -61,7 +61,8 @@ class AllSatData(list):
         if sat is not None:
           sat.analyze(source_duration, source_fluence)
     if self.const_data is not None:
-      self.const_data.analyze(source_duration, source_fluence)
+      for constellation in self.const_data:
+        constellation.analyze(source_duration, source_fluence)
     else:
       print("Constellation not set : please use make_const method if you want to analyze the constellation's results")
 

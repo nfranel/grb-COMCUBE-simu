@@ -203,7 +203,7 @@ class GRBFullData:
           print("Error, unknown interaction volume")
       self.total_hits = self.calor + self.dsssd + self.side
       # TODO testing
-      self.analyze(source_duration, source_fluence, const_analyze=False)
+      self.analyze(source_duration, source_fluence)
 
       self.set_beneficial_compton()
       self.set_beneficial_single()
@@ -250,34 +250,32 @@ class GRBFullData:
     else:
       print(" Impossible to undo the correction of the azimuthal compton scattering angles : no correction were made")
 
-  def analyze(self, source_duration, source_fluence, const_analyze=False):
+  def analyze(self, source_duration, source_fluence):
     """
     Proceeds to the data analysis to get s_eff, mdp, snr
       mdp has physical significance between 0 and 1
     :param source_duration: duration of the source
     :param source_fluence: fluence of the source [photons/cm2]
-    :param const_analyze: Select if the analysis is done on a satellite or on a constellation
     """
-    if not const_analyze:
-      #################################################################################################################
-      # Calculation of effective area
-      #################################################################################################################
-      if source_fluence is None:
-        self.s_eff_compton = None
-        self.s_eff_single = None
-      else:
-        self.s_eff_compton = self.compton_cr * source_duration / source_fluence
-        self.s_eff_single = self.single_cr * source_duration / source_fluence
+    #################################################################################################################
+    # Calculation of effective area
+    #################################################################################################################
+    if source_fluence is None:
+      self.s_eff_compton = None
+      self.s_eff_single = None
+    else:
+      self.s_eff_compton = self.compton_cr * source_duration / source_fluence
+      self.s_eff_single = self.single_cr * source_duration / source_fluence
 
-      #################################################################################################################
-      # Calculation of effective area
-      #################################################################################################################
-      self.calculates_snrs(source_duration)
+    #################################################################################################################
+    # Calculation of effective area
+    #################################################################################################################
+    self.calculates_snrs(source_duration)
 
-      #################################################################################################################
-      # Calculation of mdp
-      #################################################################################################################
-      self.mdp = calc_mdp(self.compton_cr * source_duration, self.compton_b_rate * source_duration, self.mu100_ref)
+    #################################################################################################################
+    # Calculation of mdp
+    #################################################################################################################
+    self.mdp = calc_mdp(self.compton_cr * source_duration, self.compton_b_rate * source_duration, self.mu100_ref)
 
 
   def calculates_snrs(self, source_duration):
