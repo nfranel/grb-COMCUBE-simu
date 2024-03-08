@@ -48,8 +48,6 @@ class AllSatData(list):
     list.__init__(self, temp_list)
     # Attribute meaningful after the creation of the constellation
     self.const_data = None
-    self.const_1off_data = None
-    self.const_2off_data = None
 
   def analyze(self, source_duration, source_fluence, sats_analysis):
     """
@@ -84,7 +82,7 @@ class AllSatData(list):
     ###################################################################################################################
     in_sight_sat = np.where(np.array(self) == None, False, True)
     sat_const = const[in_sight_sat]
-    self.const_data = GRBFullData([], None, None, None, None, None, None, source_duration, source_fluence, *options)
+    const_0off_data = GRBFullData([], None, None, None, None, None, None, source_duration, source_fluence, *options)
     ###################################################################################################################
     # Constellation with 1 off satellite
     ###################################################################################################################
@@ -92,7 +90,7 @@ class AllSatData(list):
     in_sight_sat_1off = in_sight_sat
     in_sight_sat_1off[off_sat] = False
     sat_const_1off = const[in_sight_sat_1off]
-    self.const_1off_data = GRBFullData([], None, None, None, None, None, None, source_duration, source_fluence, *options)
+    const_1off_data = GRBFullData([], None, None, None, None, None, None, source_duration, source_fluence, *options)
     ###################################################################################################################
     # Constellation with 2 off satellites
     ###################################################################################################################
@@ -102,14 +100,14 @@ class AllSatData(list):
     in_sight_sat_2off[off_sat1] = False
     in_sight_sat_2off[off_sat2] = False
     sat_const_2off = const[in_sight_sat_2off]
-    self.const_2off_data = GRBFullData([], None, None, None, None, None, None, source_duration, source_fluence, *options)
+    const_2off_data = GRBFullData([], None, None, None, None, None, None, source_duration, source_fluence, *options)
     ###################################################################################################################
     # Making of the constellations
     ###################################################################################################################
     list_considered_sat = [sat_const, sat_const_1off, sat_const_2off]
-    constellations = [self.const_data, self.const_1off_data, self.const_2off_data]
+    self.const_data = [self.const_0off_data, self.const_1off_data, self.const_2off_data]
     for ite_const, considered_sats in enumerate(list_considered_sat):
-      for item in constellations[ite_const].__dict__.keys():
+      for item in self.const_data[ite_const].__dict__.keys():
         ###############################################################################################################
         # Not changed
         ###############################################################################################################
@@ -149,12 +147,12 @@ class AllSatData(list):
           # Values supposed to be the same for all sat and all sims so it doesn't change and is set using 1 sat
           # Field to be used soon : "polarigram_error"
           if item in ["bins"]:
-            setattr(constellations[ite_const], item, getattr(self[selected_sats[0]], item))
+            setattr(self.const_data[ite_const], item, getattr(self[selected_sats[0]], item))
           #############################################################################################################
           # Set to true
           #############################################################################################################
           elif item in ["azim_angle_corrected"]:
-            setattr(constellations[ite_const], item, True)
+            setattr(self.const_data[ite_const], item, True)
           #############################################################################################################
           # Summed
           #############################################################################################################
@@ -165,7 +163,7 @@ class AllSatData(list):
             temp_val = 0
             for num_sat in selected_sats:
               temp_val += getattr(self[num_sat], item)
-            setattr(constellations[ite_const], item, temp_val)
+            setattr(self.const_data[ite_const], item, temp_val)
           #############################################################################################################
           # 1D concatenation
           #############################################################################################################
@@ -175,7 +173,7 @@ class AllSatData(list):
             temp_array = np.array([])
             for num_sat in selected_sats:
               temp_array = np.concatenate((temp_array, getattr(self[num_sat], item)))
-            setattr(constellations[ite_const], item, temp_array)
+            setattr(self.const_data[ite_const], item, temp_array)
           #############################################################################################################
           # 2D concatenation     - Not used anymore, but still there just in case
           #############################################################################################################
@@ -212,9 +210,9 @@ class AllSatData(list):
               temp_num += getattr(self[num_sat], item) * self[num_sat].compton
               temp_denom += self[num_sat].compton
             if temp_denom != 0:
-              setattr(constellations[ite_const], item, temp_num / temp_denom)
+              setattr(self.const_data[ite_const], item, temp_num / temp_denom)
             else:
-              setattr(constellations[ite_const], item, 0)
+              setattr(self.const_data[ite_const], item, 0)
           #############################################################################################################
           # Appened
           #############################################################################################################
@@ -222,6 +220,6 @@ class AllSatData(list):
             temp_list = []
             for num_sat in selected_sats:
               temp_list.append(getattr(self[num_sat], item))
-            setattr(constellations[ite_const], item, np.array(temp_list))
+            setattr(self.const_data[ite_const], item, np.array(temp_list))
           else:
             raise AttributeError("Item not found")
