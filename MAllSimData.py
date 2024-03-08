@@ -20,7 +20,7 @@ class AllSimData(list):
     :param source_ite: iteration of the source simulated
     :param cat_data: GBM catalog used
     :param n_sim: number of simulation done
-    :param sat_info: orbital information on the satellite
+    :param sat_info: orbital information on the satellites
     :param param_sim_duration: duration of the simulation (fixed of t90)
     :param bkg_data: list containing the background data
     :param mu_data: list containing the mu100 data
@@ -35,6 +35,7 @@ class AllSimData(list):
       self.best_fit_p_flux = None
       self.best_fit_mean_flux = None
       self.source_fluence = None
+      self.source_energy_fluence = None
     else:
       self.source_name = cat_data.name[source_ite]
       self.source_duration = float(cat_data.t90[source_ite])
@@ -47,6 +48,7 @@ class AllSimData(list):
       self.best_fit_mean_flux = float(getattr(cat_data, f"{getattr(cat_data, 'flnc_best_fitting_model')[source_ite].rstrip()}_phtflux")[source_ite])
       # Retrieving fluence of the source [photons/cm2]
       self.source_fluence = calc_fluence(cat_data, source_ite, options[0]) * self.source_duration
+      self.source_energy_fluence = float(cat_data.fluence[source_ite])
     if param_sim_duration.isdigit():
       sim_duration = float(param_sim_duration)
     elif param_sim_duration == "t90" or param_sim_duration == "lc":
@@ -83,7 +85,8 @@ class AllSimData(list):
         if flist[0].startswith("ls: cannot access"):
           temp_list.append(None)
         else:
-          temp_list.append(AllSatData(source_prefix, num_sim, sat_info, sim_duration, bkg_data, mu_data, options))
+          info_source = [self.source_duration, self.source_fluence]
+          temp_list.append(AllSatData(source_prefix, num_sim, sat_info, sim_duration, bkg_data, mu_data, info_source, options))
           self.n_sim_det += 1
 
     list.__init__(self, temp_list)
@@ -92,20 +95,6 @@ class AllSimData(list):
         if output_message is not None:
           output_message += f"\n  Total of {sim.loading_count} files loaded for simulation {sim_ite}"
     print(output_message)
-
-  @staticmethod
-  def get_keys():
-    print("======================================================================")
-    print("    Attributes")
-    print(" Number of simulations detected by the constellation : .n_sim_det")
-    print(" Name of the source :                                  .source_name")
-    print(" Duration of the source (t90 for GRB) :                .source_duration")
-    print(" ===== Attribute that needs to be handled + 2 cases (full FoV or full sky)")
-    print(" Probability of having a detection                     .proba_detec")
-    print(" Probability of being able to construct an image :     .proba_compton_image")
-    print("======================================================================")
-    print("    Methods")
-    print("======================================================================")
 
   def set_probabilities(self, n_sat, snr_min=5, n_image_min=50):
     """

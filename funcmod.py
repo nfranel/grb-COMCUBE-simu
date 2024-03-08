@@ -432,13 +432,17 @@ def rescale_cr_to_GBM_pf(cr, GBM_mean_flux, GBM_peak_flux):
 
 def calc_snr(S, B, C=0):
   """
-  Calculates the signal to noise ratio of a GRB in a time bin
+  Calculates the signal to noise ratio of a GRB in a time bin. Returns 0 if the value is negative.
   :param S: number of counts in the source (background not included)
   :param B: expected number of background counts
   :param C: minimum number of counts in the source to consider the detection
   :returns: SNR (as defined in Sarah Antier's PhD thesis)
   """
-  return S / np.sqrt(B + C)
+  snr = S / np.sqrt(B + C)
+  if snr >= 0:
+    return snr
+  else:
+    return 0
 
 
 def calc_mdp(S, B, mu100, nsigma=4.29):

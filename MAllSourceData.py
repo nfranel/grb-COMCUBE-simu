@@ -64,7 +64,7 @@ class AllSourceData:
     self.save_time = True
     self.init_correction = False
     self.snr_min = 5
-    self.options = [self.erg_cut, self.armcut, self.geometry, self.save_time, self.init_correction, self.polarigram_bins]
+    self.options = [self.erg_cut, self.armcut, self.geometry, self.init_correction, self.polarigram_bins]
 
     # Compiling the position finder
     subprocess.call(f"make -f Makefile PRG=find_detector", shell=True)
@@ -109,45 +109,6 @@ class AllSourceData:
     self.com_fov = 1
     self.gbm_fov = (1 - np.cos(np.deg2rad(horizon_angle(565)))) / 2
     self.weights = 1 / self.n_sim / self.cat_duration * self.com_duty / self.gbm_duty * self.com_fov / self.gbm_fov
-
-  @staticmethod
-  def get_keys():
-    print("======================================================================")
-    print("    Files and paths")
-    print(" background files prefix :            .bkg_prefix")
-    print(" Parameter file used for simulation : .param_file")
-    print(" Simulated data prefix :              .sim_prefix")
-    print(" Source file path :                   .source_file")
-    print(" Revan cfg file path :                .revan_file")
-    print(" Geometry file path :                 .geometry")
-    print(" Catalog file path :                  .cat_file")
-    print(" Path of spectra :                    .spectra_path")
-    print("======================================================================")
-    print("    Simulation parameters")
-    print(" Type of simulation from parfile :         .sim_type")  # Might be usefull to handle different types of sim
-    print(" Instrument fiel from parfile    :         .instrument")
-    print(" Mode used to handle catalog information : .mode")
-    print(" Formated str to extract catalog sources : .sttype")  # Might put in an other field ?
-    print(" Area of the sky allowed for simulations : .position_allowed_sim")
-    print("======================================================================")
-    print("    Data analysis options")
-    print(" Energy window considered for the analysis :           .erg_cut")
-    print(" Data extraction options :                             .options")
-    print("   [save_time, corr, erg_cut]")
-    print("    save_time : to handle the new field with a specific function")
-    print("    corr : to correct the polarization angle")
-    print("======================================================================")
-    print("    Data and simulation information")
-    print(" Information on satellites' position :   .sat_info")
-    print(" Number of satellites :                  .n_sat")
-    print(" Number of simulation performed :        .n_sim")
-    print(" Duration of simulations :               .sim_duration")
-    print(" List of source names :                  .namelist")
-    print(" Number of sources simulated :           .n_source")
-    print(" Data extracted from simulation files :  .alldata")
-    print("======================================================================")
-    print("    Methods")
-    print("======================================================================")
 
 # TODO finish the comments and rework the methods !
   def extract_sources(self, prefix, duration=None):
@@ -214,6 +175,19 @@ class AllSourceData:
             sim.analyze(source.source_duration, source.source_fluence, const_analysis)
         source.set_probabilities(n_sat=self.n_sat, snr_min=self.snr_min, n_image_min=50)
 
+  def set_beneficial(self, threshold_mdp):
+    """
+    Sets const_beneficial_compton and const_beneficial_compton to True is the value for a satellite is worth considering
+    """
+    for source_ite, source in enumerate(self.alldata):
+      if source is not None:
+        for sim_ite, sim in enumerate(source):
+          if sim is not None:
+            for sat in sim:
+              if sat is not None:
+                sat.set_beneficial_compton(threshold=threshold_mdp)
+                sat.set_beneficial_single()
+
   def make_const(self, const=None):
     """
     This function is used to combine results from different satellites
@@ -221,13 +195,25 @@ class AllSourceData:
     ! The polarigrams have to be corrected to combine the polarigrams !
     :param const: Which satellite are considered for the constellation if none, all of them are
     """
+    ###################################################################################################################
+    # Setting some satellites off
+    ###################################################################################################################
+    off_sats = np.zeros(3)
+    off_sats[0] = np.random.randint(self.n_sat)
+    off_sats[1] = np.random.randint(self.n_sat)
+    off_sats[2] = np.random.randint(self.n_sat)
+    while off_sats[2] == off_sats[1]:
+      off_sats[2] = np.random.randint(self.n_sat)
+    ###################################################################################################################
+    # Making of the constellations  -  with corrected polarigrams (if not corrected they can't be added)
+    ###################################################################################################################
     if not self.init_correction:
       self.azi_angle_corr()
     for source in self.alldata:
       if source is not None:
         for sim in source:
           if sim is not None:
-            sim.make_const(self.options, const=const)
+            sim.make_const(self.options, source.source_duration, source.source_fluence, const=const)
     if not self.init_correction:
       self.azi_angle_anticorr()
 
