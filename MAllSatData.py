@@ -89,7 +89,6 @@ class AllSatData(list):
     ###################################################################################################################
     off_sat = off_sats[0]
     in_sight_sat_1off = in_sight_sat
-    print(off_sat, type(off_sat))
     in_sight_sat_1off[off_sat] = False
     sat_const_1off = const[in_sight_sat_1off]
     const_1off_data = GRBFullData([], None, None, None, None, None, None, source_duration, source_fluence, *options)
