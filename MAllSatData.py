@@ -48,20 +48,21 @@ class AllSatData(list):
     list.__init__(self, temp_list)
     # Attribute meaningful after the creation of the constellation
     self.const_data = None
+    self.const_1off_data = None
+    self.const_2off_data = None
 
-  def analyze(self, source_duration, source_fluence, const_analysis):
+  def analyze(self, source_duration, source_fluence, sats_analysis):
     """
     Proceed to the analysis for all satellites and constellation (unless specified)
     :param source_duration: duration of the source
     :param source_fluence: fluence of the source
-    :param const_analysis: whether the constellation should be analyzed
+    :param sats_analysis: whether the satellites should be analyzed
     """
-    # First step of the analyzis, to obtain the polarigrams, and values for polarization and snr
-    # todo remove constanalysis, maybe change it to redo the satellite analysis
-    # for sat_ite, sat in enumerate(self):
-    #   if sat is not None:
-    #     sat.analyze(source_duration, source_fluence)
-    if self.const_data is not None and const_analysis:
+    if sats_analysis:
+      for sat_ite, sat in enumerate(self):
+        if sat is not None:
+          sat.analyze(source_duration, source_fluence)
+    if self.const_data is not None:
       self.const_data.analyze(source_duration, source_fluence)
     else:
       print("Constellation not set : please use make_const method if you want to analyze the constellation's results")
@@ -69,13 +70,15 @@ class AllSatData(list):
   def make_const(self, source_duration, source_fluence, off_sats, options, const=None):
     """
     Creates a constellation of several satellites by putting together the results
+    :param source_duration: duration of the source
+    :param source_fluence: fluence of the source
+    :param off_sats: indexes of the down satellites
     :param options: options for the analysis, defined in AllSourceData
     :param const: array with the number of the satellite to put in the constellation
       If None all satellites are considered
     """
     if const is None:
       const = np.array(range(self.n_sat))
-    # TODO add here the option for having satellites off
     ###################################################################################################################
     # Required for usual constellation
     ###################################################################################################################
@@ -222,84 +225,3 @@ class AllSatData(list):
             setattr(constellations[ite_const], item, np.array(temp_list))
           else:
             raise AttributeError("Item not found")
-
-  def verif_const(self, message="", const=None):
-    """
-    Method to check that the constellation has been done properly
-    :param message: message to be printed (usually the number of the satellite and the one of the simulation)
-    :param const: array with the number of the satellite to put in the constellation
-      If None all satellites are considered
-    """
-    if const is None:
-      const = np.array(range(self.n_sat))
-    considered_sat = const[np.where(np.array(self) == None, False, True)]
-
-    for item in self.const_data.__dict__.keys():
-      #      Non modified items. They stay as :
-      # ["num_sat", "dec_sat_frame", "ra_sat_frame", "expected_pa"]
-      # [None, None, None, None]
-      #      Or, until analyze() method has been applied, remain the same :
-      # ["fits", "mu100", "pa", "fit_compton_cr", "pa_err", "mu100_err", "fit_compton_cr_err", "fit_goodness", "mdp",
-      # "snr_compton", "snr_single"]
-      # [None, None, None, None, None, None, None, None, None, None, None]
-      if item not in ["sat_dec_wf", "sat_ra_wf", "num_sat", "grb_dec_sat_frame", "grb_ra_sat_frame", "expected_pa", "fits", "mu100", "pa", "fit_compton_cr", "pa_err",
-                      "mu100_err", "fit_compton_cr_err", "fit_goodness", "mdp", "snr_compton", "snr_single", "snr_compton_t90", "snr_single_t90"]:
-        ###############################################################################################################
-        # Non modified items set to None
-        if item in ["num_sat", "dec_sat_frame", "ra_sat_frame", "expected_pa"]:
-          if getattr(self.const_data, item) is not None:
-            print(f"Anomaly detected in the setting of the item {item} by make_const {message}")
-        ###############################################################################################################
-        # Value set to True
-        elif item in ["azim_angle_corrected"]:
-          setattr(self.const_data, item, True)
-        ###############################################################################################################
-        # Values supposed to be the same for all sat and all sims so it doesn't change and is set using 1 sat
-        # Except for polarigram error, only is size doesn't change, hence this verification
-        elif item in ["bins", "polarigram_error"]:
-          verification_bool = False
-          for num_sat in considered_sat:
-            if len(getattr(self[num_sat], item)) != len(getattr(self.const_data, item)):
-              verification_bool = True
-          if verification_bool:
-            print(f"Anomaly detected in the setting of the item {item} by make_const {message}")
-        ###############################################################################################################
-        # Values summed
-        elif item in ["compton_b_rate", "single_b_rate", "s_eff_compton_ref", "s_eff_single_ref", "s_eff_compton", "s_eff_single", "single", "single_cr",
-                      "compton", "compton_cr", "n_sat_detect", "calor", "dsssd", "side"]:
-          temp_val = 0
-          for num_sat in considered_sat:
-            temp_val += getattr(self[num_sat], item)
-          if round(temp_val, 8) != round(getattr(self.const_data, item), 8):
-            print(f"Anomaly detected in the setting of the item {item} by make_const {message}")
-            print(f"  The compared values from the satelitte and the constellation are : {temp_val} & {getattr(self.const_data, item)}")
-        ###############################################################################################################
-        # Values stored in a 1D array that have to be concanated (except unpol that needs another verification)
-        elif item in ["compton_ener", "compton_second", "single_ener", "compton_time", "single_time", "pol",
-                      "polar_from_position", "polar_from_energy", "arm_pol"]:
-          temp_val = 0
-          for num_sat in considered_sat:
-            temp_val += len(getattr(self[num_sat], item))
-          if temp_val != len(getattr(self.const_data, item)):
-            print(f"Anomaly detected in the setting of the item {item} by make_const {message}")
-        ###############################################################################################################
-        # Values stored in a 2D array that have to be initiated and treated so that no error occur
-        elif item in ["compton_firstpos", "compton_secpos", "single_pos"]:
-          temp_val = 0
-          for num_sat in considered_sat:
-            temp_val += len(getattr(self[num_sat], item))
-          if temp_val != len(getattr(self.const_data, item)):
-            print(temp_val, len(getattr(self.const_data, item)))
-            print(f"Anomaly detected in the setting of the item {item} by make_const {message}")
-        ###############################################################################################################
-        # unpol key
-        elif item == "unpol":
-          if getattr(self[considered_sat[0]], item) is not None:
-            temp_val = 0
-            for num_sat in considered_sat:
-              temp_val += len(getattr(self[num_sat], item))
-            if temp_val != len(getattr(self.const_data, item)):
-              print(f"Anomaly detected in the setting of the item {item} by make_const {message}")
-          else:
-            if getattr(self.const_data, item) is not None:
-              print(f"Anomaly detected in the setting of the item {item} by make_const {message}")

@@ -162,17 +162,17 @@ class AllSourceData:
               if sat is not None:
                 sat.anticorr()
 
-  def analyze(self, const_analysis=True):
+  def analyze(self, sats_analysis=False):
     """
     Proceed to the analysis of polarigrams for all satellites and constellation (unless specified) for all data
     and calculates some probabilities
-    :param const_analysis: True if the analysis is done both on the sat data and on the constellation data
+    :param sats_analysis: True if the analysis is done both on the sat data and on the constellation data
     """
     for source_ite, source in enumerate(self.alldata):
       if source is not None:
         for sim_ite, sim in enumerate(source):
           if sim is not None:
-            sim.analyze(source.source_duration, source.source_fluence, const_analysis)
+            sim.analyze(source.source_duration, source.source_fluence, sats_analysis)
         source.set_probabilities(n_sat=self.n_sat, snr_min=self.snr_min, n_image_min=50)
 
   def set_beneficial(self, threshold_mdp):
