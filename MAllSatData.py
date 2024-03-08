@@ -106,7 +106,7 @@ class AllSatData(list):
     # Making of the constellations
     ###################################################################################################################
     list_considered_sat = [sat_const, sat_const_1off, sat_const_2off]
-    self.const_data = [self.const_0off_data, self.const_1off_data, self.const_2off_data]
+    self.const_data = [const_0off_data, const_1off_data, const_2off_data]
     for ite_const, considered_sats in enumerate(list_considered_sat):
       for item in self.const_data[ite_const].__dict__.keys():
         ###############################################################################################################
