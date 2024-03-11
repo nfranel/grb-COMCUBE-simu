@@ -293,6 +293,89 @@ class AllSourceData:
         printv(f" - For simulation {sim_ite} not in the field of view.", verbose)
     return None
 
+  def study_mdp_threshold(self, mdp_thresh_list, savefile=None):
+    """
+    Give the mdp results for several MDP threshold to study its influence on the performances
+    """
+    # Search for an mdp limit :
+    if savefile is None:
+      for threshold_mdp in mdp_thresh_list:
+        self.set_beneficial(threshold_mdp)
+        self.make_const()
+        self.analyze()
+        print(f" ========               MDP THRESHOLD USED : {threshold_mdp}   ========")
+        number_detected = 0
+        mdp_list = []
+        for source in self.alldata:
+          if source is not None:
+            for sim in source:
+              if sim is not None:
+                if sim.const_data is not None:
+                  number_detected += 1
+                  if sim.const_data[0].mdp is not None:
+                    if sim.const_data[0].mdp <= 1:
+                      mdp_list.append(sim.const_data[0].mdp * 100)
+        mdp_list = np.array(mdp_list)
+        print("=                        MDP detection rates                        =")
+        print(f"   MDP<=100% : {np.sum(np.where(mdp_list <= 100, 1, 0)) * self.weights}")
+        print(f"   MDP<=90%  : {np.sum(np.where(mdp_list <= 90, 1, 0)) * self.weights}")
+        print(f"   MDP<=80%  : {np.sum(np.where(mdp_list <= 80, 1, 0)) * self.weights}")
+        print(f"   MDP<=70%  : {np.sum(np.where(mdp_list <= 70, 1, 0)) * self.weights}")
+        print(f"   MDP<=60%  : {np.sum(np.where(mdp_list <= 60, 1, 0)) * self.weights}")
+        print(f"   MDP<=50%  : {np.sum(np.where(mdp_list <= 50, 1, 0)) * self.weights}")
+        print(f"   MDP<=40%  : {np.sum(np.where(mdp_list <= 40, 1, 0)) * self.weights}")
+        print(f"   MDP<=30%  : {np.sum(np.where(mdp_list <= 30, 1, 0)) * self.weights}")
+        print(f"   MDP<=20%  : {np.sum(np.where(mdp_list <= 20, 1, 0)) * self.weights}")
+        print(f"   MDP<=10%  : {np.sum(np.where(mdp_list <= 10, 1, 0)) * self.weights}")
+    elif type(savefile) is str:
+      with open(savefile, "w") as f:
+        f.write("Result file for the MDP threshold study")
+        f.write("Threshold | MDP100 | MDP90 | MDP80 | MDP70 | MDP60 | MDP50 | MDP40 | MDP30 | MDP20 | MDP10 | Number detected | Number mdp <= 100")
+        for threshold_mdp in mdp_thresh_list:
+          self.set_beneficial(threshold_mdp)
+          self.make_const()
+          self.analyze()
+          print(f" ========               MDP THRESHOLD USED : {threshold_mdp}   ========")
+          number_detected = 0
+          mdp_list = []
+          for source in self.alldata:
+            if source is not None:
+              for sim in source:
+                if sim is not None:
+                  if sim.const_data is not None:
+                    number_detected += 1
+                    if sim.const_data[0].mdp is not None:
+                      if sim.const_data[0].mdp <= 1:
+                        mdp_list.append(sim.const_data[0].mdp * 100)
+          mdp_list = np.array(mdp_list)
+          mdp100 = np.sum(np.where(mdp_list <= 100, 1, 0)) * self.weights
+          mdp90 = np.sum(np.where(mdp_list <= 90, 1, 0)) * self.weights
+          mdp80 = np.sum(np.where(mdp_list <= 80, 1, 0)) * self.weights
+          mdp70 = np.sum(np.where(mdp_list <= 70, 1, 0)) * self.weights
+          mdp60 = np.sum(np.where(mdp_list <= 60, 1, 0)) * self.weights
+          mdp50 = np.sum(np.where(mdp_list <= 50, 1, 0)) * self.weights
+          mdp40 = np.sum(np.where(mdp_list <= 40, 1, 0)) * self.weights
+          mdp30 = np.sum(np.where(mdp_list <= 30, 1, 0)) * self.weights
+          mdp20 = np.sum(np.where(mdp_list <= 20, 1, 0)) * self.weights
+          mdp10 = np.sum(np.where(mdp_list <= 10, 1, 0)) * self.weights
+
+          f.write(f"{threshold_mdp} | {mdp100} | {mdp90} | {mdp80} | {mdp70} | {mdp60} | {mdp50} | {mdp40} | {mdp30} | {mdp20} | {mdp10} | {number_detected} | {len(mdp_list)}")
+
+          print("=                        MDP detection rates                        =")
+          print(f"   MDP<=100% : {mdp100}")
+          print(f"   MDP<=90%  : {mdp90}")
+          print(f"   MDP<=80%  : {mdp80}")
+          print(f"   MDP<=70%  : {mdp70}")
+          print(f"   MDP<=60%  : {mdp60}")
+          print(f"   MDP<=50%  : {mdp50}")
+          print(f"   MDP<=40%  : {mdp40}")
+          print(f"   MDP<=30%  : {mdp30}")
+          print(f"   MDP<=20%  : {mdp20}")
+          print(f"   MDP<=10%  : {mdp10}")
+
+    else:
+      print("Type error for savefile, must be str or None")
+
   def fov_const(self, num_val=500, show=True, save=False):
     """
     Plots a map of the sensibility over the sky for number of sat in sight, single events and compton events

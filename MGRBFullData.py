@@ -333,5 +333,14 @@ class GRBFullData:
     """
     Sets const_beneficial_compton to True is the value for a satellite is worth considering
     """
+    thresh_32 = 4.3
+    thresh_64 = 4.2
+    thresh_128 = 4
+    thresh_256 = 3.8
+    thresh_512 = 3.7
+    thresh_1024 = 3.6
+    thresh_2048 = 3.5
+    thresh_4096 = 3.4
+    # faire les tests
     self.const_beneficial_trigger = True
 
