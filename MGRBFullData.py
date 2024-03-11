@@ -318,6 +318,8 @@ class GRBFullData:
     Sets const_beneficial_compton to True is the value for a satellite is worth considering
     :param threshold: the mdp threshold required to consider a satellite is worth
     """
+    print("mdp : ", self.mdp)
+    print("threshold : ", threshold)
     if self.mdp < threshold:
       self.const_beneficial_compton = True
 
