@@ -376,6 +376,194 @@ class AllSourceData:
     else:
       print("Type error for savefile, must be str or None")
 
+  def count_triggers(self, number_off_sat=0):
+    """
+    Function to count and print the number of triggers using different criterions
+    """
+    print("================================================================================================")
+    print("== Triggers according to GBM method")
+    print("================================================================================================")
+    bin_widths = [0.032, 0.064, 0.128, 0.256, 0.512, 1.024, 2.048, 4.096]
+    all_cat = Catalog(self.cat_file, self.sttype)
+    total_in_view = 0
+    const_trigger_counter = 0
+    for source in self.alldata:
+      if source is not None:
+        for ite_sim, sim in enumerate(source):
+          if sim is not None:
+            total_in_view += 1
+            sat_counter = 0
+            for sat in sim:
+              if sat is not None:
+                if sat.const_beneficial_trigger:
+                  sat_counter += 1
+            if sat_counter >= 3:
+              const_trigger_counter += 1
+    print(f"   Trigger for at least 3 satellites :        {const_trigger_counter:.2f} triggers")
+    print("=============================================")
+    print(f" Over the {total_in_view} GRBs simulated in the constellation field of view")
+
+  # def count_triggers(self, number_off_sat=0):
+  #   """
+  #   Function to count and print the number of triggers using different criterions
+  #   """
+  #   total_in_view = 0
+  #   # Setting 1s mean triggers counter
+  #   single_instant_trigger_by_const = 0
+  #   single_instant_trigger_by_sat = 0
+  #   single_instant_trigger_by_comparison = 0
+  #   # Setting 1s peak triggers counter
+  #   single_peak_trigger_by_const = 0
+  #   single_peak_trigger_by_sat = 0
+  #   single_peak_trigger_by_comparison = 0
+  #   # Setting T90 mean triggers counter
+  #   single_t90_trigger_by_const = 0
+  #   single_t90_trigger_by_sat = 0
+  #   single_t90_trigger_by_comparison = 0
+  #
+  #   for source in self.alldata:
+  #     if source is not None:
+  #       for sim in source:
+  #         if sim is not None:
+  #           total_in_view += 1
+  #           #    Setting the trigger count to 0
+  #           # Instantaneous trigger
+  #           sat_instant_triggers = 0
+  #           sat_reduced_instant_triggers = 0
+  #           # Peak trigger
+  #           sat_peak_triggers = 0
+  #           sat_reduced_peak_triggers = 0
+  #           # t90 trigger
+  #           sat_t90_triggers = 0
+  #           sat_reduced_t90_triggers = 0
+  #           # Calculation for the individual sats
+  #           for sat in sim:
+  #             if sat is not None:
+  #               if sat.snr_single >= self.snr_min:
+  #                 sat_instant_triggers += 1
+  #               if sat.snr_single >= self.snr_min - 2:
+  #                 sat_reduced_instant_triggers += 1
+  #               if source.best_fit_p_flux is None:
+  #                 sat_peak_snr = sat.snr_single
+  #               else:
+  #                 sat_peak_snr = calc_snr(rescale_cr_to_GBM_pf(sat.single_cr, source.best_fit_mean_flux, source.best_fit_p_flux), sat.single_b_rate)
+  #               if sat_peak_snr >= self.snr_min:
+  #                 sat_peak_triggers += 1
+  #               if sat_peak_snr >= self.snr_min - 2:
+  #                 sat_reduced_peak_triggers += 1
+  #               if sat.snr_single_t90 >= self.snr_min:
+  #                 sat_t90_triggers += 1
+  #               if sat.snr_single_t90 >= self.snr_min - 2:
+  #                 sat_reduced_t90_triggers += 1
+  #           # Calculation for the whole constellation
+  #           if source.best_fit_p_flux is None:
+  #             const_peak_snr = sim.const_data[number_off_sat].snr_single
+  #           else:
+  #             const_peak_snr = calc_snr(rescale_cr_to_GBM_pf(sim.const_data[number_off_sat].single_cr, source.best_fit_mean_flux, source.best_fit_p_flux), sim.const_data[number_off_sat].single_b_rate)
+  #           # 1s mean triggers
+  #           if sim.const_data[number_off_sat].snr_single >= self.snr_min:
+  #             single_instant_trigger_by_const += 1
+  #           if sat_instant_triggers >= 1:
+  #             single_instant_trigger_by_sat += 1
+  #           if sat_reduced_instant_triggers >= 3:
+  #             single_instant_trigger_by_comparison += 1
+  #           # 1s peak triggers
+  #           if const_peak_snr >= self.snr_min:
+  #             single_peak_trigger_by_const += 1
+  #           if sat_peak_triggers >= 1:
+  #             single_peak_trigger_by_sat += 1
+  #           if sat_reduced_peak_triggers >= 3:
+  #             single_peak_trigger_by_comparison += 1
+  #           # T90 mean triggers
+  #           if sim.const_data[number_off_sat].snr_single_t90 >= self.snr_min:
+  #             single_t90_trigger_by_const += 1
+  #           if sat_t90_triggers >= 1:
+  #             single_t90_trigger_by_sat += 1
+  #           if sat_reduced_t90_triggers >= 3:
+  #             single_t90_trigger_by_comparison += 1
+  #
+  #   print("The number of trigger for single events for the different technics are the following :")
+  #   print(" == Integration time for the trigger : 1s, mean flux == ")
+  #   print(f"   For a {self.snr_min} sigma trigger with the number of hits summed over the constellation :  {single_instant_trigger_by_const:.2f} triggers")
+  #   # print(f"   For a {self.snr_min} sigma trigger on at least one of the satellites :                      {single_instant_trigger_by_sat:.2f} triggers")
+  #   print(f"   For a {self.snr_min-2} sigma trigger in at least 3 satellites of the constellation :        {single_instant_trigger_by_comparison:.2f} triggers")
+  #   # print(" == Integration time for the trigger : T90, mean flux == ")
+  #   # print(f"   For a {self.snr_min} sigma trigger with the number of hits summed over the constellation : {single_t90_trigger_by_const} triggers")
+  #   # print(f"   For a {self.snr_min} sigma trigger on at least one of the satellites : {single_t90_trigger_by_sat} triggers")
+  #   # print(f"   For a {self.snr_min-2} sigma trigger in at least 3 satellites of the constellation : {single_t90_trigger_by_comparison} triggers")
+  #   print("The number of trigger using GBM pflux for an energy range between 10keV and 1MeV are the following :")
+  #   print(" == Integration time for the trigger : 1s, peak flux == ")
+  #   print(f"   For a {self.snr_min} sigma trigger with the number of hits summed over the constellation :  {single_peak_trigger_by_const:.2f} triggers")
+  #   # print(f"   For a {self.snr_min} sigma trigger on at least one of the satellites :                      {single_peak_trigger_by_sat:.2f} triggers")
+  #   print(f"   For a {self.snr_min-2} sigma trigger in at least 3 satellites of the constellation :        {single_peak_trigger_by_comparison:.2f} triggers")
+  #   print("=============================================")
+  #   print(f" Over the {total_in_view} GRBs simulated in the constellation field of view")
+  #
+  #   print("================================================================================================")
+  #   print("== Triggers according to GBM method")
+  #   print("================================================================================================")
+  #   # bin_widths = [0.01, 0.05, 0.1, 0.25, 0.5, 1, 2, 10]
+  #   all_cat = Catalog(self.cat_file, self.sttype)
+  #   total_in_view = 0
+  #   bin_widths = [0.064, 0.256, 1.024]
+  #   sat_trigger_counter = 0
+  #   const_trigger_counter = 0
+  #   for source in self.alldata:
+  #     if source is not None:
+  #       for ite_sim, sim in enumerate(source):
+  #         if sim is not None:
+  #           total_in_view += 1
+  #           # Getting the snrs for all satellites and the constellation
+  #           list_bins = [np.arange(0, source.source_duration + width, width) for width in bin_widths]
+  #           centroid_bins = [(list_bin[1:] + list_bin[:-1]) / 2 for list_bin in list_bins]
+  #           sat_snr_list = []
+  #           sat_trigg = 0
+  #           for sat_ite, sat in enumerate(sim):
+  #             if sat is not None:
+  #               if len(np.concatenate((sat.compton_time, sat.single_time))) == 0:
+  #                 sat_trigg += 0
+  #               else:
+  #                 temp_hist = [np.histogram(np.concatenate((sat.compton_time, sat.single_time)), bins=list_bin)[0] for list_bin in list_bins]
+  #                 arg_max_bin = [np.argmax(val_hist) for val_hist in temp_hist]
+  #                 # for index1, arg_max1 in enumerate(arg_max_bin):
+  #                 #   for index2, arg_max2 in enumerate(arg_max_bin[index1 + 1:]):
+  #                 #     if not compatibility_test(centroid_bins[index1][arg_max1], bin_widths[index1], centroid_bins[index1 + 1 + index2][arg_max2], bin_widths[index1 + 1 + index2]):
+  #                 # print(f"Incompatibility between bins {bin_widths[index1]} and {bin_widths[index2]} for {source.source_name}, sim {ite_sim} and sat {sat_ite}")
+  #                 # print(f"     Centroids of the incompatible bins : {centroid_bins[index1][arg_max1]} and {centroid_bins[index1 + 1 + index2][arg_max2]}")
+  #                 snr_list = [calc_snr(temp_hist[index][arg_max_bin[index]], (sat.single_b_rate + sat.compton_b_rate) * bin_widths[index]) for index in range(len(arg_max_bin))]
+  #                 sat_snr_list.append(snr_list)
+  #                 if max(snr_list) > 3:
+  #                   sat_trigg += 1
+  #           if sim.const_data[number_off_sat] is not None:
+  #             if len(np.concatenate((sim.const_data[number_off_sat].compton_time, sim.const_data[number_off_sat].single_time))) == 0:
+  #               const_snr = [0]
+  #             else:
+  #               temp_hist = [np.histogram(np.concatenate((sim.const_data[number_off_sat].compton_time, sim.const_data[number_off_sat].single_time)), bins=list_bin)[0] for list_bin in list_bins]
+  #               arg_max_bin = [np.argmax(val_hist) for val_hist in temp_hist]
+  #               # for index1, arg_max1 in enumerate(arg_max_bin):
+  #               #   for index2, arg_max2 in enumerate(arg_max_bin[index1 + 1:]):
+  #               #     if not compatibility_test(centroid_bins[index1][arg_max1], bin_widths[index1], centroid_bins[index1 + 1 + index2][arg_max2], bin_widths[index1 + 1 + index2]):
+  #               # print(f"Incompatibility between bins {bin_widths[index1]} and {bin_widths[index2]} for {source.source_name}, sim {ite_sim} and constellation")
+  #               # print(f"     Centroids of the incompatible bins : {centroid_bins[index1][arg_max1]} and {centroid_bins[index1 + 1 + index2][arg_max2]}")
+  #               const_snr = [calc_snr(temp_hist[index][arg_max_bin[index]], (sim.const_data[number_off_sat].single_b_rate + sim.const_data[number_off_sat].compton_b_rate) * bin_widths[index]) for index in range(len(arg_max_bin))]
+  #           else:
+  #             const_snr = [0]
+  #           if sat_trigg >= 4:
+  #             sat_trigger_counter += 1
+  #           if max(const_snr) >= 6:
+  #             const_trigger_counter += 1
+  #           else:
+  #             for ite, name in enumerate(all_cat.name):
+  #               if name == source.source_name:
+  #                 ener_fluence = float(all_cat.fluence[ite])
+  #             print(max(const_snr), source.source_duration, sim.dec_world_frame, ener_fluence)
+  #   print(
+  #     f"   For a 6 sigma trigger with the number of hits summed over the constellation :  {const_trigger_counter:.2f} triggers")
+  #   print(
+  #     f"   For a 3 sigma trigger in at least 4 satellites of the constellation :        {sat_trigger_counter:.2f} triggers")
+  #   print("=============================================")
+  #   print(f" Over the {total_in_view} GRBs simulated in the constellation field of view")
+
   def fov_const(self, num_val=500, show=True, save=False):
     """
     Plots a map of the sensibility over the sky for number of sat in sight, single events and compton events
@@ -501,167 +689,6 @@ class AllSourceData:
     print(f"The mean number of satellite in sight is :       {np.mean(detec_sum):.4f} satellites")
     print(f"The mean effective area for compton events is :  {np.mean(detec_sum_compton):.4f} cm²")
     print(f"The mean effective area for single events is :   {np.mean(detec_sum_single):.4f} cm²")
-
-  def count_triggers(self, number_off_sat=0):
-    """
-    Function to count and print the number of triggers using different criterions
-    """
-    total_in_view = 0
-    # Setting 1s mean triggers counter
-    single_instant_trigger_by_const = 0
-    single_instant_trigger_by_sat = 0
-    single_instant_trigger_by_comparison = 0
-    # Setting 1s peak triggers counter
-    single_peak_trigger_by_const = 0
-    single_peak_trigger_by_sat = 0
-    single_peak_trigger_by_comparison = 0
-    # Setting T90 mean triggers counter
-    single_t90_trigger_by_const = 0
-    single_t90_trigger_by_sat = 0
-    single_t90_trigger_by_comparison = 0
-
-    for source in self.alldata:
-      if source is not None:
-        for sim in source:
-          if sim is not None:
-            total_in_view += 1
-            #    Setting the trigger count to 0
-            # Instantaneous trigger
-            sat_instant_triggers = 0
-            sat_reduced_instant_triggers = 0
-            # Peak trigger
-            sat_peak_triggers = 0
-            sat_reduced_peak_triggers = 0
-            # t90 trigger
-            sat_t90_triggers = 0
-            sat_reduced_t90_triggers = 0
-            # Calculation for the individual sats
-            for sat in sim:
-              if sat is not None:
-                if sat.snr_single >= self.snr_min:
-                  sat_instant_triggers += 1
-                if sat.snr_single >= self.snr_min - 2:
-                  sat_reduced_instant_triggers += 1
-                if source.best_fit_p_flux is None:
-                  sat_peak_snr = sat.snr_single
-                else:
-                  sat_peak_snr = calc_snr(rescale_cr_to_GBM_pf(sat.single_cr, source.best_fit_mean_flux, source.best_fit_p_flux), sat.single_b_rate)
-                if sat_peak_snr >= self.snr_min:
-                  sat_peak_triggers += 1
-                if sat_peak_snr >= self.snr_min - 2:
-                  sat_reduced_peak_triggers += 1
-                if sat.snr_single_t90 >= self.snr_min:
-                  sat_t90_triggers += 1
-                if sat.snr_single_t90 >= self.snr_min - 2:
-                  sat_reduced_t90_triggers += 1
-            # Calculation for the whole constellation
-            if source.best_fit_p_flux is None:
-              const_peak_snr = sim.const_data[number_off_sat].snr_single
-            else:
-              const_peak_snr = calc_snr(rescale_cr_to_GBM_pf(sim.const_data[number_off_sat].single_cr, source.best_fit_mean_flux, source.best_fit_p_flux), sim.const_data[number_off_sat].single_b_rate)
-            # 1s mean triggers
-            if sim.const_data[number_off_sat].snr_single >= self.snr_min:
-              single_instant_trigger_by_const += 1
-            if sat_instant_triggers >= 1:
-              single_instant_trigger_by_sat += 1
-            if sat_reduced_instant_triggers >= 3:
-              single_instant_trigger_by_comparison += 1
-            # 1s peak triggers
-            if const_peak_snr >= self.snr_min:
-              single_peak_trigger_by_const += 1
-            if sat_peak_triggers >= 1:
-              single_peak_trigger_by_sat += 1
-            if sat_reduced_peak_triggers >= 3:
-              single_peak_trigger_by_comparison += 1
-            # T90 mean triggers
-            if sim.const_data[number_off_sat].snr_single_t90 >= self.snr_min:
-              single_t90_trigger_by_const += 1
-            if sat_t90_triggers >= 1:
-              single_t90_trigger_by_sat += 1
-            if sat_reduced_t90_triggers >= 3:
-              single_t90_trigger_by_comparison += 1
-
-    print("The number of trigger for single events for the different technics are the following :")
-    print(" == Integration time for the trigger : 1s, mean flux == ")
-    print(f"   For a {self.snr_min} sigma trigger with the number of hits summed over the constellation :  {single_instant_trigger_by_const:.2f} triggers")
-    # print(f"   For a {self.snr_min} sigma trigger on at least one of the satellites :                      {single_instant_trigger_by_sat:.2f} triggers")
-    print(f"   For a {self.snr_min-2} sigma trigger in at least 3 satellites of the constellation :        {single_instant_trigger_by_comparison:.2f} triggers")
-    # print(" == Integration time for the trigger : T90, mean flux == ")
-    # print(f"   For a {self.snr_min} sigma trigger with the number of hits summed over the constellation : {single_t90_trigger_by_const} triggers")
-    # print(f"   For a {self.snr_min} sigma trigger on at least one of the satellites : {single_t90_trigger_by_sat} triggers")
-    # print(f"   For a {self.snr_min-2} sigma trigger in at least 3 satellites of the constellation : {single_t90_trigger_by_comparison} triggers")
-    print("The number of trigger using GBM pflux for an energy range between 10keV and 1MeV are the following :")
-    print(" == Integration time for the trigger : 1s, peak flux == ")
-    print(f"   For a {self.snr_min} sigma trigger with the number of hits summed over the constellation :  {single_peak_trigger_by_const:.2f} triggers")
-    # print(f"   For a {self.snr_min} sigma trigger on at least one of the satellites :                      {single_peak_trigger_by_sat:.2f} triggers")
-    print(f"   For a {self.snr_min-2} sigma trigger in at least 3 satellites of the constellation :        {single_peak_trigger_by_comparison:.2f} triggers")
-    print("=============================================")
-    print(f" Over the {total_in_view} GRBs simulated in the constellation field of view")
-
-    print("================================================================================================")
-    print("== Triggers according to GBM method")
-    print("================================================================================================")
-    # bin_widths = [0.01, 0.05, 0.1, 0.25, 0.5, 1, 2, 10]
-    all_cat = Catalog(self.cat_file, self.sttype)
-    total_in_view = 0
-    bin_widths = [0.064, 0.256, 1.024]
-    sat_trigger_counter = 0
-    const_trigger_counter = 0
-    for source in self.alldata:
-      if source is not None:
-        for ite_sim, sim in enumerate(source):
-          if sim is not None:
-            total_in_view += 1
-            # Getting the snrs for all satellites and the constellation
-            list_bins = [np.arange(0, source.source_duration + width, width) for width in bin_widths]
-            centroid_bins = [(list_bin[1:] + list_bin[:-1]) / 2 for list_bin in list_bins]
-            sat_snr_list = []
-            sat_trigg = 0
-            for sat_ite, sat in enumerate(sim):
-              if sat is not None:
-                if len(np.concatenate((sat.compton_time, sat.single_time))) == 0:
-                  sat_trigg += 0
-                else:
-                  temp_hist = [np.histogram(np.concatenate((sat.compton_time, sat.single_time)), bins=list_bin)[0] for list_bin in list_bins]
-                  arg_max_bin = [np.argmax(val_hist) for val_hist in temp_hist]
-                  # for index1, arg_max1 in enumerate(arg_max_bin):
-                  #   for index2, arg_max2 in enumerate(arg_max_bin[index1 + 1:]):
-                  #     if not compatibility_test(centroid_bins[index1][arg_max1], bin_widths[index1], centroid_bins[index1 + 1 + index2][arg_max2], bin_widths[index1 + 1 + index2]):
-                  # print(f"Incompatibility between bins {bin_widths[index1]} and {bin_widths[index2]} for {source.source_name}, sim {ite_sim} and sat {sat_ite}")
-                  # print(f"     Centroids of the incompatible bins : {centroid_bins[index1][arg_max1]} and {centroid_bins[index1 + 1 + index2][arg_max2]}")
-                  snr_list = [calc_snr(temp_hist[index][arg_max_bin[index]], (sat.single_b_rate + sat.compton_b_rate) * bin_widths[index]) for index in range(len(arg_max_bin))]
-                  sat_snr_list.append(snr_list)
-                  if max(snr_list) > 3:
-                    sat_trigg += 1
-            if sim.const_data[number_off_sat] is not None:
-              if len(np.concatenate((sim.const_data[number_off_sat].compton_time, sim.const_data[number_off_sat].single_time))) == 0:
-                const_snr = [0]
-              else:
-                temp_hist = [np.histogram(np.concatenate((sim.const_data[number_off_sat].compton_time, sim.const_data[number_off_sat].single_time)), bins=list_bin)[0] for list_bin in list_bins]
-                arg_max_bin = [np.argmax(val_hist) for val_hist in temp_hist]
-                # for index1, arg_max1 in enumerate(arg_max_bin):
-                #   for index2, arg_max2 in enumerate(arg_max_bin[index1 + 1:]):
-                #     if not compatibility_test(centroid_bins[index1][arg_max1], bin_widths[index1], centroid_bins[index1 + 1 + index2][arg_max2], bin_widths[index1 + 1 + index2]):
-                # print(f"Incompatibility between bins {bin_widths[index1]} and {bin_widths[index2]} for {source.source_name}, sim {ite_sim} and constellation")
-                # print(f"     Centroids of the incompatible bins : {centroid_bins[index1][arg_max1]} and {centroid_bins[index1 + 1 + index2][arg_max2]}")
-                const_snr = [calc_snr(temp_hist[index][arg_max_bin[index]], (sim.const_data[number_off_sat].single_b_rate + sim.const_data[number_off_sat].compton_b_rate) * bin_widths[index]) for index in range(len(arg_max_bin))]
-            else:
-              const_snr = [0]
-            if sat_trigg >= 4:
-              sat_trigger_counter += 1
-            if max(const_snr) >= 6:
-              const_trigger_counter += 1
-            else:
-              for ite, name in enumerate(all_cat.name):
-                if name == source.source_name:
-                  ener_fluence = float(all_cat.fluence[ite])
-              print(max(const_snr), source.source_duration, sim.dec_world_frame, ener_fluence)
-    print(
-      f"   For a 6 sigma trigger with the number of hits summed over the constellation :  {const_trigger_counter:.2f} triggers")
-    print(
-      f"   For a 3 sigma trigger in at least 4 satellites of the constellation :        {sat_trigger_counter:.2f} triggers")
-    print("=============================================")
-    print(f" Over the {total_in_view} GRBs simulated in the constellation field of view")
 
   def grb_map_plot(self, mode="no_cm"):
     """
