@@ -114,27 +114,27 @@ class AllSatData(list):
         ###############################################################################################################
         # The fieldselected here stay as they are with their basic initialisation (most of the time None)
         # Fields to be used soon : "fits", "pa", "fit_compton_cr", "pa_err", "fit_compton_cr_err", "fit_goodness",
-        if item not in ["sat_dec_wf", "sat_ra_wf", "num_sat", "grb_dec_sat_frame", "grb_ra_sat_frame", "expected_pa",
+        if item not in ["sat_dec_wf", "sat_ra_wf", "grb_dec_sat_frame", "grb_ra_sat_frame", "expected_pa",
                         "mdp", "hits_snrs", "compton_snrs", "single_snrs"]:
           #############################################################################################################
           # Filtering the satellites for some items
           #############################################################################################################
           if item in ["compton_b_rate", "mu100_ref", "mu100_err_ref", "s_eff_compton_ref", "compton_ener",
                       "compton_second", "compton_time", "pol", "polar_from_position", "polar_from_energy", "arm_pol",
-                      "s_eff_compton", "compton", "compton_cr", "const_beneficial_compton"]:
+                      "s_eff_compton", "compton", "compton_cr"]:
             selected_sats = []
             for index_sat in considered_sats:
               if self[index_sat].const_beneficial_compton:
                 selected_sats.append(index_sat)
             selected_sats = np.array(selected_sats)
           elif item in ["single_b_rate", "s_eff_single_ref", "single_ener", "single_time", "s_eff_single", "single",
-                        "single_cr", "const_beneficial_single"]:
+                        "single_cr"]:
             selected_sats = []
             for index_sat in considered_sats:
               if self[index_sat].const_beneficial_single:
                 selected_sats.append(index_sat)
             selected_sats = np.array(selected_sats)
-          elif item in ["hit_b_rate", "hit_time", "calor", "dsssd", "side", "const_beneficial_trigger"]:
+          elif item in ["hit_b_rate", "hit_time", "calor", "dsssd", "side"]:
             selected_sats = []
             for index_sat in considered_sats:
               if self[index_sat].const_beneficial_trigger:
@@ -217,7 +217,7 @@ class AllSatData(list):
           #############################################################################################################
           # Appened
           #############################################################################################################
-          elif item in ["const_beneficial_compton", "const_beneficial_single", "const_beneficial_trigger"]:
+          elif item in ["num_sat", "const_beneficial_compton", "const_beneficial_single", "const_beneficial_trigger"]:
             temp_list = []
             for num_sat in selected_sats:
               temp_list.append(getattr(self[num_sat], item))
