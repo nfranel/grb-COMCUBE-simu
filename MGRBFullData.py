@@ -342,8 +342,8 @@ class GRBFullData:
     thresh_1024 = 3.6
     thresh_2048 = 3.5
     thresh_4096 = 3.4
-    # if (self.hits_snrs[0] >= thresh_16 or self.hits_snrs[1] >= thresh_32 or self.hits_snrs[2] >= thresh_64 or self.hits_snrs[3] >= thresh_128 or self.hits_snrs[4] >= thresh_256 or self.hits_snrs[5] >= thresh_512 or self.hits_snrs[6] >= thresh_1024 or self.hits_snrs[7] >= thresh_2048 or self.hits_snrs[8] >= thresh_4096):
-    if (self.hits_snrs[1] >= thresh_32 or self.hits_snrs[2] >= thresh_64 or self.hits_snrs[3] >= thresh_128 or self.hits_snrs[4] >= thresh_256 or self.hits_snrs[5] >= thresh_512 or self.hits_snrs[6] >= thresh_1024 or self.hits_snrs[7] >= thresh_2048 or self.hits_snrs[8] >= thresh_4096):
+    if (self.hits_snrs[0] >= thresh_16 or self.hits_snrs[1] >= thresh_32 or self.hits_snrs[2] >= thresh_64 or self.hits_snrs[3] >= thresh_128 or self.hits_snrs[4] >= thresh_256 or self.hits_snrs[5] >= thresh_512 or self.hits_snrs[6] >= thresh_1024 or self.hits_snrs[7] >= thresh_2048 or self.hits_snrs[8] >= thresh_4096):
+    # if (self.hits_snrs[1] >= thresh_32 or self.hits_snrs[2] >= thresh_64 or self.hits_snrs[3] >= thresh_128 or self.hits_snrs[4] >= thresh_256 or self.hits_snrs[5] >= thresh_512 or self.hits_snrs[6] >= thresh_1024 or self.hits_snrs[7] >= thresh_2048 or self.hits_snrs[8] >= thresh_4096):
       self.const_beneficial_trigger = True
     else:
       self.const_beneficial_trigger = False
