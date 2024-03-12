@@ -283,7 +283,7 @@ class GRBFullData:
     Calculates the snr for different integration time
     :param source_duration: duration of the source
     """
-    integration_times = [0.032, 0.064, 0.128, 0.256, 0.512, 1.024, 2.048, 4.096, source_duration]
+    integration_times = [0.016, 0.032, 0.064, 0.128, 0.256, 0.512, 1.024, 2.048, 4.096, source_duration]
 
     self.hits_snrs = []
     self.compton_snrs = []
@@ -333,6 +333,7 @@ class GRBFullData:
     """
     Sets const_beneficial_compton to True is the value for a satellite is worth considering
     """
+    thresh_16 = 4.7
     thresh_32 = 4.3
     thresh_64 = 4.2
     thresh_128 = 4
@@ -341,7 +342,8 @@ class GRBFullData:
     thresh_1024 = 3.6
     thresh_2048 = 3.5
     thresh_4096 = 3.4
-    if (self.hits_snrs[0] >= thresh_32 or self.hits_snrs[1] >= thresh_64 or self.hits_snrs[2] >= thresh_128 or self.hits_snrs[3] >= thresh_256 or self.hits_snrs[4] >= thresh_512 or self.hits_snrs[5] >= thresh_1024 or self.hits_snrs[6] >= thresh_2048 or self.hits_snrs[7] >= thresh_4096):
+    if (self.hits_snrs[0] >= thresh_16 or self.hits_snrs[1] >= thresh_32 or self.hits_snrs[2] >= thresh_64 or self.hits_snrs[3] >= thresh_128 or self.hits_snrs[4] >= thresh_256 or self.hits_snrs[5] >= thresh_512 or self.hits_snrs[6] >= thresh_1024 or self.hits_snrs[7] >= thresh_2048 or self.hits_snrs[8] >= thresh_4096):
+    # if (self.hits_snrs[1] >= thresh_32 or self.hits_snrs[2] >= thresh_64 or self.hits_snrs[3] >= thresh_128 or self.hits_snrs[4] >= thresh_256 or self.hits_snrs[5] >= thresh_512 or self.hits_snrs[6] >= thresh_1024 or self.hits_snrs[7] >= thresh_2048 or self.hits_snrs[8] >= thresh_4096):
       self.const_beneficial_trigger = True
     else:
       self.const_beneficial_trigger = False
