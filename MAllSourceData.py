@@ -399,6 +399,8 @@ class AllSourceData:
                   sat_counter += 1
             if sat_counter >= 3:
               const_trigger_counter += 1
+            else:
+              print("Not triggered : ", source.source_name, source.source_duration, sim.dec_world_frame, source.source_energy_fluence)
     print(f"   Trigger for at least 3 satellites :        {const_trigger_counter:.2f} triggers")
     print("=============================================")
     print(f" Over the {total_in_view} GRBs simulated in the constellation field of view")
