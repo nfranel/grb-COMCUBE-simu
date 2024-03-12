@@ -381,7 +381,7 @@ class AllSourceData:
     Function to count and print the number of triggers using different criterions
     """
     print("================================================================================================")
-    print("== Triggers according to GBM method")
+    print(f"== Triggers according to GBM method with   {number_off_sat}   down satellite")
     print("================================================================================================")
     total_in_view = 0
     const_trigger_counter = 0
@@ -391,10 +391,12 @@ class AllSourceData:
           if sim is not None:
             total_in_view += 1
             sat_counter = 0
-            for sat in sim:
-              if sat is not None:
-                if sat.const_beneficial_trigger:
-                  sat_counter += 1
+            # for ite_sat, sat in enumerate(sim):
+            #   if sat is not None and ite_sat not in sat.index_down[number_off_sat]:
+            #     if sat.const_beneficial_trigger:
+            for trigger_bool in sim.const_data[number_off_sat].const_beneficial_trigger:
+              if trigger_bool:
+                sat_counter += 1
             if sat_counter >= 3:
               const_trigger_counter += 1
             else:

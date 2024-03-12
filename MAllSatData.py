@@ -48,6 +48,7 @@ class AllSatData(list):
     list.__init__(self, temp_list)
     # Attribute meaningful after the creation of the constellation
     self.const_data = None
+    # self.index_down = None
 
   def analyze(self, source_duration, source_fluence, sats_analysis):
     """
@@ -107,6 +108,7 @@ class AllSatData(list):
     ###################################################################################################################
     list_considered_sat = [sat_const, sat_const_1off, sat_const_2off]
     self.const_data = [const_0off_data, const_1off_data, const_2off_data]
+    # self.index_down = [None, (off_sat), (off_sat1, off_sat2)]
     for ite_const, considered_sats in enumerate(list_considered_sat):
       for item in self.const_data[ite_const].__dict__.keys():
         ###############################################################################################################
