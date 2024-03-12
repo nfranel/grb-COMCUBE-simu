@@ -313,7 +313,7 @@ class GRBFullData:
       sin_max_hist = hit_hist[sin_argmax]
       self.single_snrs.append(calc_snr(sin_max_hist, self.single_b_rate * int_time))
 
-  def set_beneficial_compton(self, threshold=1):
+  def set_beneficial_compton(self, threshold=2.6):
     """
     Sets const_beneficial_compton to True is the value for a satellite is worth considering
     :param threshold: the mdp threshold required to consider a satellite is worth
