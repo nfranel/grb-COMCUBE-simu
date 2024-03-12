@@ -329,8 +329,8 @@ class AllSourceData:
         print(f"   MDP<=10%  : {np.sum(np.where(mdp_list <= 10, 1, 0)) * self.weights}")
     elif type(savefile) is str:
       with open(savefile, "w") as f:
-        f.write("Result file for the MDP threshold study")
-        f.write("Threshold | MDP100 | MDP90 | MDP80 | MDP70 | MDP60 | MDP50 | MDP40 | MDP30 | MDP20 | MDP10 | Number detected | Number mdp <= 100")
+        f.write("Result file for the MDP threshold study\n")
+        f.write("Threshold | MDP100 | MDP90 | MDP80 | MDP70 | MDP60 | MDP50 | MDP40 | MDP30 | MDP20 | MDP10 | Number detected | Number mdp <= 100\n")
         for threshold_mdp in mdp_thresh_list:
           self.set_beneficial(threshold_mdp)
           self.make_const()
@@ -359,7 +359,7 @@ class AllSourceData:
           mdp20 = np.sum(np.where(mdp_list <= 20, 1, 0)) * self.weights
           mdp10 = np.sum(np.where(mdp_list <= 10, 1, 0)) * self.weights
 
-          f.write(f"{threshold_mdp} | {mdp100} | {mdp90} | {mdp80} | {mdp70} | {mdp60} | {mdp50} | {mdp40} | {mdp30} | {mdp20} | {mdp10} | {number_detected} | {len(mdp_list)}")
+          f.write(f"{threshold_mdp} | {mdp100} | {mdp90} | {mdp80} | {mdp70} | {mdp60} | {mdp50} | {mdp40} | {mdp30} | {mdp20} | {mdp10} | {number_detected} | {len(mdp_list)}\n")
 
           print("=                        MDP detection rates                        =")
           print(f"   MDP<=100% : {mdp100}")
