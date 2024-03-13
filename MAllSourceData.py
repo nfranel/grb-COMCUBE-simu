@@ -415,7 +415,7 @@ class AllSourceData:
       no_trig_dec = np.array(no_trig_dec, dtype=float)
       no_trig_e_fluence = np.array(no_trig_e_fluence, dtype=float)
 
-      t1 = f"Not triggered GRB distribution with {number_off_sat} satellite down over {total_in_view} GRB simulated"
+      t1 = f"Not triggered GRB distribution with {number_off_sat} satellite down\n{len(no_trig_duration)} not triggered over {total_in_view} GRB simulated"
       fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(27, 6))
       fig.suptitle(t1)
       ax1.hist(no_trig_duration, bins=20, histtype="step")
@@ -424,7 +424,7 @@ class AllSourceData:
       ax2.hist(no_trig_dec, bins=20, histtype="step")
       ax2.set(xlabel="GRB dec in world frame (°)", ylabel="Number of not triggered", xscale="linear", yscale="linear")
 
-      ax3.hist(no_trig_e_fluence, bins=20, histtype="step")
+      ax3.hist(no_trig_e_fluence, bins=np.logspace(int(np.log10(np.min(no_trig_e_fluence))), int(np.log10(np.max(no_trig_e_fluence)) + 1), 20), histtype="step")
       ax3.set(xlabel="GRB energy fluence (erg/cm²)", ylabel="Number of not triggered", xscale="log", yscale="linear")
       plt.show()
 
