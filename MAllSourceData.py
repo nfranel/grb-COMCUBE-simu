@@ -416,7 +416,7 @@ class AllSourceData:
       no_trig_e_fluence = np.array(no_trig_e_fluence, dtype=float)
 
       t1 = f"Not triggered GRB distribution with {number_off_sat} satellite down over {total_in_view} GRB simulated"
-      fig, (ax1, ax2, ax3) = plt.subplot(projection=None, figsize=(27, 6))
+      fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(27, 6))
       fig.suptitle(t1)
       ax1.hist(no_trig_duration, bins=20, histtype="step")
       ax1.set(xlabel="GRB duration (s)", ylabel="Number of not triggered", xscale="linear", yscale="linear")
