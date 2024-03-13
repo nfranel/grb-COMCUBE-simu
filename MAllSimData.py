@@ -46,8 +46,9 @@ class AllSimData(list):
       else:
         self.best_fit_p_flux = float(getattr(cat_data, f"{getattr(cat_data, 'pflx_best_fitting_model')[source_ite].rstrip()}_phtflux")[source_ite])
       self.best_fit_mean_flux = float(getattr(cat_data, f"{getattr(cat_data, 'flnc_best_fitting_model')[source_ite].rstrip()}_phtflux")[source_ite])
-      # Retrieving fluence of the source [photons/cm2]
+      # Retrieving fluence of the source [photons/cm²]
       self.source_fluence = calc_fluence(cat_data, source_ite, options[0]) * self.source_duration
+      # Retrieving energy fluence of the source [erg/cm²]
       self.source_energy_fluence = float(cat_data.fluence[source_ite])
     if param_sim_duration.isdigit():
       sim_duration = float(param_sim_duration)

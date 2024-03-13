@@ -376,7 +376,7 @@ class AllSourceData:
     else:
       print("Type error for savefile, must be str or None")
 
-  def count_triggers(self, number_off_sat=0):
+  def count_triggers(self, number_off_sat=0, graphs=False):
     """
     Function to count and print the number of triggers using different criterions
     """
@@ -385,15 +385,16 @@ class AllSourceData:
     print("================================================================================================")
     total_in_view = 0
     const_trigger_counter = 0
+    no_trig_name = []
+    no_trig_duration = []
+    no_trig_dec = []
+    no_trig_e_fluence = []
     for source in self.alldata:
       if source is not None:
         for ite_sim, sim in enumerate(source):
           if sim is not None:
             total_in_view += 1
             sat_counter = 0
-            # for ite_sat, sat in enumerate(sim):
-            #   if sat is not None and ite_sat not in sat.index_down[number_off_sat]:
-            #     if sat.const_beneficial_trigger:
             for trigger_bool in sim.const_data[number_off_sat].const_beneficial_trigger:
               if trigger_bool:
                 sat_counter += 1
@@ -401,9 +402,32 @@ class AllSourceData:
               const_trigger_counter += 1
             else:
               print("Not triggered : ", source.source_name, source.source_duration, sim.dec_world_frame, source.source_energy_fluence)
+              no_trig_name.append(source.source_name)
+              no_trig_duration.append(source.source_duration)
+              no_trig_dec.append(sim.dec_world_frame)
+              no_trig_e_fluence.append(source.source_energy_fluence)
+
     print(f"   Trigger for at least 3 satellites :        {const_trigger_counter:.2f} triggers")
     print("=============================================")
     print(f" Over the {total_in_view} GRBs simulated in the constellation field of view")
+    if graphs:
+      no_trig_duration = np.array(no_trig_duration, dtype=float)
+      no_trig_dec = np.array(no_trig_dec, dtype=float)
+      no_trig_e_fluence = np.array(no_trig_e_fluence, dtype=float)
+
+      t1 = f"Not triggered GRB distribution with {number_off_sat} satellite down over {total_in_view} GRB simulated"
+      fig, (ax1, ax2, ax3) = plt.subplot(projection=None, figsize=(27, 6))
+      fig.suptitle(t1)
+      ax1.hist(no_trig_duration, bins=20, histtype="step")
+      ax1.set(xlabel="GRB duration (s)", ylabel="Number of not triggered", xscale="linear", yscale="linear")
+
+      ax2.hist(no_trig_dec, bins=20, histtype="step")
+      ax2.set(xlabel="GRB dec in world frame (°)", ylabel="Number of not triggered", xscale="linear", yscale="linear")
+
+      ax3.hist(no_trig_e_fluence, bins=20, histtype="step")
+      ax3.set(xlabel="GRB energy fluence (erg/cm²)", ylabel="Number of not triggered", xscale="log", yscale="linear")
+      plt.show()
+
 
   # def count_triggers(self, number_off_sat=0):
   #   """
