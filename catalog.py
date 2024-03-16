@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.colors as colors
+from funcmod import comp, band, plaw, sbpl
 
 # Version 2, Created by Adrien Laviron, updated by Nathan Franel
 
@@ -269,6 +270,9 @@ class Catalog:
     ax1.hist(plaw_ampl, bins=nbins)
     ax2.hist(plaw_index, bins=nbins)
     ax3.hist(plaw_pivot, bins=nbins)
+    print(f"plaw mean ampl : {np.mean(plaw_ampl)}")
+    print(f"plaw mean index : {np.mean(plaw_index)}")
+    print(f"plaw mean pivot : {np.mean(plaw_pivot)}")
 
     ax1.set(xlabel="Amplitude (photon/cm2/s/keV)", ylabel="Number of GRBs")
     ax2.set(xlabel="Index", ylabel="Number of GRBs")
@@ -284,6 +288,11 @@ class Catalog:
     ax2.hist(comp_index, bins=nbins)
     ax3.hist(comp_epeak, bins=nbins)
     ax4.hist(comp_pivot, bins=nbins)
+    print(f"comp mean ampl : {np.mean(comp_ampl)}")
+    print(f"comp mean index : {np.mean(comp_index)}")
+    print(f"comp mean epeak : {np.mean(comp_epeak)}")
+    print(f"comp mean pivot : {np.mean(comp_pivot)}")
+
 
     ax1.set(xlabel="Amplitude (photon/cm2/s/keV)", ylabel="Number of GRBs")
     ax2.set(xlabel="Index", ylabel="Number of GRBs")
@@ -300,6 +309,11 @@ class Catalog:
     ax2.hist(band_alpha, bins=nbins)
     ax3.hist(band_beta, bins=nbins)
     ax4.hist(band_epeak, bins=nbins)
+    print(f"band mean ampl : {np.mean(band_ampl)}")
+    print(f"band mean alpha : {np.mean(band_alpha)}")
+    print(f"band mean beta : {np.mean(band_beta)}")
+    print(f"band mean pivot : {np.mean(band_epeak)}")
+
 
     ax1.set(xlabel="Amplitude (photon/cm2/s/keV)", ylabel="Number of GRBs")
     ax2.set(xlabel="Alpha index", ylabel="Number of GRBs")
@@ -318,6 +332,13 @@ class Catalog:
     ax4.hist(sbpl_brken, bins=nbins)
     ax5.hist(sbpl_brksc, bins=nbins)
     ax6.hist(sbpl_pivot, bins=nbins)
+    print(f"sbpl mean ampl : {np.mean(sbpl_ampl)}")
+    print(f"sbpl mean indx1 : {np.mean(sbpl_indx1)}")
+    print(f"sbpl mean indx2 : {np.mean(sbpl_indx2)}")
+    print(f"sbpl mean brken : {np.mean(sbpl_brken)}")
+    print(f"sbpl mean brksc : {np.mean(sbpl_brksc)}")
+    print(f"sbpl mean pivot : {np.mean(sbpl_pivot)}")
+
 
     ax1.set(xlabel="Amplitude (photon/cm2/s/keV)", ylabel="Number of GRBs")
     ax2.set(xlabel="Index 1", ylabel="Number of GRBs")
@@ -326,4 +347,76 @@ class Catalog:
     ax5.set(xlabel="Break scale (keV)", ylabel="Number of GRBs")
     ax6.set(xlabel="Pivot energy (keV)", ylabel="Number of GRBs")
 
+    plt.show()
+
+  def spectra_GBM_mean_param(self):
+    """
+    Plots the spectra comp, band, plaw, sbpl with GBM mean best fitting parameters
+    """
+    comp_mean_ampl = 0.016340622602951507
+    comp_mean_index = -0.8693237216017569
+    comp_mean_epeak = 363.1025391426563
+    comp_mean_pivot = 100.0
+
+    band_mean_ampl = 0.03930144912844037
+    band_mean_alpha = -0.8282043258256881
+    band_mean_beta = -2.2592566376146785
+    band_mean_pivot = 209.26818935779812
+
+    plaw_mean_ampl = 0.004935109612015504
+    plaw_mean_index = -1.569128538372093
+    plaw_mean_pivot = 100.0
+
+    sbpl_mean_ampl = 0.012727944041666668
+    sbpl_mean_indx1 = -0.9551795631944445
+    sbpl_mean_indx2 = -2.1827798513888887
+    sbpl_mean_brken = 162.59191256944445
+    sbpl_mean_brksc = 0.3
+    sbpl_mean_pivot = 100.0
+
+    tx = np.logspace(0, 4, 1000)
+
+    # e, ampl, index_l, ep, pivot=100
+    ty1 = comp(tx, comp_mean_ampl, comp_mean_index, comp_mean_epeak, comp_mean_pivot)
+    tyy1 = [tx[ite1]**2 * ty1[ite1] for ite1 in range(len(tx))]
+    # e, ampl, alpha, beta, ep, pivot=100
+    ty2 = [band(valx, band_mean_ampl, band_mean_alpha, band_mean_beta, band_mean_pivot) for valx in tx]
+    tyy2 = [tx[ite2]**2 * ty2[ite2] for ite2 in range(len(tx))]
+    # e, ampl, index_l, pivot=100
+    ty3 = plaw(tx, plaw_mean_ampl, plaw_mean_index, plaw_mean_pivot)
+    tyy3 = [tx[ite3]**2 * ty3[ite3] for ite3 in range(len(tx))]
+    # e, ampl, l1, l2, eb, delta, pivot=100
+    ty4 = sbpl(tx, sbpl_mean_ampl, sbpl_mean_indx1, sbpl_mean_indx2, sbpl_mean_brken, sbpl_mean_brksc, sbpl_mean_pivot)
+    tyy4 = [tx[ite4]**2 * ty4[ite4] for ite4 in range(len(tx))]
+
+    spec, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(18, 12))
+    plt.suptitle("GBM mean spectra (ph/cm2/keV/s)")
+    ax1.plot(tx, ty1)
+    ax1.axvline(comp_mean_epeak)
+    ax1.set(title="Comptonized spectrum", xscale="log", yscale="log")
+    ax2.plot(tx, ty2)
+    ax2.axvline(band_mean_pivot)
+    ax2.set(title="Band spectrum", xscale="log", yscale="log")
+    ax3.plot(tx, ty3)
+    ax3.axvline(plaw_mean_pivot)
+    ax3.set(title="Power law spectrum", xscale="log", yscale="log")
+    ax4.plot(tx, ty4)
+    ax4.axvline(sbpl_mean_brken)
+    ax4.set(title="Smoothly broken power law spectrum", xscale="log", yscale="log")
+    plt.show()
+
+    pow_spec, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(18, 12))
+    plt.suptitle("GBM mean power density spectra (keV/cm2/s)")
+    ax1.plot(tx, tyy1)
+    ax1.axvline(comp_mean_epeak)
+    ax1.set(title="Comptonized spectrum", xscale="log", yscale="log")
+    ax2.plot(tx, tyy2)
+    ax2.axvline(band_mean_pivot)
+    ax2.set(title="Band spectrum", xscale="log", yscale="log")
+    ax3.plot(tx, tyy3)
+    ax3.axvline(plaw_mean_pivot)
+    ax3.set(title="Power law spectrum", xscale="log", yscale="log")
+    ax4.plot(tx, tyy4)
+    ax4.axvline(sbpl_mean_brken)
+    ax4.set(title="Smoothly broken power law spectrum", xscale="log", yscale="log")
     plt.show()

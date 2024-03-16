@@ -1108,7 +1108,7 @@ def lon_verif(lon):
 #######################################################################################################
 def plaw(e, ampl, index_l, pivot=100):
   """
-  Power-law spectrum
+  Power-law spectrum (ph/cm2/keV/s)
   :param e: energy (keV)
   :param ampl: amplitude (ph/cm2/keV/s)
   :param index_l: spectral index
@@ -1120,7 +1120,7 @@ def plaw(e, ampl, index_l, pivot=100):
 
 def comp(e, ampl, index_l, ep, pivot=100):
   """
-  Comptonized spectrum
+  Comptonized spectrum (ph/cm2/keV/s)
   :param e: energy (keV)
   :param ampl: amplitude (ph/cm2/keV/s)
   :param index_l: spectral index
@@ -1133,7 +1133,7 @@ def comp(e, ampl, index_l, ep, pivot=100):
 
 def glog(e, ampl, ec, s):
   """
-  log10-gaussian spectrum model
+  log10-gaussian spectrum model (ph/cm2/keV/s)
   :param e: energy (keV)
   :param ampl: amplitude (ph/cm2/keV/s)
   :param ec: central energy (keV)
@@ -1145,7 +1145,7 @@ def glog(e, ampl, ec, s):
 
 def band(e, ampl, alpha, beta, ep, pivot=100):
   """
-  Band spectrum
+  Band spectrum (ph/cm2/keV/s)
   :param e: energy (keV)
   :param ampl: amplitude (ph/cm2/keV/s)
   :param alpha: low-energy spectral index
@@ -1163,7 +1163,7 @@ def band(e, ampl, alpha, beta, ep, pivot=100):
 
 def sbpl_sa(e, ampl, l1, l2, eb, delta, pivot=100):
   """
-  Smoothly broken power law spectrum
+  Smoothly broken power law spectrum (ph/cm2/keV/s)
   :param e: energy (keV)
   :param ampl: amplitude (ph/cm2/keV/s)
   :param l1: first powerlaw index
@@ -1180,7 +1180,7 @@ def sbpl_sa(e, ampl, l1, l2, eb, delta, pivot=100):
 
 def sbpl(e, ampl, l1, l2, eb, delta, pivot=100):
   """
-  Smoothly broken power law spectrum
+  Smoothly broken power law spectrum (ph/cm2/keV/s)
   :param e: energy (keV)
   :param ampl: amplitude (ph/cm2/keV/s)
   :param l1: first powerlaw index
