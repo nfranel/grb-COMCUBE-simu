@@ -994,7 +994,7 @@ def random_grb_dec_ra(lat_min, lat_max, lon_min, lon_max):
   :param lat_max : maximum latitude [deg] [-90, 90]
   :param lon_min : minimum longitude [deg] [-180, 180[
   :param lon_max : maximum longitude [deg] [-180, 180[
-  :returns: dec and ra. [0, 180] & [0, 360]
+  :returns: dec and ra. [0, 180] & [0, 360[
   """
   # Variable domain verification verif on ra_max is done without function to make things easier in the param file
   lat_verif(lat_min)
@@ -1007,7 +1007,7 @@ def random_grb_dec_ra(lat_min, lat_max, lon_min, lon_max):
   ra = np.mod(lon_min + np.random.rand() * (lon_max - lon_min), 2 * np.pi)
   dec, ra = np.rad2deg(dec), np.rad2deg(ra)
   # correcting some issue with the rounding of ra
-  if f"{ra:.1f}" == 360.0:
+  if round(ra, 4) == 360.0:
     ra = 0.0
   return dec, ra
 
