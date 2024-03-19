@@ -162,6 +162,9 @@ class AllSatData(list):
           # Values supposed to be the same for all sat and all sims so it doesn't change and is set using 1 sat
           # Field to be used soon : "polarigram_error"
           if item in ["bins"]:
+            print(self.const_data[ite_const])
+            print(item)
+            print(getattr(self[selected_sats[0]], item))
             setattr(self.const_data[ite_const], item, getattr(self[selected_sats[0]], item))
           #############################################################################################################
           # Set to true
