@@ -122,6 +122,8 @@ class AllSatData(list):
     # self.const_data = [const_0off_data, const_1off_data, const_2off_data]
     # self.index_down = [None, (off_sat), (off_sat1, off_sat2)]
     for ite_const, considered_sats in enumerate(list_considered_sat):
+      print(" ite const, considered sats : ")
+      print(ite_const, considered_sats)
       for item in self.const_data[ite_const].__dict__.keys():
         ###############################################################################################################
         # Not changed
