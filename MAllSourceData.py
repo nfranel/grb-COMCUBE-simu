@@ -403,7 +403,7 @@ class AllSourceData:
           if sim is not None:
             total_in_view += 1
             sat_counter = 0
-            if sim.const_data[number_off_sat] is not None :
+            if sim.const_data[number_off_sat] is not None:
               for trigger_bool in sim.const_data[number_off_sat].const_beneficial_trigger:
                 if trigger_bool:
                   sat_counter += 1

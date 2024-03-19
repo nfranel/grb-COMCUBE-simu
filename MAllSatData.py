@@ -124,122 +124,125 @@ class AllSatData(list):
     for ite_const, considered_sats in enumerate(list_considered_sat):
       print(" ite const, considered sats : ")
       print(ite_const, considered_sats)
-      for item in self.const_data[ite_const].__dict__.keys():
-        ###############################################################################################################
-        # Not changed
-        ###############################################################################################################
-        # The fieldselected here stay as they are with their basic initialisation (most of the time None)
-        # Fields to be used soon : "fits", "pa", "fit_compton_cr", "pa_err", "fit_compton_cr_err", "fit_goodness",
-        if item not in ["sat_dec_wf", "sat_ra_wf", "grb_dec_sat_frame", "grb_ra_sat_frame", "expected_pa",
-                        "mdp", "hits_snrs", "compton_snrs", "single_snrs"]:
-          #############################################################################################################
-          # Filtering the satellites for some items
-          #############################################################################################################
-          if item in ["compton_b_rate", "mu100_ref", "mu100_err_ref", "s_eff_compton_ref", "compton_ener",
-                      "compton_second", "compton_time", "pol", "polar_from_position", "polar_from_energy", "arm_pol",
-                      "s_eff_compton", "compton", "compton_cr"]:
-            selected_sats = []
-            for index_sat in considered_sats:
-              if self[index_sat].const_beneficial_compton:
-                selected_sats.append(index_sat)
-            selected_sats = np.array(selected_sats)
-          elif item in ["single_b_rate", "s_eff_single_ref", "single_ener", "single_time", "s_eff_single", "single",
-                        "single_cr"]:
-            selected_sats = []
-            for index_sat in considered_sats:
-              if self[index_sat].const_beneficial_single:
-                selected_sats.append(index_sat)
-            selected_sats = np.array(selected_sats)
-          elif item in ["hit_b_rate", "hit_time", "calor", "dsssd", "side"]:
-            selected_sats = []
-            for index_sat in considered_sats:
-              if self[index_sat].const_beneficial_trigger:
-                selected_sats.append(index_sat)
-            selected_sats = np.array(selected_sats)
-          else:
-            selected_sats = considered_sats
-          #############################################################################################################
-          # All the same
-          #############################################################################################################
-          # Values supposed to be the same for all sat and all sims so it doesn't change and is set using 1 sat
-          # Field to be used soon : "polarigram_error"
-          if item in ["bins"]:
-            print(self)
-            print(selected_sats)
-            print(self[selected_sats[0]])
-            setattr(self.const_data[ite_const], item, getattr(self[selected_sats[0]], item))
-          #############################################################################################################
-          # Set to true
-          #############################################################################################################
-          elif item in ["azim_angle_corrected"]:
-            setattr(self.const_data[ite_const], item, True)
-          #############################################################################################################
-          # Summed
-          #############################################################################################################
-          # Values summed
-          elif item in ["compton_b_rate", "single_b_rate", "hit_b_rate", "s_eff_compton_ref", "s_eff_single_ref",
-                        "s_eff_compton", "s_eff_single", "single", "single_cr", "compton", "compton_cr", "n_sat_detect",
-                        "calor", "dsssd", "side"]:
-            temp_val = 0
-            for num_sat in selected_sats:
-              temp_val += getattr(self[num_sat], item)
-            setattr(self.const_data[ite_const], item, temp_val)
-          #############################################################################################################
-          # 1D concatenation
-          #############################################################################################################
-          # Values stored in a 1D array that have to be concanated (except unpol that needs another verification)
-          elif item in ["compton_ener", "compton_second", "single_ener", "hit_time", "compton_time", "single_time",
-                        "pol", "polar_from_position", "polar_from_energy", "arm_pol"]:
-            temp_array = np.array([])
-            for num_sat in selected_sats:
-              temp_array = np.concatenate((temp_array, getattr(self[num_sat], item)))
-            setattr(self.const_data[ite_const], item, temp_array)
-          #############################################################################################################
-          # 2D concatenation     - Not used anymore, but still there just in case
-          #############################################################################################################
-          # Values stored in a 2D array that have to be initiated and treated so that no error occur
-          # elif item in ["compton_firstpos", "compton_secpos", "single_pos"]:
-          #   if len(selected_sats) == 1:
-          #     if len(getattr(self[selected_sats[0]], item)) == 0:
-          #       setattr(constellations[ite_const], item, np.array([]))
-          #     else:
-          #       setattr(constellations[ite_const], item, getattr(self[selected_sats[0]], item))
-          #   else:
-          #     temp_array = np.array([[0, 0, 0]])
-          #     for ite_num_sat in range(len(selected_sats)):
-          #       if len(getattr(self[selected_sats[ite_num_sat]], item)) != 0:
-          #         temp_array = np.concatenate((temp_array, getattr(self[selected_sats[ite_num_sat]], item)))
-          #     setattr(constellations[ite_const], item, temp_array[1:])
-          #############################################################################################################
-          # Unpol          - Not used anymore, but still there just in case
-          #############################################################################################################
-          # elif item == "unpol":
-          #   if getattr(self[selected_sats[0]], item) is not None:
-          #     temp_array = np.array([])
-          #     for num_sat in selected_sats:
-          #       temp_array = np.concatenate((temp_array, getattr(self[num_sat], item)))
-          #     setattr(constellations[ite_const], item, temp_array)
-          #############################################################################################################
-          # Weighted mean
-          #############################################################################################################
-          # mu100_ref and mu100_err_ref key
-          elif item in ["mu100_ref", "mu100_err_ref"]:
-            temp_num = 0
-            temp_denom = 0
-            for num_sat in selected_sats:
-              temp_num += getattr(self[num_sat], item) * self[num_sat].compton
-              temp_denom += self[num_sat].compton
-            if temp_denom != 0:
-              setattr(self.const_data[ite_const], item, temp_num / temp_denom)
+      if len(considered_sats) == 0:
+        self.const_data[ite_const] = None
+      else:
+        for item in self.const_data[ite_const].__dict__.keys():
+          ###############################################################################################################
+          # Not changed
+          ###############################################################################################################
+          # The fieldselected here stay as they are with their basic initialisation (most of the time None)
+          # Fields to be used soon : "fits", "pa", "fit_compton_cr", "pa_err", "fit_compton_cr_err", "fit_goodness",
+          if item not in ["sat_dec_wf", "sat_ra_wf", "grb_dec_sat_frame", "grb_ra_sat_frame", "expected_pa",
+                          "mdp", "hits_snrs", "compton_snrs", "single_snrs"]:
+            #############################################################################################################
+            # Filtering the satellites for some items
+            #############################################################################################################
+            if item in ["compton_b_rate", "mu100_ref", "mu100_err_ref", "s_eff_compton_ref", "compton_ener",
+                        "compton_second", "compton_time", "pol", "polar_from_position", "polar_from_energy", "arm_pol",
+                        "s_eff_compton", "compton", "compton_cr"]:
+              selected_sats = []
+              for index_sat in considered_sats:
+                if self[index_sat].const_beneficial_compton:
+                  selected_sats.append(index_sat)
+              selected_sats = np.array(selected_sats)
+            elif item in ["single_b_rate", "s_eff_single_ref", "single_ener", "single_time", "s_eff_single", "single",
+                          "single_cr"]:
+              selected_sats = []
+              for index_sat in considered_sats:
+                if self[index_sat].const_beneficial_single:
+                  selected_sats.append(index_sat)
+              selected_sats = np.array(selected_sats)
+            elif item in ["hit_b_rate", "hit_time", "calor", "dsssd", "side"]:
+              selected_sats = []
+              for index_sat in considered_sats:
+                if self[index_sat].const_beneficial_trigger:
+                  selected_sats.append(index_sat)
+              selected_sats = np.array(selected_sats)
             else:
-              setattr(self.const_data[ite_const], item, 0)
-          #############################################################################################################
-          # Appened
-          #############################################################################################################
-          elif item in ["num_sat", "const_beneficial_compton", "const_beneficial_single", "const_beneficial_trigger"]:
-            temp_list = []
-            for num_sat in selected_sats:
-              temp_list.append(getattr(self[num_sat], item))
-            setattr(self.const_data[ite_const], item, np.array(temp_list))
-          else:
-            raise AttributeError("Item not found")
+              selected_sats = considered_sats
+            #############################################################################################################
+            # All the same
+            #############################################################################################################
+            # Values supposed to be the same for all sat and all sims so it doesn't change and is set using 1 sat
+            # Field to be used soon : "polarigram_error"
+            if item in ["bins"]:
+              print(self)
+              print(selected_sats)
+              print(self[selected_sats[0]])
+              setattr(self.const_data[ite_const], item, getattr(self[selected_sats[0]], item))
+            #############################################################################################################
+            # Set to true
+            #############################################################################################################
+            elif item in ["azim_angle_corrected"]:
+              setattr(self.const_data[ite_const], item, True)
+            #############################################################################################################
+            # Summed
+            #############################################################################################################
+            # Values summed
+            elif item in ["compton_b_rate", "single_b_rate", "hit_b_rate", "s_eff_compton_ref", "s_eff_single_ref",
+                          "s_eff_compton", "s_eff_single", "single", "single_cr", "compton", "compton_cr", "n_sat_detect",
+                          "calor", "dsssd", "side"]:
+              temp_val = 0
+              for num_sat in selected_sats:
+                temp_val += getattr(self[num_sat], item)
+              setattr(self.const_data[ite_const], item, temp_val)
+            #############################################################################################################
+            # 1D concatenation
+            #############################################################################################################
+            # Values stored in a 1D array that have to be concanated (except unpol that needs another verification)
+            elif item in ["compton_ener", "compton_second", "single_ener", "hit_time", "compton_time", "single_time",
+                          "pol", "polar_from_position", "polar_from_energy", "arm_pol"]:
+              temp_array = np.array([])
+              for num_sat in selected_sats:
+                temp_array = np.concatenate((temp_array, getattr(self[num_sat], item)))
+              setattr(self.const_data[ite_const], item, temp_array)
+            #############################################################################################################
+            # 2D concatenation     - Not used anymore, but still there just in case
+            #############################################################################################################
+            # Values stored in a 2D array that have to be initiated and treated so that no error occur
+            # elif item in ["compton_firstpos", "compton_secpos", "single_pos"]:
+            #   if len(selected_sats) == 1:
+            #     if len(getattr(self[selected_sats[0]], item)) == 0:
+            #       setattr(constellations[ite_const], item, np.array([]))
+            #     else:
+            #       setattr(constellations[ite_const], item, getattr(self[selected_sats[0]], item))
+            #   else:
+            #     temp_array = np.array([[0, 0, 0]])
+            #     for ite_num_sat in range(len(selected_sats)):
+            #       if len(getattr(self[selected_sats[ite_num_sat]], item)) != 0:
+            #         temp_array = np.concatenate((temp_array, getattr(self[selected_sats[ite_num_sat]], item)))
+            #     setattr(constellations[ite_const], item, temp_array[1:])
+            #############################################################################################################
+            # Unpol          - Not used anymore, but still there just in case
+            #############################################################################################################
+            # elif item == "unpol":
+            #   if getattr(self[selected_sats[0]], item) is not None:
+            #     temp_array = np.array([])
+            #     for num_sat in selected_sats:
+            #       temp_array = np.concatenate((temp_array, getattr(self[num_sat], item)))
+            #     setattr(constellations[ite_const], item, temp_array)
+            #############################################################################################################
+            # Weighted mean
+            #############################################################################################################
+            # mu100_ref and mu100_err_ref key
+            elif item in ["mu100_ref", "mu100_err_ref"]:
+              temp_num = 0
+              temp_denom = 0
+              for num_sat in selected_sats:
+                temp_num += getattr(self[num_sat], item) * self[num_sat].compton
+                temp_denom += self[num_sat].compton
+              if temp_denom != 0:
+                setattr(self.const_data[ite_const], item, temp_num / temp_denom)
+              else:
+                setattr(self.const_data[ite_const], item, 0)
+            #############################################################################################################
+            # Appened
+            #############################################################################################################
+            elif item in ["num_sat", "const_beneficial_compton", "const_beneficial_single", "const_beneficial_trigger"]:
+              temp_list = []
+              for num_sat in selected_sats:
+                temp_list.append(getattr(self[num_sat], item))
+              setattr(self.const_data[ite_const], item, np.array(temp_list))
+            else:
+              raise AttributeError("Item not found")
