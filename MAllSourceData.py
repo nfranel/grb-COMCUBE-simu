@@ -198,12 +198,20 @@ class AllSourceData:
     ###################################################################################################################
     # Setting some satellites off
     ###################################################################################################################
-    off_sats = np.array([0, 0, 0])
-    off_sats[0] = np.random.randint(self.n_sat)
-    off_sats[1] = np.random.randint(self.n_sat)
-    off_sats[2] = np.random.randint(self.n_sat)
-    while off_sats[2] == off_sats[1]:
-      off_sats[2] = np.random.randint(self.n_sat)
+    off_sats = []
+    for sat_ite in range(self.n_sat):
+      temp_offsat = []
+      while len(temp_offsat) != sat_ite:
+        rand_sat = np.random.randint(self.n_sat)
+        if rand_sat not in temp_offsat:
+          temp_offsat.append(rand_sat)
+      off_sats.append(temp_offsat)
+
+    # off_sats[0] = np.random.randint(self.n_sat)
+    # off_sats[1] = np.random.randint(self.n_sat)
+    # off_sats[2] = np.random.randint(self.n_sat)
+    # while off_sats[2] == off_sats[1]:
+    #   off_sats[2] = np.random.randint(self.n_sat)
     ###################################################################################################################
     # Making of the constellations  -  with corrected polarigrams (if not corrected they can't be added)
     ###################################################################################################################
@@ -401,11 +409,12 @@ class AllSourceData:
             if sat_counter >= 3:
               const_trigger_counter += 1
             else:
-              print("Not triggered : ", source.source_name, source.source_duration, sim.dec_world_frame, source.source_energy_fluence)
               no_trig_name.append(source.source_name)
               no_trig_duration.append(source.source_duration)
               no_trig_dec.append(sim.dec_world_frame)
               no_trig_e_fluence.append(source.source_energy_fluence)
+              if len(no_trig_name) <= 30:
+                print("Not triggered : ", source.source_name, source.source_duration, sim.dec_world_frame, source.source_energy_fluence)
 
     print(f"   Trigger for at least 3 satellites :        {const_trigger_counter:.2f} triggers")
     print("=============================================")
