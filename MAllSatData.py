@@ -164,7 +164,7 @@ class AllSatData(list):
           if item in ["bins"]:
             print(self.const_data[ite_const])
             print(item)
-            print(getattr(self[selected_sats[0]], item))
+            print(self[selected_sats[0]])
             setattr(self.const_data[ite_const], item, getattr(self[selected_sats[0]], item))
           #############################################################################################################
           # Set to true
