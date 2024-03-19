@@ -403,9 +403,10 @@ class AllSourceData:
           if sim is not None:
             total_in_view += 1
             sat_counter = 0
-            for trigger_bool in sim.const_data[number_off_sat].const_beneficial_trigger:
-              if trigger_bool:
-                sat_counter += 1
+            if sim.const_data[number_off_sat] is not None :
+              for trigger_bool in sim.const_data[number_off_sat].const_beneficial_trigger:
+                if trigger_bool:
+                  sat_counter += 1
             if sat_counter >= 3:
               const_trigger_counter += 1
             else:
@@ -413,7 +414,7 @@ class AllSourceData:
               no_trig_duration.append(source.source_duration)
               no_trig_dec.append(sim.dec_world_frame)
               no_trig_e_fluence.append(source.source_energy_fluence)
-              if len(no_trig_name) <= 30:
+              if len(no_trig_name) <= 30 and graphs:
                 print("Not triggered : ", source.source_name, source.source_duration, sim.dec_world_frame, source.source_energy_fluence)
 
     print(f"   Trigger for at least 3 satellites :        {const_trigger_counter:.2f} triggers")
