@@ -543,7 +543,7 @@ def closest_mufile(grb_dec_sf, grb_ra_sf, mu_list):  # TODO : limits on variable
     return mu_list[index].mu100, mu_list[index].mu100_err, mu_list[index].s_eff_compton, mu_list[index].s_eff_single
 
 
-def calc_fluence(catalog, index, ergcut):
+def calc_flux(catalog, index, ergcut):
   """
   Calculates the fluence per unit time of a given source using an energy cut and its spectrum
   :param catalog: GBM catalog containing sources' information
@@ -563,7 +563,8 @@ def calc_fluence(catalog, index, ergcut):
   catalog.tofloat('pflx_band_ampl')
   catalog.tofloat('pflx_band_alpha')
   catalog.tofloat('pflx_band_beta')
-  catalog.tofloat('pflx_band_epeak')
+  # The next one is not converted here because if can be null in some specific cases
+  # catalog.tofloat('pflx_band_epeak')
   catalog.tofloat('pflx_sbpl_ampl')
   catalog.tofloat('pflx_sbpl_indx1')
   catalog.tofloat('pflx_sbpl_indx2')
@@ -580,7 +581,8 @@ def calc_fluence(catalog, index, ergcut):
   catalog.tofloat('flnc_band_ampl')
   catalog.tofloat('flnc_band_alpha')
   catalog.tofloat('flnc_band_beta')
-  catalog.tofloat('flnc_band_epeak')
+  # The next one is not converted here because if can be null in some specific cases
+  # catalog.tofloat('flnc_band_epeak')
   catalog.tofloat('flnc_sbpl_ampl')
   catalog.tofloat('flnc_sbpl_indx1')
   catalog.tofloat('flnc_sbpl_indx2')
@@ -597,7 +599,7 @@ def calc_fluence(catalog, index, ergcut):
                           catalog.pflx_comp_epeak[index], catalog.pflx_comp_pivot[index])
   elif model == "pflx_band":
     func = lambda x: band(x, catalog.pflx_band_ampl[index], catalog.pflx_band_alpha[index],
-                          catalog.pflx_band_beta[index], catalog.pflx_band_epeak[index])
+                          catalog.pflx_band_beta[index], float(catalog.pflx_band_epeak[index]))
   elif model == "pflx_sbpl":
     func = lambda x: sbpl(x, catalog.pflx_sbpl_ampl[index], catalog.pflx_sbpl_indx1[index],
                           catalog.pflx_sbpl_indx2[index], catalog.pflx_sbpl_brken[index],
@@ -610,7 +612,7 @@ def calc_fluence(catalog, index, ergcut):
                           catalog.flnc_comp_epeak[index], catalog.flnc_comp_pivot[index])
   elif model == "flnc_band":
     func = lambda x: band(x, catalog.flnc_band_ampl[index], catalog.flnc_band_alpha[index],
-                          catalog.flnc_band_beta[index], catalog.flnc_band_epeak[index])
+                          catalog.flnc_band_beta[index], float(catalog.flnc_band_epeak[index]))
   elif model == "flnc_sbpl":
     func = lambda x: sbpl(x, catalog.flnc_sbpl_ampl[index], catalog.flnc_sbpl_indx1[index],
                           catalog.flnc_sbpl_indx2[index], catalog.flnc_sbpl_brken[index],
