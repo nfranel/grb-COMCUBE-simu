@@ -13,6 +13,7 @@ class Catalog:
     :param data: None or string, data to put in the catalog
     :param sttype: See Catalog.fill
     """
+    self.cat_type = "GBM"
     # Fields added for some clarity
     # Peak parameters
     self.pflx_best_fitting_model = None
@@ -420,3 +421,85 @@ class Catalog:
     ax4.axvline(sbpl_mean_brken)
     ax4.set(title="Smoothly broken power law spectrum", xscale="log", yscale="log")
     plt.show()
+
+
+class SampleCatalog:
+  def __init__(self, datafile=None):
+    """
+    Instanciates a catalog
+    :param datafile: None or string, data to put in the catalog
+    """
+    self.cat_type = "sampled"
+    self.name = []
+    self.red = []
+    self.dl = []
+    self.ep = []
+    self.band_low = []
+    self.band_high = []
+    self.liso = []
+    self.eiso = []
+    self.thetaj = []
+    self.mean_flux = []
+    self.t90 = []
+    self.fluence = []
+    self.lc = []
+
+    # Catalog attributes
+    self.length = 0
+    if datafile is not None:
+      self.fill(datafile)
+
+  def __len__(self):
+    """
+    Makes use of built-in len function
+    """
+    return self.length
+
+  def fill(self, datafile):
+    """
+    Fills a Catalog with data
+    :param datafile: string, data file name
+    :param sttype: iterable of len 5:
+      first header event (int)
+      event separator (str)
+      first event (int)
+      item separator (str)
+      last event (int) OR list of the sources wanted (list)
+    """
+    with open(datafile) as f:
+      lines = f.read().split("\n")[3:]  # 3 first lines are header
+    self.length = len(lines)
+    for line in lines:
+      data = line.split("|")
+      self.name.append(data[0])
+      self.t90.append(data[1])
+      self.lc.append(data[2])
+      self.fluence.append(data[3])
+      self.mean_flux.append(data[4])
+      self.red.append(data[5])
+      self.band_low.append(data[6])
+      self.band_high.append(data[7])
+      self.ep.append(data[8])
+      self.dl.append(data[9])
+      self.liso.append(data[10])
+      self.eiso.append(data[11])
+      self.thetaj.append(data[12])
+    self.name = np.array(self.name)
+    self.red = np.array(self.red)
+    self.dl = np.array(self.dl)
+    self.ep = np.array(self.ep)
+    self.band_low = np.array(self.band_low)
+    self.band_high = np.array(self.band_high)
+    self.liso = np.array(self.liso)
+    self.eiso = np.array(self.eiso)
+    self.thetaj = np.array(self.thetaj)
+    self.mean_flux = np.array(self.mean_flux)
+    self.t90 = np.array(self.t90)
+    self.fluence = np.array(self.fluence)
+    self.lc = np.array(self.lc)
+
+  def items(self):
+    """
+    List all knowns items
+    """
+    return list(self.__dict__.keys())[3:]

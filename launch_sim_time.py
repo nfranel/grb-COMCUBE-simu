@@ -13,9 +13,16 @@ import multiprocessing as mp
 import subprocess
 import os
 import argparse
+import astropy.units
 # Developped modules imports
 from funcmod import *
-from catalog import Catalog
+from MCMCGRB import band_norm, normalisation_calc
+from catalog import Catalog, SampleCatalog
+# Useful constants
+keV_to_erg = 1 * astropy.units.keV
+keV_to_erg = keV_to_erg.to_value("erg")
+Gpc_to_cm = 1 * astropy.units.Gpc
+Gpc_to_cm = Gpc_to_cm.to_value("cm")
 
 __verbose__ = 1
 
@@ -35,12 +42,17 @@ def gen_commands(args):
   Parses parameter file and fills Namespace with the data gathered
   """
   args.commands = []
-  args.geometry, args.rcf, args.mcf, args.spectrafilepath, args.grbfile, args.csf, args.prefix, args.sttype, args.simulationsperevent, args.simtime, args.position, args.satellites = read_grbpar(args.parameterfile)
-  c = Catalog(args.grbfile, args.sttype)
-  vprint("Running with GBM data on flnc mode.", __verbose__, 0)
-  items = "flnc_plaw_ampl,flnc_plaw_pivot,flnc_plaw_index,flnc_plaw_phtflux,flnc_comp_ampl,flnc_comp_epeak,flnc_comp_index,flnc_comp_pivot,flnc_comp_phtflux,flnc_band_ampl,flnc_band_epeak,flnc_band_alpha,flnc_band_beta,flnc_band_phtflux,flnc_sbpl_ampl,flnc_sbpl_pivot,flnc_sbpl_indx1,flnc_sbpl_brken,flnc_sbpl_brksc,flnc_sbpl_indx2,flnc_sbpl_phtflux".split(",")
-  defaults = [0, 100, 0, 0, 0, 1, 0, 100, 0, 0, 1, 0, 0, 0, 0, 100, 0, 0, 0, 0, 0]
-  c.tofloats(items, defaults)
+  args.geometry, args.rcf, args.mcf, args.simmode, args.spectrafilepath, args.grbfile, args.csf, args.prefix, args.sttype, args.simulationsperevent, args.simtime, args.position, args.satellites = read_grbpar(args.parameterfile)
+  if args.simmode == "GBM":
+    c = Catalog(args.grbfile, args.sttype)
+    vprint("Running with GBM data on flnc mode.", __verbose__, 0)
+    items = "flnc_plaw_ampl,flnc_plaw_pivot,flnc_plaw_index,flnc_plaw_phtflux,flnc_comp_ampl,flnc_comp_epeak,flnc_comp_index,flnc_comp_pivot,flnc_comp_phtflux,flnc_band_ampl,flnc_band_epeak,flnc_band_alpha,flnc_band_beta,flnc_band_phtflux,flnc_sbpl_ampl,flnc_sbpl_pivot,flnc_sbpl_indx1,flnc_sbpl_brken,flnc_sbpl_brksc,flnc_sbpl_indx2,flnc_sbpl_phtflux".split(",")
+    defaults = [0, 100, 0, 0, 0, 1, 0, 100, 0, 0, 1, 0, 0, 0, 0, 100, 0, 0, 0, 0, 0]
+    c.tofloats(items, defaults)
+  elif args.simmode == "sampled":
+    c = SampleCatalog(args.grbfile)
+  else:
+    raise ValueError("Wrong simulation mode in .par file")
   args.commands = []
   sim_directory = args.prefix.split("/sim/")[0]
   with open(f"{sim_directory}/simulation_logs.txt", "w") as f:
@@ -55,39 +67,58 @@ def gen_commands(args):
     if not (args.spectrafilepath.endswith("/")) and os.name == "posix":
       args.spectrafilepath += "/"
     spectrumfile = "{}{}_spectrum.dat".format(args.spectrafilepath, c.name[i])
-    model = getattr(c, "flnc_best_fitting_model")[i].strip()
-    pht_mflx = getattr(c, f"{model}_phtflux")[i]
-    pfluxmodel = getattr(c, 'pflx_best_fitting_model')[i].strip()
-    if pfluxmodel == "":
-      pht_pflx = "No value fitted"
+    if args.simmode == "sampled":
+      pht_mflx = c.mean_flux
+      # Creation of spectra if they have not been created yet
+      if not (spectrumfile in os.listdir(args.spectrafilepath)):
+        logE = np.logspace(1, 3, 100)  # energy (log scale)
+        with open(spectrumfile, "w") as f:
+          ampl_norm = normalisation_calc(c.band_low, c.band_high)
+          norm = (1 + c.red) ** 2 / (4 * np.pi * (c.dl * Gpc_to_cm) ** 2) * c.liso / (c.ep ** 2 * keV_to_erg)
+          spec_norm = band_norm((1 + c.red) * logE / c.ep, ampl_norm, c.band_low, c.band_low)
+          spec = norm * spec_norm
+
+          f.write(f"#model normalized Band:   norm={norm}, alpha={c.band_low[i]}, beta={c.band_low[i]}, epeak={c.ep[i]}keV\n")
+          f.write(f"# Measured mean flux: {pht_mflx} ph/cm2/s in the 10-1000 keV band\n")
+          f.write(f"# Measured peak flux: >{pht_mflx} ph/cm2/s in the 10-1000 keV band\n")
+          f.write("\nIP LOGLOG\n\n")
+          for ite_E, E in enumerate(logE):
+            f.write(f"DP {E} {spec[ite_E]}\n")
+          f.write("\nEN\n\n")
     else:
-      pht_pflx = getattr(c, f"{pfluxmodel}_phtflux")[i]
-    # Creation of spectra if they have not been created yet
-    if not (spectrumfile in os.listdir(args.spectrafilepath)):
-      logE = np.logspace(1, 3, 100)  # energy (log scale)
-      with open(spectrumfile, "w") as f:
-        f.write("#model {}:  ".format(model))
-        if model == "flnc_plaw":
-          fun = lambda x: plaw(x, c.flnc_plaw_ampl[i], c.flnc_plaw_index[i], c.flnc_plaw_pivot[i])
-          f.write(f"ampl={c.flnc_plaw_ampl[i]}, index={c.flnc_plaw_index[i]}, pivot={c.flnc_plaw_pivot[i]}keV\n")
-        elif model == "flnc_comp":
-          fun = lambda x: comp(x, c.flnc_comp_ampl[i], c.flnc_comp_index[i], c.flnc_comp_epeak[i], c.flnc_comp_pivot[i])
-          f.write(f"ampl={c.flnc_comp_ampl[i]}, index={c.flnc_comp_index[i]}, epeak={c.flnc_comp_epeak[i]}keV, pivot={c.flnc_comp_pivot[i]}keV\n")
-        elif model == "flnc_band":
-          fun = lambda x: band(x, c.flnc_band_ampl[i], c.flnc_band_alpha[i], c.flnc_band_beta[i], c.flnc_band_epeak[i])
-          f.write(f"ampl={c.flnc_band_ampl[i]}, alpha={c.flnc_band_alpha[i]}, beta={c.flnc_band_beta[i]}, epeak={c.flnc_band_epeak[i]}keV\n")
-        elif model == "flnc_sbpl":
-          fun = lambda x: sbpl(x, c.flnc_sbpl_ampl[i], c.flnc_sbpl_indx1[i], c.flnc_sbpl_indx2[i], c.flnc_sbpl_brken[i], c.flnc_sbpl_brksc[i], c.flnc_sbpl_pivot[i])
-          f.write(f"ampl={c.flnc_sbpl_ampl[i]}, index1={c.flnc_sbpl_indx1[i]}, index2={c.flnc_sbpl_indx2[i]}, eb={c.flnc_sbpl_brken[i]}keV, brksc={c.flnc_sbpl_brksc[i]}keV, pivot={c.flnc_sbpl_pivot[i]}keV\n")
-        else:
-          vprint(f"Could not find best fit model for {c.name[i]} (indicated {model}). Aborting this GRB.", __verbose__, 0)
-          return
-        f.write(f"# Measured mean flux: {pht_mflx} ph/cm2/s in the 10-1000 keV band\n")
-        f.write(f"# Measured peak flux: {pht_pflx} ph/cm2/s in the 10-1000 keV band\n")
-        f.write("\nIP LOGLOG\n\n")
-        for E in logE:
-          f.write(f"DP {E} {fun(E)}\n")
-        f.write("\nEN\n\n")
+      model = getattr(c, "flnc_best_fitting_model")[i].strip()
+      pht_mflx = getattr(c, f"{model}_phtflux")[i]
+      pfluxmodel = getattr(c, 'pflx_best_fitting_model')[i].strip()
+      if pfluxmodel == "":
+        pht_pflx = "No value fitted"
+      else:
+        pht_pflx = getattr(c, f"{pfluxmodel}_phtflux")[i]
+      # Creation of spectra if they have not been created yet
+      if not (spectrumfile in os.listdir(args.spectrafilepath)):
+        logE = np.logspace(1, 3, 100)  # energy (log scale)
+        with open(spectrumfile, "w") as f:
+          f.write("#model {}:  ".format(model))
+          if model == "flnc_plaw":
+            fun = lambda x: plaw(x, c.flnc_plaw_ampl[i], c.flnc_plaw_index[i], c.flnc_plaw_pivot[i])
+            f.write(f"ampl={c.flnc_plaw_ampl[i]}, index={c.flnc_plaw_index[i]}, pivot={c.flnc_plaw_pivot[i]}keV\n")
+          elif model == "flnc_comp":
+            fun = lambda x: comp(x, c.flnc_comp_ampl[i], c.flnc_comp_index[i], c.flnc_comp_epeak[i], c.flnc_comp_pivot[i])
+            f.write(f"ampl={c.flnc_comp_ampl[i]}, index={c.flnc_comp_index[i]}, epeak={c.flnc_comp_epeak[i]}keV, pivot={c.flnc_comp_pivot[i]}keV\n")
+          elif model == "flnc_band":
+            fun = lambda x: band(x, c.flnc_band_ampl[i], c.flnc_band_alpha[i], c.flnc_band_beta[i], c.flnc_band_epeak[i])
+            f.write(f"ampl={c.flnc_band_ampl[i]}, alpha={c.flnc_band_alpha[i]}, beta={c.flnc_band_beta[i]}, epeak={c.flnc_band_epeak[i]}keV\n")
+          elif model == "flnc_sbpl":
+            fun = lambda x: sbpl(x, c.flnc_sbpl_ampl[i], c.flnc_sbpl_indx1[i], c.flnc_sbpl_indx2[i], c.flnc_sbpl_brken[i], c.flnc_sbpl_brksc[i], c.flnc_sbpl_pivot[i])
+            f.write(f"ampl={c.flnc_sbpl_ampl[i]}, index1={c.flnc_sbpl_indx1[i]}, index2={c.flnc_sbpl_indx2[i]}, eb={c.flnc_sbpl_brken[i]}keV, brksc={c.flnc_sbpl_brksc[i]}keV, pivot={c.flnc_sbpl_pivot[i]}keV\n")
+          else:
+            vprint(f"Could not find best fit model for {c.name[i]} (indicated {model}). Aborting this GRB.", __verbose__, 0)
+            return
+          f.write(f"# Measured mean flux: {pht_mflx} ph/cm2/s in the 10-1000 keV band\n")
+          f.write(f"# Measured peak flux: {pht_pflx} ph/cm2/s in the 10-1000 keV band\n")
+          f.write("\nIP LOGLOG\n\n")
+          for E in logE:
+            f.write(f"DP {E} {fun(E)}\n")
+          f.write("\nEN\n\n")
     for j in range(args.simulationsperevent):
       dec_grb_world_frame, ra_grb_world_frame = random_grb_dec_ra(args.position[0], args.position[1], args.position[2], args.position[3])  # deg
       rand_time = np.around(np.random.rand()*315567360.0, 4)  # Time of the GRB, taken randomly over a 10 years time window

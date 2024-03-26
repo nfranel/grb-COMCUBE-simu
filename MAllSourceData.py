@@ -13,7 +13,7 @@ import numpy as np
 
 # Developped modules imports
 from funcmod import *
-from catalog import Catalog
+from catalog import Catalog, SampleCatalog
 from MBkgContainer import BkgContainer
 from MmuSeffContainer import MuSeffContainer
 from MAllSimData import AllSimData
@@ -49,7 +49,7 @@ class AllSourceData:
     self.armcut = armcut
 
     # Parameters extracted from parfile
-    self.geometry, self.revan_file, self.mimrec_file, self.spectra_path, self.cat_file, self.source_file, self.sim_prefix, self.sttype, self.n_sim, self.sim_duration, self.position_allowed_sim, self.sat_info = read_grbpar(self.grb_param)
+    self.geometry, self.revan_file, self.mimrec_file, self.simmode, self.spectra_path, self.cat_file, self.source_file, self.sim_prefix, self.sttype, self.n_sim, self.sim_duration, self.position_allowed_sim, self.sat_info = read_grbpar(self.grb_param)
     self.n_sat = len(self.sat_info)
 
     self.result_prefix = self.grb_param.split("/polGBM.par")[0].split("/")[-1]
@@ -85,7 +85,12 @@ class AllSourceData:
       self.namelist = cat_data[0]
       self.n_source = len(self.namelist)
     else:
-      cat_data = Catalog(self.cat_file, self.sttype)
+      if self.simmode == "GBM":
+        cat_data = Catalog(self.cat_file, self.sttype)
+      elif self.simmode == "sampled":
+        cat_data = SampleCatalog(self.cat_file)
+      else:
+        raise ValueError("Wrong simulation mode in .par file")
       self.namelist = cat_data.name
       self.n_source = len(self.namelist)
 
@@ -102,12 +107,19 @@ class AllSourceData:
       self.alldata = [AllSimData(self.sim_prefix, source_ite, cat_data, self.n_sim, self.sat_info, self.sim_duration, self.bkgdata, self.muSeffdata, self.options) for source_ite in range(self.n_source)]
 
     # Setting some informations used for obtaining the GRB count rates
-    self.cat_duration = 10
-    # self.com_duty = 1
     self.com_duty = self.n_sim_simulated / (self.n_sim_simulated + self.n_sim_in_radbelt)
-    self.gbm_duty = 0.85
     self.com_fov = 1
-    self.gbm_fov = (1 - np.cos(np.deg2rad(horizon_angle(565)))) / 2
+    if self.simmode == "GBM":
+      self.cat_duration = 10
+      self.gbm_duty = 0.85
+      self.gbm_fov = (1 - np.cos(np.deg2rad(horizon_angle(565)))) / 2
+    elif self.simmode == "sampled":
+      self.cat_duration = 2
+      self.gbm_duty = 1
+      self.gbm_fov = 1
+    else:
+      raise ValueError("Wrong simulation mode in .par file")
+    # self.com_duty = 1
     self.weights = 1 / self.n_sim / self.cat_duration * self.com_duty / self.gbm_duty * self.com_fov / self.gbm_fov
 
 # TODO finish the comments and rework the methods !

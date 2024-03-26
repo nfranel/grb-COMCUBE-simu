@@ -156,7 +156,7 @@ def read_grbpar(parfile):
   :param parfile: path/name of the parameter file
   """
   sat_info = []
-  geometry, revan_file, mimrec_file, spectra_path, cat_file, source_file, sim_prefix, sttype, n_sim, simtime, position_allowed_sim = None, None, None, None, None, None, None, None, None, None, None
+  geometry, revan_file, mimrec_file, sim_mode, spectra_path, cat_file, source_file, sim_prefix, sttype, n_sim, simtime, position_allowed_sim = None, None, None, None, None, None, None, None, None, None, None, None
   with open(parfile) as f:
     lines = f.read().split("\n")
   for line in lines:
@@ -166,6 +166,8 @@ def read_grbpar(parfile):
       revan_file = line.split(" ")[1]
     elif line.startswith("@mimrecfile"):
       mimrec_file = line.split(" ")[1]
+    elif line.startswith("@simmode"):
+      sim_mode = line.split(" ")[1]
     elif line.startswith("@spectrafilepath"):
       spectra_path = line.split(" ")[1]
     elif line.startswith("@grbfile"):
@@ -185,7 +187,7 @@ def read_grbpar(parfile):
     elif line.startswith("@satellite"):
       dat = [float(e) for e in line.split(" ")[1:]]
       sat_info.append(dat)
-  return geometry, revan_file, mimrec_file, spectra_path, cat_file, source_file, sim_prefix, sttype, n_sim, simtime, position_allowed_sim, sat_info
+  return geometry, revan_file, mimrec_file, sim_mode, spectra_path, cat_file, source_file, sim_prefix, sttype, n_sim, simtime, position_allowed_sim, sat_info
 
 
 def read_bkgpar(parfile):
