@@ -467,7 +467,7 @@ class SampleCatalog:
       last event (int) OR list of the sources wanted (list)
     """
     with open(datafile) as f:
-      lines = f.read().split("\n")[3:]  # 3 first lines are header
+      lines = f.read().split("\n")[3:-1]  # 3 first lines are header
     self.length = len(lines)
     for line in lines:
       print("line : ", line)
