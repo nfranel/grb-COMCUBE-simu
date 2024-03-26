@@ -251,7 +251,7 @@ class GRBSample:
     self.thetaj_max = 15
     self.lmin = 1e47  # erg/s
     self.lmax = 1e53
-    self.n_year = 10
+    self.n_year = 2
     self.filename = f"./Sampled/sampled_grb_cat_{self.n_year}years.txt"
     #################################################################################################################
     # Short GRB attributes
