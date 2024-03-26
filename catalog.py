@@ -470,7 +470,6 @@ class SampleCatalog:
       lines = f.read().split("\n")[3:-1]  # 3 first lines are header
     self.length = len(lines)
     for line in lines:
-      print("line : ", line)
       data = line.split("|")
       self.name.append(data[0])
       self.t90.append(data[1])
