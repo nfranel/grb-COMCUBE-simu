@@ -6,10 +6,12 @@
 # Package imports
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib as mpl
 import cartopy.crs as ccrs
 from apexpy import Apex
 # Developped modules imports
 from funcmod import *
+from MmuSeffContainer import MuSeffContainer
 from catalog import Catalog
 from MLogData import LogData
 
@@ -182,26 +184,26 @@ def calc_duty(inc, ohm, omega, alt, show=False):
   return counter / len(time_vals)
 
 
-def fov_const(num_val=500, show=True, save=False):
+def fov_const(parfile, mu100par, num_val=500, erg_cut=(10, 1000), armcut=180, show=True, save=False):
   """
   Plots a map of the sensibility over the sky for number of sat in sight, single events and compton events
   :param num_val: number of value to
   """
+  sat_info = read_grbpar(parfile)[-1]
+  n_sat = len(sat_info)
+  result_prefix = parfile.split("/polGBM.par")[0].split("/")[-1]
+  museffdata = MuSeffContainer(mu100par, erg_cut, armcut)
   phi_world = np.linspace(0, 360, num_val, endpoint=False)
   # theta will be converted in sat coord with grb_decra_worldf2satf, which takes dec in world coord with 0 being north pole and 180 the south pole !
   theta_world = np.linspace(0, 180, num_val)
-  detection = np.zeros((self.n_sat, num_val, num_val))
-  detection_compton = np.zeros((self.n_sat, num_val, num_val))
-  detection_single = np.zeros((self.n_sat, num_val, num_val))
+  detection = np.zeros((n_sat, num_val, num_val))
+  detection_compton = np.zeros((n_sat, num_val, num_val))
+  detection_single = np.zeros((n_sat, num_val, num_val))
 
-  # for ite in range(self.n_sat):
-  #   detection_pola[ite] = np.array([[eff_area_compton_func(grb_decra_worldf2satf(theta, phi, self.sat_info[ite][0], self.sat_info[ite][1])[0], self.sat_info[ite][2], func_type="cos") for phi in phi_world] for theta in theta_world])
-  #   detection_spectro[ite] = np.array([[eff_area_single_func(grb_decra_worldf2satf(theta, phi, self.sat_info[ite][0], self.sat_info[ite][1])[0], self.sat_info[ite][2], func_type="data") for phi in phi_world] for theta in theta_world])
-
-  for ite, info_sat in enumerate(self.sat_info):
+  for ite, info_sat in enumerate(sat_info):
     for ite_theta, theta in enumerate(theta_world):
       for ite_phi, phi in enumerate(phi_world):
-        detection_compton[ite][ite_theta][ite_phi], detection_single[ite][ite_theta][ite_phi], detection[ite][ite_theta][ite_phi] = eff_area_func(theta, phi, info_sat, self.muSeffdata)
+        detection_compton[ite][ite_theta][ite_phi], detection_single[ite][ite_theta][ite_phi], detection[ite][ite_theta][ite_phi] = eff_area_func(theta, phi, info_sat, museffdata)
   detec_sum = np.sum(detection, axis=0)
   detec_sum_compton = np.sum(detection_compton, axis=0)
   detec_sum_single = np.sum(detection_single, axis=0)
@@ -220,7 +222,7 @@ def fov_const(num_val=500, show=True, save=False):
   ##################################################################################################################
   # Map for number of satellite in sight
   ##################################################################################################################
-  levels = range(detec_min, detec_max + 1, max(1, int(detec_max + 1 - detec_min) / 15))
+  levels = range(detec_min, detec_max + 1, max(1, int((detec_max + 1 - detec_min) / 15)))
 
   # fig1, ax1 = plt.subplots(1, 1, figsize=(10, 6))
   fig1, ax1 = plt.subplots(subplot_kw={'projection': ccrs.PlateCarree()}, figsize=(10, 6))
@@ -232,7 +234,7 @@ def fov_const(num_val=500, show=True, save=False):
   cbar = fig1.colorbar(h1, ticks=levels)
   cbar.set_label("Number of satellite in sight", rotation=270, labelpad=20)
   if save:
-    fig1.savefig(f"{self.result_prefix}_n_sight")
+    fig1.savefig(f"{result_prefix}_n_sight")
   if show:
     plt.show()
 
@@ -251,7 +253,7 @@ def fov_const(num_val=500, show=True, save=False):
   ##################################################################################################################
   # Map of constellation's compton effective area
   ##################################################################################################################
-  levels_compton = range(detec_min_compton, detec_max_compton + 1, max(1, int(detec_max_compton + 1 - detec_min_compton) / 15))
+  levels_compton = range(detec_min_compton, detec_max_compton + 1, max(1, int((detec_max_compton + 1 - detec_min_compton) / 15)))
 
   # fig2, ax2 = plt.subplots(1, 1, figsize=(10, 6))
   fig2, ax2 = plt.subplots(subplot_kw={'projection': ccrs.PlateCarree()}, figsize=(10, 6))
@@ -263,7 +265,7 @@ def fov_const(num_val=500, show=True, save=False):
   cbar = fig2.colorbar(h3, ticks=levels_compton)
   cbar.set_label("Effective area at for compton events (cm²)", rotation=270, labelpad=20)
   if save:
-    fig2.savefig(f"{self.result_prefix}_compton_seff")
+    fig2.savefig(f"{result_prefix}_compton_seff")
   if show:
     plt.show()
 
@@ -282,7 +284,7 @@ def fov_const(num_val=500, show=True, save=False):
   ##################################################################################################################
   # Map of constellation's compton effective area
   ##################################################################################################################
-  levels_single = range(detec_min_single, detec_max_single + 1, max(1, int(detec_max_single + 1 - detec_min_single) / 15))
+  levels_single = range(detec_min_single, detec_max_single + 1, max(1, int((detec_max_single + 1 - detec_min_single) / 15)))
 
   # fig3, ax3 = plt.subplots(1, 1, figsize=(10, 6))
   fig3, ax3 = plt.subplots(subplot_kw={'projection': ccrs.PlateCarree()}, figsize=(10, 6))
@@ -294,7 +296,7 @@ def fov_const(num_val=500, show=True, save=False):
   cbar = fig3.colorbar(h5, ticks=levels_single)
   cbar.set_label("Effective area for single events (cm²)", rotation=270, labelpad=20)
   if save:
-    fig3.savefig(f"{self.result_prefix}_single_seff")
+    fig3.savefig(f"{result_prefix}_single_seff")
   if show:
     plt.show()
 

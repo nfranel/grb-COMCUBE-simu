@@ -47,18 +47,39 @@ class MuSeffContainer(list):
     armname = f"armcut-{armcut}"
     cond_saving = f"condensed-mu-seff-saved_{geom_name}_{self.decs[0]:.0f}-{self.decs[1]:.0f}-{self.decs[2]:.0f}_{self.ras[0]:.0f}-{self.ras[1]:.0f}-{self.ras[2]:.0f}_{ergname}_{armname}.txt"
 
-    if saving not in os.listdir(f"./mu100/sim_{geom_name}"):
-      init_time = time()
-      print("###########################################################################")
-      print(" mu/Seff data not saved : Saving ")
-      print("###########################################################################")
-      self.save_fulldata(f"./mu100/sim_{geom_name}/{saving}")
-      self.save_condenseddata(f"./mu100/sim_{geom_name}/{saving}", f"./mu100/sim_{geom_name}/{cond_saving}", ergcut, armcut)
-      print("=======================================")
-      print(" Saving of mu/Seff data finished in : ", time() - init_time, "seconds")
-      print("=======================================")
-    else:
-      if cond_saving not in os.listdir(f"./mu100/sim_{geom_name}"):
+    # if saving not in os.listdir(f"./mu100/sim_{geom_name}"):
+    #   init_time = time()
+    #   print("###########################################################################")
+    #   print(" mu/Seff data not saved : Saving ")
+    #   print("###########################################################################")
+    #   self.save_fulldata(f"./mu100/sim_{geom_name}/{saving}")
+    #   self.save_condenseddata(f"./mu100/sim_{geom_name}/{saving}", f"./mu100/sim_{geom_name}/{cond_saving}", ergcut, armcut)
+    #   print("=======================================")
+    #   print(" Saving of mu/Seff data finished in : ", time() - init_time, "seconds")
+    #   print("=======================================")
+    # else:
+    #   if cond_saving not in os.listdir(f"./mu100/sim_{geom_name}"):
+    #     init_time = time()
+    #     print("###########################################################################")
+    #     print(" mu/Seff condensed data not saved : Saving ")
+    #     print("###########################################################################")
+    #     self.save_condenseddata(f"./mu100/sim_{geom_name}/{saving}", f"./mu100/sim_{geom_name}/{cond_saving}", ergcut, armcut)
+    #     print("=======================================")
+    #     print(" Saving of mu/Seff data finished in : ", time() - init_time, "seconds")
+    #     print("=======================================")
+
+    if cond_saving not in os.listdir(f"./mu100/sim_{geom_name}"):
+      if saving not in os.listdir(f"./mu100/sim_{geom_name}"):
+        init_time = time()
+        print("###########################################################################")
+        print(" mu/Seff data not saved : Saving ")
+        print("###########################################################################")
+        self.save_fulldata(f"./mu100/sim_{geom_name}/{saving}")
+        self.save_condenseddata(f"./mu100/sim_{geom_name}/{saving}", f"./mu100/sim_{geom_name}/{cond_saving}", ergcut, armcut)
+        print("=======================================")
+        print(" Saving of mu/Seff data finished in : ", time() - init_time, "seconds")
+        print("=======================================")
+      else:
         init_time = time()
         print("###########################################################################")
         print(" mu/Seff condensed data not saved : Saving ")
