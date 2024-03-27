@@ -192,6 +192,7 @@ def normalisation_calc(ind1, ind2):
   IntFlu = temp_func(IntEner)
   IntNorm = trapezoid(IntFlu, x=IntEner)
 
+  print(IntNorm, np.exp(ind2 - ind1) / (ind2 + 2) * xb ** (ind1 + 2))
   norm = 1 / (IntNorm - np.exp(ind2 - ind1) / (ind2 + 2) * xb ** (ind1 + 2))
   return norm
 
