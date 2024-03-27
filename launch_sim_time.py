@@ -68,6 +68,7 @@ def gen_commands(args):
       args.spectrafilepath += "/"
     spectrumfile = "{}{}_spectrum.dat".format(args.spectrafilepath, c.name[i])
     if args.simmode == "sampled":
+      lc_name = c.lc[i]
       pht_mflx = c.mean_flux[i]
       # Creation of spectra if they have not been created yet
       if not (spectrumfile in os.listdir(args.spectrafilepath)):
@@ -86,6 +87,7 @@ def gen_commands(args):
             f.write(f"DP {E} {spec[ite_E]}\n")
           f.write("\nEN\n\n")
     else:
+      lc_name = None
       model = getattr(c, "flnc_best_fitting_model")[i].strip()
       pht_mflx = getattr(c, f"{model}_phtflux")[i]
       pfluxmodel = getattr(c, 'pflx_best_fitting_model')[i].strip()
@@ -149,7 +151,7 @@ def gen_commands(args):
               simtime = None
               lc_bool = False
               vprint("simtime in parameter file unknown. Check parameter file.", __verbose__, 0)
-            args.commands.append((not(args.nocosima), not(args.norevan), not(args.nomimrec), c.name[i], k, spectrumfile, pht_mflx, simtime, lc_bool, polstr, j, f"{dec_grb_world_frame:.4f}_{ra_grb_world_frame:.4f}_{rand_time:.4f}", theta, phi))
+            args.commands.append((not(args.nocosima), not(args.norevan), not(args.nomimrec), c.name[i], k, spectrumfile, pht_mflx, simtime, lc_bool, lc_name, polstr, j, f"{dec_grb_world_frame:.4f}_{ra_grb_world_frame:.4f}_{rand_time:.4f}", theta, phi))
             save_log(f"{sim_directory}/simulation_logs.txt", c.name[i], j, k, "Simulated", s[0], s[1], s[2], s[3], rand_time, dec_sat_world_frame, ra_sat_world_frame, dec_grb_world_frame, ra_grb_world_frame, theta, phi)
   for i in range(len(c)):
     gen_grb(i)
@@ -202,11 +204,14 @@ def maketmpsf(command, args, pid):
       elif line.startswith(f"{source}.Spectrum") and (source == "GRBsource" or source == "GRBsourcenp"):
         f.write(f"{source}.Spectrum File {command[5]}")
       elif line.startswith(f"{source}.Polarization") and (source == "GRBsource" or source == "GRBsourcenp"):
-        f.write(f"{source}.Polarization Absolute 1. {command[9]}")
+        f.write(f"{source}.Polarization Absolute 1. {command[10]}")
       elif line.startswith(f"{source}.Flux") and (source == "GRBsource" or source == "GRBsourcenp"):
         f.write(f"{source}.Flux {command[6]}")
         if command[8]:
-          f.write(f"\n{source}.Lightcurve File true ./sources/Light_Curves/LightCurve_{command[3]}.dat")
+          if command[9] is None:
+            f.write(f"\n{source}.Lightcurve File true ./sources/Light_Curves/LightCurve_{command[3]}.dat")
+          else:
+            f.write(f"\n{source}.Lightcurve File true ./sources/Light_Curves/{command[9]}")
       else:
         f.write(line)
       f.write("\n")
