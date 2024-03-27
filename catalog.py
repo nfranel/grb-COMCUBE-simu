@@ -501,7 +501,6 @@ class SampleCatalog:
     if events[-1] == "":
       self.length -= 1
     for line in events:
-      print(line)
       data = line.split("|")
       self.name.append(data[0])
       self.t90.append(float(data[1]))
