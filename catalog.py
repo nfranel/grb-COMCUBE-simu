@@ -500,7 +500,7 @@ class SampleCatalog:
     self.length = len(events)
     if events[-1] == "":
       self.length -= 1
-    for line in lines:
+    for line in events:
       print(line)
       data = line.split("|")
       self.name.append(data[0])
