@@ -762,7 +762,3 @@ class GRBSample:
     # ax8.set(title="T90 distributions", xlabel="T90 (s)", ylabel="Number of GRB", xscale="linear", yscale=yscale)
     # ax8.legend()
 
-sample_test = GRBSample()
-# sample_test.short_comparison()
-sample_test.long_distri()
-sample_test.short_distri()
