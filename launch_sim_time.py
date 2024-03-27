@@ -68,14 +68,14 @@ def gen_commands(args):
       args.spectrafilepath += "/"
     spectrumfile = "{}{}_spectrum.dat".format(args.spectrafilepath, c.name[i])
     if args.simmode == "sampled":
-      pht_mflx = c.mean_flux
+      pht_mflx = c.mean_flux[i]
       # Creation of spectra if they have not been created yet
       if not (spectrumfile in os.listdir(args.spectrafilepath)):
         logE = np.logspace(1, 3, 100)  # energy (log scale)
         with open(spectrumfile, "w") as f:
-          ampl_norm = normalisation_calc(c.band_low, c.band_high)
-          norm = (1 + c.red) ** 2 / (4 * np.pi * (c.dl * Gpc_to_cm) ** 2) * c.liso / (c.ep ** 2 * keV_to_erg)
-          spec_norm = band_norm((1 + c.red) * logE / c.ep, ampl_norm, c.band_low, c.band_low)
+          ampl_norm = normalisation_calc(c.band_low[i], c.band_high[i])
+          norm = (1 + c.red[i]) ** 2 / (4 * np.pi * (c.dl[i] * Gpc_to_cm) ** 2) * c.liso[i] / (c.ep[i] ** 2 * keV_to_erg)
+          spec_norm = band_norm((1 + c.red[i]) * logE / c.ep[i], ampl_norm, c.band_low[i], c.band_low[i])
           spec = norm * spec_norm
 
           f.write(f"#model normalized Band:   norm={norm}, alpha={c.band_low[i]}, beta={c.band_low[i]}, epeak={c.ep[i]}keV\n")
