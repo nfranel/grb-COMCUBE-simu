@@ -16,7 +16,6 @@ import argparse
 import astropy.units
 # Developped modules imports
 from funcmod import *
-from MCMCGRB import band_norm, normalisation_calc
 from catalog import Catalog, SampleCatalog
 # Useful constants
 keV_to_erg = 1 * astropy.units.keV
