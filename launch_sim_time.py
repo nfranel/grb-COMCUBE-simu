@@ -50,7 +50,7 @@ def gen_commands(args):
     defaults = [0, 100, 0, 0, 0, 1, 0, 100, 0, 0, 1, 0, 0, 0, 0, 100, 0, 0, 0, 0, 0]
     c.tofloats(items, defaults)
   elif args.simmode == "sampled":
-    c = SampleCatalog(args.grbfile)
+    c = SampleCatalog(args.grbfile, args.sttype)
   else:
     raise ValueError("Wrong simulation mode in .par file")
   args.commands = []

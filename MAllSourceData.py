@@ -89,7 +89,7 @@ class AllSourceData:
       if self.simmode == "GBM":
         cat_data = Catalog(self.cat_file, self.sttype)
       elif self.simmode == "sampled":
-        cat_data = SampleCatalog(self.cat_file)
+        cat_data = SampleCatalog(self.cat_file, self.sttype)
       else:
         raise ValueError("Wrong simulation mode in .par file")
       self.namelist = cat_data.name
