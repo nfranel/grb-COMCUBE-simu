@@ -48,14 +48,14 @@ class AllSimData(list):
           self.best_fit_p_flux = float(getattr(cat_data, f"{getattr(cat_data, 'pflx_best_fitting_model')[source_ite].rstrip()}_phtflux")[source_ite])
         self.best_fit_mean_flux = float(getattr(cat_data, f"{getattr(cat_data, 'flnc_best_fitting_model')[source_ite].rstrip()}_phtflux")[source_ite])
         # Retrieving fluence of the source [photons/cm²]
-        self.source_fluence = calc_flux(cat_data, source_ite, options[0]) * self.source_duration
+        self.source_fluence = calc_flux_gbm(cat_data, source_ite, options[0]) * self.source_duration
         # Retrieving energy fluence of the source [erg/cm²]
         self.source_energy_fluence = float(cat_data.fluence[source_ite])
       elif cat_data.cat_type == "sampled":
         self.best_fit_model = "band"
         self.best_fit_p_flux = None
         self.best_fit_mean_flux = float(cat_data.fluence[source_ite])
-        self.source_fluence = calc_flux(cat_data, source_ite, options[0]) * self.source_duration
+        self.source_fluence = calc_flux_gbm(cat_data, source_ite, options[0]) * self.source_duration
         self.source_energy_fluence = None
       else:
         raise ValueError("Wrong catalog type")

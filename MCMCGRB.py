@@ -337,7 +337,7 @@ class GRBSample:
         self.gbm_t90.append(float(self.gbm_cat.t90[ite_gbm]))
         if float(self.gbm_cat.t90[ite_gbm]) <= 2:
           self.short_gbm_epeak.append(float(gbm_ep))
-          self.short_gbm_ph_flux.append(calc_flux(self.gbm_cat, ite_gbm, (10, 1000)))
+          self.short_gbm_ph_flux.append(calc_flux_gbm(self.gbm_cat, ite_gbm, (10, 1000)))
           self.short_gbm_ph_fluence.append(self.short_gbm_ph_flux[-1]*float(self.gbm_cat.t90[ite_gbm]))
           self.short_gbm_en_flux.append(float(self.gbm_cat.fluence[ite_gbm]) / float(self.gbm_cat.t90[ite_gbm]))
           self.short_gbm_alpha.append(float(self.gbm_cat.flnc_band_alpha[ite_gbm]))
@@ -345,7 +345,7 @@ class GRBSample:
           self.short_gbm_t90.append(float(self.gbm_cat.t90[ite_gbm]))
         else:
           self.long_gbm_epeak.append(float(gbm_ep))
-          self.long_gbm_ph_flux.append(calc_flux(self.gbm_cat, ite_gbm, (10, 1000)))
+          self.long_gbm_ph_flux.append(calc_flux_gbm(self.gbm_cat, ite_gbm, (10, 1000)))
           self.long_gbm_ph_fluence.append(self.long_gbm_ph_flux[-1]*float(self.gbm_cat.t90[ite_gbm]))
           self.long_gbm_en_flux.append(float(self.gbm_cat.fluence[ite_gbm]) / float(self.gbm_cat.t90[ite_gbm]))
           self.long_gbm_alpha.append(float(self.gbm_cat.flnc_band_alpha[ite_gbm]))

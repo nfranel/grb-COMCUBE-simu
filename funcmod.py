@@ -1,10 +1,18 @@
 import numpy as np
 import gzip
-from scipy.integrate import quad
+from scipy.integrate import quad, trapezoid
 from time import time
 import os
 import subprocess
 from apexpy import Apex
+
+from MCMCGRB import normalisation_calc, band_norm
+import astropy.units
+# Useful constants
+keV_to_erg = 1 * astropy.units.keV
+keV_to_erg = keV_to_erg.to_value("erg")
+Gpc_to_cm = 1 * astropy.units.Gpc
+Gpc_to_cm = Gpc_to_cm.to_value("cm")
 
 # TODO USE ASTROPY CONSTANTS
 m_elec = 9.1094e-31  # kg
@@ -545,7 +553,7 @@ def closest_mufile(grb_dec_sf, grb_ra_sf, mu_list):  # TODO : limits on variable
     return mu_list[index].mu100, mu_list[index].mu100_err, mu_list[index].s_eff_compton, mu_list[index].s_eff_single
 
 
-def calc_flux(catalog, index, ergcut):
+def calc_flux_gbm(catalog, index, ergcut):
   """
   Calculates the fluence per unit time of a given source using an energy cut and its spectrum
   :param catalog: GBM catalog containing sources' information
@@ -623,6 +631,23 @@ def calc_flux(catalog, index, ergcut):
     print("Could not find best fit model for {} (indicated {}). Aborting this GRB.".format(catalog.name[index], model))
     return
   return quad(func, ergcut[0], ergcut[1])[0]
+
+
+def calc_flux_sample(catalog, index, ergcut):
+  """
+  Calculates the fluence per unit time of a given source using an energy cut and its spectrum
+  :param catalog: GBM catalog containing sources' information
+  :param index: index of the source in the catalog
+  :param ergcut: energy window over which the fluence is calculated
+  :returns: the number of photons per cm² for a given energy range, averaged over the duration of the sim : ncount/cm²/s
+  """
+
+  ampl_norm = normalisation_calc(catalog.band_low[index], catalog.band_high[index])
+  ener_range = np.logspace(np.log10(ergcut[0]), np.log10(ergcut[1]), 100001)
+  norm = (1 + catalog.red[index]) ** 2 / (4 * np.pi * (catalog.dl[index] * Gpc_to_cm) ** 2) * catalog.liso[-1] / (catalog.ep[index] ** 2 * keV_to_erg)
+  spec_norm = band_norm((1 + catalog.red[index]) * ener_range / catalog.ep[index], ampl_norm, catalog.band_low[index], catalog.band_high[index])
+  spec = norm * spec_norm
+  return trapezoid(spec, ener_range)
 
 
 def duty_calc(inclination):  # TODO : limits on variables CHANGE IT WITH THE NEW
