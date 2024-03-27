@@ -199,7 +199,7 @@ savevar = True
 
 # fov_const("./polGBM.par", num_val=200, dutymode=True, show=False, save=savevar)
 
-fov_const("esa_prop/Pres_14nov/400km/equatorial/polGBM.par", num_val=500, dutymode=True, show=False, save=savevar)
+fov_const("esa_prop/Pres_14nov/500km/equatorial/polGBM.par", num_val=500, dutymode=True, show=False, save=savevar)
 # fov_const("esa_prop/Pres_14nov/400km/5-5-45/polGBM.par", num_val=500, dutymode=True, show=False, save=savevar)
 # fov_const("esa_prop/Pres_14nov/400km/0-45-97/polGBM.par", num_val=500, dutymode=True, show=False, save=savevar)
 # fov_const("esa_prop/Pres_14nov/500km/equatorial/polGBM.par", num_val=500, dutymode=True, show=False, save=savevar)
