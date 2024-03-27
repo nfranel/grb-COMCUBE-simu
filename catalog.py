@@ -424,7 +424,7 @@ class Catalog:
 
 
 class SampleCatalog:
-  def __init__(self, datafile=None):
+  def __init__(self, datafile=None, sttype=None):
     """
     Instanciates a catalog
     :param datafile: None or string, data to put in the catalog
@@ -446,8 +446,9 @@ class SampleCatalog:
 
     # Catalog attributes
     self.length = 0
-    if datafile is not None:
-      self.fill(datafile)
+    self.sttype = None
+    if datafile is not None and sttype is not None:
+      self.fill(datafile, sttype)
 
   def __len__(self):
     """
@@ -455,7 +456,22 @@ class SampleCatalog:
     """
     return self.length
 
-  def fill(self, datafile):
+  def formatsttype(self):
+    """
+    Formats self.sttype, the standardized type of text data file
+    """
+    for i in range(5):
+      if self.sttype[i] == "n":
+        self.sttype[i] = "\n"
+      if self.sttype[i] == "t":
+        self.sttype[i] = "\t"
+      if i % 2 == 0:
+        if type(self.sttype[i]) is str and self.sttype[i].startswith('['):
+          self.sttype[i] = self.sttype[i][1:-1].split(',')
+        else:
+          self.sttype[i] = int(self.sttype[i])
+
+  def fill(self, datafile, sttype):
     """
     Fills a Catalog with data
     :param datafile: string, data file name
@@ -466,9 +482,24 @@ class SampleCatalog:
       item separator (str)
       last event (int) OR list of the sources wanted (list)
     """
+    self.sttype = sttype
+    self.formatsttype()
     with open(datafile) as f:
-      lines = f.read().split("\n")[3:-1]  # 3 first lines are header
-    self.length = len(lines)
+      lines = f.read().split(sttype[1])  # Getting rid of the header
+    if type(sttype[4]) is int:
+      events = lines[sttype[2]:sttype[4]]
+      if events[-1] == '':
+        events = events[:-1]
+    elif type(sttype[4]) is list:
+      events = lines[sttype[2]:]
+      if events[-1] == '':
+        events = events[:-1]
+      events = [event for event in events if event.split(sttype[3])[1] in sttype[4]]
+    else:
+      events = []
+    self.length = len(events)
+    if events[-1] == "":
+      self.length -= 1
     for line in lines:
       data = line.split("|")
       self.name.append(data[0])

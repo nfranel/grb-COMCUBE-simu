@@ -9,6 +9,7 @@ import multiprocessing as mp
 from itertools import repeat
 import matplotlib.pyplot as plt
 import matplotlib as mpl
+import cartopy.crs as ccrs
 import numpy as np
 
 # Developped modules imports
@@ -652,11 +653,14 @@ class AllSourceData:
     ##################################################################################################################
     levels = range(detec_min, detec_max + 1, max(1, int(detec_max + 1 - detec_min) / 15))
 
-    fig1, ax1 = plt.subplots(1, 1, figsize=(10, 6))
+    # fig1, ax1 = plt.subplots(1, 1, figsize=(10, 6))
+    fig1, ax1 = plt.subplots(subplot_kw={'projection': ccrs.PlateCarree()}, figsize=(10, 6))
+    ax1.set_global()
+    ax1.coastlines()
     h1 = ax1.pcolormesh(phi_plot, np.pi / 2 - theta_plot, detec_sum, cmap=cmap_det)
     ax1.axis('scaled')
     ax1.set(xlabel="Right ascention (rad)", ylabel="Declination (rad)")
-    cbar = fig1.colorbar(ticks=levels)
+    cbar = fig1.colorbar(h1, ticks=levels)
     cbar.set_label("Number of satellite in sight", rotation=270, labelpad=20)
     if save:
       fig1.savefig(f"{self.result_prefix}_n_sight")
@@ -680,11 +684,14 @@ class AllSourceData:
     ##################################################################################################################
     levels_compton = range(detec_min_compton, detec_max_compton + 1, max(1, int(detec_max_compton + 1 - detec_min_compton) / 15))
 
-    fig2, ax2 = plt.subplots(1, 1, figsize=(10, 6))
+    # fig2, ax2 = plt.subplots(1, 1, figsize=(10, 6))
+    fig2, ax2 = plt.subplots(subplot_kw={'projection': ccrs.PlateCarree()}, figsize=(10, 6))
+    ax2.set_global()
+    ax2.coastlines()
     h3 = ax2.pcolormesh(phi_plot, np.pi / 2 - theta_plot, detec_sum_compton, cmap=cmap_compton)
     ax2.axis('scaled')
     ax2.set(xlabel="Right ascention (rad)", ylabel="Declination (rad)")
-    cbar = fig2.colorbar(ticks=levels_compton)
+    cbar = fig2.colorbar(h3, ticks=levels_compton)
     cbar.set_label("Effective area at for compton events (cm²)", rotation=270, labelpad=20)
     if save:
       fig2.savefig(f"{self.result_prefix}_compton_seff")
@@ -708,11 +715,14 @@ class AllSourceData:
     ##################################################################################################################
     levels_single = range(detec_min_single, detec_max_single + 1, max(1, int(detec_max_single + 1 - detec_min_single) / 15))
 
-    fig3, ax3 = plt.subplots(1, 1, figsize=(10, 6))
+    # fig3, ax3 = plt.subplots(1, 1, figsize=(10, 6))
+    fig3, ax3 = plt.subplots(subplot_kw={'projection': ccrs.PlateCarree()}, figsize=(10, 6))
+    ax3.set_global()
+    ax3.coastlines()
     h5 = ax3.pcolormesh(phi_plot, np.pi / 2 - theta_plot, detec_sum_single, cmap=cmap_single)
     ax3.axis('scaled')
     ax3.set(xlabel="Right ascention (rad)", ylabel="Declination (rad)")
-    cbar = fig3.colorbar(ticks=levels_single)
+    cbar = fig3.colorbar(h5, ticks=levels_single)
     cbar.set_label("Effective area for single events (cm²)", rotation=270, labelpad=20)
     if save:
       fig3.savefig(f"{self.result_prefix}_single_seff")

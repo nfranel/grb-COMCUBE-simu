@@ -359,7 +359,9 @@ class GRBSample:
     #################################################################################################################
     # Setting up a save file
     with open(self.filename, "w") as f:
+      f.write("Header : ")
       f.write(f"Catalog of synthetic GRBs sampled over {self.n_year} years\n")
+      f.write(f"Based on differents works, see MCMCGRB.py for more details")
       f.write("Keys : \n")
       f.write("name|t90|light curve name|fluence|mean flux|redshift|Band low energy index|Band high energy index|peak energy|luminosity distance|isotropic luminosity|isotropic energy|jet opening angle\n")
     # Long GRBs
