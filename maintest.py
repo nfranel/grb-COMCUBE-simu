@@ -26,7 +26,7 @@ grb_sim_param = "/pdisk/ESA/COMCUBEv15--500km--0-0-0--27sat--lc-sampled/polGBM.p
 # grb_sim_param = "/pdisk/ESA/COMCUBEv15--500km--5-5-45--27sat--short/polGBM.par"
 bkg_param = "./bkg/bkg-v15.par"
 mu_param = "./mu100/mu100-v15.par"
-erg = (30, 460)
+erg = (30, 1000)
 # erg = (30, 1000)
 arm = 180
 test = AllSourceData(grb_sim_param, bkg_param, mu_param, erg, arm, parallel="all")
