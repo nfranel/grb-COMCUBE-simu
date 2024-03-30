@@ -101,7 +101,10 @@ class GRBFullData:
     ###################################################################################################################
     self.const_beneficial_compton = False       # Appened                 #
     self.const_beneficial_single = False        # Appened                 #
-    self.const_beneficial_trigger = False       # Appened                 #
+    self.const_beneficial_trigger_4s = False       # Appened                 #
+    self.const_beneficial_trigger_3s = False       # Appened                 #
+    self.const_beneficial_trigger_2s = False       # Appened                 #
+    self.const_beneficial_trigger_1s = False       # Appened                 #
 
     ###################################################################################################################
     #                   Reading data from file
@@ -333,6 +336,23 @@ class GRBFullData:
     """
     Sets const_beneficial_compton to True is the value for a satellite is worth considering
     """
+    # For 4 sats
+    thresh_16 = 4.1
+    thresh_32 = 3.9
+    thresh_64 = 3.7
+    thresh_128 = 3.6
+    thresh_256 = 3.5
+    thresh_512 = 3.3
+    thresh_1024 = 3.3
+    thresh_2048 = 3.2
+    thresh_4096 = 3.1
+    if (self.hits_snrs[0] >= thresh_16 or self.hits_snrs[1] >= thresh_32 or self.hits_snrs[2] >= thresh_64 or self.hits_snrs[3] >= thresh_128 or self.hits_snrs[4] >= thresh_256 or self.hits_snrs[5] >= thresh_512 or self.hits_snrs[6] >= thresh_1024 or self.hits_snrs[7] >= thresh_2048 or self.hits_snrs[8] >= thresh_4096):
+    # if (self.hits_snrs[1] >= thresh_32 or self.hits_snrs[2] >= thresh_64 or self.hits_snrs[3] >= thresh_128 or self.hits_snrs[4] >= thresh_256 or self.hits_snrs[5] >= thresh_512 or self.hits_snrs[6] >= thresh_1024 or self.hits_snrs[7] >= thresh_2048 or self.hits_snrs[8] >= thresh_4096):
+      self.const_beneficial_trigger_4s = True
+    else:
+      self.const_beneficial_trigger_4s = False
+
+    # For 3 sats
     thresh_16 = 4.7
     thresh_32 = 4.3
     thresh_64 = 4.2
@@ -344,7 +364,38 @@ class GRBFullData:
     thresh_4096 = 3.4
     if (self.hits_snrs[0] >= thresh_16 or self.hits_snrs[1] >= thresh_32 or self.hits_snrs[2] >= thresh_64 or self.hits_snrs[3] >= thresh_128 or self.hits_snrs[4] >= thresh_256 or self.hits_snrs[5] >= thresh_512 or self.hits_snrs[6] >= thresh_1024 or self.hits_snrs[7] >= thresh_2048 or self.hits_snrs[8] >= thresh_4096):
     # if (self.hits_snrs[1] >= thresh_32 or self.hits_snrs[2] >= thresh_64 or self.hits_snrs[3] >= thresh_128 or self.hits_snrs[4] >= thresh_256 or self.hits_snrs[5] >= thresh_512 or self.hits_snrs[6] >= thresh_1024 or self.hits_snrs[7] >= thresh_2048 or self.hits_snrs[8] >= thresh_4096):
-      self.const_beneficial_trigger = True
+      self.const_beneficial_trigger_3s = True
     else:
-      self.const_beneficial_trigger = False
+      self.const_beneficial_trigger_3s = False
 
+    # For 2 sats
+    thresh_16 = 5.7
+    thresh_32 = 5.3
+    thresh_64 = 5
+    thresh_128 = 4.8
+    thresh_256 = 4.6
+    thresh_512 = 4.4
+    thresh_1024 = 4.3
+    thresh_2048 = 4.2
+    thresh_4096 = 4.1
+    if (self.hits_snrs[0] >= thresh_16 or self.hits_snrs[1] >= thresh_32 or self.hits_snrs[2] >= thresh_64 or self.hits_snrs[3] >= thresh_128 or self.hits_snrs[4] >= thresh_256 or self.hits_snrs[5] >= thresh_512 or self.hits_snrs[6] >= thresh_1024 or self.hits_snrs[7] >= thresh_2048 or self.hits_snrs[8] >= thresh_4096):
+    # if (self.hits_snrs[1] >= thresh_32 or self.hits_snrs[2] >= thresh_64 or self.hits_snrs[3] >= thresh_128 or self.hits_snrs[4] >= thresh_256 or self.hits_snrs[5] >= thresh_512 or self.hits_snrs[6] >= thresh_1024 or self.hits_snrs[7] >= thresh_2048 or self.hits_snrs[8] >= thresh_4096):
+      self.const_beneficial_trigger_2s = True
+    else:
+      self.const_beneficial_trigger_2s = False
+
+    # For 1 sats
+    thresh_16 = 8.2
+    thresh_32 = 7.5
+    thresh_64 = 6.9
+    thresh_128 = 6.6
+    thresh_256 = 6.3
+    thresh_512 = 6
+    thresh_1024 = 5.8
+    thresh_2048 = 5.6
+    thresh_4096 = 5.5
+    if (self.hits_snrs[0] >= thresh_16 or self.hits_snrs[1] >= thresh_32 or self.hits_snrs[2] >= thresh_64 or self.hits_snrs[3] >= thresh_128 or self.hits_snrs[4] >= thresh_256 or self.hits_snrs[5] >= thresh_512 or self.hits_snrs[6] >= thresh_1024 or self.hits_snrs[7] >= thresh_2048 or self.hits_snrs[8] >= thresh_4096):
+    # if (self.hits_snrs[1] >= thresh_32 or self.hits_snrs[2] >= thresh_64 or self.hits_snrs[3] >= thresh_128 or self.hits_snrs[4] >= thresh_256 or self.hits_snrs[5] >= thresh_512 or self.hits_snrs[6] >= thresh_1024 or self.hits_snrs[7] >= thresh_2048 or self.hits_snrs[8] >= thresh_4096):
+      self.const_beneficial_trigger_1s = True
+    else:
+      self.const_beneficial_trigger_1s = False

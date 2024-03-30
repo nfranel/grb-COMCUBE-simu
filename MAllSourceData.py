@@ -405,7 +405,10 @@ class AllSourceData:
     print(f"== Triggers according to GBM method with   {number_off_sat}   down satellite")
     print("================================================================================================")
     total_in_view = 0
-    const_trigger_counter = 0
+    const_trigger_counter_4s = 0
+    const_trigger_counter_3s = 0
+    const_trigger_counter_2s = 0
+    const_trigger_counter_1s = 0
     no_trig_name = []
     no_trig_duration = []
     no_trig_dec = []
@@ -415,13 +418,27 @@ class AllSourceData:
         for ite_sim, sim in enumerate(source):
           if sim is not None:
             total_in_view += 1
-            sat_counter = 0
+            sat_counter_4s = 0
+            sat_counter_3s = 0
+            sat_counter_2s = 0
+            sat_counter_1s = 0
             if sim.const_data[number_off_sat] is not None:
-              for trigger_bool in sim.const_data[number_off_sat].const_beneficial_trigger:
+              for trigger_bool in sim.const_data[number_off_sat].const_beneficial_trigger_4s:
                 if trigger_bool:
-                  sat_counter += 1
-            if sat_counter >= 3:
-              const_trigger_counter += 1
+                  sat_counter_4s += 1
+              for trigger_bool in sim.const_data[number_off_sat].const_beneficial_trigger_3s:
+                if trigger_bool:
+                  sat_counter_3s += 1
+              for trigger_bool in sim.const_data[number_off_sat].const_beneficial_trigger_2s:
+                if trigger_bool:
+                  sat_counter_2s += 1
+              for trigger_bool in sim.const_data[number_off_sat].const_beneficial_trigger_1s:
+                if trigger_bool:
+                  sat_counter_1s += 1
+            if sat_counter_4s >= 4:
+              const_trigger_counter_4s += 1
+            if sat_counter_3s >= 3:
+              const_trigger_counter_3s += 1
             else:
               no_trig_name.append(source.source_name)
               no_trig_duration.append(source.source_duration)
@@ -429,8 +446,15 @@ class AllSourceData:
               no_trig_e_fluence.append(source.source_energy_fluence)
               if len(no_trig_name) <= 30 and graphs:
                 print("Not triggered : ", source.source_name, source.source_duration, sim.dec_world_frame, source.source_energy_fluence)
+            if sat_counter_2s >= 2:
+              const_trigger_counter_2s += 1
+            if sat_counter_1s >= 1:
+              const_trigger_counter_1s += 1
 
-    print(f"   Trigger for at least 3 satellites :        {const_trigger_counter:.2f} triggers")
+
+    print(f"   Trigger for at least 3 satellites :        {const_trigger_counter_3s:.2f} triggers")
+    print(f"   Trigger for at least 2 satellites :        {const_trigger_counter_2s:.2f} triggers")
+    print(f"   Trigger for 1 satellite :        {const_trigger_counter_1s:.2f} triggers")
     print("=============================================")
     print(f" Over the {total_in_view} GRBs simulated in the constellation field of view")
     if graphs:

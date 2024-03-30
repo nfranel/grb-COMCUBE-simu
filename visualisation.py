@@ -116,7 +116,7 @@ def magnetic_latitude_convert(altitude, lat_range=np.linspace(90, -90, 721), lon
   plt.show()
 
 
-def calc_duty(inc, ohm, omega, alt, show=False):
+def calc_duty(inc, ohm, omega, alt, show=False, show_sat=False):
   """
   Calculates the duty cycle caused by the radiation belts
   :param inc: inclination of the orbit [deg]
@@ -125,6 +125,7 @@ def calc_duty(inc, ohm, omega, alt, show=False):
   :param alt: altitude of the orbit
   :param show: If True shows the trajectory of a satellite on this orbit and the exclusion zones
   """
+  plt.rcParams.update({'font.size': 15})
   orbit_period = orbital_period_calc(alt)
   n_orbit = 1000
   n_val_per_orbit = 100
@@ -153,42 +154,53 @@ def calc_duty(inc, ohm, omega, alt, show=False):
   print(f"   === {counter / len(time_vals)}")
 
   if show:
-    fig, ax = plt.subplots(subplot_kw={'projection': ccrs.PlateCarree(central_longitude=0)})
+    fig, ax = plt.subplots(subplot_kw={'projection': ccrs.PlateCarree(central_longitude=0)}, figsize=(15, 8))
     ax.set_global()
 
-    dec_points = np.linspace(0, 180, 181)
-    ra_points = np.linspace(0, 360, 360, endpoint=False)
-    plottitle = f"All radiation belt {alt}km, inc : {inc}"
+    dec_points = np.linspace(0, 180, 361)
+    ra_points = np.linspace(0, 360, 720, endpoint=False)
+    plottitle = f"All radiation belt {alt}km"
+    # plottitle = f"Proton radiation belt {alt}km"
+    nite = len(dec_points) * len(ra_points)
+    ncount = 0
     cancel_dec = []
     cancel_ra = []
     for dec_p in dec_points:
       for ra_p in ra_points:
+        ncount += 1
         if verif_rad_belts(dec_p, ra_p, alt):
           cancel_dec.append(dec_p)
           cancel_ra.append(ra_p)
+        print(f"Calculation : {int(ncount / nite * 100)}%", end="\r")
+    print("Calculation over")
     cancel_dec = 90 - np.array(cancel_dec)
     cancel_ra = np.array(cancel_ra)
-    ax.scatter(cancel_ra, cancel_dec, s=1, color="red")
+    ax.scatter(cancel_ra, cancel_dec, s=1, color="blue")
     ax.set(title=plottitle)
     # Adding the coasts
     ax.coastlines()
-    print(cancel_dec)
-    print(cancel_ra)
+    # print(cancel_dec)
+    # print(cancel_ra)
 
     colors = ["lightsteelblue", "cornflowerblue", "royalblue", "blue", "navy"]
-    # Creating the lists of sat coordinates
-    ax.scatter(long_list, lat_list, s=1, color=colors[2])
-    ax.scatter(long_list_rej, lat_list_rej, s=1, color="black")
+    # Displaying the satellites (rejected and not rejected)
+    if show_sat:
+      ax.scatter(long_list, lat_list, s=1, color=colors[2])
+      ax.scatter(long_list_rej, lat_list_rej, s=1, color="black")
 
     plt.show()
   return counter / len(time_vals)
 
 
-def fov_const(parfile, mu100par, num_val=500, erg_cut=(10, 1000), armcut=180, show=True, save=False):
+def fov_const(parfile, mu100par, num_val=500, erg_cut=(10, 1000), armcut=180, show=True, save=False, bigfont=True):
   """
   Plots a map of the sensibility over the sky for number of sat in sight, single events and compton events
   :param num_val: number of value to
   """
+  if bigfont:
+    plt.rcParams.update({'font.size': 15})
+  else:
+    plt.rcParams.update({'font.size': 10})
   sat_info = read_grbpar(parfile)[-1]
   n_sat = len(sat_info)
   result_prefix = parfile.split("/polGBM.par")[0].split("/")[-1]
@@ -200,10 +212,15 @@ def fov_const(parfile, mu100par, num_val=500, erg_cut=(10, 1000), armcut=180, sh
   detection_compton = np.zeros((n_sat, num_val, num_val))
   detection_single = np.zeros((n_sat, num_val, num_val))
 
+  nite = num_val**2 * n_sat
+  ncount = 0
   for ite, info_sat in enumerate(sat_info):
     for ite_theta, theta in enumerate(theta_world):
       for ite_phi, phi in enumerate(phi_world):
+        ncount += 1
         detection_compton[ite][ite_theta][ite_phi], detection_single[ite][ite_theta][ite_phi], detection[ite][ite_theta][ite_phi] = eff_area_func(theta, phi, info_sat, museffdata)
+        print(f"Calculation : {int(ncount/nite*100)}%", end="\r")
+  print("Calculation over")
   detec_sum = np.sum(detection, axis=0)
   detec_sum_compton = np.sum(detection_compton, axis=0)
   detec_sum_single = np.sum(detection_single, axis=0)
@@ -220,19 +237,19 @@ def fov_const(parfile, mu100par, num_val=500, erg_cut=(10, 1000), armcut=180, sh
   cmap_single = mpl.cm.Oranges_r
 
   ##################################################################################################################
-  # Map for number of satellite in sight
+  # Map for number of satellites in sight
   ##################################################################################################################
   levels = range(detec_min, detec_max + 1, max(1, int((detec_max + 1 - detec_min) / 15)))
 
   # fig1, ax1 = plt.subplots(1, 1, figsize=(10, 6))
-  fig1, ax1 = plt.subplots(subplot_kw={'projection': ccrs.PlateCarree()}, figsize=(10, 6))
+  fig1, ax1 = plt.subplots(subplot_kw={'projection': ccrs.PlateCarree()}, figsize=(15, 8))
   ax1.set_global()
   ax1.coastlines()
   h1 = ax1.pcolormesh(phi_plot, 90 - theta_plot, detec_sum, cmap=cmap_det)
   ax1.axis('scaled')
-  ax1.set(xlabel="Right ascention (rad)", ylabel="Declination (rad)")
+  ax1.set(xlabel="Right ascention (rad)", ylabel="Declination (rad)", title="Constellation sky coverage map")
   cbar = fig1.colorbar(h1, ticks=levels)
-  cbar.set_label("Number of satellite in sight", rotation=270, labelpad=20)
+  cbar.set_label("Number of satellites covering the area", rotation=270, labelpad=20)
   if save:
     fig1.savefig(f"{result_prefix}_n_sight")
   if show:
@@ -256,14 +273,14 @@ def fov_const(parfile, mu100par, num_val=500, erg_cut=(10, 1000), armcut=180, sh
   levels_compton = range(detec_min_compton, detec_max_compton + 1, max(1, int((detec_max_compton + 1 - detec_min_compton) / 15)))
 
   # fig2, ax2 = plt.subplots(1, 1, figsize=(10, 6))
-  fig2, ax2 = plt.subplots(subplot_kw={'projection': ccrs.PlateCarree()}, figsize=(10, 6))
+  fig2, ax2 = plt.subplots(subplot_kw={'projection': ccrs.PlateCarree()}, figsize=(15, 8))
   ax2.set_global()
   ax2.coastlines()
   h3 = ax2.pcolormesh(phi_plot, 90 - theta_plot, detec_sum_compton, cmap=cmap_compton)
   ax2.axis('scaled')
-  ax2.set(xlabel="Right ascention (rad)", ylabel="Declination (rad)")
+  ax2.set(xlabel="Right ascention (rad)", ylabel="Declination (rad)", title="Constellation sky sensitivity map for Compton events")
   cbar = fig2.colorbar(h3, ticks=levels_compton)
-  cbar.set_label("Effective area at for compton events (cm²)", rotation=270, labelpad=20)
+  cbar.set_label("Effective area for Compton events (cm²)", rotation=270, labelpad=20)
   if save:
     fig2.savefig(f"{result_prefix}_compton_seff")
   if show:
@@ -275,24 +292,24 @@ def fov_const(parfile, mu100par, num_val=500, erg_cut=(10, 1000), armcut=180, sh
   # plt.xlabel("Right ascention (rad)")
   # plt.ylabel("Declination (rad)")
   # cbar = plt.colorbar(ticks=levels_compton)
-  # cbar.set_label("Effective area at for compton events (cm²)", rotation=270, labelpad=20)
+  # cbar.set_label("Effective area for Compton events (cm²)", rotation=270, labelpad=20)
   # if save:
   #   plt.savefig(f"{self.result_prefix}_compton_seff_proj")
   # if show:
   #   plt.show()
 
   ##################################################################################################################
-  # Map of constellation's compton effective area
+  # Map of constellation's single effective area
   ##################################################################################################################
   levels_single = range(detec_min_single, detec_max_single + 1, max(1, int((detec_max_single + 1 - detec_min_single) / 15)))
 
   # fig3, ax3 = plt.subplots(1, 1, figsize=(10, 6))
-  fig3, ax3 = plt.subplots(subplot_kw={'projection': ccrs.PlateCarree()}, figsize=(10, 6))
+  fig3, ax3 = plt.subplots(subplot_kw={'projection': ccrs.PlateCarree()}, figsize=(15, 8))
   ax3.set_global()
   ax3.coastlines()
   h5 = ax3.pcolormesh(phi_plot, 90 - theta_plot, detec_sum_single, cmap=cmap_single)
   ax3.axis('scaled')
-  ax3.set(xlabel="Right ascention (rad)", ylabel="Declination (rad)")
+  ax3.set(xlabel="Right ascention (rad)", ylabel="Declination (rad)", title="Constellation sky sensitivity map for single events")
   cbar = fig3.colorbar(h5, ticks=levels_single)
   cbar.set_label("Effective area for single events (cm²)", rotation=270, labelpad=20)
   if save:
@@ -312,7 +329,7 @@ def fov_const(parfile, mu100par, num_val=500, erg_cut=(10, 1000), armcut=180, sh
   # if show:
   #   plt.show()
 
-  print(f"The mean number of satellite in sight is :       {np.mean(detec_sum):.4f} satellites")
+  print(f"The mean number of satellites in sight is :       {np.mean(detec_sum):.4f} satellites")
   print(f"The mean effective area for compton events is :  {np.mean(detec_sum_compton):.4f} cm²")
   print(f"The mean effective area for single events is :   {np.mean(detec_sum_single):.4f} cm²")
 

@@ -155,7 +155,7 @@ class AllSatData(list):
             elif item in ["hit_b_rate", "hit_time", "calor", "dsssd", "side"]:
               selected_sats = []
               for index_sat in considered_sats:
-                if self[index_sat].const_beneficial_trigger:
+                if self[index_sat].const_beneficial_trigger_3s:
                   selected_sats.append(index_sat)
               selected_sats = np.array(selected_sats)
             else:
@@ -235,7 +235,7 @@ class AllSatData(list):
             #############################################################################################################
             # Appened
             #############################################################################################################
-            elif item in ["num_sat", "const_beneficial_compton", "const_beneficial_single", "const_beneficial_trigger"]:
+            elif item in ["num_sat", "const_beneficial_compton", "const_beneficial_single", "const_beneficial_trigger_4s", "const_beneficial_trigger_3s", "const_beneficial_trigger_2s", "const_beneficial_trigger_1s"]:
               temp_list = []
               for num_sat in selected_sats:
                 temp_list.append(getattr(self[num_sat], item))
