@@ -130,14 +130,14 @@ class GRBFullData:
           self.single_ener.append(reading[0])
           self.single_time.append(reading[1])
           single_pos.append(reading[2])
-      self.compton_ener = np.array(self.compton_ener)
-      self.compton_second = np.array(self.compton_second)
-      self.single_ener = np.array(self.single_ener)
-      compton_firstpos = np.array(compton_firstpos)
-      compton_secpos = np.array(compton_secpos)
-      single_pos = np.array(single_pos)
-      self.compton_time = np.array(self.compton_time)
-      self.single_time = np.array(self.single_time)
+      self.compton_ener = np.array(self.compton_ener, dtype="float32")
+      self.compton_second = np.array(self.compton_second, dtype="float32")
+      self.single_ener = np.array(self.single_ener, dtype="float32")
+      compton_firstpos = np.array(compton_firstpos, dtype="float32")
+      compton_secpos = np.array(compton_secpos, dtype="float32")
+      single_pos = np.array(single_pos, dtype="float32")
+      self.compton_time = np.array(self.compton_time, dtype="float32")
+      self.single_time = np.array(self.single_time, dtype="float32")
 
       #################################################################################################################
       #                     Filling the fields
