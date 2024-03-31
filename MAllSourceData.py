@@ -452,6 +452,7 @@ class AllSourceData:
               const_trigger_counter_1s += 1
 
 
+    print(f"   Trigger for at least 4 satellites :        {const_trigger_counter_4s:.2f} triggers")
     print(f"   Trigger for at least 3 satellites :        {const_trigger_counter_3s:.2f} triggers")
     print(f"   Trigger for at least 2 satellites :        {const_trigger_counter_2s:.2f} triggers")
     print(f"   Trigger for 1 satellite :        {const_trigger_counter_1s:.2f} triggers")
