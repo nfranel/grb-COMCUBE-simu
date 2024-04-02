@@ -84,7 +84,7 @@ class AllSatData(list):
     # Required for usual constellation
     ###################################################################################################################
     in_sight_sat = np.where(np.array(self) == None, False, True)
-    sat_const = const[in_sight_sat]
+    # sat_const = const[in_sight_sat]
     # const_0off_data = GRBFullData([], None, None, None, None, None, None, source_duration, source_fluence, *options)
     ###################################################################################################################
     # Constellation with down satellites
@@ -155,7 +155,7 @@ class AllSatData(list):
             elif item in ["hit_b_rate", "hit_time", "calor", "dsssd", "side"]:
               selected_sats = []
               for index_sat in considered_sats:
-                if self[index_sat].const_beneficial_trigger_3s:
+                if np.sum(self[index_sat].const_beneficial_trigger_3s) >= 1:  # todo test it
                   selected_sats.append(index_sat)
               selected_sats = np.array(selected_sats)
             else:
@@ -235,10 +235,18 @@ class AllSatData(list):
             #############################################################################################################
             # Appened
             #############################################################################################################
-            elif item in ["num_sat", "const_beneficial_compton", "const_beneficial_single", "const_beneficial_trigger_4s", "const_beneficial_trigger_3s", "const_beneficial_trigger_2s", "const_beneficial_trigger_1s"]:
+            elif item in ["num_sat", "const_beneficial_compton", "const_beneficial_single"]:
               temp_list = []
               for num_sat in selected_sats:
                 temp_list.append(getattr(self[num_sat], item))
               setattr(self.const_data[ite_const], item, np.array(temp_list))
+            #############################################################################################################
+            # List sum
+            #############################################################################################################
+            elif item in ["const_beneficial_trigger_4s", "const_beneficial_trigger_3s", "const_beneficial_trigger_2s", "const_beneficial_trigger_1s"]:
+              temp_list = np.zeros(9, dtype=np.int16)
+              for num_sat in selected_sats:
+                temp_list += getattr(self[num_sat], item)
+              setattr(self.const_data[ite_const], item, temp_list)
             else:
               raise AttributeError("Item not found")

@@ -101,10 +101,10 @@ class GRBFullData:
     ###################################################################################################################
     self.const_beneficial_compton = False       # Appened                 #
     self.const_beneficial_single = False        # Appened                 #
-    self.const_beneficial_trigger_4s = False       # Appened                 #
-    self.const_beneficial_trigger_3s = False       # Appened                 #
-    self.const_beneficial_trigger_2s = False       # Appened                 #
-    self.const_beneficial_trigger_1s = False       # Appened                 #
+    self.const_beneficial_trigger_4s = np.zeros(9, dtype=np.int16)  # List sum                  #
+    self.const_beneficial_trigger_3s = np.zeros(9, dtype=np.int16)  # List sum                  #
+    self.const_beneficial_trigger_2s = np.zeros(9, dtype=np.int16)  # List sum                  #
+    self.const_beneficial_trigger_1s = np.zeros(9, dtype=np.int16)  # List sum                  #
 
     ###################################################################################################################
     #                   Reading data from file
@@ -337,65 +337,34 @@ class GRBFullData:
     Sets const_beneficial_compton to True is the value for a satellite is worth considering
     """
     # For 4 sats
-    thresh_16 = 4.1
-    thresh_32 = 3.9
-    thresh_64 = 3.7
-    thresh_128 = 3.6
-    thresh_256 = 3.5
-    thresh_512 = 3.3
-    thresh_1024 = 3.3
-    thresh_2048 = 3.2
-    thresh_4096 = 3.1
-    if (self.hits_snrs[0] >= thresh_16 or self.hits_snrs[1] >= thresh_32 or self.hits_snrs[2] >= thresh_64 or self.hits_snrs[3] >= thresh_128 or self.hits_snrs[4] >= thresh_256 or self.hits_snrs[5] >= thresh_512 or self.hits_snrs[6] >= thresh_1024 or self.hits_snrs[7] >= thresh_2048 or self.hits_snrs[8] >= thresh_4096):
-    # if (self.hits_snrs[1] >= thresh_32 or self.hits_snrs[2] >= thresh_64 or self.hits_snrs[3] >= thresh_128 or self.hits_snrs[4] >= thresh_256 or self.hits_snrs[5] >= thresh_512 or self.hits_snrs[6] >= thresh_1024 or self.hits_snrs[7] >= thresh_2048 or self.hits_snrs[8] >= thresh_4096):
-      self.const_beneficial_trigger_4s = True
-    else:
-      self.const_beneficial_trigger_4s = False
+    # thresh_list has the sigma threshold for 16, 32, 64, 128, 256, 512, 1024, 2048 and 4096s
+    thresh_list_4s = [4.1, 3.9, 3.7, 3.6, 3.5, 3.3, 3.3, 3.2, 3.1]
+    for ite_ts in range(len(self.const_beneficial_trigger_4s)):
+      if self.hits_snrs[ite_ts] >= thresh_list_4s[ite_ts]:
+        self.const_beneficial_trigger_4s[ite_ts] = 1
+      else:
+        self.const_beneficial_trigger_4s[ite_ts] = 0
 
     # For 3 sats
-    thresh_16 = 4.7
-    thresh_32 = 4.3
-    thresh_64 = 4.2
-    thresh_128 = 4
-    thresh_256 = 3.8
-    thresh_512 = 3.7
-    thresh_1024 = 3.6
-    thresh_2048 = 3.5
-    thresh_4096 = 3.4
-    if (self.hits_snrs[0] >= thresh_16 or self.hits_snrs[1] >= thresh_32 or self.hits_snrs[2] >= thresh_64 or self.hits_snrs[3] >= thresh_128 or self.hits_snrs[4] >= thresh_256 or self.hits_snrs[5] >= thresh_512 or self.hits_snrs[6] >= thresh_1024 or self.hits_snrs[7] >= thresh_2048 or self.hits_snrs[8] >= thresh_4096):
-    # if (self.hits_snrs[1] >= thresh_32 or self.hits_snrs[2] >= thresh_64 or self.hits_snrs[3] >= thresh_128 or self.hits_snrs[4] >= thresh_256 or self.hits_snrs[5] >= thresh_512 or self.hits_snrs[6] >= thresh_1024 or self.hits_snrs[7] >= thresh_2048 or self.hits_snrs[8] >= thresh_4096):
-      self.const_beneficial_trigger_3s = True
-    else:
-      self.const_beneficial_trigger_3s = False
+    thresh_list_3s = [4.7, 4.3, 4.2, 4, 3.8, 3.7, 3.6, 3.5, 3.4]
+    for ite_ts in range(len(self.const_beneficial_trigger3s)):
+      if self.hits_snrs[ite_ts] >= thresh_list_3s[ite_ts]:
+        self.const_beneficial_trigger_3s[ite_ts] = 1
+      else:
+        self.const_beneficial_trigger_3s[ite_ts] = 0
 
     # For 2 sats
-    thresh_16 = 5.7
-    thresh_32 = 5.3
-    thresh_64 = 5
-    thresh_128 = 4.8
-    thresh_256 = 4.6
-    thresh_512 = 4.4
-    thresh_1024 = 4.3
-    thresh_2048 = 4.2
-    thresh_4096 = 4.1
-    if (self.hits_snrs[0] >= thresh_16 or self.hits_snrs[1] >= thresh_32 or self.hits_snrs[2] >= thresh_64 or self.hits_snrs[3] >= thresh_128 or self.hits_snrs[4] >= thresh_256 or self.hits_snrs[5] >= thresh_512 or self.hits_snrs[6] >= thresh_1024 or self.hits_snrs[7] >= thresh_2048 or self.hits_snrs[8] >= thresh_4096):
-    # if (self.hits_snrs[1] >= thresh_32 or self.hits_snrs[2] >= thresh_64 or self.hits_snrs[3] >= thresh_128 or self.hits_snrs[4] >= thresh_256 or self.hits_snrs[5] >= thresh_512 or self.hits_snrs[6] >= thresh_1024 or self.hits_snrs[7] >= thresh_2048 or self.hits_snrs[8] >= thresh_4096):
-      self.const_beneficial_trigger_2s = True
-    else:
-      self.const_beneficial_trigger_2s = False
+    thresh_list_2s = [5.7, 5.3, 5, 4.8, 4.6, 4.4, 4.3, 4.2, 4.1]
+    for ite_ts in range(len(self.const_beneficial_trigger_2s)):
+      if self.hits_snrs[ite_ts] >= thresh_list_2s[ite_ts]:
+        self.const_beneficial_trigger_2s[ite_ts] = 1
+      else:
+        self.const_beneficial_trigger_2s[ite_ts] = 0
 
     # For 1 sats
-    thresh_16 = 8.2
-    thresh_32 = 7.5
-    thresh_64 = 6.9
-    thresh_128 = 6.6
-    thresh_256 = 6.3
-    thresh_512 = 6
-    thresh_1024 = 5.8
-    thresh_2048 = 5.6
-    thresh_4096 = 5.5
-    if (self.hits_snrs[0] >= thresh_16 or self.hits_snrs[1] >= thresh_32 or self.hits_snrs[2] >= thresh_64 or self.hits_snrs[3] >= thresh_128 or self.hits_snrs[4] >= thresh_256 or self.hits_snrs[5] >= thresh_512 or self.hits_snrs[6] >= thresh_1024 or self.hits_snrs[7] >= thresh_2048 or self.hits_snrs[8] >= thresh_4096):
-    # if (self.hits_snrs[1] >= thresh_32 or self.hits_snrs[2] >= thresh_64 or self.hits_snrs[3] >= thresh_128 or self.hits_snrs[4] >= thresh_256 or self.hits_snrs[5] >= thresh_512 or self.hits_snrs[6] >= thresh_1024 or self.hits_snrs[7] >= thresh_2048 or self.hits_snrs[8] >= thresh_4096):
-      self.const_beneficial_trigger_1s = True
-    else:
-      self.const_beneficial_trigger_1s = False
+    thresh_list_1s = [8.2, 7.5, 6.9, 6.6, 6.3, 6, 5.8, 5.6, 5.5]
+    for ite_ts in range(len(self.const_beneficial_trigger_1s)):
+      if self.hits_snrs[ite_ts] >= thresh_list_1s[ite_ts]:
+        self.const_beneficial_trigger_1s[ite_ts] = 1
+      else:
+        self.const_beneficial_trigger_1s[ite_ts] = 0
