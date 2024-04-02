@@ -347,7 +347,7 @@ class GRBFullData:
 
     # For 3 sats
     thresh_list_3s = [4.7, 4.3, 4.2, 4, 3.8, 3.7, 3.6, 3.5, 3.4]
-    for ite_ts in range(len(self.const_beneficial_trigger3s)):
+    for ite_ts in range(len(self.const_beneficial_trigger_3s)):
       if self.hits_snrs[ite_ts] >= thresh_list_3s[ite_ts]:
         self.const_beneficial_trigger_3s[ite_ts] = 1
       else:
