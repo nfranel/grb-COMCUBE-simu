@@ -3,6 +3,7 @@ from time import time
 from funcmod import *
 from visualisation import *
 from MCMCGRB import GRBSample
+from catalog import SampleCatalog
 import matplotlib.pyplot as plt
 import numpy as np
 import cartopy.crs as ccrs
@@ -10,6 +11,8 @@ import cartopy.crs as ccrs
 
 init_time = time()
 grb_sim_param = "/pdisk/ESA/COMCUBEv15--500km--0-0-0--27sat--lc-sampled/polGBM.par"
+# grb_sim_param = "/pdisk/ESA/COMCUBEv15--500km--45-45-45--27sat--lc-sampled/polGBM.par"
+# grb_sim_param = "/pdisk/ESA/COMCUBEv15--500km--97.5-97.5-97.5--27sat--lc-sampled/polGBM.par"
 
 # grb_sim_param = "/pdisk/ESA/COMCUBEv15--500km--0-0-0--27sat--lc-all/polGBM.par"
 # grb_sim_param = "/pdisk/ESA/COMCUBEv15--500km--45-45-45--27sat--lc-all/polGBM.par"
@@ -87,6 +90,180 @@ fig1, ax = plt.subplots(nrows=1, ncols=1, figsize=(10, 6))
 ax.plot(range(test.n_sat), mdp30list)
 ax.set(title="Evolution of detection rate for GRB with MDP <= 30% with the number of down satellite", xlabel="Number of satellite not working", ylabel="Detection rate of GRB with MDP <= 30% (/yr)")
 ax.grid(True, which='major', linestyle='--', color='black', alpha=0.3)
+plt.show()
+
+
+#######################################################################################################################
+# Sample comparison
+#######################################################################################################################
+cat_gbm = Catalog("./GBM/allGBM.txt", test.sttype)
+gbm_ep = []
+gbm_t90 = []
+gbm_ph_flux = []
+gbm_ph_fluence = []
+
+gbm_ep_l = []
+gbm_t90_l = []
+gbm_ph_flux_l = []
+gbm_ph_fluence_l = []
+
+gbm_ep_s = []
+gbm_t90_s = []
+gbm_ph_flux_s = []
+gbm_ph_fluence_s = []
+for ite_gbm, gbm_ep in enumerate(cat_gbm.flnc_band_epeak):
+  if gbm_ep.strip() != "":
+    ep_temp = float(gbm_ep)
+    t90_temp = float(cat_gbm.t90[ite_gbm])
+    flux_temp = calc_flux_gbm(cat_gbm, ite_gbm, (10, 1000))
+    fluence_temp = flux_temp * t90_temp
+    gbm_ep.append(ep_temp)
+    gbm_t90.append(t90_temp)
+    gbm_ph_flux.append(flux_temp)
+    gbm_ph_fluence.append(fluence_temp)
+    if float(cat_gbm.t90[ite_gbm]) <= 2:
+      gbm_ep_s.append(ep_temp)
+      gbm_t90_s.append(t90_temp)
+      gbm_ph_flux_s.append(flux_temp)
+      gbm_ph_fluence_s.append(fluence_temp)
+    else:
+      gbm_ep_l.append(ep_temp)
+      gbm_t90_l.append(t90_temp)
+      gbm_ph_flux_l.append(flux_temp)
+      gbm_ph_fluence_l.append(fluence_temp)
+  else:
+    print("Information : Find null Epeak in catalog")
+
+cat_samp = SampleCatalog(test.cat_file, test.sttype)
+samp_ep = []
+samp_t90 = []
+samp_ph_flux = []
+samp_ph_fluence = []
+
+samp_ep_l = []
+samp_t90_l = []
+samp_ph_flux_l = []
+samp_ph_fluence_l = []
+
+samp_ep_s = []
+samp_t90_s = []
+samp_ph_flux_s = []
+samp_ph_fluence_s = []
+for ite_samp, name_samp in enumerate(cat_samp.name):
+  samp_ep.append(cat_samp.ep[ite_samp])
+  samp_t90.append(cat_samp.t90[ite_samp])
+  samp_ph_flux.append(cat_samp.mean_flux[ite_samp])
+  samp_ph_fluence.append(cat_samp.fluence[ite_samp])
+  if name_samp.startswith("sGRB"):
+    samp_ep_s.append(cat_samp.ep[ite_samp])
+    samp_t90_s.append(cat_samp.t90[ite_samp])
+    samp_ph_flux_s.append(cat_samp.mean_flux[ite_samp])
+    samp_ph_fluence_s.append(cat_samp.fluence[ite_samp])
+  else:
+    samp_ep_l.append(cat_samp.ep[ite_samp])
+    samp_t90_l.append(cat_samp.t90[ite_samp])
+    samp_ph_flux_l.append(cat_samp.mean_flux[ite_samp])
+    samp_ph_fluence_l.append(cat_samp.fluence[ite_samp])
+
+number_off_sat = 0
+print("================================================================================================")
+print(f"== Triggers according to GBM method with   {number_off_sat}   down satellite")
+print("================================================================================================")
+total_in_view = 0
+const_trigger_counter_4s = 0
+const_trigger_counter_3s = 0
+const_trigger_counter_2s = 0
+const_trigger_counter_1s = 0
+trig_name = []
+trig_ep = []
+trig_t90 = []
+trig_ph_flux = []
+trig_ph_fluence = []
+
+trig_ep_l = []
+trig_t90_l = []
+trig_ph_flux_l = []
+trig_ph_fluence_l = []
+
+trig_ep_s = []
+trig_t90_s = []
+trig_ph_flux_s = []
+trig_ph_fluence_s = []
+for source in test.alldata:
+  if source is not None:
+    for ite_sim, sim in enumerate(source):
+      if sim is not None:
+        total_in_view += 1
+        sat_counter_4s = 0
+        sat_counter_3s = 0
+        sat_counter_2s = 0
+        sat_counter_1s = 0
+        if sim.const_data[number_off_sat] is not None:
+          for trigger_bool in sim.const_data[number_off_sat].const_beneficial_trigger_4s:
+            if trigger_bool:
+              sat_counter_4s += 1
+          for trigger_bool in sim.const_data[number_off_sat].const_beneficial_trigger_3s:
+            if trigger_bool:
+              sat_counter_3s += 1
+          for trigger_bool in sim.const_data[number_off_sat].const_beneficial_trigger_2s:
+            if trigger_bool:
+              sat_counter_2s += 1
+          for trigger_bool in sim.const_data[number_off_sat].const_beneficial_trigger_1s:
+            if trigger_bool:
+              sat_counter_1s += 1
+        if sat_counter_4s >= 4:
+          const_trigger_counter_4s += 1
+        if sat_counter_3s >= 3:
+          const_trigger_counter_3s += 1
+          for samp_ite, samp_name in enumerate(cat_samp):
+            if samp_name == source.source_name:
+              temp_ep = cat_samp.ep[samp_ite]
+              temp_t90 = cat_samp.t90[samp_ite]
+              temp_flux = cat_samp.mean_flux[samp_ite]
+              temp_fluence = cat_samp.fluence[samp_ite]
+          if source.source_name.startswith("sGRB"):
+            trig_ep_s.append(temp_ep)
+            trig_t90_s.append(temp_t90)
+            trig_ph_flux_s.append(temp_flux)
+            trig_ph_fluence_s.append(temp_fluence)
+          else:
+            trig_ep_l.append(temp_ep)
+            trig_t90_l.append(temp_t90)
+            trig_ph_flux_l.append(temp_flux)
+            trig_ph_fluence_l.append(temp_fluence)
+        if sat_counter_2s >= 2:
+          const_trigger_counter_2s += 1
+        if sat_counter_1s >= 1:
+          const_trigger_counter_1s += 1
+
+print(f"   Trigger for at least 4 satellites :        {const_trigger_counter_4s:.2f} triggers")
+print(f"   Trigger for at least 3 satellites :        {const_trigger_counter_3s:.2f} triggers")
+print(f"   Trigger for at least 2 satellites :        {const_trigger_counter_2s:.2f} triggers")
+print(f"   Trigger for 1 satellite :        {const_trigger_counter_1s:.2f} triggers")
+print("=============================================")
+print(f" Over the {total_in_view} GRBs simulated in the constellation field of view")
+
+
+
+bins = np.logspace(-7, 4, 50)
+fig1, (ax1, ax2, ax3) = plt.subplots(nrows=1, ncols=3, figsize=(27, 6))
+ax1.hist(samp_ph_fluence, bins=bins, weights=[1/2] * len(samp_ph_fluence))
+ax1.hist(trig_ph_fluence, bins=bins, weights=[1/2] * len(trig_ph_fluence))
+ax1.hist(gbm_ph_fluence, bins=bins, weights=[1/10] * len(gbm_ph_fluence))
+ax1.set(title="Fluence histograms", xlabel="Photon fluence (ph/cm²)", ylabel="Number of bursts", xscale="log", yscale="log")
+ax1.grid(True, which='major', linestyle='--', color='black', alpha=0.3)
+
+ax2.hist(samp_ph_fluence_s, bins=bins, weights=[1/2] * len(samp_ph_fluence_s))
+ax2.hist(trig_ph_fluence_s, bins=bins, weights=[1/2] * len(trig_ph_fluence_s))
+ax2.hist(gbm_ph_fluence_s, bins=bins, weights=[1/10] * len(gbm_ph_fluence_s))
+ax2.set(title="sGRB Fluence histograms", xlabel="Photon fluence (ph/cm²)", ylabel="Number of short bursts", xscale="log", yscale="log")
+ax2.grid(True, which='major', linestyle='--', color='black', alpha=0.3)
+
+ax3.hist(samp_ph_fluence_l, bins=bins, weights=[1/2] * len(samp_ph_fluence_l))
+ax3.hist(trig_ph_fluence_l, bins=bins, weights=[1/2] * len(trig_ph_fluence_l))
+ax3.hist(gbm_ph_fluence_l, bins=bins, weights=[1/10] * len(gbm_ph_fluence_l))
+ax3.set(title="lGRB Fluence histograms", xlabel="Photon fluence (ph/cm²)", ylabel="Number of long bursts", xscale="log", yscale="log")
+ax3.grid(True, which='major', linestyle='--', color='black', alpha=0.3)
 plt.show()
 
 
