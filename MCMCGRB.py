@@ -146,12 +146,12 @@ class GRBSample:
       f.write("Keys : \n")
       f.write("name|t90|light curve name|fluence|mean flux|redshift|Band low energy index|Band high energy index|peak energy|luminosity distance|isotropic luminosity|isotropic energy|jet opening angle\n")
     # Long GRBs
-    self.nlong = self.n_year * int(quad(red_rate_long, self.zmin, self.zmax, (self.red0, self.n1, self.n2, self.z1))[0])
+    self.nlong = int(self.n_year * int(quad(red_rate_long, self.zmin, self.zmax, (self.red0, self.n1, self.n2, self.z1))[0]))
     print("nlong : ", self.nlong)
     for ite in range(self.nlong):
       self.add_long(ite)
     # Short GRBs
-    self.nshort = self.n_year * int(quad(red_rate_short, self.zmin, self.zmax, (self.short_rate, self.p1, self.zp, self.p2))[0])
+    self.nshort = int(self.n_year * int(quad(red_rate_short, self.zmin, self.zmax, (self.short_rate, self.p1, self.zp, self.p2))[0]))
     print("nshort : ", self.nshort)
     for ite in range(self.nshort):
       self.add_short(ite)
