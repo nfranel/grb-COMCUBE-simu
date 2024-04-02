@@ -34,17 +34,17 @@ class BkgContainer(list):
     # print("geom_name", geom_name)
     # print("saving", saving)
     # print("cond_saving", cond_saving)
-    if saving not in os.listdir(f"./bkg/sim_{geom_name}"):
-      init_time = time()
-      print("###########################################################################")
-      print(" bkg data not saved : Saving ")
-      print("###########################################################################")
-      self.save_data(f"./bkg/sim_{geom_name}/{saving}", f"./bkg/sim_{geom_name}/{cond_saving}", ergcut)
-      print("=======================================")
-      print(" Saving of bkg data finished in : ", time() - init_time, "seconds")
-      print("=======================================")
-    else:
-      if cond_saving not in os.listdir(f"./bkg/sim_{geom_name}"):
+    if cond_saving not in os.listdir(f"./bkg/sim_{geom_name}"):
+      if saving not in os.listdir(f"./bkg/sim_{geom_name}"):
+        init_time = time()
+        print("###########################################################################")
+        print(" bkg data not saved : Saving ")
+        print("###########################################################################")
+        self.save_data(f"./bkg/sim_{geom_name}/{saving}", f"./bkg/sim_{geom_name}/{cond_saving}", ergcut)
+        print("=======================================")
+        print(" Saving of bkg data finished in : ", time() - init_time, "seconds")
+        print("=======================================")
+      else:
         init_time = time()
         print("###########################################################################")
         print(" bkg condensed data not saved : Saving ")
