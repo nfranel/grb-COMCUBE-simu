@@ -108,7 +108,7 @@ class AllSourceData:
       self.alldata = [AllSimData(self.sim_prefix, source_ite, cat_data, self.n_sim, self.sat_info, self.sim_duration, self.bkgdata, self.muSeffdata, self.options) for source_ite in range(self.n_source)]
 
     # Setting some informations used for obtaining the GRB count rates
-    self.com_duty = self.n_sim_simulated / (self.n_sim_simulated + self.n_sim_in_radbelt)
+    self.com_duty = 1  # self.n_sim_simulated / (self.n_sim_simulated + self.n_sim_in_radbelt)
     self.com_fov = 1
     if self.simmode == "GBM":
       self.cat_duration = 10

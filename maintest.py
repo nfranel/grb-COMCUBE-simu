@@ -111,9 +111,9 @@ gbm_ep_s = []
 gbm_t90_s = []
 gbm_ph_flux_s = []
 gbm_ph_fluence_s = []
-for ite_gbm, gbm_ep in enumerate(cat_gbm.flnc_band_epeak):
-  if gbm_ep.strip() != "":
-    ep_temp = float(gbm_ep)
+for ite_gbm, ep_gbm in enumerate(cat_gbm.flnc_band_epeak):
+  if ep_gbm.strip() != "":
+    ep_temp = float(ep_gbm)
     t90_temp = float(cat_gbm.t90[ite_gbm])
     flux_temp = calc_flux_gbm(cat_gbm, ite_gbm, (10, 1000))
     fluence_temp = flux_temp * t90_temp
@@ -262,6 +262,73 @@ ax2.grid(True, which='major', linestyle='--', color='black', alpha=0.3)
 ax3.hist(samp_ph_fluence_l, bins=bins, weights=[1/2] * len(samp_ph_fluence_l))
 ax3.hist(trig_ph_fluence_l, bins=bins, weights=[1/2] * len(trig_ph_fluence_l))
 ax3.hist(gbm_ph_fluence_l, bins=bins, weights=[1/10] * len(gbm_ph_fluence_l))
+ax3.set(title="lGRB Fluence histograms", xlabel="Photon fluence (ph/cm²)", ylabel="Number of long bursts", xscale="log", yscale="log")
+ax3.grid(True, which='major', linestyle='--', color='black', alpha=0.3)
+plt.show()
+
+
+Fast test
+cat_gbm = Catalog("./GBM/allGBM.txt", [4, '\n', 5, '|', 10000])
+gbm_ep = []
+gbm_t90 = []
+gbm_ph_flux = []
+gbm_ph_fluence = []
+
+gbm_ep_l = []
+gbm_t90_l = []
+gbm_ph_flux_l = []
+gbm_ph_fluence_l = []
+
+gbm_ep_s = []
+gbm_t90_s = []
+gbm_ph_flux_s = []
+gbm_ph_fluence_s = []
+for ite_gbm, ep_gbm in enumerate(cat_gbm.flnc_band_epeak):
+  if ep_gbm.strip() != "":
+    ep_temp = float(ep_gbm)
+    t90_temp = float(cat_gbm.t90[ite_gbm])
+    flux_temp = calc_flux_gbm(cat_gbm, ite_gbm, (10, 1000))
+    fluence_temp = flux_temp * t90_temp
+    gbm_ep.append(ep_temp)
+    gbm_t90.append(t90_temp)
+    gbm_ph_flux.append(flux_temp)
+    gbm_ph_fluence.append(fluence_temp)
+    if float(cat_gbm.t90[ite_gbm]) <= 2:
+      gbm_ep_s.append(ep_temp)
+      gbm_t90_s.append(t90_temp)
+      gbm_ph_flux_s.append(flux_temp)
+      gbm_ph_fluence_s.append(fluence_temp)
+    else:
+      gbm_ep_l.append(ep_temp)
+      gbm_t90_l.append(t90_temp)
+      gbm_ph_flux_l.append(flux_temp)
+      gbm_ph_fluence_l.append(fluence_temp)
+  else:
+    print("Information : Find null Epeak in catalog")
+
+mflu = []
+flu = []
+tim = []
+for source in test.alldata:
+  mflu.append(source.best_fit_mean_flux)
+  flu.append(source.source_fluence)
+  tim.append(source.source_duration)
+
+bins = np.logspace(-7, 4, 50)
+fig1, (ax1, ax2, ax3) = plt.subplots(nrows=1, ncols=3, figsize=(27, 6))
+ax1.hist(gbm_ph_fluence, bins=bins, histtype="step", weights=[1/10] * len(gbm_ph_fluence))
+ax1.hist(flu, bins=bins, histtype="step")
+ax1.set(title="Fluence histograms", xlabel="Photon fluence (ph/cm²)", ylabel="Number of bursts", xscale="log", yscale="log")
+ax1.grid(True, which='major', linestyle='--', color='black', alpha=0.3)
+
+ax2.hist(gbm_ph_flux, bins=bins, histtype="step", weights=[1/10] * len(gbm_ph_flux))
+ax2.hist(mflu, bins=bins, histtype="step")
+ax2.set(title="sGRB Fluence histograms", xlabel="Photon fluence (ph/cm²)", ylabel="Number of short bursts", xscale="log", yscale="log")
+ax2.grid(True, which='major', linestyle='--', color='black', alpha=0.3)
+
+bins = np.linspace(0, 400, 50)
+ax3.hist(gbm_t90, bins=bins, histtype="step", weights=[1/10] * len(gbm_t90))
+ax3.hist(tim, bins=bins, histtype="step")
 ax3.set(title="lGRB Fluence histograms", xlabel="Photon fluence (ph/cm²)", ylabel="Number of long bursts", xscale="log", yscale="log")
 ax3.grid(True, which='major', linestyle='--', color='black', alpha=0.3)
 plt.show()

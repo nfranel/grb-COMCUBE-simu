@@ -212,7 +212,7 @@ class GRBSample:
     # picking according to distributions
     ##################################################################################################################
     z_temp = acc_reject(red_rate_long, [self.red0, self.n1, self.n2, self.z1], self.zmin, self.zmax)
-    lbol_temp = acc_reject(luminosity_function, [self.al1_l, self.al2_l, self.lb_l], self.lmin, self.lmax)
+    lbol_temp = acc_reject(luminosity_function, [self.al1_l, self.al2_l, self.lb_l], self.lmin, self.lmax) / 2.5
     temp_band_low = np.random.normal(loc=self.band_low_l_mu, scale=self.band_low_l_sig)
     temp_band_high = np.random.normal(loc=self.band_high_l_mu, scale=self.band_high_l_sig)
     while (temp_band_low - temp_band_high) / (temp_band_low + 2) < 0:
@@ -232,7 +232,7 @@ class GRBSample:
       # picking according to distributions
       ##################################################################################################################
       z_temp = acc_reject(red_rate_long, [self.red0, self.n1, self.n2, self.z1], self.zmin, self.zmax)
-      lbol_temp = acc_reject(luminosity_function, [self.al1_l, self.al2_l, self.lb_l], self.lmin, self.lmax)
+      lbol_temp = acc_reject(luminosity_function, [self.al1_l, self.al2_l, self.lb_l], self.lmin, self.lmax) / 2.5
       temp_band_low = np.random.normal(loc=self.band_low_l_mu, scale=self.band_low_l_sig)
       temp_band_high = np.random.normal(loc=self.band_high_l_mu, scale=self.band_high_l_sig)
       while (temp_band_low - temp_band_high) / (temp_band_low + 2) < 0:
@@ -399,24 +399,24 @@ class GRBSample:
     ax2.legend()
 
     ax3.hist(self.ep_short, bins=np.logspace(np.log10(self.epmin), np.log10(self.epmax), nbin), histtype="step", color="blue", label=f"Sample, {len(self.ep_short)} GRB")
-    ax3.hist(self.short_gbm_epeak, bins=np.logspace(np.log10(self.epmin), np.log10(self.epmax), nbin), histtype="step", color="red", label=f"GBM, {len(self.short_gbm_epeak)} GRB", weights=[1 / gbmduty] * len(self.short_gbm_epeak))
+    ax3.hist(self.short_gbm_epeak, bins=np.logspace(np.log10(self.epmin), np.log10(self.epmax), nbin), histtype="step", color="red", label=f"GBM, {len(self.short_gbm_epeak)} GRB", weights=[1 / gbmduty / 5] * len(self.short_gbm_epeak))
     ax3.set(title="Ep distributions", xlabel="Peak energy (keV)", ylabel="Number of GRB", xscale="log", yscale=yscale)
     ax3.legend()
 
     ph_short_fluence = np.array(self.mean_flux_short)*np.array(self.t90_short)
     ph_min, ph_max = np.min(ph_short_fluence), np.max(ph_short_fluence)
     ax4.hist(ph_short_fluence, bins=np.logspace(np.log10(ph_min), np.log10(ph_max), nbin), histtype="step", color="blue", label=f"Sample, {len(ph_short_fluence)} GRB")
-    ax4.hist(self.short_gbm_ph_fluence, bins=np.logspace(np.log10(np.min(self.mean_flux_long)), np.log10(np.max(self.mean_flux_long)), nbin), histtype="step", color="red", label=f"GBM, {len(self.short_gbm_ph_fluence)} GRB", weights=[1 / gbmduty] * len(self.short_gbm_ph_fluence))
+    ax4.hist(self.short_gbm_ph_fluence, bins=np.logspace(np.log10(np.min(self.mean_flux_long)), np.log10(np.max(self.mean_flux_long)), nbin), histtype="step", color="red", label=f"GBM, {len(self.short_gbm_ph_fluence)} GRB", weights=[1 / gbmduty / 5] * len(self.short_gbm_ph_fluence))
     ax4.set(title="Fluence distributions", xlabel="Photon fluence (photon/cm²)", ylabel="Number of GRB", xscale="log", yscale=yscale)
     ax4.legend()
 
     ax5.hist(self.mean_flux_short, bins=np.logspace(np.log10(np.min(self.mean_flux_long)), np.log10(np.max(self.mean_flux_long)), nbin), histtype="step", color="blue", label=f"Sample, {len(self.mean_flux_short)} GRB")
-    ax5.hist(self.short_gbm_ph_flux, bins=np.logspace(np.log10(np.min(self.mean_flux_long)), np.log10(np.max(self.mean_flux_long)), nbin), histtype="step", color="red", label=f"GBM, {len(self.short_gbm_ph_flux)} GRB", weights=[1 / gbmduty] * len(self.short_gbm_ph_flux))
+    ax5.hist(self.short_gbm_ph_flux, bins=np.logspace(np.log10(np.min(self.mean_flux_long)), np.log10(np.max(self.mean_flux_long)), nbin), histtype="step", color="red", label=f"GBM, {len(self.short_gbm_ph_flux)} GRB", weights=[1 / gbmduty / 5] * len(self.short_gbm_ph_flux))
     ax5.set(title="Mean flux distributions", xlabel="Photon flux (photon/cm²/s)", ylabel="Number of GRB", xscale="log", yscale=yscale)
     ax5.legend()
 
     ax6.hist(self.t90_short, bins=nbin, histtype="step", color="blue", label=f"Sample, {len(self.t90_short)} GRB")
-    ax6.hist(self.short_gbm_t90, bins=nbin, histtype="step", color="red", label=f"GBM, {len(self.short_gbm_t90)} GRB", weights=[1 / gbmduty] * len(self.short_gbm_t90))
+    ax6.hist(self.short_gbm_t90, bins=nbin, histtype="step", color="red", label=f"GBM, {len(self.short_gbm_t90)} GRB", weights=[1 / gbmduty / 5] * len(self.short_gbm_t90))
     ax6.set(title="T90 distributions", xlabel="T90 (s)", ylabel="Number of GRB", xscale="linear", yscale=yscale)
     ax6.legend()
 
@@ -471,34 +471,34 @@ class GRBSample:
     ax2.legend()
 
     ax3.hist(self.ep_long, bins=np.logspace(np.log10(self.epmin), np.log10(self.epmax), nbin), histtype="step", color="blue", label=f"Sample, {len(self.ep_long)} GRB")
-    ax3.hist(self.long_gbm_epeak, bins=np.logspace(np.log10(self.epmin), np.log10(self.epmax), nbin), histtype="step", color="red", label=f"GBM, {len(self.long_gbm_epeak)} GRB", weights=[1 / gbmduty] * len(self.long_gbm_epeak))
+    ax3.hist(self.long_gbm_epeak, bins=np.logspace(np.log10(self.epmin), np.log10(self.epmax), nbin), histtype="step", color="red", label=f"GBM, {len(self.long_gbm_epeak)} GRB", weights=[1 / gbmduty / 5] * len(self.long_gbm_epeak))
     ax3.set(title="Ep distributions", xlabel="Peak energy (keV)", ylabel="Number of GRB", xscale="log", yscale=yscale)
     ax3.legend()
 
     ax4.hist(self.band_low_long, bins=np.linspace(np.min(self.long_gbm_alpha), np.max(self.long_gbm_alpha), nbin), histtype="step", color="blue", label=f"Sample, {len(self.band_low_long)} GRB")
-    ax4.hist(self.long_gbm_alpha, bins=np.linspace(np.min(self.long_gbm_alpha), np.max(self.long_gbm_alpha), nbin), histtype="step", color="red", label=f"GBM, {len(self.long_gbm_alpha)} GRB", weights=[1 / gbmduty] * len(self.long_gbm_alpha))
+    ax4.hist(self.long_gbm_alpha, bins=np.linspace(np.min(self.long_gbm_alpha), np.max(self.long_gbm_alpha), nbin), histtype="step", color="red", label=f"GBM, {len(self.long_gbm_alpha)} GRB", weights=[1 / gbmduty / 5] * len(self.long_gbm_alpha))
     ax4.set(title="Band low energy index", xlabel="Alpha", ylabel="Number of GRB", xscale="linear", yscale=yscale)
     ax4.legend()
 
     ax5.hist(self.band_high_long, bins=np.linspace(np.min(self.long_gbm_beta), np.max(self.long_gbm_beta), nbin), histtype="step", color="green", label=f"Sample, {len(self.band_high_long)} GRB")
-    ax5.hist(self.long_gbm_beta, bins=np.linspace(np.min(self.long_gbm_beta), np.max(self.long_gbm_beta), nbin), histtype="step", color="orange", label=f"GBM, {len(self.long_gbm_beta)} GRB", weights=[1 / gbmduty] * len(self.long_gbm_beta))
+    ax5.hist(self.long_gbm_beta, bins=np.linspace(np.min(self.long_gbm_beta), np.max(self.long_gbm_beta), nbin), histtype="step", color="orange", label=f"GBM, {len(self.long_gbm_beta)} GRB", weights=[1 / gbmduty / 5] * len(self.long_gbm_beta))
     ax5.set(title="Band high energy index", xlabel="Beta", ylabel="Number of GRB", xscale="linear", yscale=yscale)
     ax5.legend()
 
     ph_long_fluence = np.array(self.mean_flux_long)*np.array(self.t90_long)
     ph_min, ph_max = np.min(ph_long_fluence), np.max(ph_long_fluence)
     ax6.hist(ph_long_fluence, bins=np.logspace(np.log10(ph_min), np.log10(ph_max), nbin), histtype="step", color="blue", label=f"Sample, {len(ph_long_fluence)} GRB")
-    ax6.hist(self.long_gbm_ph_fluence, bins=np.logspace(np.log10(np.min(self.mean_flux_long)), np.log10(np.max(self.mean_flux_long)), nbin), histtype="step", color="red", label=f"GBM, {len(self.long_gbm_ph_fluence)} GRB", weights=[1 / gbmduty] * len(self.long_gbm_ph_fluence))
+    ax6.hist(self.long_gbm_ph_fluence, bins=np.logspace(np.log10(np.min(self.mean_flux_long)), np.log10(np.max(self.mean_flux_long)), nbin), histtype="step", color="red", label=f"GBM, {len(self.long_gbm_ph_fluence)} GRB", weights=[1 / gbmduty / 5] * len(self.long_gbm_ph_fluence))
     ax6.set(title="Fluence distributions", xlabel="Photon fluence (photon/cm²)", ylabel="Number of GRB", xscale="log", yscale=yscale)
     ax6.legend()
 
     ax7.hist(self.mean_flux_long, bins=np.logspace(np.log10(np.min(self.mean_flux_long)), np.log10(np.max(self.mean_flux_long)), nbin), histtype="step", color="blue", label=f"Sample, {len(self.mean_flux_long)} GRB")
-    ax7.hist(self.long_gbm_ph_flux, bins=np.logspace(np.log10(np.min(self.mean_flux_long)), np.log10(np.max(self.mean_flux_long)), nbin), histtype="step", color="red", label=f"GBM, {len(self.long_gbm_ph_flux)} GRB", weights=[1 / gbmduty] * len(self.long_gbm_ph_flux))
+    ax7.hist(self.long_gbm_ph_flux, bins=np.logspace(np.log10(np.min(self.mean_flux_long)), np.log10(np.max(self.mean_flux_long)), nbin), histtype="step", color="red", label=f"GBM, {len(self.long_gbm_ph_flux)} GRB", weights=[1 / gbmduty / 5] * len(self.long_gbm_ph_flux))
     ax7.set(title="Mean flux distributions", xlabel="Photon flux (photon/cm²/s)", ylabel="Number of GRB", xscale="log", yscale=yscale)
     ax7.legend()
 
     ax8.hist(self.t90_long, bins=nbin, histtype="step", color="blue", label=f"Sample, {len(self.t90_long)} GRB")
-    ax8.hist(self.long_gbm_t90, bins=nbin, histtype="step", color="red", label=f"GBM, {len(self.long_gbm_t90)} GRB", weights=[1 / gbmduty] * len(self.long_gbm_t90))
+    ax8.hist(self.long_gbm_t90, bins=nbin, histtype="step", color="red", label=f"GBM, {len(self.long_gbm_t90)} GRB", weights=[1 / gbmduty / 5] * len(self.long_gbm_t90))
     ax8.set(title="T90 distributions", xlabel="T90 (s)", ylabel="Number of GRB", xscale="linear", yscale=yscale)
     ax8.legend()
 
