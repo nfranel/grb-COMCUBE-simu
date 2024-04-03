@@ -115,7 +115,7 @@ class AllSourceData:
       self.gbm_duty = 0.85
       self.gbm_fov = (1 - np.cos(np.deg2rad(horizon_angle(565)))) / 2
     elif self.simmode == "sampled":
-      self.cat_duration = 2
+      self.cat_duration = float(self.cat_file.split("_")[-1].split("years")[0])
       self.gbm_duty = 1
       self.gbm_fov = 1
     else:

@@ -10,11 +10,11 @@ import cartopy.crs as ccrs
 
 
 init_time = time()
-# grb_sim_param = "/pdisk/ESA/COMCUBEv15--500km--0-0-0--27sat--lc-sampled/polGBM.par"
+grb_sim_param = "/pdisk/ESA/COMCUBEv15--500km--0-0-0--27sat--lc-sampledv2/polGBM.par"
 # grb_sim_param = "/pdisk/ESA/COMCUBEv15--500km--45-45-45--27sat--lc-sampled/polGBM.par"
 # grb_sim_param = "/pdisk/ESA/COMCUBEv15--500km--97.5-97.5-97.5--27sat--lc-sampled/polGBM.par"
 
-grb_sim_param = "/pdisk/ESA/COMCUBEv15--500km--0-0-0--27sat--lc-all/polGBM.par"
+# grb_sim_param = "/pdisk/ESA/COMCUBEv15--500km--0-0-0--27sat--lc-all/polGBM.par"
 # grb_sim_param = "/pdisk/ESA/COMCUBEv15--500km--45-45-45--27sat--lc-all/polGBM.par"
 # grb_sim_param = "/pdisk/ESA/COMCUBEv15--500km--97.5-97.5-97.5--27sat--lc-all/polGBM.par"
 
@@ -215,12 +215,16 @@ for source in test.alldata:
           const_trigger_counter_4s += 1
         if sat_counter_3s >= 3:
           const_trigger_counter_3s += 1
-          for samp_ite, samp_name in enumerate(cat_samp):
+          for samp_ite, samp_name in enumerate(cat_samp.name):
             if samp_name == source.source_name:
               temp_ep = cat_samp.ep[samp_ite]
               temp_t90 = cat_samp.t90[samp_ite]
               temp_flux = cat_samp.mean_flux[samp_ite]
               temp_fluence = cat_samp.fluence[samp_ite]
+              trig_ep.append(temp_ep)
+              trig_t90.append(temp_t90)
+              trig_ph_flux.append(temp_flux)
+              trig_ph_fluence.append(temp_fluence)
           if source.source_name.startswith("sGRB"):
             trig_ep_s.append(temp_ep)
             trig_t90_s.append(temp_t90)
@@ -244,25 +248,46 @@ print("=============================================")
 print(f" Over the {total_in_view} GRBs simulated in the constellation field of view")
 
 
-
-bins = np.logspace(-7, 4, 50)
+bins=np.logspace(np.log10(np.min(samp_ph_flux_l)), np.log10(np.max(samp_ph_flux_l)), 50)
+# bins = np.logspace(-8, 3, 40)
 fig1, (ax1, ax2, ax3) = plt.subplots(nrows=1, ncols=3, figsize=(27, 6))
-ax1.hist(samp_ph_fluence, bins=bins, weights=[1/2] * len(samp_ph_fluence))
-ax1.hist(trig_ph_fluence, bins=bins, weights=[1/2] * len(trig_ph_fluence))
-ax1.hist(gbm_ph_fluence, bins=bins, weights=[1/10] * len(gbm_ph_fluence))
+ax1.hist(samp_ph_flux, bins=bins, histtype="step", weights=[1/test.cat_duration] * len(samp_ph_flux), color="blue", label="Sample")
+ax1.hist(trig_ph_flux, bins=bins, histtype="step", weights=[1/test.cat_duration] * len(trig_ph_flux), color="green", label="Detected")
+ax1.hist(gbm_ph_flux, bins=bins, histtype="step", weights=[1/10] * len(gbm_ph_flux), color="red", label="GBM")
+ax1.set(title="Flux histograms", xlabel="Photon flux (ph/cm²/s)", ylabel="Number of bursts", xscale="log", yscale="log")
+ax1.grid(True, which='major', linestyle='--', color='black', alpha=0.3)
+
+ax2.hist(samp_ph_flux_s, bins=bins, histtype="step", weights=[1/test.cat_duration] * len(samp_ph_flux_s), color="blue", label="Sample")
+trig = ax2.hist(trig_ph_flux_s, bins=bins, histtype="step", weights=[1/test.cat_duration] * len(trig_ph_flux_s), color="green", label="Detected")
+gbm = ax2.hist(gbm_ph_flux_s, bins=bins, histtype="step", weights=[1/10] * len(gbm_ph_flux_s), color="red", label="GBM")
+ax2.set(title="sGRB flux histograms", xlabel="Photon flux (ph/cm²/s)", ylabel="Number of short bursts", xscale="log", yscale="log")
+ax2.grid(True, which='major', linestyle='--', color='black', alpha=0.3)
+
+ax3.hist(samp_ph_flux_l, bins=bins, histtype="step", weights=[1/test.cat_duration] * len(samp_ph_flux_l), color="blue", label="Sample")
+ax3.hist(trig_ph_flux_l, bins=bins, histtype="step", weights=[1/test.cat_duration] * len(trig_ph_flux_l), color="green", label="Detected")
+ax3.hist(gbm_ph_flux_l, bins=bins, histtype="step", weights=[1/10] * len(gbm_ph_flux_l), color="red", label="GBM")
+ax3.set(title="lGRB flux histograms", xlabel="Photon flux (ph/cm²/s)", ylabel="Number of long bursts", xscale="log", yscale="log")
+ax3.grid(True, which='major', linestyle='--', color='black', alpha=0.3)
+plt.show()
+
+bins = np.logspace(-6, 4, 40)
+fig1, (ax1, ax2, ax3) = plt.subplots(nrows=1, ncols=3, figsize=(27, 6))
+ax1.hist(samp_ph_fluence, bins=bins, histtype="step", weights=[1/test.cat_duration] * len(samp_ph_fluence), color="blue", label="Sample")
+ax1.hist(trig_ph_fluence, bins=bins, histtype="step", weights=[1/test.cat_duration] * len(trig_ph_fluence), color="green", label="Detected")
+ax1.hist(gbm_ph_fluence, bins=bins, histtype="step", weights=[1/10] * len(gbm_ph_fluence), color="red", label="GBM")
 ax1.set(title="Fluence histograms", xlabel="Photon fluence (ph/cm²)", ylabel="Number of bursts", xscale="log", yscale="log")
 ax1.grid(True, which='major', linestyle='--', color='black', alpha=0.3)
 
-ax2.hist(samp_ph_fluence_s, bins=bins, weights=[1/2] * len(samp_ph_fluence_s))
-ax2.hist(trig_ph_fluence_s, bins=bins, weights=[1/2] * len(trig_ph_fluence_s))
-ax2.hist(gbm_ph_fluence_s, bins=bins, weights=[1/10] * len(gbm_ph_fluence_s))
-ax2.set(title="sGRB Fluence histograms", xlabel="Photon fluence (ph/cm²)", ylabel="Number of short bursts", xscale="log", yscale="log")
+ax2.hist(samp_ph_fluence_s, bins=bins, histtype="step", weights=[1/test.cat_duration] * len(samp_ph_fluence_s), color="blue", label="Sample")
+ax2.hist(trig_ph_fluence_s, bins=bins, histtype="step", weights=[1/test.cat_duration] * len(trig_ph_fluence_s), color="green", label="Detected")
+ax2.hist(gbm_ph_fluence_s, bins=bins, histtype="step", weights=[1/10] * len(gbm_ph_fluence_s), color="red", label="GBM")
+ax2.set(title="sGRB fluence histograms", xlabel="Photon fluence (ph/cm²)", ylabel="Number of short bursts", xscale="log", yscale="log")
 ax2.grid(True, which='major', linestyle='--', color='black', alpha=0.3)
 
-ax3.hist(samp_ph_fluence_l, bins=bins, weights=[1/2] * len(samp_ph_fluence_l))
-ax3.hist(trig_ph_fluence_l, bins=bins, weights=[1/2] * len(trig_ph_fluence_l))
-ax3.hist(gbm_ph_fluence_l, bins=bins, weights=[1/10] * len(gbm_ph_fluence_l))
-ax3.set(title="lGRB Fluence histograms", xlabel="Photon fluence (ph/cm²)", ylabel="Number of long bursts", xscale="log", yscale="log")
+ax3.hist(samp_ph_fluence_l, bins=bins, histtype="step", weights=[1/test.cat_duration] * len(samp_ph_fluence_l), color="blue", label="Sample")
+ax3.hist(trig_ph_fluence_l, bins=bins, histtype="step", weights=[1/test.cat_duration] * len(trig_ph_fluence_l), color="green", label="Detected")
+ax3.hist(gbm_ph_fluence_l, bins=bins, histtype="step", weights=[1/10] * len(gbm_ph_fluence_l), color="red", label="GBM")
+ax3.set(title="lGRB fluence histograms", xlabel="Photon fluence (ph/cm²)", ylabel="Number of long bursts", xscale="log", yscale="log")
 ax3.grid(True, which='major', linestyle='--', color='black', alpha=0.3)
 plt.show()
 

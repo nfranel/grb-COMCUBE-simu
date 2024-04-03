@@ -173,7 +173,7 @@ class GRBSample:
     self.dl_short.append(Planck18.luminosity_distance(self.z_short[-1]).value / 1000)  # Gpc
     self.ep_o_short.append(self.ep_short[-1] / (1 + self.z_short[-1]))
     self.eiso_short.append(amati_short(self.ep_short[-1], self.qa, self.ma))
-    self.liso_short.append(yonetoku_short(self.ep_short[-1], self.qy, self.my))
+    self.liso_short.append(yonetoku_short(self.ep_short[-1], self.qy, self.my) / 2)
     self.band_low_short = -0.6
     self.band_high_short = -2.5
 
@@ -212,7 +212,7 @@ class GRBSample:
     # picking according to distributions
     ##################################################################################################################
     z_temp = acc_reject(red_rate_long, [self.red0, self.n1, self.n2, self.z1], self.zmin, self.zmax)
-    lbol_temp = acc_reject(luminosity_function, [self.al1_l, self.al2_l, self.lb_l], self.lmin, self.lmax) / 2.5
+    lbol_temp = acc_reject(luminosity_function, [self.al1_l, self.al2_l, self.lb_l], self.lmin, self.lmax) / 3.5
     temp_band_low = np.random.normal(loc=self.band_low_l_mu, scale=self.band_low_l_sig)
     temp_band_high = np.random.normal(loc=self.band_high_l_mu, scale=self.band_high_l_sig)
     while (temp_band_low - temp_band_high) / (temp_band_low + 2) < 0:
@@ -232,7 +232,7 @@ class GRBSample:
       # picking according to distributions
       ##################################################################################################################
       z_temp = acc_reject(red_rate_long, [self.red0, self.n1, self.n2, self.z1], self.zmin, self.zmax)
-      lbol_temp = acc_reject(luminosity_function, [self.al1_l, self.al2_l, self.lb_l], self.lmin, self.lmax) / 2.5
+      lbol_temp = acc_reject(luminosity_function, [self.al1_l, self.al2_l, self.lb_l], self.lmin, self.lmax) / 3.5
       temp_band_low = np.random.normal(loc=self.band_low_l_mu, scale=self.band_low_l_sig)
       temp_band_high = np.random.normal(loc=self.band_high_l_mu, scale=self.band_high_l_sig)
       while (temp_band_low - temp_band_high) / (temp_band_low + 2) < 0:
