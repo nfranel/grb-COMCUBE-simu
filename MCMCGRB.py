@@ -140,7 +140,7 @@ class GRBSample:
     #################################################################################################################
     # Setting up a save file
     with open(self.filename, "w") as f:
-      f.write("Header : \n"")
+      f.write("Header : \n")
       f.write(f"Catalog of synthetic GRBs sampled over {self.n_year} years\n")
       f.write(f"Based on differents works, see MCMCGRB.py for more details\n")
       f.write("Keys : \n")
