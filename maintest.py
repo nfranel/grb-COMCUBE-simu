@@ -10,11 +10,11 @@ import cartopy.crs as ccrs
 
 
 init_time = time()
-grb_sim_param = "/pdisk/ESA/COMCUBEv15--500km--0-0-0--27sat--lc-sampledv2/polGBM.par"
-# grb_sim_param = "/pdisk/ESA/COMCUBEv15--500km--45-45-45--27sat--lc-sampled/polGBM.par"
-# grb_sim_param = "/pdisk/ESA/COMCUBEv15--500km--97.5-97.5-97.5--27sat--lc-sampled/polGBM.par"
+# grb_sim_param = "/pdisk/ESA/COMCUBEv15--500km--0-0-0--27sat--lc-sampledv4/polGBM.par"
+# grb_sim_param = "/pdisk/ESA/COMCUBEv15--500km--45-45-45--27sat--lc-sampledv3/polGBM.par"
+# grb_sim_param = "/pdisk/ESA/COMCUBEv15--500km--97.5-97.5-97.5--27sat--lc-sampledv3/polGBM.par"
 
-# grb_sim_param = "/pdisk/ESA/COMCUBEv15--500km--0-0-0--27sat--lc-all/polGBM.par"
+grb_sim_param = "/pdisk/ESA/COMCUBEv15--500km--0-0-0--27sat--lc-all/polGBM.par"
 # grb_sim_param = "/pdisk/ESA/COMCUBEv15--500km--45-45-45--27sat--lc-all/polGBM.par"
 # grb_sim_param = "/pdisk/ESA/COMCUBEv15--500km--97.5-97.5-97.5--27sat--lc-all/polGBM.par"
 
@@ -29,7 +29,7 @@ grb_sim_param = "/pdisk/ESA/COMCUBEv15--500km--0-0-0--27sat--lc-sampledv2/polGBM
 # grb_sim_param = "/pdisk/ESA/COMCUBEv15--500km--5-5-45--27sat--short/polGBM.par"
 bkg_param = "./bkg/bkg-v15.par"
 mu_param = "./mu100/mu100-v15.par"
-erg = (30, 1000)
+erg = (10, 1000)
 # erg = (30, 1000)
 arm = 180
 test = AllSourceData(grb_sim_param, bkg_param, mu_param, erg, arm, parallel="all")
@@ -90,6 +90,139 @@ fig1, ax = plt.subplots(nrows=1, ncols=1, figsize=(10, 6))
 ax.plot(range(test.n_sat), mdp30list)
 ax.set(title="Evolution of detection rate for GRB with MDP <= 30% with the number of down satellite", xlabel="Number of satellite not working", ylabel="Detection rate of GRB with MDP <= 30% (/yr)")
 ax.grid(True, which='major', linestyle='--', color='black', alpha=0.3)
+plt.show()
+
+
+#######################################################################################################################
+# Looking for comparable bursts
+#######################################################################################################################
+
+from MAllSourceData import AllSourceData
+from time import time
+from funcmod import *
+from visualisation import *
+from MCMCGRB import GRBSample
+from catalog import SampleCatalog
+import matplotlib.pyplot as plt
+import numpy as np
+import cartopy.crs as ccrs
+
+cat_gbm = Catalog("./GBM/allGBM.txt", [4, '\n', 5, '|', 10000])
+gbm_ep = []
+gbm_t90 = []
+gbm_ph_flux = []
+gbm_ph_fluence = []
+
+gbm_ep_l = []
+gbm_t90_l = []
+gbm_ph_flux_l = []
+gbm_ph_fluence_l = []
+gbm_name_l = []
+gbm_ites_l = []
+
+gbm_ep_s = []
+gbm_t90_s = []
+gbm_ph_flux_s = []
+gbm_ph_fluence_s = []
+for ite_gbm, ep_gbm in enumerate(cat_gbm.flnc_band_epeak):
+  if ep_gbm.strip() != "":
+    ep_temp = float(ep_gbm)
+    t90_temp = float(cat_gbm.t90[ite_gbm])
+    flux_temp = calc_flux_gbm(cat_gbm, ite_gbm, (10, 1000))
+    fluence_temp = flux_temp * t90_temp
+    name_temp = cat_gbm.name[ite_gbm]
+    gbm_ep.append(ep_temp)
+    gbm_t90.append(t90_temp)
+    gbm_ph_flux.append(flux_temp)
+    gbm_ph_fluence.append(fluence_temp)
+    if float(cat_gbm.t90[ite_gbm]) <= 2:
+      gbm_ep_s.append(ep_temp)
+      gbm_t90_s.append(t90_temp)
+      gbm_ph_flux_s.append(flux_temp)
+      gbm_ph_fluence_s.append(fluence_temp)
+    else:
+      gbm_ep_l.append(ep_temp)
+      gbm_t90_l.append(t90_temp)
+      gbm_ph_flux_l.append(flux_temp)
+      gbm_ph_fluence_l.append(fluence_temp)
+      gbm_name_l.append(name_temp)
+      gbm_ites_l.append(ite_gbm)
+  else:
+    print("Information : Find null Epeak in catalog")
+
+
+cat_samp = SampleCatalog("./Sampled/sampled_grb_cat_0.5years.txt", [4, '\n', 5, '|', 10000])
+samp_ep = []
+samp_t90 = []
+samp_ph_flux = []
+samp_ph_fluence = []
+
+samp_ep_l = []
+samp_t90_l = []
+samp_ph_flux_l = []
+samp_ph_fluence_l = []
+samp_name_l = []
+samp_ites_l = []
+
+samp_ep_s = []
+samp_t90_s = []
+samp_ph_flux_s = []
+samp_ph_fluence_s = []
+for ite_samp, name_samp in enumerate(cat_samp.name):
+  samp_ep.append(cat_samp.ep[ite_samp])
+  samp_t90.append(cat_samp.t90[ite_samp])
+  samp_ph_flux.append(cat_samp.mean_flux[ite_samp])
+  samp_ph_fluence.append(cat_samp.fluence[ite_samp])
+  if name_samp.startswith("sGRB"):
+    samp_ep_s.append(cat_samp.ep[ite_samp])
+    samp_t90_s.append(cat_samp.t90[ite_samp])
+    samp_ph_flux_s.append(cat_samp.mean_flux[ite_samp])
+    samp_ph_fluence_s.append(cat_samp.fluence[ite_samp])
+  else:
+    samp_ep_l.append(cat_samp.ep[ite_samp])
+    samp_t90_l.append(cat_samp.t90[ite_samp])
+    samp_ph_flux_l.append(cat_samp.mean_flux[ite_samp])
+    samp_ph_fluence_l.append(cat_samp.fluence[ite_samp])
+    samp_name_l.append(cat_samp.name[ite_samp])
+    samp_ites_l.append(ite_samp)
+
+
+gbm_flu_vals = np.array(gbm_ph_flux_l)
+samp_flu_vals = np.array(samp_ph_flux_l)
+gbm_t90_vals = np.array(gbm_t90_l)
+samp_t90_vals = np.array(samp_t90_l)
+gbm_name = np.array(gbm_name_l)
+samp_name = np.array(samp_name_l)
+gbm_ite = np.array(gbm_ites_l)
+samp_ite = np.array(samp_ites_l)
+minlim = 1.06
+maxlim = 1.09
+nbins = 50
+
+ns_t90 = samp_t90_vals[np.logical_and(minlim<samp_flu_vals, samp_flu_vals<maxlim)]
+ns_flu = samp_flu_vals[np.logical_and(minlim<samp_flu_vals, samp_flu_vals<maxlim)]
+ns_name = samp_name[np.logical_and(minlim<samp_flu_vals, samp_flu_vals<maxlim)]
+ns_ite = samp_ite[np.logical_and(minlim<samp_flu_vals, samp_flu_vals<maxlim)]
+ng_t90 = gbm_t90_vals[np.logical_and(minlim<gbm_flu_vals, gbm_flu_vals<maxlim)]
+ng_flu = gbm_flu_vals[np.logical_and(minlim<gbm_flu_vals, gbm_flu_vals<maxlim)]
+ng_name = gbm_name[np.logical_and(minlim<gbm_flu_vals, gbm_flu_vals<maxlim)]
+ng_ite = gbm_ite[np.logical_and(minlim<gbm_flu_vals, gbm_flu_vals<maxlim)]
+
+plt.rcParams.update({'font.size': 13})
+bins=np.logspace(np.log10(np.min(ns_flu)), np.log10(np.max(ns_flu)), nbins)
+# bins = np.logspace(-8, 3, 40)
+fig1, (ax1, ax2) = plt.subplots(nrows=1, ncols=2, figsize=(20, 6))
+ax1.hist(ns_flu, bins=bins, histtype="step", weights=[1/0.5] * len(ns_flu), color="darkblue", label="Sample")
+ax1.hist(ng_flu, bins=bins, histtype="step", weights=[1/10] * len(ng_flu), color="red", label="GBM")
+ax1.set(title="Flux histograms", xlabel="Photon flux (ph/cm²/s)", ylabel="Number of bursts", xscale="log", yscale="log")
+ax1.grid(True, which='major', linestyle='--', color='black', alpha=0.3)
+ax1.legend(loc='upper left')
+
+ax2.hist(ns_t90, bins=nbins, histtype="step", weights=[1/0.5] * len(ns_t90), color="darkblue", label="Sample")
+ax2.hist(ng_t90, bins=nbins, histtype="step", weights=[1/10] * len(ng_t90), color="red", label="GBM")
+ax2.set(title="T90 histograms", xlabel="T90 (s)", ylabel="Number of bursts", xscale="linear", yscale="log")
+ax2.grid(True, which='major', linestyle='--', color='black', alpha=0.3)
+ax2.legend(loc='upper left')
 plt.show()
 
 
@@ -239,6 +372,27 @@ for source in test.alldata:
           const_trigger_counter_2s += 1
         if sat_counter_1s >= 1:
           const_trigger_counter_1s += 1
+          # for samp_ite, samp_name in enumerate(cat_samp.name):
+          #   if samp_name == source.source_name:
+          #     temp_ep = cat_samp.ep[samp_ite]
+          #     temp_t90 = cat_samp.t90[samp_ite]
+          #     temp_flux = cat_samp.mean_flux[samp_ite]
+          #     temp_fluence = cat_samp.fluence[samp_ite]
+          #     trig_ep.append(temp_ep)
+          #     trig_t90.append(temp_t90)
+          #     trig_ph_flux.append(temp_flux)
+          #     trig_ph_fluence.append(temp_fluence)
+          # if source.source_name.startswith("sGRB"):
+          #   trig_ep_s.append(temp_ep)
+          #   trig_t90_s.append(temp_t90)
+          #   trig_ph_flux_s.append(temp_flux)
+          #   trig_ph_fluence_s.append(temp_fluence)
+          # else:
+          #   trig_ep_l.append(temp_ep)
+          #   trig_t90_l.append(temp_t90)
+          #   trig_ph_flux_l.append(temp_flux)
+          #   trig_ph_fluence_l.append(temp_fluence)
+
 
 print(f"   Trigger for at least 4 satellites :        {const_trigger_counter_4s:.2f} triggers")
 print(f"   Trigger for at least 3 satellites :        {const_trigger_counter_3s:.2f} triggers")
@@ -247,27 +401,30 @@ print(f"   Trigger for 1 satellite :        {const_trigger_counter_1s:.2f} trigg
 print("=============================================")
 print(f" Over the {total_in_view} GRBs simulated in the constellation field of view")
 
-
+plt.rcParams.update({'font.size': 13})
 bins=np.logspace(np.log10(np.min(samp_ph_flux_l)), np.log10(np.max(samp_ph_flux_l)), 50)
 # bins = np.logspace(-8, 3, 40)
 fig1, (ax1, ax2, ax3) = plt.subplots(nrows=1, ncols=3, figsize=(27, 6))
-ax1.hist(samp_ph_flux, bins=bins, histtype="step", weights=[1/test.cat_duration] * len(samp_ph_flux), color="blue", label="Sample")
-ax1.hist(trig_ph_flux, bins=bins, histtype="step", weights=[1/test.cat_duration] * len(trig_ph_flux), color="green", label="Detected")
+ax1.hist(samp_ph_flux, bins=bins, histtype="step", weights=[1/test.cat_duration] * len(samp_ph_flux), color="darkblue", label="Sample")
+ax1.hist(trig_ph_flux, bins=bins, histtype="step", weights=[1/test.cat_duration] * len(trig_ph_flux), linestyle='--', color="lime", label="Detected")
 ax1.hist(gbm_ph_flux, bins=bins, histtype="step", weights=[1/10] * len(gbm_ph_flux), color="red", label="GBM")
 ax1.set(title="Flux histograms", xlabel="Photon flux (ph/cm²/s)", ylabel="Number of bursts", xscale="log", yscale="log")
 ax1.grid(True, which='major', linestyle='--', color='black', alpha=0.3)
+ax1.legend(loc='upper left')
 
-ax2.hist(samp_ph_flux_s, bins=bins, histtype="step", weights=[1/test.cat_duration] * len(samp_ph_flux_s), color="blue", label="Sample")
-trig = ax2.hist(trig_ph_flux_s, bins=bins, histtype="step", weights=[1/test.cat_duration] * len(trig_ph_flux_s), color="green", label="Detected")
+ax2.hist(samp_ph_flux_s, bins=bins, histtype="step", weights=[1/test.cat_duration] * len(samp_ph_flux_s), color="darkblue", label="Sample")
+trig = ax2.hist(trig_ph_flux_s, bins=bins, histtype="step", weights=[1/test.cat_duration] * len(trig_ph_flux_s), linestyle='--', color="lime", label="Detected")
 gbm = ax2.hist(gbm_ph_flux_s, bins=bins, histtype="step", weights=[1/10] * len(gbm_ph_flux_s), color="red", label="GBM")
 ax2.set(title="sGRB flux histograms", xlabel="Photon flux (ph/cm²/s)", ylabel="Number of short bursts", xscale="log", yscale="log")
 ax2.grid(True, which='major', linestyle='--', color='black', alpha=0.3)
+ax2.legend(loc='upper left')
 
-ax3.hist(samp_ph_flux_l, bins=bins, histtype="step", weights=[1/test.cat_duration] * len(samp_ph_flux_l), color="blue", label="Sample")
-ax3.hist(trig_ph_flux_l, bins=bins, histtype="step", weights=[1/test.cat_duration] * len(trig_ph_flux_l), color="green", label="Detected")
+ax3.hist(samp_ph_flux_l, bins=bins, histtype="step", weights=[1/test.cat_duration] * len(samp_ph_flux_l), color="darkblue", label="Sample")
+ax3.hist(trig_ph_flux_l, bins=bins, histtype="step", weights=[1/test.cat_duration] * len(trig_ph_flux_l), linestyle='--', color="lime", label="Detected")
 ax3.hist(gbm_ph_flux_l, bins=bins, histtype="step", weights=[1/10] * len(gbm_ph_flux_l), color="red", label="GBM")
 ax3.set(title="lGRB flux histograms", xlabel="Photon flux (ph/cm²/s)", ylabel="Number of long bursts", xscale="log", yscale="log")
 ax3.grid(True, which='major', linestyle='--', color='black', alpha=0.3)
+ax3.legend(loc='upper left')
 plt.show()
 
 bins = np.logspace(-6, 4, 40)

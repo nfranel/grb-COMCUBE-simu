@@ -54,7 +54,7 @@ class AllSimData(list):
       elif cat_data.cat_type == "sampled":
         self.best_fit_model = "band"
         self.best_fit_p_flux = None
-        self.best_fit_mean_flux = float(cat_data.fluence[source_ite])
+        self.best_fit_mean_flux = float(cat_data.mean_flux[source_ite])
         self.source_fluence = calc_flux_sample(cat_data, source_ite, options[0]) * self.source_duration
         self.source_energy_fluence = None
       else:
