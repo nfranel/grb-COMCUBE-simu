@@ -633,6 +633,16 @@ def calc_flux_gbm(catalog, index, ergcut):
   return quad(func, ergcut[0], ergcut[1])[0]
 
 
+def nomr_band_spec_calc(band_low, band_high, red, dl, ep, liso, ener_range):
+  """
+  Calculates the spectrum of a band function based on indexes and energy/luminosity values
+  """
+  ampl_norm = normalisation_calc(band_low, band_high)
+  norm = (1 + red) ** 2 / (4 * np.pi * (dl * Gpc_to_cm) ** 2) * liso / (ep ** 2 * keV_to_erg)
+  spec_norm = band_norm((1 + red) * ener_range / ep, ampl_norm, band_low, band_high)
+  return norm, norm * spec_norm
+
+
 def calc_flux_sample(catalog, index, ergcut):
   """
   Calculates the fluence per unit time of a given source using an energy cut and its spectrum
@@ -641,12 +651,8 @@ def calc_flux_sample(catalog, index, ergcut):
   :param ergcut: energy window over which the fluence is calculated
   :returns: the number of photons per cm² for a given energy range, averaged over the duration of the sim : ncount/cm²/s
   """
-
-  ampl_norm = normalisation_calc(catalog.band_low[index], catalog.band_high[index])
   ener_range = np.logspace(np.log10(ergcut[0]), np.log10(ergcut[1]), 100001)
-  norm = (1 + catalog.red[index]) ** 2 / (4 * np.pi * (catalog.dl[index] * Gpc_to_cm) ** 2) * catalog.liso[-1] / (catalog.ep[index] ** 2 * keV_to_erg)
-  spec_norm = band_norm((1 + catalog.red[index]) * ener_range / catalog.ep[index], ampl_norm, catalog.band_low[index], catalog.band_high[index])
-  spec = norm * spec_norm
+  norm_val, spec = nomr_band_spec_calc(catalog.band_low[index], catalog.band_high[index], catalog.red[index], catalog.dl[index], catalog.ep[index], catalog.liso[index], ener_range)
   return trapezoid(spec, ener_range)
 
 

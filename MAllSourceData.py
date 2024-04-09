@@ -397,7 +397,7 @@ class AllSourceData:
     else:
       print("Type error for savefile, must be str or None")
 
-  def count_triggers(self, number_off_sat=0, graphs=False):
+  def count_triggers(self, number_off_sat=0, weighted=True, graphs=False):
     """
     Function to count and print the number of triggers using different criterions
     """

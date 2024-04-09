@@ -140,11 +140,11 @@ class GRBSample:
     #################################################################################################################
     # Setting up a save file
     with open(self.filename, "w") as f:
-      f.write("Header : \n")
       f.write(f"Catalog of synthetic GRBs sampled over {self.n_year} years\n")
       f.write(f"Based on differents works, see MCMCGRB.py for more details\n")
-      f.write("Keys : \n")
+      f.write("Keys and units : \n")
       f.write("name|t90|light curve name|fluence|mean flux|redshift|Band low energy index|Band high energy index|peak energy|luminosity distance|isotropic luminosity|isotropic energy|jet opening angle\n")
+      f.write("[dimensionless] | [s] | [dimensionless] | [ph/cm2] | [ph/cm2/s] | [dimensionless] | [dimensionless] | [dimensionless] | [keV] | [Gpc] | [erg/s] | [erg] | [°]\n")
     # Long GRBs
     self.nlong = int(self.n_year * int(quad(red_rate_long, self.zmin, self.zmax, (self.red0, self.n1, self.n2, self.z1))[0]))
     print("nlong : ", self.nlong)
@@ -180,15 +180,8 @@ class GRBSample:
     ##################################################################################################################
     # Calculation of spectrum
     ##################################################################################################################
-    ampl_norm = normalisation_calc(self.band_low_short, self.band_high_short)
     ener_range = np.logspace(1, 3, 100001)
-    norm = (1 + self.z_short[-1])**2 / (4*np.pi*(self.dl_short[-1] * Gpc_to_cm)**2) * self.liso_short[-1] / (self.ep_short[-1]**2 * keV_to_erg)
-    spec_norm = band_norm((1+self.z_short[-1])*ener_range/self.ep_short[-1], ampl_norm, self.band_low_short, self.band_high_short)
-    spec = norm * spec_norm
-    # print("======")
-    # # print(trapezoid(spec, ener_range))
-    # print(simpson(spec_norm * (1+self.z_short[-1])*ener_range/self.ep_short[-1], (1+self.z_short[-1])*ener_range/self.ep_short[-1]))
-    # print(simpson(spec, (1+self.z_short[-1])*ener_range/self.ep_short[-1]))
+    norm_val, spec = nomr_band_spec_calc(self.band_low_short, self.band_high_short, self.z_short[-1], self.dl_short[-1], self.ep_short[-1], self.liso_short[-1], ener_range)
     self.mean_flux_short.append(trapezoid(spec, ener_range))
 
     # self.t90_short.append((1+self.z_short[-1]) * self.eiso_short[-1] / self.liso_short[-1])
@@ -250,10 +243,7 @@ class GRBSample:
       ampl_norm = normalisation_calc(temp_band_low, temp_band_high)
 
     ener_range = np.logspace(1, 3, 100)
-    norm = (1 + z_temp)**2 / (4*np.pi*(dl_temp * Gpc_to_cm)**2) * lbol_temp / (ep_temp**2 * keV_to_erg)
-    spec_norm = band_norm((1+z_temp)*ener_range/ep_temp, ampl_norm, temp_band_low, temp_band_high)
-    spec = norm * spec_norm
-
+    norm_val, spec = nomr_band_spec_calc(temp_band_low, temp_band_high, z_temp, dl_temp, ep_temp, lbol_temp, ener_range)
     eiso_temp = amati_long(ep_temp)
     # With a distribution
     temp_t90 = acc_reject(t90_long_distri, [], 2, 1000)

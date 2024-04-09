@@ -58,7 +58,7 @@ def gen_commands(args):
     f.write("========================================================================\n")
     f.write("                    Log file for the simulations                        \n")
     f.write("GRB name | simulation number | satellite number | status of the simulation | sat inclination | sat RA of ascending node | sat argument of periapsis | altitude | random time of simulation | sat dec world frame | sat ra world frame | grb dec world frame | grb ra world frame | grb dec sat frame | grb ra sat frame\n")
-    f.write("name | sim_num | sat_num | status | inc | ohm | omega | alt | rand_time | sat_decwf | sat_rawf | grb_decwf | grb_rawf | grb_decsf | grb_rasf")
+    f.write("name | sim_num | sat_num | status | inc | ohm | omega | alt | rand_time | sat_decwf | sat_rawf | grb_decwf | grb_rawf | grb_decsf | grb_rasf\n")
     f.write("Angles in degrees and altitude in km\n")
     f.write("========================================================================\n")
   def gen_grb(i): # Generate a single GRB command
@@ -73,12 +73,8 @@ def gen_commands(args):
       if not (spectrumfile in os.listdir(args.spectrafilepath)):
         logE = np.logspace(1, 3, 100)  # energy (log scale)
         with open(spectrumfile, "w") as f:
-          ampl_norm = normalisation_calc(c.band_low[i], c.band_high[i])
-          norm = (1 + c.red[i]) ** 2 / (4 * np.pi * (c.dl[i] * Gpc_to_cm) ** 2) * c.liso[i] / (c.ep[i] ** 2 * keV_to_erg)
-          spec_norm = band_norm((1 + c.red[i]) * logE / c.ep[i], ampl_norm, c.band_low[i], c.band_low[i])
-          spec = norm * spec_norm
-
-          f.write(f"#model normalized Band:   norm={norm}, alpha={c.band_low[i]}, beta={c.band_low[i]}, epeak={c.ep[i]}keV\n")
+          norm_val, spec = nomr_band_spec_calc(c.band_low[i], c.band_high[i], c.red[i], c.dl[i], c.ep[i], c.liso[i], logE)
+          f.write(f"#model normalized Band:   norm={norm_val}, alpha={c.band_low[i]}, beta={c.band_high[i]}, epeak={c.ep[i]}keV\n")
           f.write(f"# Measured mean flux: {pht_mflx} ph/cm2/s in the 10-1000 keV band\n")
           f.write(f"# Measured peak flux: >{pht_mflx} ph/cm2/s in the 10-1000 keV band\n")
           f.write("\nIP LOGLOG\n\n")

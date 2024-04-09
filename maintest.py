@@ -75,8 +75,8 @@ for ite_const in range(test.n_sat):
               if sim.const_data[ite_const].mdp is not None:
                 if sim.const_data[ite_const].mdp <= 1:
                   mdp_list.append(sim.const_data[ite_const].mdp * 100)
-                  if sim.const_data[ite_const].mdp <= 0.1:
-                    print(f"High MDP GRB : {source.source_name}")
+                  # if sim.const_data[ite_const].mdp <= 0.1:
+                  #   print(f"High MDP GRB : {source.source_name}")
   mdp_list = np.array(mdp_list)
   mdp30list.append(np.sum(np.where(mdp_list <= 30, 1, 0)) * test.weights)
   print(f" ========               MDP THRESHOLD USED : {2.6}   ========")
