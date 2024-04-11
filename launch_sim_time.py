@@ -69,8 +69,12 @@ def gen_commands(args):
     if args.simmode == "sampled":
       lc_name = c.lc[i]
       pht_mflx = c.mean_flux[i]
+      n_year = float(args.grbfile.split("years")[0].split("_")[-1])
+      spectrafolder = f"{args.spectrafilepath}{n_year}sample/"
+      if not (f"{n_year}sample" in os.listdir(args.spectrafilepath)):
+        os.mkdir(f"{n_year}sample")
       # Creation of spectra if they have not been created yet
-      if not (spectrumfile in os.listdir(args.spectrafilepath)):
+      if not (spectrumfile in spectrafolder):
         logE = np.logspace(1, 3, 100)  # energy (log scale)
         with open(spectrumfile, "w") as f:
           norm_val, spec = nomr_band_spec_calc(c.band_low[i], c.band_high[i], c.red[i], c.dl[i], c.ep[i], c.liso[i], logE)
@@ -287,7 +291,7 @@ if __name__ == "__main__":
     vprint("Running of {} parameter file with output prefix {}".format(args.parameterfile, args.prefix), __verbose__, 0)
     args = gen_commands(args)
     vprint("{} Commands have been parsed".format(len(args.commands)), __verbose__, 0)
-    run_sims(args.commands)
+    # run_sims(args.commands)
   else:
     vprint("Missing parameter file or geometry - not running.", __verbose__, 0)
 
