@@ -245,8 +245,8 @@ class GRBSample:
     ener_range = np.logspace(1, 3, 100)
     norm_val, spec = nomr_band_spec_calc(temp_band_low, temp_band_high, z_temp, dl_temp, ep_temp, lbol_temp, ener_range)
     eiso_temp = amati_long(ep_temp)
-    # With a distribution
-    temp_t90 = acc_reject(t90_long_distri, [], 2, 1000)
+    # With a distribution : the value is taken in a log distribution and then put back in linear value
+    temp_t90 = 10**acc_reject(t90_long_log_distri, [], np.log10(2), 3)
     # With Eiso
     # temp_t90 = (1+z_temp) * eiso_temp / lbol_temp
 
@@ -376,8 +376,8 @@ class GRBSample:
     yscale = "log"
     nbin = 50
     gbmduty = 0.587
-    # gbmcorrec = 1 / gbmduty / 10
-    gbmcorrec = 2
+    gbmcorrec = 1 / gbmduty / 10
+    # gbmcorrec = 2
     # n_sample = len(self.z_long)
     comp_fig, ((ax1, ax2, ax3), (ax4, ax5, ax6)) = plt.subplots(2, 3, figsize=(27, 12))
     ax1.hist(self.z_short, bins=nbin, histtype="step", color="blue", label=f"Sample, {len(self.z_short)} GRB", weights=[1 / self.n_year] * len(self.z_short))
@@ -405,10 +405,12 @@ class GRBSample:
     ax5.set(title="Mean flux distributions", xlabel="Photon flux (photon/cm²/s)", ylabel="Number of GRB", xscale="log", yscale=yscale)
     ax5.legend()
 
-    ax6.hist(self.t90_short, bins=nbin, histtype="step", color="blue", label=f"Sample, {len(self.t90_short)} GRB", weights=[1 / self.n_year] * len(self.t90_short))
-    ax6.hist(self.short_gbm_t90, bins=nbin, histtype="step", color="red", label=f"GBM, {len(self.short_gbm_t90)} GRB", weights=[gbmcorrec] * len(self.short_gbm_t90))
-    ax6.set(title="T90 distributions", xlabel="T90 (s)", ylabel="Number of GRB", xscale="linear", yscale=yscale)
+    ax6.hist(self.t90_short, bins=np.logspace(-3, np.log10(2), nbin), histtype="step", color="blue", label=f"Sample, {len(self.t90_short)} GRB", weights=[1 / self.n_year] * len(self.t90_short))
+    ax6.hist(self.short_gbm_t90, bins=np.logspace(-3, np.log10(2), nbin), histtype="step", color="red", label=f"GBM, {len(self.short_gbm_t90)} GRB", weights=[gbmcorrec] * len(self.short_gbm_t90))
+    ax6.set(title="T90 distributions", xlabel="T90 (s)", ylabel="Number of GRB", xscale="log", yscale=yscale)
     ax6.legend()
+
+    plt.show()
 
     # index = np.where(ph_short_fluence > 52.64808276890968, True, False)
     # comp_fig, ((ax1, ax2, ax3), (ax4, ax5, ax6)) = plt.subplots(2, 3, figsize=(27, 12))
@@ -451,8 +453,8 @@ class GRBSample:
     nbin = 50
     gbmduty = 0.587
     # n_sample = len(self.z_long)
-    # gbmcorrec = 1 / gbmduty / 10
-    gbmcorrec = 2
+    gbmcorrec = 1 / gbmduty / 10
+    # gbmcorrec = 2
     comp_fig, ((ax1, ax2, ax3, ax4), (ax5, ax6, ax7, ax8)) = plt.subplots(2, 4, figsize=(27, 12))
     ax1.hist(self.z_long, bins=nbin, histtype="step", color="blue", label=f"Sample, {len(self.z_long)} GRB", weights=[1 / self.n_year] * len(self.z_long))
     ax1.set(title="Redshift distributions", xlabel="Redshift", ylabel="Number of GRB", xscale="linear", yscale=yscale)
@@ -489,10 +491,12 @@ class GRBSample:
     ax7.set(title="Mean flux distributions", xlabel="Photon flux (photon/cm²/s)", ylabel="Number of GRB", xscale="log", yscale=yscale)
     ax7.legend()
 
-    ax8.hist(self.t90_long, bins=nbin, histtype="step", color="blue", label=f"Sample, {len(self.t90_long)} GRB", weights=[1 / self.n_year] * len(self.t90_long))
-    ax8.hist(self.long_gbm_t90, bins=nbin, histtype="step", color="red", label=f"GBM, {len(self.long_gbm_t90)} GRB", weights=[gbmcorrec] * len(self.long_gbm_t90))
-    ax8.set(title="T90 distributions", xlabel="T90 (s)", ylabel="Number of GRB", xscale="linear", yscale=yscale)
+    ax8.hist(self.t90_long, bins=np.logspace(np.log10(2), 3, nbin), histtype="step", color="blue", label=f"Sample, {len(self.t90_long)} GRB", weights=[1 / self.n_year] * len(self.t90_long))
+    ax8.hist(self.long_gbm_t90, bins=np.logspace(np.log10(2), 3, nbin), histtype="step", color="red", label=f"GBM, {len(self.long_gbm_t90)} GRB", weights=[gbmcorrec] * len(self.long_gbm_t90))
+    ax8.set(title="T90 distributions", xlabel="T90 (s)", ylabel="Number of GRB", xscale="log", yscale=yscale)
     ax8.legend()
+
+    plt.show()
 
     # index = np.where(ph_long_fluence > 3498.2773030363187, True, False)
     # comp_fig, ((ax1, ax2, ax3, ax4), (ax5, ax6, ax7, ax8)) = plt.subplots(2, 4, figsize=(27, 12))

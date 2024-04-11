@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.colors as colors
-from funcmod import comp, band, plaw, sbpl
+from funcmod import comp, band, plaw, sbpl, calc_flux_sample, calc_flux_gbm
 
 # Version 2, Created by Adrien Laviron, updated by Nathan Franel
 
@@ -56,6 +56,7 @@ class Catalog:
     # Catalog attributes
     self.name = None
     self.t90 = None
+    self.fluence = None
     self.length = 0
     self.data = None
     self.sttype = None
@@ -420,6 +421,116 @@ class Catalog:
     ax4.plot(tx, tyy4)
     ax4.axvline(sbpl_mean_brken)
     ax4.set(title="Smoothly broken power law spectrum", xscale="log", yscale="log")
+    plt.show()
+
+  def grb_distribution(self):
+    gbm_epeak = []
+    gbm_ph_flux = []
+    gbm_t90 = []
+    gbm_ph_fluence = []
+    gbm_en_fluence = []
+    gbm_en_flux = []
+    gbm_alpha = []
+    gbm_beta = []
+
+    short_gbm_epeak = []
+    short_gbm_ph_flux = []
+    short_gbm_t90 = []
+    short_gbm_ph_fluence = []
+    short_gbm_en_fluence = []
+    short_gbm_en_flux = []
+    short_gbm_alpha = []
+    short_gbm_beta = []
+
+    long_gbm_epeak = []
+    long_gbm_ph_flux = []
+    long_gbm_t90 = []
+    long_gbm_ph_fluence = []
+    long_gbm_en_fluence = []
+    long_gbm_en_flux = []
+    long_gbm_alpha = []
+    long_gbm_beta = []
+
+    for ite_gbm, gbm_ep in enumerate(self.flnc_band_epeak):
+      if gbm_ep.strip() != "":
+        epeak = float(gbm_ep)
+        ph_flux = calc_flux_gbm(self, ite_gbm, (10, 1000))
+        t90 = float(self.t90[ite_gbm])
+        ph_fluence = ph_flux * t90
+        en_fluence = float(self.fluence[ite_gbm])
+        en_flux = en_fluence / t90
+        alpha = float(self.flnc_band_alpha[ite_gbm])
+        beta = float(self.flnc_band_beta[ite_gbm])
+
+        gbm_epeak.append(epeak)
+        gbm_ph_flux.append(ph_flux)
+        gbm_t90.append(t90)
+        gbm_ph_fluence.append(ph_fluence)
+        gbm_en_fluence.append(en_fluence)
+        gbm_en_flux.append(en_flux)
+        gbm_alpha.append(alpha)
+        gbm_beta.append(beta)
+
+        if t90 <= 2:
+          short_gbm_epeak.append(epeak)
+          short_gbm_ph_flux.append(ph_flux)
+          short_gbm_t90.append(t90)
+          short_gbm_ph_fluence.append(ph_fluence)
+          short_gbm_en_fluence.append(en_fluence)
+          short_gbm_en_flux.append(en_flux)
+          short_gbm_alpha.append(alpha)
+          short_gbm_beta.append(beta)
+        else:
+          long_gbm_epeak.append(epeak)
+          long_gbm_ph_flux.append(ph_flux)
+          long_gbm_t90.append(t90)
+          long_gbm_ph_fluence.append(ph_fluence)
+          long_gbm_en_fluence.append(en_fluence)
+          long_gbm_en_flux.append(en_flux)
+          long_gbm_alpha.append(alpha)
+          long_gbm_beta.append(beta)
+      else:
+        print("Information : Find null Epeak in catalog")
+
+    dist_fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(27, 12))
+    nbin = 60
+    gbmcorrec = 1 / 0.587 / 10
+    lenall = len(gbm_epeak)
+    lenlong = len(long_gbm_epeak)
+    lenshort = len(short_gbm_epeak)
+
+    epmin, epmax = np.min(gbm_epeak), np.max(gbm_epeak)
+    bins1 = np.logspace(np.log10(epmin), np.log10(epmax), nbin)
+    ax1.hist(gbm_epeak, bins=bins1, histtype="step", color="blue", label=f"GBM, {lenall} GRB", weights=[gbmcorrec] * lenall)
+    ax1.hist(long_gbm_epeak, bins=bins1, histtype="step", color="red", label=f"GBM long, {lenlong} GRB", weights=[gbmcorrec] * lenlong)
+    ax1.hist(short_gbm_epeak, bins=bins1, histtype="step", color="green", label=f"GBM short, {lenshort} GRB", weights=[gbmcorrec] * lenshort)
+    ax1.set(title="Ep distributions", xlabel="Peak energy (keV)", ylabel="Number of GRB", xscale="log", yscale="log")
+    ax1.legend()
+
+    ph_fluence_min, ph_fluence_max = np.min(gbm_ph_fluence), np.max(gbm_ph_fluence)
+    bins2 = np.logspace(np.log10(ph_fluence_min), np.log10(ph_fluence_max), nbin)
+    ax2.hist(gbm_ph_fluence, bins=bins2, histtype="step", color="blue", label=f"GBM, {lenall} GRB", weights=[gbmcorrec] * lenall)
+    ax2.hist(long_gbm_ph_fluence, bins=bins2, histtype="step", color="red", label=f"GBM long, {lenlong} GRB", weights=[gbmcorrec] * lenlong)
+    ax2.hist(short_gbm_ph_fluence, bins=bins2, histtype="step", color="green", label=f"GBM short, {lenshort} GRB", weights=[gbmcorrec] * lenshort)
+    ax2.set(title="Fluence distributions", xlabel="Photon fluence (photon/cm²)", ylabel="Number of GRB", xscale="log", yscale="log")
+    ax2.legend()
+
+    ph_flux_min, ph_flux_max = np.min(gbm_ph_flux), np.max(gbm_ph_flux)
+    bins3 = np.logspace(np.log10(ph_flux_min), np.log10(ph_flux_max), nbin)
+    ax3.hist(gbm_ph_flux, bins=bins3, histtype="step", color="blue", label=f"GBM, {lenall} GRB", weights=[gbmcorrec] * lenall)
+    ax3.hist(long_gbm_ph_flux, bins=bins3, histtype="step", color="red", label=f"GBM long, {lenlong} GRB", weights=[gbmcorrec] * lenlong)
+    ax3.hist(short_gbm_ph_flux, bins=bins3, histtype="step", color="green", label=f"GBM short, {lenshort} GRB", weights=[gbmcorrec] * lenshort)
+    ax3.set(title="Mean flux distributions", xlabel="Photon flux (photon/cm²/s)", ylabel="Number of GRB", xscale="log", yscale="log")
+    ax3.legend()
+
+    t90_min, t90_max = np.min(gbm_t90), np.max(gbm_t90)
+    bins4 = np.logspace(np.log10(t90_min), np.log10(t90_max), nbin)
+    ax4.hist(gbm_t90, bins=bins4, histtype="step", color="blue", label=f"GBM, {lenall} GRB", weights=[gbmcorrec] * lenall)
+    ax4.hist(long_gbm_t90, bins=bins4, histtype="step", color="red", label=f"GBM long, {lenlong} GRB", weights=[gbmcorrec] * lenlong)
+    ax4.hist(short_gbm_t90, bins=bins4, histtype="step", color="green", label=f"GBM short, {lenshort} GRB", weights=[gbmcorrec] * lenshort)
+    ax4.set(title="T90 distributions", xlabel="T90 (s)", ylabel="Number of GRB", xscale="log", yscale="log")
+    ax4.legend()
+
     plt.show()
 
 

@@ -1,6 +1,7 @@
 import numpy as np
 import gzip
 from scipy.integrate import quad, trapezoid
+from scipy.stats import skewnorm
 from time import time
 import os
 import subprocess
@@ -1237,8 +1238,6 @@ def sbpl(e, ampl, l1, l2, eb, delta, pivot=100):
 
 
 
-
-
 def acc_reject(func, func_args, xmin, xmax):
   """
   Proceeds to an acceptance rejection method
@@ -1399,7 +1398,7 @@ def t90_short_distri(time):
   else:
     raise TypeError("Please use a correct type for time, only accepted are float or numpy ndarray")
 
-def t90_long_distri(time):
+def t90_long_log_distri(time):
   """
   Distribution of T90 based on GBM t90 >= 2 with a sbpl
     Not optimal as no correlation with other parameters is considered
@@ -1407,10 +1406,11 @@ def t90_long_distri(time):
   # func = astropy.modeling.powerlaws.SmoothlyBrokenPowerLaw1D(2, 45, -0.8, 1.8, 0.3)
   # func = astropy.modeling.powerlaws.SmoothlyBrokenPowerLaw1D(4.39, 39.36, -0.2, 2.37, 0.44)
   # log fit
-  func = astropy.modeling.powerlaws.SmoothlyBrokenPowerLaw1D(2.69, 73.77, -0.98, 2.82, 0.8)
-  # linear fit
-  func = astropy.modeling.powerlaws.SmoothlyBrokenPowerLaw1D(amplitude=1.85588078, x_break=37.65197146, alpha_1=0.20414639, alpha_2=2.29646448, delta=0.40775433)
-  return func(time)
+  # func = astropy.modeling.powerlaws.SmoothlyBrokenPowerLaw1D(2.69, 73.77, -0.98, 2.82, 0.8)
+  # # linear fit
+  # func = astropy.modeling.powerlaws.SmoothlyBrokenPowerLaw1D(amplitude=1.85588078, x_break=37.65197146, alpha_1=0.20414639, alpha_2=2.29646448, delta=0.40775433)
+  ampl, skewness, mu, sigma = 54.18322289, -2.0422097,  1.89431034,  0.74602339
+  return ampl * skewnorm.pdf(time, skewness, mu, sigma)
 
 
 def normalisation_calc(ind1, ind2):
