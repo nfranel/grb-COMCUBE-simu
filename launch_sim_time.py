@@ -65,12 +65,12 @@ def gen_commands(args):
     # generate spectrum file here if not already done
     if not (args.spectrafilepath.endswith("/")) and os.name == "posix":
       args.spectrafilepath += "/"
-    spectrumfile = "{}{}_spectrum.dat".format(args.spectrafilepath, c.name[i])
     if args.simmode == "sampled":
       lc_name = c.lc[i]
       pht_mflx = c.mean_flux[i]
       n_year = float(args.grbfile.split("years")[0].split("_")[-1])
       spectrafolder = f"{args.spectrafilepath}{n_year}sample/"
+      spectrumfile = "{}{}_spectrum.dat".format(spectrafolder, c.name[i])
       if not (f"{n_year}sample" in os.listdir(args.spectrafilepath)):
         os.mkdir(spectrafolder)
       # Creation of spectra if they have not been created yet
@@ -86,6 +86,7 @@ def gen_commands(args):
             f.write(f"DP {E} {spec[ite_E]}\n")
           f.write("\nEN\n\n")
     else:
+      spectrumfile = "{}{}_spectrum.dat".format(args.spectrafilepath, c.name[i])
       lc_name = None
       model = getattr(c, "flnc_best_fitting_model")[i].strip()
       pht_mflx = getattr(c, f"{model}_phtflux")[i]
