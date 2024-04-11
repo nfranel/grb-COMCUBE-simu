@@ -72,7 +72,7 @@ def gen_commands(args):
       n_year = float(args.grbfile.split("years")[0].split("_")[-1])
       spectrafolder = f"{args.spectrafilepath}{n_year}sample/"
       if not (f"{n_year}sample" in os.listdir(args.spectrafilepath)):
-        os.mkdir(f"{n_year}sample")
+        os.mkdir(spectrafolder)
       # Creation of spectra if they have not been created yet
       if not (spectrumfile in spectrafolder):
         logE = np.logspace(1, 3, 100)  # energy (log scale)
