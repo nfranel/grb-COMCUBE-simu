@@ -100,7 +100,7 @@ def extract_LC(fullname):
       print(data)
   return times, counts
 
-t1, c1 = extract_LC("./sources/Light_Curves/LightCurve_GRB080714425.dat")
+# t1, c1 = extract_LC("./sources/Light_Curves/LightCurve_GRB080714425.dat")
 
 def make_tte_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_mask, bin_size=0.1, ener_range=(10, 1000), show=False, directory="./sources/"):
   """
