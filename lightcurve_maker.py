@@ -396,13 +396,14 @@ def create_lc(cat, GRB_ite, bin_size="auto", ener_range=(10, 1000), show=False, 
   print(f"Running {GRBname}, ite : {GRB_ite}")
   return make_tte_lc(GRBname, start_t90, end_t90, time_range, bkg_range, lc_detector_mask, bin_size=bin_size, ener_range=ener_range, show=show, directory=directory)
 
-# unfit = []
-# for ite in range(0, len(cat_all.name)):
-# # for ite in range(589, 591):
-#   ret = create_lc(cat_all, ite, bin_size="auto", show=False)
-#   if ret != 0:
-#     unfit.append((cat_all.name[ite], ite))
-# print(ret)
+cat_all = Catalog("GBM/allGBM.txt", [4, '\n', 5, '|', 4000])
+unfit = []
+for ite in range(0, len(cat_all.name)):
+# for ite in range(589, 591):
+  ret = create_lc(cat_all, ite, bin_size="auto", show=False)
+  if ret != 0:
+    unfit.append((cat_all.name[ite], ite))
+print(unfit)
 
 # lc_list = subprocess.getoutput("ls ./sources/Light_Curves/").split("\n")
 # lc_names = [name.split(".dat")[0].split("LightCurve_")[1] for name in lc_list]
