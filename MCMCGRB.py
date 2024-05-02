@@ -1,4 +1,5 @@
-
+import seaborn as sns
+import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.integrate import quad, trapezoid, simpson, IntegrationWarning
@@ -16,7 +17,7 @@ class GRBSample:
   Class to create GRB samples
   """
 
-  def __init__(self):
+  def __init__(self, version):
     """
     Initialisation of the different attributes
     """
@@ -31,58 +32,32 @@ class GRBSample:
     self.thetaj_max = 15
     self.lmin = 1e47  # erg/s
     self.lmax = 1e53
-    self.n_year = 0.5
+    self.n_year = 2
+    gbmduty = 0.587
+    self.gbm_weight = 1 / gbmduty / 10
+    self.sample_weight = 1 / self.n_year
+    self.version = version
     self.filename = f"./Sampled/sampled_grb_cat_{self.n_year}years.txt"
+    self.columns = ["Redshift", "Epeak", "PeakLuminosity", "MeanFlux", "T90", "Fluence", "LightCurveName", "BandLow", "BandHigh", "LuminosityDistance", "EnergyIso", "Type", "Cat"]
+    self.sample_df = pd.DataFrame(columns=self.columns)
+    self.gbm_df = pd.DataFrame(columns=self.columns)
     #################################################################################################################
     # Short GRB attributes
     #################################################################################################################
     # PARAMETERS
     self.al1_s, self.al2_s, self.lb_s = 0.53, 3.4, 2.8
-    self.p1, self.zp, self.p2 = 2.8, 2.3, 3.5
-    self.a1, self.a2, self.epb = -0.53, 4, 1600  # Took -a1 because the results were coherent only this way
-    self.ma, self.qa = 1.1, 0.042
-    self.my, self.qy = 0.84, 0.034
-    self.mu, self.sigma, self.skew = 2.5, 3, 2
     self.band_low_short = -0.6
     self.band_high_short = -2.5
     self.short_rate = 0.20  # +0.04 -0.07 [Gpc-3.yr-1]
     self.nshort = None  # func to calculate ?
-    self.z_short = []
-    self.dl_short = []
-    self.ep_short = []
-    self.ep_o_short = []
-    self.eiso_short = []
-    self.liso_short = []
-    self.thetaj_short = []
-    self.mean_flux_short = []
-    self.t90_short = []
-    self.fluence_short = []
-
-    self.lc_short = []
 
     #################################################################################################################
     # long GRB attributes
     #################################################################################################################
-    self.red0, self.n1, self.n2, self.z1 = 0.42, 2.07, -0.7, 3.6
-    self.al1_l, self.al2_l, self.lb_l = -0.65, -3, 10 ** 52.05
-    self.ampl, self.l0, self.ind1 = 372, 1e52, 0.5
     self.band_low_l_mu, self.band_low_l_sig = -0.87, 0.33
     self.band_high_l_mu, self.band_high_l_sig = -2.36, 0.31
     self.t90_mu, self.t90_sig = 58.27, 18
-
     self.nlong = None
-    self.z_long = []
-    self.dl_long = []
-    self.lbol_long = []
-    self.eiso_long = []
-    self.ep_long = []
-    self.band_low_long = []
-    self.band_high_long = []
-    self.mean_flux_long = []
-    self.t90_long = []
-    self.fluence_long = []
-
-    self.lc_long = []
 
     #################################################################################################################
     # GBM attributes
@@ -90,48 +65,28 @@ class GRBSample:
     self.cat_name = "GBM/allGBM.txt"
     self.sttype = [4, '\n', 5, '|', 4000]
     self.gbm_cat = None
-    self.all_gbm_epeak = []
-    self.short_gbm_epeak = []
-    self.long_gbm_epeak = []
-    self.short_gbm_ph_flux = []
-    self.long_gbm_ph_flux = []
-    self.short_gbm_en_flux = []
-    self.long_gbm_en_flux = []
-    self.short_gbm_alpha = []
-    self.long_gbm_alpha = []
-    self.short_gbm_beta = []
-    self.long_gbm_beta = []
-    self.gbm_t90 = []
-    self.short_gbm_ph_fluence = []
-    self.long_gbm_ph_fluence = []
-    self.short_gbm_t90 = []
-    self.long_gbm_t90 = []
-
 
     #################################################################################################################
     # Setting some attributes
     #################################################################################################################
     self.gbm_cat = Catalog(self.cat_name, self.sttype)
     for ite_gbm, gbm_ep in enumerate(self.gbm_cat.flnc_band_epeak):
-      if gbm_ep.strip() != "":
-        self.all_gbm_epeak.append(float(gbm_ep))
-        self.gbm_t90.append(float(self.gbm_cat.t90[ite_gbm]))
-        if float(self.gbm_cat.t90[ite_gbm]) <= 2:
-          self.short_gbm_epeak.append(float(gbm_ep))
-          self.short_gbm_ph_flux.append(calc_flux_gbm(self.gbm_cat, ite_gbm, (10, 1000)))
-          self.short_gbm_ph_fluence.append(self.short_gbm_ph_flux[-1]*float(self.gbm_cat.t90[ite_gbm]))
-          self.short_gbm_en_flux.append(float(self.gbm_cat.fluence[ite_gbm]) / float(self.gbm_cat.t90[ite_gbm]))
-          self.short_gbm_alpha.append(float(self.gbm_cat.flnc_band_alpha[ite_gbm]))
-          self.short_gbm_beta.append(float(self.gbm_cat.flnc_band_beta[ite_gbm]))
-          self.short_gbm_t90.append(float(self.gbm_cat.t90[ite_gbm]))
+      if gbm_ep.strip() != "" and self.gbm_cat.pflx_best_fitting_model[ite_gbm].strip() != "":
+        ep_temp = float(gbm_ep)
+        temp_t90 = float(self.gbm_cat.t90[ite_gbm])
+        lc_temp = self.closest_lc(temp_t90)
+        peak_model = getattr(self.gbm_cat, "pflx_best_fitting_model")[ite_gbm].strip()
+        temp_mean_flux = float(getattr(self.gbm_cat, f"{peak_model}_phtflux")[ite_gbm]) #calc_flux_gbm(self.gbm_cat, ite_gbm, (10, 1000))
+        temp_fluence = temp_mean_flux * temp_t90
+        temp_band_low = float(self.gbm_cat.flnc_band_alpha[ite_gbm])
+        temp_band_high = float(self.gbm_cat.flnc_band_beta[ite_gbm])
+        if temp_t90 < 2:
+          temp_type = f"GBM short {self.gbm_cat.flnc_best_fitting_model[ite_gbm]}"
         else:
-          self.long_gbm_epeak.append(float(gbm_ep))
-          self.long_gbm_ph_flux.append(calc_flux_gbm(self.gbm_cat, ite_gbm, (10, 1000)))
-          self.long_gbm_ph_fluence.append(self.long_gbm_ph_flux[-1]*float(self.gbm_cat.t90[ite_gbm]))
-          self.long_gbm_en_flux.append(float(self.gbm_cat.fluence[ite_gbm]) / float(self.gbm_cat.t90[ite_gbm]))
-          self.long_gbm_alpha.append(float(self.gbm_cat.flnc_band_alpha[ite_gbm]))
-          self.long_gbm_beta.append(float(self.gbm_cat.flnc_band_beta[ite_gbm]))
-          self.long_gbm_t90.append(float(self.gbm_cat.t90[ite_gbm]))
+          temp_type = f"GBM long {self.gbm_cat.flnc_best_fitting_model[ite_gbm]}"
+
+        data_row = pd.DataFrame(data=[[None, ep_temp, None, temp_mean_flux, temp_t90, temp_fluence, lc_temp, temp_band_low, temp_band_high, None, None, temp_type, "GBM"]], columns=self.columns)
+        self.gbm_df = pd.concat([self.gbm_df, data_row], ignore_index=True)
       else:
         print("Information : Find null Epeak in catalog")
 
@@ -146,17 +101,17 @@ class GRBSample:
       f.write("name|t90|light curve name|fluence|mean flux|redshift|Band low energy index|Band high energy index|peak energy|luminosity distance|isotropic luminosity|isotropic energy|jet opening angle\n")
       f.write("[dimensionless] | [s] | [dimensionless] | [ph/cm2] | [ph/cm2/s] | [dimensionless] | [dimensionless] | [dimensionless] | [keV] | [Gpc] | [erg/s] | [erg] | [°]\n")
     # Long GRBs
-    self.nlong = int(self.n_year * int(quad(red_rate_long, self.zmin, self.zmax, (self.red0, self.n1, self.n2, self.z1))[0]))
+    self.nlong = int(self.n_year * int(quad(red_rate_long, self.zmin, self.zmax, args=version)[0]))
     print("nlong : ", self.nlong)
     for ite in range(self.nlong):
-      self.add_long(ite)
+      self.add_long(ite, version)
     # Short GRBs
-    self.nshort = int(self.n_year * int(quad(red_rate_short, self.zmin, self.zmax, (self.short_rate, self.p1, self.zp, self.p2))[0]))
+    self.nshort = int(self.n_year * int(quad(red_rate_short, self.zmin, self.zmax, (self.short_rate, version))[0]))
     print("nshort : ", self.nshort)
     for ite in range(self.nshort):
-      self.add_short(ite)
+      self.add_short(ite, version)
 
-  def add_short(self, sample_number):
+  def add_short(self, sample_number, version):
     """
     Creates the quatities of a short burst according to distributions
     Based on Lana Salmon's thesis and Ghirlanda et al, 2016
@@ -164,39 +119,36 @@ class GRBSample:
     ##################################################################################################################
     # picking according to distributions
     ##################################################################################################################
-    # self.z_short.append(acc_reject(redshift_distribution_short, [self.p1, self.zp, self.p2], self.zmin, self.zmax))
-    self.z_short.append(acc_reject(red_rate_short, [self.short_rate, self.p1, self.zp, self.p2], self.zmin, self.zmax))
-    self.ep_short.append(acc_reject(epeak_distribution_short, [self.a1, self.a2, self.epb], self.epmin, self.epmax))
+    z_temp = acc_reject(red_rate_short, [self.short_rate, version], self.zmin, self.zmax)
+    ep_temp = acc_reject(epeak_distribution_short, [version], self.epmin, self.epmax)
+    temp_t90 = acc_reject(t90_short_distri, [version], 1e-3, 2)
+    lc_temp = self.closest_lc(temp_t90)
     ##################################################################################################################
     # Calculation other parameters with relations
     ##################################################################################################################
-    self.dl_short.append(Planck18.luminosity_distance(self.z_short[-1]).value / 1000)  # Gpc
-    self.ep_o_short.append(self.ep_short[-1] / (1 + self.z_short[-1]))
-    self.eiso_short.append(amati_short(self.ep_short[-1], self.qa, self.ma))
-    self.liso_short.append(yonetoku_short(self.ep_short[-1], self.qy, self.my) / 2)
-    self.band_low_short = -0.6
-    self.band_high_short = -2.5
+    lpeak_temp = yonetoku_short(ep_temp, version)  # / 2
+    dl_temp = Planck18.luminosity_distance(z_temp).value / 1000  # Gpc
+    eiso_temp = amati_short(ep_temp, version)
+    temp_band_high = -0.6
+    temp_band_low = -2.5
 
     ##################################################################################################################
     # Calculation of spectrum
     ##################################################################################################################
     ener_range = np.logspace(1, 3, 100001)
-    norm_val, spec = nomr_band_spec_calc(self.band_low_short, self.band_high_short, self.z_short[-1], self.dl_short[-1], self.ep_short[-1], self.liso_short[-1], ener_range)
-    self.mean_flux_short.append(trapezoid(spec, ener_range))
+    norm_val, spec = nomr_band_spec_calc(self.band_low_short, self.band_high_short, z_temp, dl_temp, ep_temp, lpeak_temp, ener_range)
+    temp_mean_flux = trapezoid(spec, ener_range)
 
-    # self.t90_short.append((1+self.z_short[-1]) * self.eiso_short[-1] / self.liso_short[-1])
-    self.t90_short.append(acc_reject(t90_short_distri, [], 1e-3, 2))
+    data_row = pd.DataFrame(data=[[z_temp, ep_temp, lpeak_temp, temp_mean_flux, temp_t90, temp_mean_flux * temp_t90, lc_temp, temp_band_low, temp_band_high, dl_temp, eiso_temp, "Sample short", "Sample"]],
+                            columns=self.columns)
+    self.sample_df = pd.concat([self.sample_df, data_row], ignore_index=True)
 
-    self.lc_short.append(self.closest_lc(self.t90_short[-1]))
-    self.fluence_short.append(self.mean_flux_long[-1] * self.t90_short[-1])
+    # self.thetaj_short.append(acc_reject(skewnorm.pdf, [2, 2.5, 3], self.thetaj_min, self.thetaj_max))
+    self.save_grb(f"sGRB{self.n_year}S{sample_number}", temp_t90, lc_temp, temp_mean_flux * temp_t90,
+                  temp_mean_flux, z_temp, self.band_low_short, self.band_high_short,
+                  ep_temp, dl_temp, lpeak_temp, eiso_temp, 0)
 
-    # todo, check if rejection method is really needed here or if a skewed normal law can be directly use
-    self.thetaj_short.append(acc_reject(skewnorm.pdf, [self.skew, self.mu, self.sigma], self.thetaj_min, self.thetaj_max))
-    self.save_grb(f"sGRB{self.n_year}S{sample_number}", self.t90_short[-1], self.lc_short[-1], self.fluence_short[-1],
-                  self.mean_flux_short[-1], self.z_short[-1], self.band_low_short, self.band_high_short,
-                  self.ep_short[-1], self.dl_short[-1], self.liso_short[-1], self.eiso_short[-1], self.thetaj_short[-1])
-
-  def add_long(self, sample_number):
+  def add_long(self, sample_number, version):
     """
     Creates the quatities of a long burst according to distributions
     Based on Sarah Antier's thesis
@@ -204,8 +156,8 @@ class GRBSample:
     ##################################################################################################################
     # picking according to distributions
     ##################################################################################################################
-    z_temp = acc_reject(red_rate_long, [self.red0, self.n1, self.n2, self.z1], self.zmin, self.zmax)
-    lbol_temp = acc_reject(luminosity_function, [self.al1_l, self.al2_l, self.lb_l], self.lmin, self.lmax) / 3.5
+    z_temp = acc_reject(red_rate_long, [version], self.zmin, self.zmax)
+    lpeak_temp = acc_reject(lpeak_function_long, [version], self.lmin, self.lmax)  # / 3.5
     temp_band_low = np.random.normal(loc=self.band_low_l_mu, scale=self.band_low_l_sig)
     temp_band_high = np.random.normal(loc=self.band_high_l_mu, scale=self.band_high_l_sig)
     while (temp_band_low - temp_band_high) / (temp_band_low + 2) < 0:
@@ -215,7 +167,7 @@ class GRBSample:
     # Calculation other parameters with relations
     ##################################################################################################################
     dl_temp = Planck18.luminosity_distance(z_temp).to_value("Gpc")
-    ep_temp = yonetoku_long(lbol_temp, self.ampl, self.l0, self.ind1)
+    ep_temp = yonetoku_long(lpeak_temp, version)
     ##################################################################################################################
     # Calculation of spectrum
     ##################################################################################################################
@@ -224,8 +176,8 @@ class GRBSample:
       ##################################################################################################################
       # picking according to distributions
       ##################################################################################################################
-      z_temp = acc_reject(red_rate_long, [self.red0, self.n1, self.n2, self.z1], self.zmin, self.zmax)
-      lbol_temp = acc_reject(luminosity_function, [self.al1_l, self.al2_l, self.lb_l], self.lmin, self.lmax) / 3.5
+      z_temp = acc_reject(red_rate_long, [version], self.zmin, self.zmax)
+      lpeak_temp = acc_reject(lpeak_function_long, [version], self.lmin, self.lmax)  # / 3.5
       temp_band_low = np.random.normal(loc=self.band_low_l_mu, scale=self.band_low_l_sig)
       temp_band_high = np.random.normal(loc=self.band_high_l_mu, scale=self.band_high_l_sig)
       while (temp_band_low - temp_band_high) / (temp_band_low + 2) < 0:
@@ -236,52 +188,44 @@ class GRBSample:
       # Calculation other parameters with relations
       ##################################################################################################################
       dl_temp = Planck18.luminosity_distance(z_temp).to_value("Gpc")
-      ep_temp = yonetoku_long(lbol_temp, self.ampl, self.l0, self.ind1)
+      ep_temp = yonetoku_long(lpeak_temp, version)
       ##################################################################################################################
       # Calculation of spectrum
       ##################################################################################################################
       ampl_norm = normalisation_calc(temp_band_low, temp_band_high)
 
     ener_range = np.logspace(1, 3, 100)
-    norm_val, spec = nomr_band_spec_calc(temp_band_low, temp_band_high, z_temp, dl_temp, ep_temp, lbol_temp, ener_range)
-    eiso_temp = amati_long(ep_temp)
+    norm_val, spec = nomr_band_spec_calc(temp_band_low, temp_band_high, z_temp, dl_temp, ep_temp, lpeak_temp, ener_range)
+    eiso_temp = amati_long(ep_temp, version)
     # With a distribution : the value is taken in a log distribution and then put back in linear value
-    temp_t90 = 10**acc_reject(t90_long_log_distri, [], np.log10(2), 3)
+    temp_t90 = 10**acc_reject(t90_long_log_distri, [version], np.log10(2), 3)
+    lc_temp = self.closest_lc(temp_t90)
+
     # With Eiso
-    # temp_t90 = (1+z_temp) * eiso_temp / lbol_temp
+    # temp_t90 = (1+z_temp) * eiso_temp / lpeak_temp
+    temp_mean_flux = trapezoid(spec, ener_range)
 
-    self.z_long.append(z_temp)
-    self.dl_long.append(dl_temp)
-    self.lbol_long.append(lbol_temp)
-    self.ep_long.append(ep_temp)
-    self.band_low_long.append(temp_band_low)
-    self.band_high_long.append(temp_band_high)
-    # spec is N(E) so now we need to integrate it vs E (and not vs (1+z)E/Ep)
-    self.mean_flux_long.append(trapezoid(spec, ener_range))
-    self.t90_long.append(temp_t90)
-    self.lc_long.append(self.closest_lc(temp_t90))
-    self.eiso_long.append(eiso_temp)
-    self.fluence_long.append(self.mean_flux_long[-1] * temp_t90)
-    self.save_grb(f"lGRB{self.n_year}S{sample_number}", self.t90_long[-1], self.lc_long[-1], self.fluence_long[-1],
-                  self.mean_flux_long[-1], self.z_long[-1], self.band_low_long[-1], self.band_high_long[-1],
-                  self.ep_long[-1], self.dl_long[-1], self.lbol_long[-1], eiso_temp, 0)
+    data_row = pd.DataFrame(data=[[z_temp, ep_temp, lpeak_temp, temp_mean_flux, temp_t90, temp_mean_flux * temp_t90, lc_temp, temp_band_low, temp_band_high, dl_temp, eiso_temp, "Sample long", "Sample"]],
+                            columns=self.columns)
+    self.sample_df = pd.concat([self.sample_df, data_row], ignore_index=True)
 
+    self.save_grb(f"lGRB{self.n_year}S{sample_number}", temp_t90, lc_temp, temp_mean_flux * temp_t90, temp_mean_flux, z_temp, temp_band_low, temp_band_high, ep_temp, dl_temp, lpeak_temp, eiso_temp, 0)
 
   def closest_lc(self, searched_time):
     """
     Find the lightcurve with a duration which is the closest to the sampled t90 time
     """
-    abs_diff = np.abs(np.array(self.gbm_t90) - searched_time)
+    abs_diff = np.abs(np.array(self.gbm_cat.t90, dtype=float) - searched_time)
     gbm_index = np.argmin(abs_diff)
-    # print(searched_time, self.gbm_t90[gbm_index])
+    # print(searched_time, float(self.gbm_cat.t90[gbm_index]))
     return f"LightCurve_{self.gbm_cat.name[gbm_index]}.dat"
 
-  def save_grb(self, name, t90, lcname, fluence, mean_flux, red, band_low, band_high, ep, dl, liso, eiso, thetaj):
+  def save_grb(self, name, t90, lcname, fluence, mean_flux, red, band_low, band_high, ep, dl, lpeak, eiso, thetaj):
     """
     Saves a GRB in a catalog file
     """
     with open(self.filename, "a") as f:
-      f.write(f"{name}|{t90}|{lcname}|{fluence}|{mean_flux}|{red}|{band_low}|{band_high}|{ep}|{dl}|{liso}|{eiso}|{thetaj}\n")
+      f.write(f"{name}|{t90}|{lcname}|{fluence}|{mean_flux}|{red}|{band_low}|{band_high}|{ep}|{dl}|{lpeak}|{eiso}|{thetaj}\n")
 
   def short_comparison(self):
     """
@@ -337,34 +281,38 @@ class GRBSample:
                 57.11462450592885, 82.80632411067194, 44.86166007905138, 29.841897233201582, 19.960474308300395,
                 11.660079051383399, 14.82213438735178, 7.707509881422925, 2.9644268774703555, 3.7549407114624507]
 
-    n_sample = len(self.z_short)
+    df_short = self.sample_df.loc[self.sample_df.Type == "Sample short"]
+    n_sample = len(df_short)
+
+    df_gbm_short = self.gbm_df.loc[self.gbm_df.T90 < 2]
+
     comp_fig, ((ax1, ax2, ax3), (ax4, ax5, ax6)) = plt.subplots(2, 3, figsize=(27, 12))
-    ax1.hist(self.z_short, bins=45, histtype="step", color="blue", weights=[1000 / n_sample] * n_sample, label="Distribution")
+    ax1.hist(df_short.Redshift, bins=45, histtype="step", color="blue", weights=[1000 / n_sample] * n_sample, label="Distribution")
     ax1.step(zx_lana, zy_lana, color="red", label="Model")
     ax1.set(title="Redshift distributions", xlabel="Redshift", ylabel="Number of GRB", xscale="linear", yscale="linear")
     ax1.legend()
 
-    ax2.hist(self.dl_short, bins=45, histtype="step", color="blue", weights=[1000 / n_sample] * n_sample, label="Distribution")
+    ax2.hist(df_short.LuminosityDistance, bins=45, histtype="step", color="blue", weights=[1000 / n_sample] * n_sample, label="Distribution")
     ax2.step(dlx_lana, dly_lana, color="red", label="Model")
     ax2.set(title="DL distributions", xlabel="Luminosity distance (Gpc)", ylabel="Number of GRB", xscale="linear", yscale="linear")
     ax2.legend()
 
-    ax3.hist(self.ep_short, bins=np.logspace(np.log10(self.epmin), np.log10(self.epmax), 56), histtype="step", color="blue", weights=[1000 / n_sample] * n_sample, label="Distribution")
+    ax3.hist(df_short.Epeak, bins=np.logspace(np.log10(self.epmin), np.log10(self.epmax), 56), histtype="step", color="blue", weights=[1000 / n_sample] * n_sample, label="Distribution")
     ax3.step(epx_lana, epy_lana, color="red", label="Model")
     ax3.set(title="Ep distributions", xlabel="Peak energy (keV)", ylabel="Number of GRB", xscale="log", yscale="linear")
     ax3.legend()
 
-    ax4.hist(self.ep_o_short, bins=np.logspace(np.log10(self.epmin), np.log10(self.epmax), 56), histtype="step", color="blue", weights=[len(self.short_gbm_epeak) / n_sample] * n_sample, label="Distribution")
-    ax4.hist(self.short_gbm_epeak, bins=np.logspace(np.log10(self.epmin), np.log10(self.epmax), 56), histtype="step", color="red", label="Model (GBM)")
+    # ax4.hist(self.ep_o_short, bins=np.logspace(np.log10(self.epmin), np.log10(self.epmax), 56), histtype="step", color="blue", weights=[len(self.short_gbm_epeak) / n_sample] * n_sample, label="Distribution")
+    ax4.hist(df_gbm_short.Epeak, bins=np.logspace(np.log10(self.epmin), np.log10(self.epmax), 56), histtype="step", color="red", label="Model (GBM)")
     ax4.set(title="Ep obs distributions", xlabel="Obs frame peak energy (keV)", ylabel="Number of GRB", xscale="log", yscale="linear")
     ax4.legend()
 
-    ax5.hist(np.log10(np.array(self.eiso_short) / 1e52), bins=28, histtype="step", color="blue", weights=[1000 / n_sample] * n_sample, label="Distribution")
-    ax5.step(eisox_lana, eisoy_lana, color="red", label="Model")
-    ax5.set(title="Eiso distributions", xlabel="Log10(Eiso/1e52) (erg)", ylabel="Number of GRB", xscale="linear", yscale="linear")
-    ax5.legend()
+    ax4.hist(np.log10(np.array(df_short.EnergyIso) / 1e52), bins=28, histtype="step", color="blue", weights=[1000 / n_sample] * n_sample, label="Distribution")
+    ax4.step(eisox_lana, eisoy_lana, color="red", label="Model")
+    ax4.set(title="Eiso distributions", xlabel="Log10(Eiso/1e52) (erg)", ylabel="Number of GRB", xscale="linear", yscale="linear")
+    ax4.legend()
 
-    ax6.hist(self.thetaj_short, bins=np.linspace(0, 15, 30), histtype="step", color="blue", weights=[1000 / n_sample] * n_sample, label="Distribution")
+    # ax6.hist(self.thetaj_short, bins=np.linspace(0, 15, 30), histtype="step", color="blue", weights=[1000 / n_sample] * n_sample, label="Distribution")
     ax6.step(thx_lana, thy_lana, color="red", label="Model")
     ax6.set(title="thetaj distributions", xlabel="Thetaj (°)", ylabel="Number of GRB", xscale="linear", yscale="linear")
     ax6.legend()
@@ -375,75 +323,41 @@ class GRBSample:
     """
     yscale = "log"
     nbin = 50
-    gbmduty = 0.587
-    gbmcorrec = 1 / gbmduty / 10
-    # gbmcorrec = 2
-    # n_sample = len(self.z_long)
-    comp_fig, ((ax1, ax2, ax3), (ax4, ax5, ax6)) = plt.subplots(2, 3, figsize=(27, 12))
-    ax1.hist(self.z_short, bins=nbin, histtype="step", color="blue", label=f"Sample, {len(self.z_short)} GRB", weights=[1 / self.n_year] * len(self.z_short))
-    ax1.set(title="Redshift distributions", xlabel="Redshift", ylabel="Number of GRB", xscale="linear", yscale=yscale)
+
+    fluence_min, fluence_max = 1e-8, 1e4
+    flux_min, flux_max = 1e-8, 1e5
+
+    df_short = self.sample_df.loc[self.sample_df.Type == "Sample short"]
+    n_sample = len(df_short)
+
+    df_gbm_short = self.gbm_df.loc[self.gbm_df.T90 < 2]
+    n_gbm = len(df_gbm_short)
+
+    comp_fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(27, 12))
+
+    ax1.hist(df_short.Epeak, bins=np.logspace(np.log10(self.epmin), np.log10(self.epmax), nbin), histtype="step", color="blue", label=f"Sample, {n_sample} GRB", weights=[self.sample_weight] * n_sample)
+    ax1.hist(df_gbm_short.Epeak, bins=np.logspace(np.log10(self.epmin), np.log10(self.epmax), nbin), histtype="step", color="red", label=f"GBM, {n_gbm} GRB", weights=[self.gbm_weight] * n_gbm)
+    ax1.set(title="Ep distributions", xlabel="Peak energy (keV)", ylabel="Number of GRB", xscale="log", yscale=yscale)
     ax1.legend()
 
-    ax2.hist(self.liso_short, bins=np.logspace(np.log10(self.lmin), np.log10(self.lmax), nbin), histtype="step", color="blue", label=f"Sample, {len(self.liso_short)} GRB", weights=[1 / self.n_year] * len(self.liso_short))
-    ax2.set(title="Lbol distributions", xlabel="Bolometric luminosity (erg/s)", ylabel="Number of GRB", xscale="log", yscale=yscale)
+    fluence_bin = np.logspace(np.log10(fluence_min), np.log10(fluence_max), nbin)
+    ax2.hist(df_short.Fluence, bins=fluence_bin, histtype="step", color="blue", label=f"Sample, {n_sample} GRB", weights=[self.sample_weight] * n_sample)
+    ax2.hist(df_gbm_short.Fluence, bins=fluence_bin, histtype="step", color="red", label=f"GBM, {n_gbm} GRB", weights=[self.gbm_weight] * n_gbm)
+    ax2.set(title="Fluence distributions", xlabel="Photon fluence (photon/cm²)", ylabel="Number of GRB", xscale="log", yscale=yscale)
     ax2.legend()
 
-    ax3.hist(self.ep_short, bins=np.logspace(np.log10(self.epmin), np.log10(self.epmax), nbin), histtype="step", color="blue", label=f"Sample, {len(self.ep_short)} GRB", weights=[1 / self.n_year] * len(self.ep_short))
-    ax3.hist(self.short_gbm_epeak, bins=np.logspace(np.log10(self.epmin), np.log10(self.epmax), nbin), histtype="step", color="red", label=f"GBM, {len(self.short_gbm_epeak)} GRB", weights=[gbmcorrec] * len(self.short_gbm_epeak))
-    ax3.set(title="Ep distributions", xlabel="Peak energy (keV)", ylabel="Number of GRB", xscale="log", yscale=yscale)
+    flux_bin = np.logspace(np.log10(flux_min), np.log10(flux_max), nbin)
+    ax3.hist(df_short.MeanFlux, bins=flux_bin, histtype="step", color="blue", label=f"Sample, {n_sample} GRB", weights=[self.sample_weight] * n_sample)
+    ax3.hist(df_gbm_short.MeanFlux, bins=flux_bin, histtype="step", color="red", label=f"GBM, {n_gbm} GRB", weights=[self.gbm_weight] * n_gbm)
+    ax3.set(title="Mean flux distributions", xlabel="Photon flux (photon/cm²/s)", ylabel="Number of GRB", xscale="log", yscale=yscale)
     ax3.legend()
 
-    ph_short_fluence = np.array(self.mean_flux_short)*np.array(self.t90_short)
-    ph_min, ph_max = np.min(ph_short_fluence), np.max(ph_short_fluence)
-    ax4.hist(ph_short_fluence, bins=np.logspace(np.log10(ph_min), np.log10(ph_max), nbin), histtype="step", color="blue", label=f"Sample, {len(ph_short_fluence)} GRB", weights=[1 / self.n_year] * len(ph_short_fluence))
-    ax4.hist(self.short_gbm_ph_fluence, bins=np.logspace(np.log10(np.min(self.mean_flux_long)), np.log10(np.max(self.mean_flux_long)), nbin), histtype="step", color="red", label=f"GBM, {len(self.short_gbm_ph_fluence)} GRB", weights=[gbmcorrec] * len(self.short_gbm_ph_fluence))
-    ax4.set(title="Fluence distributions", xlabel="Photon fluence (photon/cm²)", ylabel="Number of GRB", xscale="log", yscale=yscale)
+    ax4.hist(df_short.T90, bins=np.logspace(-3, np.log10(2), nbin), histtype="step", color="blue", label=f"Sample, {n_sample} GRB", weights=[self.sample_weight] * n_sample)
+    ax4.hist(df_gbm_short.T90, bins=np.logspace(-3, np.log10(2), nbin), histtype="step", color="red", label=f"GBM, {n_gbm} GRB", weights=[self.gbm_weight] * n_gbm)
+    ax4.set(title="T90 distributions", xlabel="T90 (s)", ylabel="Number of GRB", xscale="log", yscale=yscale)
     ax4.legend()
 
-    ax5.hist(self.mean_flux_short, bins=np.logspace(np.log10(np.min(self.mean_flux_long)), np.log10(np.max(self.mean_flux_long)), nbin), histtype="step", color="blue", label=f"Sample, {len(self.mean_flux_short)} GRB", weights=[1 / self.n_year] * len(self.mean_flux_short))
-    ax5.hist(self.short_gbm_ph_flux, bins=np.logspace(np.log10(np.min(self.mean_flux_long)), np.log10(np.max(self.mean_flux_long)), nbin), histtype="step", color="red", label=f"GBM, {len(self.short_gbm_ph_flux)} GRB", weights=[gbmcorrec] * len(self.short_gbm_ph_flux))
-    ax5.set(title="Mean flux distributions", xlabel="Photon flux (photon/cm²/s)", ylabel="Number of GRB", xscale="log", yscale=yscale)
-    ax5.legend()
-
-    ax6.hist(self.t90_short, bins=np.logspace(-3, np.log10(2), nbin), histtype="step", color="blue", label=f"Sample, {len(self.t90_short)} GRB", weights=[1 / self.n_year] * len(self.t90_short))
-    ax6.hist(self.short_gbm_t90, bins=np.logspace(-3, np.log10(2), nbin), histtype="step", color="red", label=f"GBM, {len(self.short_gbm_t90)} GRB", weights=[gbmcorrec] * len(self.short_gbm_t90))
-    ax6.set(title="T90 distributions", xlabel="T90 (s)", ylabel="Number of GRB", xscale="log", yscale=yscale)
-    ax6.legend()
-
     plt.show()
-
-    # index = np.where(ph_short_fluence > 52.64808276890968, True, False)
-    # comp_fig, ((ax1, ax2, ax3), (ax4, ax5, ax6)) = plt.subplots(2, 3, figsize=(27, 12))
-    # ax1.hist(np.array(self.z_short)[index], bins=nbin, histtype="step", color="blue", label=f"Sample, {len(np.array(self.z_short)[index])} GRB")
-    # ax1.set(title="Redshift distributions", xlabel="Redshift", ylabel="Number of GRB", xscale="linear", yscale=yscale)
-    # ax1.legend()
-    #
-    # ax2.hist(np.array(self.liso_short)[index], bins=np.logspace(np.log10(self.lmin), np.log10(self.lmax), nbin), histtype="step", color="blue", label=f"Sample, {len(np.array(self.liso_short)[index])} GRB")
-    # ax2.set(title="Lbol distributions", xlabel="Bolometric luminosity (erg/s)", ylabel="Number of GRB", xscale="log", yscale=yscale)
-    # ax2.legend()
-    #
-    # ax3.hist(np.array(self.ep_short)[index], bins=np.logspace(np.log10(self.epmin), np.log10(self.epmax), nbin), histtype="step", color="blue", label=f"Sample, {len(np.array(self.ep_short)[index])} GRB")
-    # ax3.hist(self.short_gbm_epeak, bins=np.logspace(np.log10(self.epmin), np.log10(self.epmax), nbin), histtype="step", color="red", label=f"GBM, {len(self.short_gbm_epeak)} GRB", weights=[1 / gbmduty] * len(self.short_gbm_epeak))
-    # ax3.set(title="Ep distributions", xlabel="Peak energy (keV)", ylabel="Number of GRB", xscale="log", yscale=yscale)
-    # ax3.legend()
-    #
-    # ph_short_fluence = np.array(self.mean_flux_short)*np.array(self.t90_short)
-    # ph_min, ph_max = np.min(ph_short_fluence), np.max(ph_short_fluence)
-    # ax4.hist(np.array(ph_short_fluence)[index], bins=np.logspace(np.log10(ph_min), np.log10(ph_max), nbin), histtype="step", color="blue", label=f"Sample, {len(np.array(ph_short_fluence)[index])} GRB")
-    # ax4.hist(self.short_gbm_ph_fluence, bins=np.logspace(np.log10(np.min(self.mean_flux_long)), np.log10(np.max(self.mean_flux_long)), nbin), histtype="step", color="red", label=f"GBM, {len(self.short_gbm_ph_fluence)} GRB", weights=[1 / gbmduty] * len(self.short_gbm_ph_fluence))
-    # ax4.set(title="Fluence distributions", xlabel="Photon fluence (photon/cm²)", ylabel="Number of GRB", xscale="log", yscale=yscale)
-    # ax4.legend()
-    #
-    # ax5.hist(np.array(self.mean_flux_short)[index], bins=np.logspace(np.log10(np.min(self.mean_flux_long)), np.log10(np.max(self.mean_flux_long)), nbin), histtype="step", color="blue", label=f"Sample, {len(np.array(self.mean_flux_short)[index])} GRB")
-    # ax5.hist(self.short_gbm_ph_flux, bins=np.logspace(np.log10(np.min(self.mean_flux_long)), np.log10(np.max(self.mean_flux_long)), nbin), histtype="step", color="red", label=f"GBM, {len(self.short_gbm_ph_flux)} GRB", weights=[1 / gbmduty] * len(self.short_gbm_ph_flux))
-    # ax5.set(title="Mean flux distributions", xlabel="Photon flux (photon/cm²/s)", ylabel="Number of GRB", xscale="log", yscale=yscale)
-    # ax5.legend()
-    #
-    # ax6.hist(np.array(self.t90_short)[index], bins=nbin, histtype="step", color="blue", label=f"Sample, {len(np.array(self.t90_short)[index])} GRB")
-    # ax6.hist(self.short_gbm_t90, bins=nbin, histtype="step", color="red", label=f"GBM, {len(self.short_gbm_t90)} GRB", weights=[1 / gbmduty] * len(self.short_gbm_t90))
-    # ax6.set(title="T90 distributions", xlabel="T90 (s)", ylabel="Number of GRB", xscale="linear", yscale=yscale)
-    # ax6.legend()
-
 
   def long_distri(self):
     """
@@ -451,92 +365,92 @@ class GRBSample:
     """
     yscale = "log"
     nbin = 50
-    gbmduty = 0.587
-    # n_sample = len(self.z_long)
-    gbmcorrec = 1 / gbmduty / 10
-    # gbmcorrec = 2
-    comp_fig, ((ax1, ax2, ax3, ax4), (ax5, ax6, ax7, ax8)) = plt.subplots(2, 4, figsize=(27, 12))
-    ax1.hist(self.z_long, bins=nbin, histtype="step", color="blue", label=f"Sample, {len(self.z_long)} GRB", weights=[1 / self.n_year] * len(self.z_long))
-    ax1.set(title="Redshift distributions", xlabel="Redshift", ylabel="Number of GRB", xscale="linear", yscale=yscale)
+
+    fluence_min, fluence_max = 1e-8, 1e4
+    flux_min, flux_max = 1e-8, 1e5
+
+    df_long = self.sample_df.loc[self.sample_df.Type == "Sample long"]
+    n_sample = len(df_long)
+
+    df_gbm_long = self.gbm_df.loc[self.gbm_df.T90 >= 2]
+    n_gbm = len(df_gbm_long)
+
+    comp_fig, ((ax1, ax2, ax3), (ax4, ax5, ax6)) = plt.subplots(2, 3, figsize=(27, 12))
+
+    ax1.hist(df_long.Epeak, bins=np.logspace(np.log10(self.epmin), np.log10(self.epmax), nbin), histtype="step", color="blue", label=f"Sample, {n_sample} GRB", weights=[self.sample_weight] * n_sample)
+    ax1.hist(df_gbm_long.Epeak, bins=np.logspace(np.log10(self.epmin), np.log10(self.epmax), nbin), histtype="step", color="red", label=f"GBM, {n_gbm} GRB", weights=[self.gbm_weight] * n_gbm)
+    ax1.set(title="Ep distributions", xlabel="Peak energy (keV)", ylabel="Number of GRB", xscale="log", yscale=yscale)
     ax1.legend()
 
-    ax2.hist(self.lbol_long, bins=np.logspace(np.log10(self.lmin), np.log10(self.lmax), nbin), histtype="step", color="blue", label=f"Sample, {len(self.lbol_long)} GRB", weights=[1 / self.n_year] * len(self.lbol_long))
-    ax2.set(title="Lbol distributions", xlabel="Bolometric luminosity (erg/s)", ylabel="Number of GRB", xscale="log", yscale=yscale)
+    alpha_bin = np.linspace(np.min(df_long.BandLow), np.max(df_long.BandLow), nbin)
+    ax2.hist(df_long.BandLow, bins=alpha_bin, histtype="step", color="blue", label=f"Sample, {n_sample} GRB", weights=[self.sample_weight] * n_sample)
+    ax2.hist(df_gbm_long.BandLow, bins=alpha_bin, histtype="step", color="red", label=f"GBM, {n_gbm} GRB", weights=[self.gbm_weight] * n_gbm)
+    ax2.set(title="Band low energy index", xlabel="Alpha", ylabel="Number of GRB", xscale="linear", yscale=yscale)
     ax2.legend()
 
-    ax3.hist(self.ep_long, bins=np.logspace(np.log10(self.epmin), np.log10(self.epmax), nbin), histtype="step", color="blue", label=f"Sample, {len(self.ep_long)} GRB", weights=[1 / self.n_year] * len(self.ep_long))
-    ax3.hist(self.long_gbm_epeak, bins=np.logspace(np.log10(self.epmin), np.log10(self.epmax), nbin), histtype="step", color="red", label=f"GBM, {len(self.long_gbm_epeak)} GRB", weights=[gbmcorrec] * len(self.long_gbm_epeak))
-    ax3.set(title="Ep distributions", xlabel="Peak energy (keV)", ylabel="Number of GRB", xscale="log", yscale=yscale)
+    beta_bin = np.linspace(np.min(df_long.BandHigh), np.max(df_long.BandHigh), nbin)
+    ax3.hist(df_long.BandHigh, bins=beta_bin, histtype="step", color="green", label=f"Sample, {n_sample} GRB", weights=[self.sample_weight] * n_sample)
+    ax3.hist(df_gbm_long.BandHigh, bins=beta_bin, histtype="step", color="orange", label=f"GBM, {n_gbm} GRB", weights=[self.gbm_weight] * n_gbm)
+    ax3.set(title="Band high energy index", xlabel="Beta", ylabel="Number of GRB", xscale="linear", yscale=yscale)
     ax3.legend()
 
-    ax4.hist(self.band_low_long, bins=np.linspace(np.min(self.long_gbm_alpha), np.max(self.long_gbm_alpha), nbin), histtype="step", color="blue", label=f"Sample, {len(self.band_low_long)} GRB", weights=[1 / self.n_year] * len(self.band_low_long))
-    ax4.hist(self.long_gbm_alpha, bins=np.linspace(np.min(self.long_gbm_alpha), np.max(self.long_gbm_alpha), nbin), histtype="step", color="red", label=f"GBM, {len(self.long_gbm_alpha)} GRB", weights=[gbmcorrec] * len(self.long_gbm_alpha))
-    ax4.set(title="Band low energy index", xlabel="Alpha", ylabel="Number of GRB", xscale="linear", yscale=yscale)
+    fluence_bin = np.logspace(np.log10(fluence_min), np.log10(fluence_max), nbin)
+    ax4.hist(df_long.Fluence, bins=fluence_bin, histtype="step", color="blue", label=f"Sample, {n_sample} GRB", weights=[self.sample_weight] * n_sample)
+    ax4.hist(df_gbm_long.Fluence, bins=fluence_bin, histtype="step", color="red", label=f"GBM, {n_gbm} GRB", weights=[self.gbm_weight] * n_gbm)
+    ax4.set(title="Fluence distributions", xlabel="Photon fluence (photon/cm²)", ylabel="Number of GRB", xscale="log", yscale=yscale)
     ax4.legend()
 
-    ax5.hist(self.band_high_long, bins=np.linspace(np.min(self.long_gbm_beta), np.max(self.long_gbm_beta), nbin), histtype="step", color="green", label=f"Sample, {len(self.band_high_long)} GRB", weights=[1 / self.n_year] * len(self.band_high_long))
-    ax5.hist(self.long_gbm_beta, bins=np.linspace(np.min(self.long_gbm_beta), np.max(self.long_gbm_beta), nbin), histtype="step", color="orange", label=f"GBM, {len(self.long_gbm_beta)} GRB", weights=[gbmcorrec] * len(self.long_gbm_beta))
-    ax5.set(title="Band high energy index", xlabel="Beta", ylabel="Number of GRB", xscale="linear", yscale=yscale)
+    flux_bin = np.logspace(np.log10(flux_min), np.log10(flux_max), nbin)
+    ax5.hist(df_long.MeanFlux, bins=flux_bin, histtype="step", color="blue", label=f"Sample, {n_sample} GRB", weights=[self.sample_weight] * n_sample)
+    ax5.hist(df_gbm_long.MeanFlux, bins=flux_bin, histtype="step", color="red", label=f"GBM, {n_gbm} GRB", weights=[self.gbm_weight] * n_gbm)
+    ax5.set(title="Mean flux distributions", xlabel="Photon flux (photon/cm²/s)", ylabel="Number of GRB", xscale="log", yscale=yscale)
     ax5.legend()
 
-    ph_long_fluence = np.array(self.mean_flux_long)*np.array(self.t90_long)
-    ph_min, ph_max = np.min(ph_long_fluence), np.max(ph_long_fluence)
-    ax6.hist(ph_long_fluence, bins=np.logspace(np.log10(ph_min), np.log10(ph_max), nbin), histtype="step", color="blue", label=f"Sample, {len(ph_long_fluence)} GRB", weights=[1 / self.n_year] * len(ph_long_fluence))
-    ax6.hist(self.long_gbm_ph_fluence, bins=np.logspace(np.log10(np.min(self.mean_flux_long)), np.log10(np.max(self.mean_flux_long)), nbin), histtype="step", color="red", label=f"GBM, {len(self.long_gbm_ph_fluence)} GRB", weights=[gbmcorrec] * len(self.long_gbm_ph_fluence))
-    ax6.set(title="Fluence distributions", xlabel="Photon fluence (photon/cm²)", ylabel="Number of GRB", xscale="log", yscale=yscale)
+    ax6.hist(df_long.T90, bins=np.logspace(np.log10(2), 3, nbin), histtype="step", color="blue", label=f"Sample, {n_sample} GRB", weights=[self.sample_weight] * n_sample)
+    ax6.hist(df_gbm_long.T90, bins=np.logspace(np.log10(2), 3, nbin), histtype="step", color="red", label=f"GBM, {n_gbm} GRB", weights=[self.gbm_weight] * n_gbm)
+    ax6.set(title="T90 distributions", xlabel="T90 (s)", ylabel="Number of GRB", xscale="log", yscale=yscale)
     ax6.legend()
-
-    ax7.hist(self.mean_flux_long, bins=np.logspace(np.log10(np.min(self.mean_flux_long)), np.log10(np.max(self.mean_flux_long)), nbin), histtype="step", color="blue", label=f"Sample, {len(self.mean_flux_long)} GRB", weights=[1 / self.n_year] * len(self.mean_flux_long))
-    ax7.hist(self.long_gbm_ph_flux, bins=np.logspace(np.log10(np.min(self.mean_flux_long)), np.log10(np.max(self.mean_flux_long)), nbin), histtype="step", color="red", label=f"GBM, {len(self.long_gbm_ph_flux)} GRB", weights=[gbmcorrec] * len(self.long_gbm_ph_flux))
-    ax7.set(title="Mean flux distributions", xlabel="Photon flux (photon/cm²/s)", ylabel="Number of GRB", xscale="log", yscale=yscale)
-    ax7.legend()
-
-    ax8.hist(self.t90_long, bins=np.logspace(np.log10(2), 3, nbin), histtype="step", color="blue", label=f"Sample, {len(self.t90_long)} GRB", weights=[1 / self.n_year] * len(self.t90_long))
-    ax8.hist(self.long_gbm_t90, bins=np.logspace(np.log10(2), 3, nbin), histtype="step", color="red", label=f"GBM, {len(self.long_gbm_t90)} GRB", weights=[gbmcorrec] * len(self.long_gbm_t90))
-    ax8.set(title="T90 distributions", xlabel="T90 (s)", ylabel="Number of GRB", xscale="log", yscale=yscale)
-    ax8.legend()
 
     plt.show()
 
-    # index = np.where(ph_long_fluence > 3498.2773030363187, True, False)
-    # comp_fig, ((ax1, ax2, ax3, ax4), (ax5, ax6, ax7, ax8)) = plt.subplots(2, 4, figsize=(27, 12))
-    # ax1.hist(np.array(self.z_long)[index], bins=nbin, histtype="step", color="blue", label=f"Sample, {len(np.array(self.z_long)[index])} GRB")
-    # ax1.set(title="Redshift distributions", xlabel="Redshift", ylabel="Number of GRB", xscale="linear", yscale=yscale)
-    # ax1.legend()
-    #
-    # ax2.hist(np.array(self.lbol_long)[index], bins=np.logspace(np.log10(self.lmin), np.log10(self.lmax), nbin), histtype="step", color="blue", label=f"Sample, {len(np.array(self.lbol_long)[index])} GRB")
-    # ax2.set(title="Lbol distributions", xlabel="Bolometric luminosity (erg/s)", ylabel="Number of GRB", xscale="log", yscale=yscale)
-    # ax2.legend()
-    #
-    # ax3.hist(np.array(self.ep_long)[index], bins=np.logspace(np.log10(self.epmin), np.log10(self.epmax), nbin), histtype="step", color="blue", label=f"Sample, {len(np.array(self.ep_long)[index])} GRB")
-    # ax3.hist(self.long_gbm_epeak, bins=np.logspace(np.log10(self.epmin), np.log10(self.epmax), nbin), histtype="step", color="red", label=f"GBM, {len(self.long_gbm_epeak)} GRB", weights=[1 / gbmduty] * len(self.long_gbm_epeak))
-    # ax3.set(title="Ep distributions", xlabel="Peak energy (keV)", ylabel="Number of GRB", xscale="log", yscale=yscale)
-    # ax3.legend()
-    #
-    # ax4.hist(np.array(self.band_low_long)[index], bins=np.linspace(np.min(self.long_gbm_alpha), np.max(self.long_gbm_alpha), nbin), histtype="step", color="blue", label=f"Sample, {len(np.array(self.band_low_long)[index])} GRB")
-    # ax4.hist(self.long_gbm_alpha, bins=np.linspace(np.min(self.long_gbm_alpha), np.max(self.long_gbm_alpha), nbin), histtype="step", color="red", label=f"GBM, {len(self.long_gbm_alpha)} GRB", weights=[1 / gbmduty] * len(self.long_gbm_alpha))
-    # ax4.set(title="Band low energy index", xlabel="Alpha", ylabel="Number of GRB", xscale="linear", yscale=yscale)
-    # ax4.legend()
-    #
-    # ax5.hist(np.array(self.band_high_long)[index], bins=np.linspace(np.min(self.long_gbm_beta), np.max(self.long_gbm_beta), nbin), histtype="step", color="green", label=f"Sample, {len(np.array(self.band_high_long)[index])} GRB")
-    # ax5.hist(self.long_gbm_beta, bins=np.linspace(np.min(self.long_gbm_beta), np.max(self.long_gbm_beta), nbin), histtype="step", color="orange", label=f"GBM, {len(self.long_gbm_beta)} GRB", weights=[1 / gbmduty] * len(self.long_gbm_beta))
-    # ax5.set(title="Band high energy index", xlabel="Beta", ylabel="Number of GRB", xscale="linear", yscale=yscale)
-    # ax5.legend()
-    #
-    # ph_long_fluence = np.array(self.mean_flux_long)*np.array(self.t90_long)
-    # ph_min, ph_max = np.min(ph_long_fluence), np.max(ph_long_fluence)
-    # ax6.hist(np.array(ph_long_fluence)[index], bins=np.logspace(np.log10(ph_min), np.log10(ph_max), nbin), histtype="step", color="blue", label=f"Sample, {len(np.array(ph_long_fluence)[index])} GRB")
-    # ax6.hist(self.long_gbm_ph_fluence, bins=np.logspace(np.log10(np.min(self.mean_flux_long)), np.log10(np.max(self.mean_flux_long)), nbin), histtype="step", color="red", label=f"GBM, {len(self.long_gbm_ph_fluence)} GRB", weights=[1 / gbmduty] * len(self.long_gbm_ph_fluence))
-    # ax6.set(title="Fluence distributions", xlabel="Photon fluence (photon/cm²)", ylabel="Number of GRB", xscale="log", yscale=yscale)
-    # ax6.legend()
-    #
-    # ax7.hist(np.array(self.mean_flux_long)[index], bins=np.logspace(np.log10(np.min(self.mean_flux_long)), np.log10(np.max(self.mean_flux_long)), nbin), histtype="step", color="blue", label=f"Sample, {len(np.array(self.mean_flux_long)[index])} GRB")
-    # ax7.hist(self.long_gbm_ph_flux, bins=np.logspace(np.log10(np.min(self.mean_flux_long)), np.log10(np.max(self.mean_flux_long)), nbin), histtype="step", color="red", label=f"GBM, {len(self.long_gbm_ph_flux)} GRB", weights=[1 / gbmduty] * len(self.long_gbm_ph_flux))
-    # ax7.set(title="Mean flux distributions", xlabel="Photon flux (photon/cm²/s)", ylabel="Number of GRB", xscale="log", yscale=yscale)
-    # ax7.legend()
-    #
-    # ax8.hist(np.array(self.t90_long)[index], bins=nbin, histtype="step", color="blue", label=f"Sample, {len(np.array(self.t90_long)[index])} GRB")
-    # ax8.hist(self.long_gbm_t90, bins=nbin, histtype="step", color="red", label=f"GBM, {len(self.long_gbm_t90)} GRB", weights=[1 / gbmduty] * len(self.long_gbm_t90))
-    # ax8.set(title="T90 distributions", xlabel="T90 (s)", ylabel="Number of GRB", xscale="linear", yscale=yscale)
-    # ax8.legend()
+  def distri_pairplot(self):
+    fraction = self.n_year/10/0.6
+    selec_cols = ["Redshift", "Epeak", "PeakLuminosity", "MeanFlux", "T90", "Fluence", "Type"]
+    if fraction < 1:
+      selec_gbm_df = self.gbm_df[selec_cols].sample(frac=fraction)
+      selec_samp_df = self.sample_df[selec_cols]
+    else:
+      selec_gbm_df = self.gbm_df[selec_cols]
+      selec_samp_df = self.sample_df[selec_cols].sample(frac=1/fraction)
+    plot_df = pd.concat([selec_samp_df, selec_gbm_df], ignore_index=True)
+    plot_df[["Epeak", "PeakLuminosity", "MeanFlux", "T90", "Fluence"]] = plot_df[["Epeak", "PeakLuminosity", "MeanFlux", "T90", "Fluence"]].apply(np.log10, axis=1)
+    plot_df.rename(columns={"Epeak": "LogEpeak", "PeakLuminosity": "LogPeakLuminosity", "MeanFlux": "LogMeanFlux", "T90": "LogT90", "Fluence": "LogFluence"})
 
+    colors = ["lightskyblue", "navy", "lightgreen", "limegreen", "forestgreen", "darkgreen", "thistle", "plum", "violet", "purple"]
+    p1 = sns.pairplot(plot_df, hue="Type", corner=True, palette=colors, plot_kws={'s': 10})
+
+    selec_cols = ["MeanFlux", "T90", "Fluence", "Cat"]
+    if fraction < 1:
+      selec_gbm_df = self.gbm_df[selec_cols].sample(frac=fraction)
+      selec_samp_df = self.sample_df[selec_cols]
+    else:
+      selec_gbm_df = self.gbm_df[selec_cols]
+      selec_samp_df = self.sample_df[selec_cols].sample(frac=1/fraction)
+    plot_df = pd.concat([selec_samp_df, selec_gbm_df], ignore_index=True)
+    plot_df[["MeanFlux", "T90", "Fluence"]] = plot_df[["MeanFlux", "T90", "Fluence"]].apply(np.log10, axis=1)
+    plot_df.rename(columns={"MeanFlux": "LogMeanFlux", "T90": "LogT90", "Fluence": "LogFluence"})
+
+    sns.pairplot(plot_df, hue="Cat", corner=True, palette=["lightskyblue", "lightgreen"], plot_kws={'s': 10})
+
+    selec_cols = ["Epeak", "MeanFlux", "T90", "Fluence", "Type"]
+    if fraction < 1:
+      selec_gbm_df = self.gbm_df[selec_cols].sample(frac=fraction)
+      selec_samp_df = self.sample_df[selec_cols]
+    else:
+      selec_gbm_df = self.gbm_df[selec_cols]
+      selec_samp_df = self.sample_df[selec_cols].sample(frac=1/fraction)
+    plot_df = pd.concat([selec_samp_df, selec_gbm_df], ignore_index=True)
+    plot_df[["Epeak", "MeanFlux", "T90", "Fluence"]] = plot_df[["Epeak", "MeanFlux", "T90", "Fluence"]].apply(np.log10, axis=1)
+    plot_df.rename(columns={"Epeak": "LogEpeak", "MeanFlux": "LogMeanFlux", "T90": "LogT90", "Fluence": "LogFluence"})
+
+    sns.pairplot(plot_df, hue="Type", corner=True, palette=colors, plot_kws={'s': 10})

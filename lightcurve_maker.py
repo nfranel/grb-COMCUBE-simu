@@ -63,38 +63,6 @@ def rm_files(tte_list, directory):
     subprocess.call(f"rm -f {directory}{file}", shell=True)
 
 
-# Values from catalog :
-cat_all = Catalog("GBM/allGBM.txt", [4, '\n', 5, '|', 4000])
-# cat_towork = Catalog("GBM/updatedallGBM.txt", [4, '\n', 5, '|', 2000])
-# print("cat loaded")
-# ite = 0
-# name = cat_all.name[ite]
-# t90 = float(cat_all.t90[ite])
-# start_t90 = float(cat_all.t90_start[ite])
-# end_t90 = start_t90 + t90
-# time_integ_lower_energy = float(cat_all.duration_energy_low[ite])
-# time_integ_higher_energy = float(cat_all.duration_energy_high[ite])
-# bk_time_low_start = float(cat_all.back_interval_low_start[ite])
-# bk_time_low_stop = float(cat_all.back_interval_low_stop[ite])
-# bk_time_high_start = float(cat_all.back_interval_high_start[ite])
-# bk_time_high_stop = float(cat_all.back_interval_high_stop[ite])
-# lc_detector_mask = cat_all.bcat_detector_mask[ite]
-# spec_detector_mask = cat_all.scat_detector_mask[ite]
-# flu_integ_start_time = float(cat_all.flnc_spectrum_start[ite])
-# flu_integ_stop_time = float(cat_all.flnc_spectrum_stop[ite])
-#
-# fluence = float(cat_all.fluence[ite])
-#
-# bkg_range = [(bk_time_low_start, bk_time_low_stop), (bk_time_high_start, bk_time_high_stop)]
-# time_range = None
-# bin_size=0.064
-# bin_size=0.25
-# ener_range=(50, 300)
-# ener_range=(10, 1000)
-# show=True
-# directory="../fermi_lc/"
-
-
 def save_LC(rates, centroids, fullname):
   """
   Writes the light curve in a .dat file
@@ -110,9 +78,29 @@ def save_LC(rates, centroids, fullname):
       raise TypeError("rates and centroids should be numpy arrays")
     centroids -= centroids[0]
     for ite in range(len(rates)):
-      f.write(f"DP {centroids[ite]}  {rates[ite]}\n")
+      f.write(f"DP {centroids[ite]} {rates[ite]}\n")
     f.write("EN")
 
+
+def extract_LC(fullname):
+  """
+  Opens a light curve file from a .dat file and returns 2 lists containing time and count
+  :param fullname: path + name of the file to save the light curves
+  """
+  times = []
+  counts = []
+  with open(fullname, "r") as f:
+    lines = f.read().split("\n")[3:-1]
+    if float(lines[0].split(" ")[1]) != 0:
+      raise ValueError("Error, light curve doesn't start at a time t=0")
+    for line in lines:
+      data = line.split(" ")
+      times.append(data[1])
+      counts.append(data[2])
+      print(data)
+  return times, counts
+
+t1, c1 = extract_LC("./sources/Light_Curves/LightCurve_GRB080714425.dat")
 
 def make_tte_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_mask, bin_size=0.1, ener_range=(10, 1000), show=False, directory="./sources/"):
   """
@@ -427,13 +415,13 @@ def create_lc(cat, GRB_ite, bin_size="auto", ener_range=(10, 1000), show=False, 
 #     not_ready_name.append(name)
 #     not_ready_ite.append(cat_ite)
 
-failed = ['GRB080804456', 'GRB090514734', 'GRB091024380', 'GRB101015558', 'GRB110928180', 'GRB120713226', 'GRB120719146', 'GRB120727681', 'GRB120728434', 'GRB120728934', 'GRB120801920', 'GRB120811649', 'GRB120819048', 'GRB120820585', 'GRB120831901', 'GRB120908873', 'GRB120908938', 'GRB120915000', 'GRB120921877', 'GRB120922939', 'GRB121027038', 'GRB121029350', 'GRB121116459', 'GRB121117018', 'GRB121123421', 'GRB121125356', 'GRB121125469', 'GRB130515056', 'GRB130925173', 'GRB131006367']
-failed_ite = [17, 200, 327, 549, 768, 943, 947, 948, 949, 950, 952, 955, 960, 961, 968, 971, 972, 978, 986, 987, 1000, 1002, 1009, 1010, 1016, 1019, 1020, 1114, 1203, 1209]
-
-ret_list = []
-for ite in failed_ite:
-  ret = create_lc(cat_all, ite, bin_size="auto", show=False)
-  ret_list.append(ret)
-
-len(ret_list)
+# failed = ['GRB080804456', 'GRB090514734', 'GRB091024380', 'GRB101015558', 'GRB110928180', 'GRB120713226', 'GRB120719146', 'GRB120727681', 'GRB120728434', 'GRB120728934', 'GRB120801920', 'GRB120811649', 'GRB120819048', 'GRB120820585', 'GRB120831901', 'GRB120908873', 'GRB120908938', 'GRB120915000', 'GRB120921877', 'GRB120922939', 'GRB121027038', 'GRB121029350', 'GRB121116459', 'GRB121117018', 'GRB121123421', 'GRB121125356', 'GRB121125469', 'GRB130515056', 'GRB130925173', 'GRB131006367']
+# failed_ite = [17, 200, 327, 549, 768, 943, 947, 948, 949, 950, 952, 955, 960, 961, 968, 971, 972, 978, 986, 987, 1000, 1002, 1009, 1010, 1016, 1019, 1020, 1114, 1203, 1209]
+#
+# ret_list = []
+# for ite in failed_ite:
+#   ret = create_lc(cat_all, ite, bin_size="auto", show=False)
+#   ret_list.append(ret)
+#
+# len(ret_list)
 

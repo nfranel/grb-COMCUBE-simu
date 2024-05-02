@@ -1,4 +1,6 @@
 from MAllSourceData import AllSourceData
+import seaborn as sns
+import pandas as pd
 from time import time
 from funcmod import *
 from visualisation import *
@@ -195,8 +197,8 @@ gbm_name = np.array(gbm_name_l)
 samp_name = np.array(samp_name_l)
 gbm_ite = np.array(gbm_ites_l)
 samp_ite = np.array(samp_ites_l)
-minlim = 1.06
-maxlim = 1.09
+minlim = 10
+maxlim = 30
 nbins = 50
 
 ns_t90 = samp_t90_vals[np.logical_and(minlim<samp_flu_vals, samp_flu_vals<maxlim)]

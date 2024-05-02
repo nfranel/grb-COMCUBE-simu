@@ -30,7 +30,7 @@ GRBsource.Beam                            FarFieldPointSource 0. 0.             
 GRBsource.Spectrum                        File repo_path/sources/grb/GRBSpectrum_Ep300keV.dat            # Optional, overwriten by automatic python launcher
 GRBsource.Polarization                    RelativeX 1. 0.                                                # Optional, overwriten by automatic python launcher
 GRBsource.Flux                            10.                                                            # Optional, overwriten by automatic python launcher
-#Flux in #/cm^2/s
+#Average total Flux in #/cm^2/s
 
 ## Unpolarized run parameters:
 #
