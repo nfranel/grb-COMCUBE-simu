@@ -6,6 +6,7 @@ from gbm.background import BackgroundFitter
 from gbm.background.binned import Polynomial
 import gbm
 from gbm.finder import TriggerFtp
+from funcmod import extract_lc
 
 import numpy as np
 from catalog import Catalog
@@ -82,25 +83,7 @@ def save_LC(rates, centroids, fullname):
     f.write("EN")
 
 
-def extract_LC(fullname):
-  """
-  Opens a light curve file from a .dat file and returns 2 lists containing time and count
-  :param fullname: path + name of the file to save the light curves
-  """
-  times = []
-  counts = []
-  with open(fullname, "r") as f:
-    lines = f.read().split("\n")[3:-1]
-    if float(lines[0].split(" ")[1]) != 0:
-      raise ValueError("Error, light curve doesn't start at a time t=0")
-    for line in lines:
-      data = line.split(" ")
-      times.append(data[1])
-      counts.append(data[2])
-      print(data)
-  return times, counts
-
-# t1, c1 = extract_LC("./sources/Light_Curves/LightCurve_GRB080714425.dat")
+# t1, c1 = extract_lc("./sources/Light_Curves/LightCurve_GRB080714425.dat")
 
 def make_tte_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_mask, bin_size=0.1, ener_range=(10, 1000), show=False, directory="./sources/"):
   """
@@ -396,14 +379,14 @@ def create_lc(cat, GRB_ite, bin_size="auto", ener_range=(10, 1000), show=False, 
   print(f"Running {GRBname}, ite : {GRB_ite}")
   return make_tte_lc(GRBname, start_t90, end_t90, time_range, bkg_range, lc_detector_mask, bin_size=bin_size, ener_range=ener_range, show=show, directory=directory)
 
-cat_all = Catalog("GBM/allGBM.txt", [4, '\n', 5, '|', 4000])
-unfit = []
-for ite in range(0, len(cat_all.name)):
-# for ite in range(589, 591):
-  ret = create_lc(cat_all, ite, bin_size="auto", show=False)
-  if ret != 0:
-    unfit.append((cat_all.name[ite], ite))
-print(unfit)
+# cat_all = Catalog("GBM/allGBM.txt", [4, '\n', 5, '|', 4000])
+# unfit = []
+# for ite in range(0, len(cat_all.name)):
+# # for ite in range(589, 591):
+#   ret = create_lc(cat_all, ite, bin_size="auto", show=False)
+#   if ret != 0:
+#     unfit.append((cat_all.name[ite], ite))
+# print(unfit)
 
 # lc_list = subprocess.getoutput("ls ./sources/Light_Curves/").split("\n")
 # lc_names = [name.split(".dat")[0].split("LightCurve_")[1] for name in lc_list]

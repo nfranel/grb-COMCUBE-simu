@@ -7,9 +7,11 @@ from scipy.stats import skewnorm
 from catalog import Catalog
 from funcmod import *
 from scipy.optimize import curve_fit
+from scipy.stats import gaussian_kde
 import warnings
 
 from astropy.cosmology import WMAP9, Planck18
+from astropy.modeling.powerlaws import SmoothlyBrokenPowerLaw1D, ExponentialCutoffPowerLaw1D
 
 
 class GRBSample:
@@ -26,19 +28,19 @@ class GRBSample:
     #################################################################################################################
     self.zmin = 0
     self.zmax = 10
-    self.epmin = 1e-1
+    self.epmin = 1e0
     self.epmax = 1e5
     self.thetaj_min = 0
     self.thetaj_max = 15
     self.lmin = 1e47  # erg/s
     self.lmax = 1e53
-    self.n_year = 2
+    self.n_year = 10
     gbmduty = 0.587
     self.gbm_weight = 1 / gbmduty / 10
     self.sample_weight = 1 / self.n_year
     self.version = version
     self.filename = f"./Sampled/sampled_grb_cat_{self.n_year}years.txt"
-    self.columns = ["Redshift", "Epeak", "PeakLuminosity", "MeanFlux", "T90", "Fluence", "LightCurveName", "BandLow", "BandHigh", "LuminosityDistance", "EnergyIso", "Type", "Cat"]
+    self.columns = ["Redshift", "EpeakObs", "Epeak", "PeakLuminosity", "MeanFlux", "PeakFlux", "T90", "Fluence", "LightCurveName", "BandLow", "BandHigh", "LuminosityDistance", "EnergyIso", "Type", "Cat"]
     self.sample_df = pd.DataFrame(columns=self.columns)
     self.gbm_df = pd.DataFrame(columns=self.columns)
     #################################################################################################################
@@ -72,23 +74,25 @@ class GRBSample:
     self.gbm_cat = Catalog(self.cat_name, self.sttype)
     for ite_gbm, gbm_ep in enumerate(self.gbm_cat.flnc_band_epeak):
       if gbm_ep.strip() != "" and self.gbm_cat.pflx_best_fitting_model[ite_gbm].strip() != "":
-        ep_temp = float(gbm_ep)
+        ep_obs_temp = float(gbm_ep)
+        ep_temp = None
         temp_t90 = float(self.gbm_cat.t90[ite_gbm])
         lc_temp = self.closest_lc(temp_t90)
         peak_model = getattr(self.gbm_cat, "pflx_best_fitting_model")[ite_gbm].strip()
-        temp_mean_flux = float(getattr(self.gbm_cat, f"{peak_model}_phtflux")[ite_gbm]) #calc_flux_gbm(self.gbm_cat, ite_gbm, (10, 1000))
+        temp_peak_flux = float(getattr(self.gbm_cat, f"{peak_model}_phtflux")[ite_gbm])
+        temp_mean_flux = calc_flux_gbm(self.gbm_cat, ite_gbm, (10, 1000))
         temp_fluence = temp_mean_flux * temp_t90
         temp_band_low = float(self.gbm_cat.flnc_band_alpha[ite_gbm])
         temp_band_high = float(self.gbm_cat.flnc_band_beta[ite_gbm])
         if temp_t90 < 2:
-          temp_type = f"GBM short {self.gbm_cat.flnc_best_fitting_model[ite_gbm]}"
+          temp_type = f"GBM short {self.gbm_cat.flnc_best_fitting_model[ite_gbm].strip()}"
         else:
-          temp_type = f"GBM long {self.gbm_cat.flnc_best_fitting_model[ite_gbm]}"
-
-        data_row = pd.DataFrame(data=[[None, ep_temp, None, temp_mean_flux, temp_t90, temp_fluence, lc_temp, temp_band_low, temp_band_high, None, None, temp_type, "GBM"]], columns=self.columns)
+          temp_type = f"GBM long {self.gbm_cat.flnc_best_fitting_model[ite_gbm].strip()}"
+        data_row = pd.DataFrame(data=[[None, ep_obs_temp, ep_temp, None, temp_mean_flux, temp_peak_flux, temp_t90, temp_fluence, lc_temp, temp_band_low, temp_band_high, None, None, temp_type, "GBM"]], columns=self.columns)
         self.gbm_df = pd.concat([self.gbm_df, data_row], ignore_index=True)
       else:
         print("Information : Find null Epeak in catalog")
+    self.gbm_distri()
 
     #################################################################################################################
     # Creating GRBs
@@ -111,6 +115,35 @@ class GRBSample:
     for ite in range(self.nshort):
       self.add_short(ite, version)
 
+  def gbm_distri(self):
+    """
+    Creates the GBM distribution used for estimating the sample parameters. Distributions are obtained with a kde method on the GBM datasets
+    """
+    df_gbm_short = self.gbm_df.loc[self.gbm_df.T90 < 2]
+    df_gbm_long = self.gbm_df.loc[self.gbm_df.T90 >= 2]
+
+    short_bools_ep = np.where(df_gbm_short.Type == 'GBM short flnc_comp', True, False)
+    short_bools_index = np.where(df_gbm_short.Type == 'GBM short flnc_comp', True, np.where(df_gbm_short.Type == 'GBM short flnc_plaw', True, False))
+
+    # long_bools_ep = np.where(df_gbm_long.Type == 'GBM long flnc_band', True, np.where(df_gbm_long.Type == 'GBM long flnc_comp', True, np.where(df_gbm_long.Type == 'GBM long flnc_sbpl', True, False)))
+    long_bools_ep = np.where(df_gbm_long.Type == 'GBM long flnc_band', True, False)
+    long_bools_index = np.where(df_gbm_long.Type == 'GBM long flnc_band', True, np.where(df_gbm_long.Type == 'GBM long flnc_sbpl', True, False))
+
+    # self.kde_short_log_ep_obs = gaussian_kde(np.log10(df_gbm_short[short_bools_ep].EpeakObs.values))
+    self.kde_short_log_ep_obs = gaussian_kde(np.log10(df_gbm_short.EpeakObs.values))
+    self.kde_short_log_t90 = gaussian_kde(np.log10(df_gbm_short.T90.values))
+    df_temp_index_s = df_gbm_short[short_bools_index]
+    # self.kde_short_band_low = gaussian_kde(df_temp_index_s[df_temp_index_s.BandLow < 3].BandLow.values)
+    # self.kde_short_band_high = gaussian_kde(df_temp_index_s[df_temp_index_s.BandHigh > -8].BandHigh.values)
+    self.kde_short_band_low = gaussian_kde(df_gbm_short.BandLow.values)
+    self.kde_short_band_high = gaussian_kde(df_gbm_short.BandHigh.values)
+
+    self.kde_long_log_ep_obs = gaussian_kde(np.log10(df_gbm_long[long_bools_ep].EpeakObs.values))
+    self.kde_long_log_t90 = gaussian_kde(np.log10(df_gbm_long.T90.values))
+    df_temp_index_l = df_gbm_long[long_bools_index]
+    self.kde_long_band_low = gaussian_kde(df_temp_index_l[df_temp_index_l.BandLow < 0.5].BandLow.values)
+    self.kde_long_band_high = gaussian_kde(df_temp_index_l[df_temp_index_l.BandHigh > -8].BandHigh.values)
+
   def add_short(self, sample_number, version):
     """
     Creates the quatities of a short burst according to distributions
@@ -119,34 +152,53 @@ class GRBSample:
     ##################################################################################################################
     # picking according to distributions
     ##################################################################################################################
-    z_temp = acc_reject(red_rate_short, [self.short_rate, version], self.zmin, self.zmax)
-    ep_temp = acc_reject(epeak_distribution_short, [version], self.epmin, self.epmax)
-    temp_t90 = acc_reject(t90_short_distri, [version], 1e-3, 2)
-    lc_temp = self.closest_lc(temp_t90)
+    z_obs_temp = acc_reject(red_rate_short, [self.short_rate, version], self.zmin, self.zmax)
+    ep_obs_temp = 10**self.kde_short_log_ep_obs.resample(1)[0][0]
+    ep_rest_temp = ep_obs_temp * (1 + z_obs_temp)
+
+    band_low_obs_temp = self.kde_short_band_low.resample(1)[0][0]
+    band_high_obs_temp = self.kde_short_band_high.resample(1)[0][0]
+    if (band_low_obs_temp - band_high_obs_temp) / (band_low_obs_temp + 2) < 0:
+      ampl_norm = -1
+    else:
+      ampl_norm = normalisation_calc(band_low_obs_temp, band_high_obs_temp)
+    while ampl_norm < 0:
+      band_low_obs_temp = self.kde_short_band_low.resample(1)[0][0]
+      band_high_obs_temp = self.kde_short_band_high.resample(1)[0][0]
+      if (band_low_obs_temp - band_high_obs_temp) / (band_low_obs_temp + 2) < 0:
+        ampl_norm = -1
+      else:
+        ampl_norm = normalisation_calc(band_low_obs_temp, band_high_obs_temp)
+
+    t90_obs_temp = 10 ** self.kde_short_log_t90.resample(1)[0][0]
+    lc_temp = self.closest_lc(t90_obs_temp)
+    times, counts = extract_lc(f"./sources/Light_Curves/{lc_temp}")
+    pflux_to_mflux = np.mean(counts) / np.max(counts)
+
     ##################################################################################################################
     # Calculation other parameters with relations
     ##################################################################################################################
-    lpeak_temp = yonetoku_short(ep_temp, version)  # / 2
-    dl_temp = Planck18.luminosity_distance(z_temp).value / 1000  # Gpc
-    eiso_temp = amati_short(ep_temp, version)
-    temp_band_high = -0.6
-    temp_band_low = -2.5
+    dl_obs_temp = Planck18.luminosity_distance(z_obs_temp).value / 1000  # Gpc
+    eiso_rest_temp = amati_short(ep_rest_temp, version)
+    lpeak_rest_temp = yonetoku_short(ep_rest_temp, version)  # / 2
+    # lpeak_rest_temp = eiso_rest_temp / (t90_obs_temp / (1+z_obs_temp)) / pflux_to_mflux
 
     ##################################################################################################################
     # Calculation of spectrum
     ##################################################################################################################
     ener_range = np.logspace(1, 3, 100001)
-    norm_val, spec = nomr_band_spec_calc(self.band_low_short, self.band_high_short, z_temp, dl_temp, ep_temp, lpeak_temp, ener_range)
-    temp_mean_flux = trapezoid(spec, ener_range)
+    # norm_val, spec, temp_peak_flux = norm_band_spec_calc(self.band_low_short, self.band_high_short, z_obs_temp, dl_obs_temp, ep_rest_temp, lpeak_rest_temp, ener_range, verbose=False)
+    norm_val, spec, temp_peak_flux = norm_band_spec_calc(self.band_low_short, self.band_high_short, z_obs_temp, dl_obs_temp, ep_rest_temp, lpeak_rest_temp, ener_range, verbose=False)
+    temp_mean_flux = temp_peak_flux * pflux_to_mflux
 
-    data_row = pd.DataFrame(data=[[z_temp, ep_temp, lpeak_temp, temp_mean_flux, temp_t90, temp_mean_flux * temp_t90, lc_temp, temp_band_low, temp_band_high, dl_temp, eiso_temp, "Sample short", "Sample"]],
-                            columns=self.columns)
+    data_row = pd.DataFrame(data=[[z_obs_temp, ep_obs_temp, ep_rest_temp, lpeak_rest_temp, temp_mean_flux, temp_peak_flux, t90_obs_temp, temp_mean_flux * t90_obs_temp, lc_temp, band_low_obs_temp, band_high_obs_temp, dl_obs_temp, eiso_rest_temp, "Sample short",
+                                   "Sample"]], columns=self.columns)
     self.sample_df = pd.concat([self.sample_df, data_row], ignore_index=True)
 
     # self.thetaj_short.append(acc_reject(skewnorm.pdf, [2, 2.5, 3], self.thetaj_min, self.thetaj_max))
-    self.save_grb(f"sGRB{self.n_year}S{sample_number}", temp_t90, lc_temp, temp_mean_flux * temp_t90,
-                  temp_mean_flux, z_temp, self.band_low_short, self.band_high_short,
-                  ep_temp, dl_temp, lpeak_temp, eiso_temp, 0)
+    self.save_grb(f"sGRB{self.n_year}S{sample_number}", t90_obs_temp, lc_temp, temp_mean_flux * t90_obs_temp,
+                  temp_mean_flux, z_obs_temp, self.band_low_short, self.band_high_short,
+                  ep_rest_temp, dl_obs_temp, lpeak_rest_temp, eiso_rest_temp, 0)
 
   def add_long(self, sample_number, version):
     """
@@ -156,60 +208,55 @@ class GRBSample:
     ##################################################################################################################
     # picking according to distributions
     ##################################################################################################################
-    z_temp = acc_reject(red_rate_long, [version], self.zmin, self.zmax)
-    lpeak_temp = acc_reject(lpeak_function_long, [version], self.lmin, self.lmax)  # / 3.5
-    temp_band_low = np.random.normal(loc=self.band_low_l_mu, scale=self.band_low_l_sig)
-    temp_band_high = np.random.normal(loc=self.band_high_l_mu, scale=self.band_high_l_sig)
-    while (temp_band_low - temp_band_high) / (temp_band_low + 2) < 0:
-      temp_band_low = np.random.normal(loc=self.band_low_l_mu, scale=self.band_low_l_sig)
-      temp_band_high = np.random.normal(loc=self.band_high_l_mu, scale=self.band_high_l_sig)
+    z_obs_temp = acc_reject(red_rate_long, [version], self.zmin, self.zmax)
+    ep_obs_temp = 10**self.kde_long_log_ep_obs.resample(1)[0][0]
+    ep_rest_temp = ep_obs_temp * (1 + z_obs_temp)
+
+    band_low_obs_temp = self.kde_long_band_low.resample(1)[0][0]
+    band_high_obs_temp = self.kde_long_band_high.resample(1)[0][0]
+    if (band_low_obs_temp - band_high_obs_temp) / (band_low_obs_temp + 2) < 0:
+      ampl_norm = -1
+    else:
+      ampl_norm = normalisation_calc(band_low_obs_temp, band_high_obs_temp)
+    while ampl_norm < 0:
+      band_low_obs_temp = self.kde_long_band_low.resample(1)[0][0]
+      band_high_obs_temp = self.kde_long_band_high.resample(1)[0][0]
+      if (band_low_obs_temp - band_high_obs_temp) / (band_low_obs_temp + 2) < 0:
+        ampl_norm = -1
+      else:
+        ampl_norm = normalisation_calc(band_low_obs_temp, band_high_obs_temp)
+
+    # With a distribution : the value is taken in a log distribution and then put back in linear value
+    t90_obs_temp = 10 ** self.kde_long_log_t90.resample(1)[0][0]
+    lc_temp = self.closest_lc(t90_obs_temp)
+    times, counts = extract_lc(f"./sources/Light_Curves/{lc_temp}")
+    pflux_to_mflux = np.mean(counts) / np.max(counts)
+
     ##################################################################################################################
     # Calculation other parameters with relations
     ##################################################################################################################
-    dl_temp = Planck18.luminosity_distance(z_temp).to_value("Gpc")
-    ep_temp = yonetoku_long(lpeak_temp, version)
+    dl_obs_temp = Planck18.luminosity_distance(z_obs_temp).to_value("Gpc")
+    eiso_rest_temp = amati_long(ep_rest_temp, version)
+    lpeak_rest_temp = yonetoku_long(ep_rest_temp, version)
+    # lpeak_rest_temp = eiso_rest_temp / (t90_obs_temp / (1+z_obs_temp)) / pflux_to_mflux
+
     ##################################################################################################################
     # Calculation of spectrum
     ##################################################################################################################
-    ampl_norm = normalisation_calc(temp_band_low, temp_band_high)
-    while ampl_norm < 0:
-      ##################################################################################################################
-      # picking according to distributions
-      ##################################################################################################################
-      z_temp = acc_reject(red_rate_long, [version], self.zmin, self.zmax)
-      lpeak_temp = acc_reject(lpeak_function_long, [version], self.lmin, self.lmax)  # / 3.5
-      temp_band_low = np.random.normal(loc=self.band_low_l_mu, scale=self.band_low_l_sig)
-      temp_band_high = np.random.normal(loc=self.band_high_l_mu, scale=self.band_high_l_sig)
-      while (temp_band_low - temp_band_high) / (temp_band_low + 2) < 0:
-        temp_band_low = np.random.normal(loc=self.band_low_l_mu, scale=self.band_low_l_sig)
-        temp_band_high = np.random.normal(loc=self.band_high_l_mu, scale=self.band_high_l_sig)
+    ener_range = np.logspace(1, 5, 100001)
+    norm_val, spec, temp_peak_flux = norm_band_spec_calc(band_low_obs_temp, band_high_obs_temp, z_obs_temp, dl_obs_temp, ep_rest_temp, lpeak_rest_temp, ener_range, verbose=False)
+    temp_mean_flux = temp_peak_flux * pflux_to_mflux
 
-      ##################################################################################################################
-      # Calculation other parameters with relations
-      ##################################################################################################################
-      dl_temp = Planck18.luminosity_distance(z_temp).to_value("Gpc")
-      ep_temp = yonetoku_long(lpeak_temp, version)
-      ##################################################################################################################
-      # Calculation of spectrum
-      ##################################################################################################################
-      ampl_norm = normalisation_calc(temp_band_low, temp_band_high)
+    # pb : flux int = 1 entre 0 et inf mais ici entre 1e1 et 1e3... il y a certainement un rapport a prendre
+    # voir pk diff entre les 2 manière de faire un spectre
+    # comparer val totale de flux avec K ep**2
 
-    ener_range = np.logspace(1, 3, 100)
-    norm_val, spec = nomr_band_spec_calc(temp_band_low, temp_band_high, z_temp, dl_temp, ep_temp, lpeak_temp, ener_range)
-    eiso_temp = amati_long(ep_temp, version)
-    # With a distribution : the value is taken in a log distribution and then put back in linear value
-    temp_t90 = 10**acc_reject(t90_long_log_distri, [version], np.log10(2), 3)
-    lc_temp = self.closest_lc(temp_t90)
-
-    # With Eiso
-    # temp_t90 = (1+z_temp) * eiso_temp / lpeak_temp
-    temp_mean_flux = trapezoid(spec, ener_range)
-
-    data_row = pd.DataFrame(data=[[z_temp, ep_temp, lpeak_temp, temp_mean_flux, temp_t90, temp_mean_flux * temp_t90, lc_temp, temp_band_low, temp_band_high, dl_temp, eiso_temp, "Sample long", "Sample"]],
-                            columns=self.columns)
+    # stop
+    data_row = pd.DataFrame(data=[[z_obs_temp, ep_obs_temp, ep_rest_temp, lpeak_rest_temp, temp_mean_flux, temp_peak_flux, t90_obs_temp, temp_mean_flux * t90_obs_temp, lc_temp, band_low_obs_temp, band_high_obs_temp, dl_obs_temp, eiso_rest_temp, "Sample long",
+                                   "Sample"]], columns=self.columns)
     self.sample_df = pd.concat([self.sample_df, data_row], ignore_index=True)
 
-    self.save_grb(f"lGRB{self.n_year}S{sample_number}", temp_t90, lc_temp, temp_mean_flux * temp_t90, temp_mean_flux, z_temp, temp_band_low, temp_band_high, ep_temp, dl_temp, lpeak_temp, eiso_temp, 0)
+    self.save_grb(f"lGRB{self.n_year}S{sample_number}", t90_obs_temp, lc_temp, temp_mean_flux * t90_obs_temp, temp_mean_flux, z_obs_temp, band_low_obs_temp, band_high_obs_temp, ep_rest_temp, dl_obs_temp, lpeak_rest_temp, eiso_rest_temp, 0)
 
   def closest_lc(self, searched_time):
     """
@@ -333,29 +380,43 @@ class GRBSample:
     df_gbm_short = self.gbm_df.loc[self.gbm_df.T90 < 2]
     n_gbm = len(df_gbm_short)
 
+    # Momentaneous change
+    # bools = np.where(df_gbm_short.Type == 'GBM short flnc_band', True, np.where(df_gbm_short.Type == 'GBM short flnc_comp', True, False))
+    # df_gbm_short = df_gbm_short[bools]
+    # self.gbm_weight = self.gbm_weight * n_gbm / len(df_gbm_short)
+    # n_gbm = len(df_gbm_short)
+
     comp_fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(27, 12))
 
-    ax1.hist(df_short.Epeak, bins=np.logspace(np.log10(self.epmin), np.log10(self.epmax), nbin), histtype="step", color="blue", label=f"Sample, {n_sample} GRB", weights=[self.sample_weight] * n_sample)
-    ax1.hist(df_gbm_short.Epeak, bins=np.logspace(np.log10(self.epmin), np.log10(self.epmax), nbin), histtype="step", color="red", label=f"GBM, {n_gbm} GRB", weights=[self.gbm_weight] * n_gbm)
+    ax1.hist(df_short.EpeakObs, bins=np.logspace(np.log10(self.epmin), np.log10(self.epmax), nbin), histtype="step", color="blue", label=f"Sample, {n_sample} GRB", weights=[self.sample_weight] * n_sample)
+    ax1.hist(df_gbm_short.EpeakObs, bins=np.logspace(np.log10(self.epmin), np.log10(self.epmax), nbin), histtype="step", color="red", label=f"GBM, {n_gbm} GRB", weights=[self.gbm_weight] * n_gbm)
     ax1.set(title="Ep distributions", xlabel="Peak energy (keV)", ylabel="Number of GRB", xscale="log", yscale=yscale)
     ax1.legend()
+    ax1.grid(True, which='major', linestyle='--', color='black', alpha=0.3)
+    ax1.grid(True, which='minor', linestyle=':', color='black', alpha=0.2)
 
     fluence_bin = np.logspace(np.log10(fluence_min), np.log10(fluence_max), nbin)
     ax2.hist(df_short.Fluence, bins=fluence_bin, histtype="step", color="blue", label=f"Sample, {n_sample} GRB", weights=[self.sample_weight] * n_sample)
     ax2.hist(df_gbm_short.Fluence, bins=fluence_bin, histtype="step", color="red", label=f"GBM, {n_gbm} GRB", weights=[self.gbm_weight] * n_gbm)
     ax2.set(title="Fluence distributions", xlabel="Photon fluence (photon/cm²)", ylabel="Number of GRB", xscale="log", yscale=yscale)
     ax2.legend()
+    ax2.grid(True, which='major', linestyle='--', color='black', alpha=0.3)
+    ax2.grid(True, which='minor', linestyle=':', color='black', alpha=0.2)
 
     flux_bin = np.logspace(np.log10(flux_min), np.log10(flux_max), nbin)
     ax3.hist(df_short.MeanFlux, bins=flux_bin, histtype="step", color="blue", label=f"Sample, {n_sample} GRB", weights=[self.sample_weight] * n_sample)
     ax3.hist(df_gbm_short.MeanFlux, bins=flux_bin, histtype="step", color="red", label=f"GBM, {n_gbm} GRB", weights=[self.gbm_weight] * n_gbm)
     ax3.set(title="Mean flux distributions", xlabel="Photon flux (photon/cm²/s)", ylabel="Number of GRB", xscale="log", yscale=yscale)
     ax3.legend()
+    ax3.grid(True, which='major', linestyle='--', color='black', alpha=0.3)
+    ax3.grid(True, which='minor', linestyle=':', color='black', alpha=0.2)
 
     ax4.hist(df_short.T90, bins=np.logspace(-3, np.log10(2), nbin), histtype="step", color="blue", label=f"Sample, {n_sample} GRB", weights=[self.sample_weight] * n_sample)
     ax4.hist(df_gbm_short.T90, bins=np.logspace(-3, np.log10(2), nbin), histtype="step", color="red", label=f"GBM, {n_gbm} GRB", weights=[self.gbm_weight] * n_gbm)
     ax4.set(title="T90 distributions", xlabel="T90 (s)", ylabel="Number of GRB", xscale="log", yscale=yscale)
     ax4.legend()
+    ax4.grid(True, which='major', linestyle='--', color='black', alpha=0.3)
+    ax4.grid(True, which='minor', linestyle=':', color='black', alpha=0.2)
 
     plt.show()
 
@@ -375,41 +436,59 @@ class GRBSample:
     df_gbm_long = self.gbm_df.loc[self.gbm_df.T90 >= 2]
     n_gbm = len(df_gbm_long)
 
+    # Momentaneous change
+    # bools = np.where(df_gbm_long.Type == 'GBM long flnc_band', True, np.where(df_gbm_long.Type == 'GBM long flnc_comp', True, False))
+    # df_gbm_long = df_gbm_long[bools]
+    # self.gbm_weight = self.gbm_weight * n_gbm / len(df_gbm_long)
+    # n_gbm = len(df_gbm_long)
+
     comp_fig, ((ax1, ax2, ax3), (ax4, ax5, ax6)) = plt.subplots(2, 3, figsize=(27, 12))
 
-    ax1.hist(df_long.Epeak, bins=np.logspace(np.log10(self.epmin), np.log10(self.epmax), nbin), histtype="step", color="blue", label=f"Sample, {n_sample} GRB", weights=[self.sample_weight] * n_sample)
-    ax1.hist(df_gbm_long.Epeak, bins=np.logspace(np.log10(self.epmin), np.log10(self.epmax), nbin), histtype="step", color="red", label=f"GBM, {n_gbm} GRB", weights=[self.gbm_weight] * n_gbm)
+    ax1.hist(df_long.EpeakObs, bins=np.logspace(np.log10(self.epmin), np.log10(self.epmax), nbin), histtype="step", color="blue", label=f"Sample, {n_sample} GRB", weights=[self.sample_weight] * n_sample)
+    ax1.hist(df_gbm_long.EpeakObs, bins=np.logspace(np.log10(self.epmin), np.log10(self.epmax), nbin), histtype="step", color="red", label=f"GBM, {n_gbm} GRB", weights=[self.gbm_weight] * n_gbm)
     ax1.set(title="Ep distributions", xlabel="Peak energy (keV)", ylabel="Number of GRB", xscale="log", yscale=yscale)
     ax1.legend()
+    ax1.grid(True, which='major', linestyle='--', color='black', alpha=0.3)
+    ax1.grid(True, which='minor', linestyle=':', color='black', alpha=0.2)
 
     alpha_bin = np.linspace(np.min(df_long.BandLow), np.max(df_long.BandLow), nbin)
     ax2.hist(df_long.BandLow, bins=alpha_bin, histtype="step", color="blue", label=f"Sample, {n_sample} GRB", weights=[self.sample_weight] * n_sample)
     ax2.hist(df_gbm_long.BandLow, bins=alpha_bin, histtype="step", color="red", label=f"GBM, {n_gbm} GRB", weights=[self.gbm_weight] * n_gbm)
     ax2.set(title="Band low energy index", xlabel="Alpha", ylabel="Number of GRB", xscale="linear", yscale=yscale)
     ax2.legend()
+    ax2.grid(True, which='major', linestyle='--', color='black', alpha=0.3)
+    ax2.grid(True, which='minor', linestyle=':', color='black', alpha=0.2)
 
     beta_bin = np.linspace(np.min(df_long.BandHigh), np.max(df_long.BandHigh), nbin)
     ax3.hist(df_long.BandHigh, bins=beta_bin, histtype="step", color="green", label=f"Sample, {n_sample} GRB", weights=[self.sample_weight] * n_sample)
     ax3.hist(df_gbm_long.BandHigh, bins=beta_bin, histtype="step", color="orange", label=f"GBM, {n_gbm} GRB", weights=[self.gbm_weight] * n_gbm)
     ax3.set(title="Band high energy index", xlabel="Beta", ylabel="Number of GRB", xscale="linear", yscale=yscale)
     ax3.legend()
+    ax3.grid(True, which='major', linestyle='--', color='black', alpha=0.3)
+    ax3.grid(True, which='minor', linestyle=':', color='black', alpha=0.2)
 
     fluence_bin = np.logspace(np.log10(fluence_min), np.log10(fluence_max), nbin)
     ax4.hist(df_long.Fluence, bins=fluence_bin, histtype="step", color="blue", label=f"Sample, {n_sample} GRB", weights=[self.sample_weight] * n_sample)
     ax4.hist(df_gbm_long.Fluence, bins=fluence_bin, histtype="step", color="red", label=f"GBM, {n_gbm} GRB", weights=[self.gbm_weight] * n_gbm)
     ax4.set(title="Fluence distributions", xlabel="Photon fluence (photon/cm²)", ylabel="Number of GRB", xscale="log", yscale=yscale)
     ax4.legend()
+    ax4.grid(True, which='major', linestyle='--', color='black', alpha=0.3)
+    ax4.grid(True, which='minor', linestyle=':', color='black', alpha=0.2)
 
     flux_bin = np.logspace(np.log10(flux_min), np.log10(flux_max), nbin)
     ax5.hist(df_long.MeanFlux, bins=flux_bin, histtype="step", color="blue", label=f"Sample, {n_sample} GRB", weights=[self.sample_weight] * n_sample)
     ax5.hist(df_gbm_long.MeanFlux, bins=flux_bin, histtype="step", color="red", label=f"GBM, {n_gbm} GRB", weights=[self.gbm_weight] * n_gbm)
     ax5.set(title="Mean flux distributions", xlabel="Photon flux (photon/cm²/s)", ylabel="Number of GRB", xscale="log", yscale=yscale)
     ax5.legend()
+    ax5.grid(True, which='major', linestyle='--', color='black', alpha=0.3)
+    ax5.grid(True, which='minor', linestyle=':', color='black', alpha=0.2)
 
     ax6.hist(df_long.T90, bins=np.logspace(np.log10(2), 3, nbin), histtype="step", color="blue", label=f"Sample, {n_sample} GRB", weights=[self.sample_weight] * n_sample)
     ax6.hist(df_gbm_long.T90, bins=np.logspace(np.log10(2), 3, nbin), histtype="step", color="red", label=f"GBM, {n_gbm} GRB", weights=[self.gbm_weight] * n_gbm)
     ax6.set(title="T90 distributions", xlabel="T90 (s)", ylabel="Number of GRB", xscale="log", yscale=yscale)
     ax6.legend()
+    ax6.grid(True, which='major', linestyle='--', color='black', alpha=0.3)
+    ax6.grid(True, which='minor', linestyle=':', color='black', alpha=0.2)
 
     plt.show()
 
@@ -427,7 +506,8 @@ class GRBSample:
     plot_df.rename(columns={"Epeak": "LogEpeak", "PeakLuminosity": "LogPeakLuminosity", "MeanFlux": "LogMeanFlux", "T90": "LogT90", "Fluence": "LogFluence"})
 
     colors = ["lightskyblue", "navy", "lightgreen", "limegreen", "forestgreen", "darkgreen", "thistle", "plum", "violet", "purple"]
-    p1 = sns.pairplot(plot_df, hue="Type", corner=True, palette=colors, plot_kws={'s': 10})
+    order = ['Sample long', 'Sample short', 'GBM long flnc_band', 'GBM long flnc_comp', 'GBM long flnc_sbpl', 'GBM long flnc_plaw', 'GBM short flnc_band', 'GBM short flnc_comp', 'GBM short flnc_sbpl', 'GBM short flnc_plaw']
+    p1 = sns.pairplot(plot_df, hue="Type", hue_order=order, corner=True, palette=colors, plot_kws={'s': 10})
 
     selec_cols = ["MeanFlux", "T90", "Fluence", "Cat"]
     if fraction < 1:
@@ -453,4 +533,354 @@ class GRBSample:
     plot_df[["Epeak", "MeanFlux", "T90", "Fluence"]] = plot_df[["Epeak", "MeanFlux", "T90", "Fluence"]].apply(np.log10, axis=1)
     plot_df.rename(columns={"Epeak": "LogEpeak", "MeanFlux": "LogMeanFlux", "T90": "LogT90", "Fluence": "LogFluence"})
 
-    sns.pairplot(plot_df, hue="Type", corner=True, palette=colors, plot_kws={'s': 10})
+    sns.pairplot(plot_df, hue="Type", hue_order=order, corner=True, palette=colors, plot_kws={'s': 10})
+
+  def distri_gbm_spectral_type(self):
+    selec_cols = ["Epeak", "BandLow", "BandHigh", "MeanFlux", "Fluence", "Type"]
+    full_df = self.gbm_df[selec_cols]
+    self.tt = full_df
+    # full_df[["Epeak", "MeanFlux", "Fluence"]] = full_df[["Epeak", "MeanFlux", "Fluence"]].apply(np.log10, axis=1)
+    # full_df.rename(columns={"Epeak": "LogEpeak", "MeanFlux": "LogMeanFlux", "Fluence": "LogFluence"})
+    # short_bools = np.where(full_df.Type == 'GBM short flnc_band', True, np.where(full_df.Type == 'GBM short flnc_comp', True, np.where(full_df.Type == 'GBM short flnc_sbpl', True, np.where(full_df.Type == 'GBM short flnc_plaw', True, False))))
+    # long_bools = np.where(full_df.Type == 'GBM long flnc_band', True, np.where(full_df.Type == 'GBM long flnc_comp', True, np.where(full_df.Type == 'GBM long flnc_sbpl', True, np.where(full_df.Type == 'GBM long flnc_plaw', True, False))))
+    # short_df = full_df[short_bools]
+    # long_df = full_df[long_bools]
+
+
+    #
+    # Short burst
+    #
+    df_short_comp = full_df[full_df.Type == 'GBM short flnc_comp']
+    df_short_band = full_df[full_df.Type == 'GBM short flnc_band']
+    df_short_sbpl = full_df[full_df.Type == 'GBM short flnc_sbpl']
+    df_short_plaw = full_df[full_df.Type == 'GBM short flnc_plaw']
+
+    col_plot = ["Epeak", "BandLow", "BandHigh"]
+    colors = ["lightskyblue", "navy", "lightgreen", "forestgreen"]
+    nbin = 30
+    scales = ["log", "linear", "linear"]
+
+    figdist, axs = plt.subplots(1, 3, figsize=(27, 6))
+    for ite_ax, ax in enumerate(axs):
+      liminf = np.min(full_df[col_plot[ite_ax]])
+      limsup = np.max(full_df[col_plot[ite_ax]])
+      if scales[ite_ax] == "log":
+        bins = np.logspace(np.log10(liminf), np.log10(limsup), nbin)
+        ax.set(xscale=scales[ite_ax], yscale="log", xlabel=f"log {col_plot[ite_ax]}", ylabel=f"log number of count")
+      elif scales[ite_ax] == "linear":
+        bins = np.linspace(liminf, limsup, nbin)
+        ax.set(xscale=scales[ite_ax], yscale="log", xlabel=f"{col_plot[ite_ax]}", ylabel=f"log number of count")
+      else:
+        raise ValueError('Wrong scale used')
+      ax.hist(df_short_comp[col_plot[ite_ax]].values, histtype="step", bins=bins, color=colors[0], label='GBM short flnc_comp')
+      ax.hist(df_short_band[col_plot[ite_ax]].values, histtype="step", bins=bins, color=colors[1], label='GBM short flnc_band')
+      ax.hist(df_short_sbpl[col_plot[ite_ax]].values, histtype="step", bins=bins, color=colors[2], label='GBM short flnc_sbpl')
+      ax.hist(df_short_plaw[col_plot[ite_ax]].values, histtype="step", bins=bins, color=colors[3], label='GBM short flnc_plaw')
+    axs[0].legend()
+
+    col_plot = ["Epeak", "MeanFlux", "Fluence"]
+    colors = ["lightskyblue", "navy", "lightgreen", "forestgreen"]
+    nbin = 30
+    scales = ["log", "log", "log"]
+    figdist, axs = plt.subplots(1, 3, figsize=(27, 6))
+    for ite_ax, ax in enumerate(axs):
+      liminf = np.min(full_df[col_plot[ite_ax]])
+      limsup = np.max(full_df[col_plot[ite_ax]])
+      if scales[ite_ax] == "log":
+        bins = np.logspace(np.log10(liminf), np.log10(limsup), nbin)
+        ax.set(xscale=scales[ite_ax], yscale="log", xlabel=f"log {col_plot[ite_ax]}", ylabel=f"log number of count")
+      elif scales[ite_ax] == "linear":
+        bins = np.linspace(liminf, limsup, nbin)
+        ax.set(xscale=scales[ite_ax], yscale="log", xlabel=f"{col_plot[ite_ax]}", ylabel=f"log number of count")
+      else:
+        raise ValueError('Wrong scale used')
+      ax.hist(df_short_comp[col_plot[ite_ax]].values, histtype="step", bins=bins, color=colors[0], label='GBM short flnc_comp')
+      ax.hist(df_short_band[col_plot[ite_ax]].values, histtype="step", bins=bins, color=colors[1], label='GBM short flnc_band')
+      ax.hist(df_short_sbpl[col_plot[ite_ax]].values, histtype="step", bins=bins, color=colors[2], label='GBM short flnc_sbpl')
+      ax.hist(df_short_plaw[col_plot[ite_ax]].values, histtype="step", bins=bins, color=colors[3], label='GBM short flnc_plaw')
+    axs[0].legend()
+
+    #
+    # Long burst
+    #
+    col_plot = ["Epeak", "BandLow", "BandHigh"]
+    colors = ["lightskyblue", "navy", "lightgreen", "forestgreen"]
+    nbin = 30
+    scales = ["log", "linear", "linear"]
+
+    df_long_comp = full_df[full_df.Type == 'GBM long flnc_comp']
+    df_long_band = full_df[full_df.Type == 'GBM long flnc_band']
+    df_long_sbpl = full_df[full_df.Type == 'GBM long flnc_sbpl']
+    df_long_plaw = full_df[full_df.Type == 'GBM long flnc_plaw']
+
+    figdist, axs = plt.subplots(1, 3, figsize=(27, 6))
+    for ite_ax, ax in enumerate(axs):
+      liminf = np.min(full_df[col_plot[ite_ax]])
+      limsup = np.max(full_df[col_plot[ite_ax]])
+      if scales[ite_ax] == "log":
+        bins = np.logspace(np.log10(liminf), np.log10(limsup), nbin)
+        ax.set(xscale=scales[ite_ax], yscale="log", xlabel=f"log {col_plot[ite_ax]}", ylabel=f"log number of count")
+      elif scales[ite_ax] == "linear":
+        bins = np.linspace(liminf, limsup, nbin)
+        ax.set(xscale=scales[ite_ax], yscale="log", xlabel=f"{col_plot[ite_ax]}", ylabel=f"log number of count")
+      else:
+        raise ValueError('Wrong scale used')
+      ax.hist(df_long_comp[col_plot[ite_ax]].values, histtype="step", bins=bins, color=colors[0], label='GBM long flnc_comp')
+      ax.hist(df_long_band[col_plot[ite_ax]].values, histtype="step", bins=bins, color=colors[1], label='GBM long flnc_band')
+      ax.hist(df_long_sbpl[col_plot[ite_ax]].values, histtype="step", bins=bins, color=colors[2], label='GBM long flnc_sbpl')
+      ax.hist(df_long_plaw[col_plot[ite_ax]].values, histtype="step", bins=bins, color=colors[3], label='GBM long flnc_plaw')
+    axs[0].legend()
+
+    col_plot = ["Epeak", "MeanFlux", "Fluence"]
+    colors = ["lightskyblue", "navy", "lightgreen", "forestgreen"]
+    nbin = 30
+    scales = ["log", "log", "log"]
+    figdist, axs = plt.subplots(1, 3, figsize=(27, 6))
+    for ite_ax, ax in enumerate(axs):
+      liminf = np.min(full_df[col_plot[ite_ax]])
+      limsup = np.max(full_df[col_plot[ite_ax]])
+      if scales[ite_ax] == "log":
+        bins = np.logspace(np.log10(liminf), np.log10(limsup), nbin)
+        ax.set(xscale=scales[ite_ax], yscale="log", xlabel=f"log {col_plot[ite_ax]}", ylabel=f"log number of count")
+      elif scales[ite_ax] == "linear":
+        bins = np.linspace(liminf, limsup, nbin)
+        ax.set(xscale=scales[ite_ax], yscale="log", xlabel=f"{col_plot[ite_ax]}", ylabel=f"log number of count")
+      else:
+        raise ValueError('Wrong scale used')
+      ax.hist(df_long_comp[col_plot[ite_ax]].values, histtype="step", bins=bins, color=colors[0], label='GBM long flnc_comp')
+      ax.hist(df_long_band[col_plot[ite_ax]].values, histtype="step", bins=bins, color=colors[1], label='GBM long flnc_band')
+      ax.hist(df_long_sbpl[col_plot[ite_ax]].values, histtype="step", bins=bins, color=colors[2], label='GBM long flnc_sbpl')
+      ax.hist(df_long_plaw[col_plot[ite_ax]].values, histtype="step", bins=bins, color=colors[3], label='GBM long flnc_plaw')
+    axs[0].legend()
+
+# comparer Ep band et comp
+# comp et plaw semblent avoir un flux plus élevé
+#
+# voir la comparaison avec uniquement les GRB avec un spectre de band ?
+#
+# epcomp = []
+# epband = []
+# ep_all = []
+# for ite, model in enumerate(smp.gbm_cat.flnc_best_fitting_model):
+#   smodel = model.strip()
+#   if smodel == "flnc_comp":
+#     epcomp.append(float(smp.gbm_cat.flnc_comp_epeak[ite]))
+#   elif smodel == "flnc_band":
+#     epband.append(float(smp.gbm_cat.flnc_band_epeak[ite]))
+#   if smp.gbm_cat.flnc_band_epeak[ite].strip() != "":
+#     ep_all.append(float(smp.gbm_cat.flnc_band_epeak[ite]))
+# epmin = np.min(ep_all)
+# epmax = np.max(ep_all)
+# bins = np.logspace(np.log10(epmin), np.log10(epmax), 30)
+# fig, ax = plt.subplots(1, 1, figsize=(10, 6))
+# ax.hist(epcomp, bins=bins, color="blue", label="ep comp")
+# ax.hist(epband, bins=bins, color="green", label="ep band")
+# ax.set(xscale="log", yscale="log", xlabel="Epeak", ylabel="Number")
+# ax.legend()
+# plt.show()
+
+
+# def add_short(self, sample_number, version):
+#   """
+#   Creates the quatities of a short burst according to distributions
+#   Based on Lana Salmon's thesis and Ghirlanda et al, 2016
+#   """
+#   ##################################################################################################################
+#   # picking according to distributions
+#   ##################################################################################################################
+#   z_temp = acc_reject(red_rate_short, [self.short_rate, version], self.zmin, self.zmax)
+#   ep_temp = acc_reject(epeak_distribution_short, [version], self.epmin, self.epmax)
+#   ep_obs_temp = ep_temp / (1 + z_temp)
+#   temp_t90 = acc_reject(t90_short_distri, [version], 1e-3, 2)
+#   lc_temp = self.closest_lc(temp_t90)
+#   ##################################################################################################################
+#   # Calculation other parameters with relations
+#   ##################################################################################################################
+#   lpeak_temp = yonetoku_short(ep_temp, version)  # / 2
+#   dl_temp = Planck18.luminosity_distance(z_temp).value / 1000  # Gpc
+#   eiso_temp = amati_short(ep_temp, version)
+#   temp_band_high = -0.6
+#   temp_band_low = -2.5
+#
+#   ##################################################################################################################
+#   # Calculation of spectrum
+#   ##################################################################################################################
+#   ener_range = np.logspace(1, 3, 100001)
+#   norm_val, spec = norn_band_spec_calc(self.band_low_short, self.band_high_short, z_temp, dl_temp, ep_temp, lpeak_temp, ener_range)
+#   temp_peak_flux = trapezoid(spec, ener_range)
+#
+#   times, counts = extract_lc(f"./sources/Light_Curves/{lc_temp}")
+#   temp_mean_flux = temp_peak_flux / np.max(counts) * np.mean(counts)
+#
+#   data_row = pd.DataFrame(data=[[z_temp, ep_obs_temp, ep_temp, lpeak_temp, temp_mean_flux, temp_peak_flux, temp_t90, temp_mean_flux * temp_t90, lc_temp, temp_band_low, temp_band_high, dl_temp, eiso_temp, "Sample short",
+#                                  "Sample"]], columns=self.columns)
+#   self.sample_df = pd.concat([self.sample_df, data_row], ignore_index=True)
+#
+#   # self.thetaj_short.append(acc_reject(skewnorm.pdf, [2, 2.5, 3], self.thetaj_min, self.thetaj_max))
+#   self.save_grb(f"sGRB{self.n_year}S{sample_number}", temp_t90, lc_temp, temp_mean_flux * temp_t90,
+#                 temp_mean_flux, z_temp, self.band_low_short, self.band_high_short,
+#                 ep_temp, dl_temp, lpeak_temp, eiso_temp, 0)
+#
+# def add_long(self, sample_number, version):
+#   """
+#   Creates the quatities of a long burst according to distributions
+#   Based on Sarah Antier's thesis
+#   """
+#   ##################################################################################################################
+#   # picking according to distributions
+#   ##################################################################################################################
+#   z_temp = acc_reject(red_rate_long, [version], self.zmin, self.zmax)
+#   lpeak_temp = acc_reject(lpeak_function_long, [version], self.lmin, self.lmax)  # / 3.5
+#   temp_band_low = np.random.normal(loc=self.band_low_l_mu, scale=self.band_low_l_sig)
+#   temp_band_high = np.random.normal(loc=self.band_high_l_mu, scale=self.band_high_l_sig)
+#   while (temp_band_low - temp_band_high) / (temp_band_low + 2) < 0:
+#     temp_band_low = np.random.normal(loc=self.band_low_l_mu, scale=self.band_low_l_sig)
+#     temp_band_high = np.random.normal(loc=self.band_high_l_mu, scale=self.band_high_l_sig)
+#   ##################################################################################################################
+#   # Calculation other parameters with relations
+#   ##################################################################################################################
+#   dl_temp = Planck18.luminosity_distance(z_temp).to_value("Gpc")
+#   ep_temp = yonetoku_reverse_long(lpeak_temp, version)
+#   epObstemp = ep_temp / (1 + z_temp)
+#   ##################################################################################################################
+#   # Calculation of spectrum
+#   ##################################################################################################################
+#   ampl_norm = normalisation_calc(temp_band_low, temp_band_high)
+#   while ampl_norm < 0:
+#     ##################################################################################################################
+#     # picking according to distributions
+#     ##################################################################################################################
+#     z_temp = acc_reject(red_rate_long, [version], self.zmin, self.zmax)
+#     lpeak_temp = acc_reject(lpeak_function_long, [version], self.lmin, self.lmax)  # / 3.5
+#     temp_band_low = np.random.normal(loc=self.band_low_l_mu, scale=self.band_low_l_sig)
+#     temp_band_high = np.random.normal(loc=self.band_high_l_mu, scale=self.band_high_l_sig)
+#     while (temp_band_low - temp_band_high) / (temp_band_low + 2) < 0:
+#       temp_band_low = np.random.normal(loc=self.band_low_l_mu, scale=self.band_low_l_sig)
+#       temp_band_high = np.random.normal(loc=self.band_high_l_mu, scale=self.band_high_l_sig)
+#
+#     ##################################################################################################################
+#     # Calculation other parameters with relations
+#     ##################################################################################################################
+#     dl_temp = Planck18.luminosity_distance(z_temp).to_value("Gpc")
+#     ep_temp = yonetoku_reverse_long(lpeak_temp, version)
+#     ##################################################################################################################
+#     # Calculation of spectrum
+#     ##################################################################################################################
+#     ampl_norm = normalisation_calc(temp_band_low, temp_band_high)
+#
+#   ener_range = np.logspace(1, 3, 100)
+#   norm_val, spec = norn_band_spec_calc(temp_band_low, temp_band_high, z_temp, dl_temp, ep_temp, lpeak_temp, ener_range)
+#   eiso_temp = amati_long(ep_temp, version)
+#   # With a distribution : the value is taken in a log distribution and then put back in linear value
+#   temp_t90 = 10**acc_reject(t90_long_log_distri, [version], np.log10(2), 3)
+#   lc_temp = self.closest_lc(temp_t90)
+#
+#   # With Eiso
+#   # temp_t90 = (1+z_temp) * eiso_temp / lpeak_temp
+#   temp_peak_flux = trapezoid(spec, ener_range)
+#
+#   times, counts = extract_lc(f"./sources/Light_Curves/{lc_temp}")
+#   temp_mean_flux = temp_peak_flux / np.max(counts) * np.mean(counts)
+#
+#   data_row = pd.DataFrame(data=[[z_temp, epObstemp, ep_temp, lpeak_temp, temp_mean_flux, temp_peak_flux, temp_t90, temp_mean_flux * temp_t90, lc_temp, temp_band_low, temp_band_high, dl_temp, eiso_temp, "Sample long",
+#                                  "Sample"]], columns=self.columns)
+#   self.sample_df = pd.concat([self.sample_df, data_row], ignore_index=True)
+#
+#   self.save_grb(f"lGRB{self.n_year}S{sample_number}", temp_t90, lc_temp, temp_mean_flux * temp_t90, temp_mean_flux, z_temp, temp_band_low, temp_band_high, ep_temp, dl_temp, lpeak_temp, eiso_temp, 0)
+
+
+# df_gbm_short = smp.gbm_df.loc[smp.gbm_df.T90 < 2]
+# df_gbm_long = smp.gbm_df.loc[smp.gbm_df.T90 >= 2]
+#
+# # short_bools = np.where(smp.gbm_df.Type == 'GBM short flnc_band', True, np.where(smp.gbm_df.Type == 'GBM short flnc_comp', True, False))
+# # long_bools = np.where(smp.gbm_df.Type == 'GBM long flnc_band', True, np.where(smp.gbm_df.Type == 'GBM long flnc_comp', True, False))
+# # df_gbm_short = smp.gbm_df.loc[short_bools]
+# # df_gbm_long = smp.gbm_df.loc[long_bools]
+#
+# # df_gbm_short = df_gbm_short.loc[df_gbm_short.EpeakObs < 10000]
+# # df_gbm_long = df_gbm_long.loc[df_gbm_long.EpeakObs < 10000]
+#
+# ep_short = np.log10(df_gbm_short.EpeakObs.values)
+# ep_long = np.log10(df_gbm_long.EpeakObs.values)
+# # ep_short = df_gbm_short.EpeakObs.values
+# # ep_long = df_gbm_long.EpeakObs.values
+# def exp_cutoff(x, A, alpha, x0, xcut):
+#   return A * (x/x0)**(-alpha) * np.exp(-x/xcut)
+# def sbplaw(x, A, xb, alpha1, alpha2, delta):
+#   return A * (x/xb)**(-alpha1) * (1/2*(1+(x/xb)**(1/delta)))**((alpha1-alpha2)*delta)
+# def skew(x, ampl, skewness, mu, sigma):
+#   return ampl * skewnorm.pdf(x, skewness, mu, sigma)
+# bin1, bin2 = 60, 100
+# fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(20, 6))
+# hist_s = ax1.hist(ep_short, bins=bin1)
+# ax1.set(xscale="linear", yscale="linear", xlabel="Log Epeak short", ylabel="Log number", ylim=(1, 60))
+# hist_l = ax2.hist(ep_long, bins=bin2)
+# ax2.set(xscale="linear", yscale="linear", xlabel="Log Epeak long", ylabel="Log number", ylim=(1, 300))
+# xs, ys, xl, yl = (hist_s[1][1:] + hist_s[1][:-1])/2, hist_s[0], (hist_l[1][1:] + hist_l[1][:-1])/2, hist_l[0]
+# # p1 = [8.2,  3.33, -5.89, 35.,  0.12]# p2 = [200,  2.20, -5.17, 7.95, 0.048]# p1 = [11.9, 3.16, -4.87, 35., 0.05]# p2 = [82, 2.17, -7.49, 8.58, 0.049]
+# p1 = [16, -5.2, 3.15, 0.66]
+# p2 = [80,  1.6,  1.9,  0.44]
+# # p2 = [130,  2.18, -5.05, 7.53, 0.04]
+# ax1.plot(np.linspace(0, 4, 100), skew(np.linspace(0, 4, 100), *p1), color="red")
+# ax2.plot(np.linspace(0, 6, 100), skew(np.linspace(0, 6, 100), *p2), color="red")
+# bnd = ([0.01, 1, -10, 0, 0], [np.inf, 4, 0, 35, 10])
+# # bnd = ([1, 0, 0, -10, 0, 99], [3, 100, 35, 0, 10, 100])# bnd2 = ([1, 0, 0, -10, 0, 99], [10, 100, 35, 0, 10, 100])
+# f1 = curve_fit(skew, xs, ys)[0]
+# f2 = curve_fit(skew, xl, yl)[0]
+# print(f1, f2)
+# ax1.plot(np.linspace(0, 4, 100), skew(np.linspace(0, 4, 100), *f1))
+# ax2.plot(np.linspace(0, 6, 100), skew(np.linspace(0, 6, 100), *f2))
+# kde1 = gaussian_kde(np.log10(df_gbm_short.EpeakObs.values))
+# kde2 = gaussian_kde(np.log10(df_gbm_long.EpeakObs.values))
+# ax1.plot(np.linspace(0, 4, 100), np.max(ys)*kde1.pdf(np.linspace(0, 4, 100)))
+# ax2.plot(np.linspace(0, 6, 100), np.max(yl)*kde2.pdf(np.linspace(0, 6, 100)))
+# # c1 = sns.histplot(np.log10(df_gbm_short.EpeakObs.values), ax=ax1, bins=bin1, kde=True)
+# # c2 = sns.histplot(np.log10(df_gbm_long.EpeakObs.values), ax=ax2, bins=bin2, kde=True)
+# # epmin, epmax = np.log10(1e0), np.log10(2e4)
+# ep_short_dist = kde1.resample(len(ep_short))[0]
+# ep_long_dist = kde2.resample(len(ep_long))[0]
+# hist_s = ax1.hist(ep_short_dist, histtype="step", bins=bin1)
+# hist_l = ax2.hist(ep_long_dist, histtype="step", bins=bin2)
+# plt.show()
+
+
+# alpha = -0.6892844452574826
+# beta = -2.3989831213742
+# ep = 752.2489411396507
+# red = 6.731476096232795
+#
+# x = np.logspace(-4, 8, 10000000)
+# A = normalisation_calc(alpha, beta)
+# y = x * band_norm(x, A, alpha, beta)
+# print(trapezoid(y, x=x))
+#
+# x = np.logspace(-4, 8, 1000)
+# A = normalisation_calc(alpha, beta)
+# y = x * band_norm(x, A, alpha, beta)
+# print(trapezoid(y, x=x))
+#
+# x = np.logspace(1, 3, 10000000)
+# A = normalisation_calc(alpha, beta)
+# y = x * band_norm(x, A, alpha, beta)
+# print(trapezoid(y, x=x))
+#
+# x = np.logspace(1, 3, 100)
+# A = normalisation_calc(alpha, beta)
+# y = x * band_norm(x, A, alpha, beta)
+# print(trapezoid(y, x=x))
+
+# xb = (alpha - beta) / (alpha + 2)
+# def temp_func(x):
+#   return x ** (alpha + 1) * np.exp(-(alpha + 2) * x)
+#
+#
+# IntEner = np.logspace(-10, np.log10(xb), 100000000)
+# IntFlu = temp_func(IntEner)
+# best = trapezoid(IntFlu, x=IntEner)
+# print("best : ", best)
+#
+# for beg in [-9, -8, -7, -6, -5]:
+#   for num in [1000, 10000, 100000, 1000000, 10000000]:
+#     IntEner = np.logspace(beg, np.log10(xb), num)
+#     IntFlu = temp_func(IntEner)
+#     print(beg, num, (best - trapezoid(IntFlu, x=IntEner)) / best)

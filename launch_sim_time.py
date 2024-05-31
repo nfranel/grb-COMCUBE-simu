@@ -77,10 +77,10 @@ def gen_commands(args):
       if not (spectrumfile in spectrafolder):
         logE = np.logspace(1, 3, 100)  # energy (log scale)
         with open(spectrumfile, "w") as f:
-          norm_val, spec = nomr_band_spec_calc(c.band_low[i], c.band_high[i], c.red[i], c.dl[i], c.ep[i], c.liso[i], logE)
+          norm_val, spec, pht_pflux = norm_band_spec_calc(c.band_low[i], c.band_high[i], c.red[i], c.dl[i], c.ep[i], c.liso[i], logE)
           f.write(f"#model normalized Band:   norm={norm_val}, alpha={c.band_low[i]}, beta={c.band_high[i]}, epeak={c.ep[i]}keV\n")
           f.write(f"# Measured mean flux: {pht_mflx} ph/cm2/s in the 10-1000 keV band\n")
-          f.write(f"# Measured peak flux: >{pht_mflx} ph/cm2/s in the 10-1000 keV band\n")
+          f.write(f"# Measured peak flux: {pht_pflux} ph/cm2/s in the 10-1000 keV band\n")
           f.write("\nIP LOGLOG\n\n")
           for ite_E, E in enumerate(logE):
             f.write(f"DP {E} {spec[ite_E]}\n")

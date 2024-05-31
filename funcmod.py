@@ -159,6 +159,24 @@ def save_log(filename, name, num_sim, num_sat, status, inc, ohm, omega, alt, ran
     f.write(f"{name} | {num_sim} | {num_sat} | {status} | {inc} | {ohm} | {omega} | {alt} | {random_time} | {sat_dec_wf} | {sat_ra_wf} | {grb_dec_wf} | {grb_ra_wf} | {grb_dec_st} | {grb_ra_sf}\n")
 
 
+def extract_lc(fullname):
+  """
+  Opens a light curve file from a .dat file and returns 2 lists containing time and count
+  :param fullname: path + name of the file to save the light curves
+  """
+  times = []
+  counts = []
+  with open(fullname, "r") as f:
+    lines = f.read().split("\n")[3:-1]
+    if float(lines[0].split(" ")[1]) != 0:
+      raise ValueError("Error, light curve doesn't start at a time t=0")
+    for line in lines:
+      data = line.split(" ")
+      times.append(data[1])
+      counts.append(data[2])
+  return np.array(times, dtype=float), np.array(counts, dtype=float)
+
+
 def read_grbpar(parfile):
   """
   reads a source's parameter file to get useful information for the analysis
@@ -634,14 +652,78 @@ def calc_flux_gbm(catalog, index, ergcut):
   return quad(func, ergcut[0], ergcut[1])[0]
 
 
-def nomr_band_spec_calc(band_low, band_high, red, dl, ep, liso, ener_range):
+def normalisation_calc(ind1, ind2):
+  """
+
+  """
+  xb = (ind1-ind2) / (ind1+2)
+
+  def temp_func(x):
+    return x ** (ind1 + 1) * np.exp(-(ind1 + 2) * x)
+
+  IntEner = np.logspace(-8, np.log10(xb), 100000)
+  IntFlu = temp_func(IntEner)
+  IntNorm = trapezoid(IntFlu, x=IntEner)
+  norm = 1 / (IntNorm - np.exp(ind2 - ind1) / (ind2 + 2) * xb ** (ind1 + 2))
+  return norm
+
+
+def band_norm(ener, norm, ind1, ind2):
+  """
+  Normalized Band function as described in Sarah Antier's thesis
+  """
+  xb = (ind1-ind2) / (ind1+2)
+  if type(ener) is float or type(ener) is int:
+    if ener <= xb:
+      return norm * ener**ind1 * np.exp(-(ind1+2) * ener)
+    else:
+      return norm * ener**ind2 * np.exp(ind2-ind1) * xb**(ind1-ind2)
+  elif type(ener) is np.ndarray:
+    return np.where(ener <= xb, norm * ener**ind1 * np.exp(-(ind1+2) * ener), norm * ener**ind2 * np.exp(ind2-ind1) * xb**(ind1-ind2))
+  else:
+    raise TypeError("Please use a correct type for ener, only accepted are float or numpy ndarray")
+
+
+def norm_band_spec_calc(band_low, band_high, red, dl, ep, liso, ener_range, verbose=False):
   """
   Calculates the spectrum of a band function based on indexes and energy/luminosity values
   """
+  # Normalisation value
   ampl_norm = normalisation_calc(band_low, band_high)
-  norm = (1 + red) ** 2 / (4 * np.pi * (dl * Gpc_to_cm) ** 2) * liso / (ep ** 2 * keV_to_erg)
-  spec_norm = band_norm((1 + red) * ener_range / ep, ampl_norm, band_low, band_high)
-  return norm, norm * spec_norm
+  # Redshift corrected and normalized observed energy range
+  x = (1 + red) * ener_range / ep
+
+  # Normalized spectrum
+  spec_norm = band_norm(x, ampl_norm, band_low, band_high)
+
+  # Spectrum norm
+  norm = (1 + red) ** 2 / (4 * np.pi * (dl * Gpc_to_cm) ** 2) * liso / (ep**2 * keV_to_erg)
+  pflux_norm = (1 + red) / (4 * np.pi * (dl * Gpc_to_cm) ** 2) * liso / (ep * keV_to_erg)
+
+  spectrum = norm * spec_norm
+  int_norm_spec = trapezoid(spec_norm, x)
+  peak_flux = pflux_norm * int_norm_spec
+
+  # Spectrum equivalent to usual Band spectrum with :
+  # amp = norm_val * ampl_norm * (ep_rest_temp / 100) ** (-band_low_obs_temp)
+  # band((1 + z_obs_temp) * ener_range, amp, band_low_obs_temp, band_high_obs_temp, ep_rest_temp, pivot=100)
+
+  if verbose:
+    ratio_norm = trapezoid(x * spec_norm, x)
+    print("==========================================================================================")
+    print("Spectrum information :")
+    print("Integral of x*B(x), supposed to be 1 from 0 to +inf : ")
+    print(f"   With energy range : {np.min(ener_range)}-{np.max(ener_range)} keV  :  ", ratio_norm)
+    xtest = (1 + red) * np.logspace(-4, 8, 100000) / ep
+    spec_norm_test = band_norm(xtest, ampl_norm, band_low, band_high)
+    print(f"   With energy range : {1e-4}-{1e8} keV  :  ", trapezoid(xtest * spec_norm_test, xtest))
+    print("Peak photon flux method 1 direct : ")
+    print(f"   Between : {np.min(ener_range)}-{np.min(ener_range)} keV  :  {peak_flux} ph/cm²/s")
+    print(f"   Between : {1e-4}-{1e8} keV  :  {pflux_norm * trapezoid(spec_norm_test, xtest)} ph/cm²/s")
+    print("Integrated normalized spectrum value : ", int_norm_spec)
+    print(f"Part of total luminosity on energy range {np.min(ener_range)}-{np.max(ener_range)} keV : ", ratio_norm)
+
+  return norm, spectrum, peak_flux
 
 
 def calc_flux_sample(catalog, index, ergcut):
@@ -653,8 +735,8 @@ def calc_flux_sample(catalog, index, ergcut):
   :returns: the number of photons per cm² for a given energy range, averaged over the duration of the sim : ncount/cm²/s
   """
   ener_range = np.logspace(np.log10(ergcut[0]), np.log10(ergcut[1]), 100001)
-  norm_val, spec = nomr_band_spec_calc(catalog.band_low[index], catalog.band_high[index], catalog.red[index], catalog.dl[index], catalog.ep[index], catalog.liso[index], ener_range)
-  return trapezoid(spec, ener_range)
+  norm_val, spec, pflux = norm_band_spec_calc(catalog.band_low[index], catalog.band_high[index], catalog.red[index], catalog.dl[index], catalog.ep[index], catalog.liso[index], ener_range)
+  return pflux
 
 
 def duty_calc(inclination):  # TODO : limits on variables CHANGE IT WITH THE NEW
@@ -1236,8 +1318,6 @@ def sbpl(e, ampl, l1, l2, eb, delta, pivot=100):
   return ampl * (e / pivot) ** b * 10 ** (a - ap)
 
 
-
-
 def acc_reject(func, func_args, xmin, xmax):
   """
   Proceeds to an acceptance rejection method
@@ -1255,13 +1335,13 @@ def acc_reject(func, func_args, xmin, xmax):
 
 def lpeak_function_long(lpeak, version):
   """
-  Version 0
+  Version 0-1-2
     Luminosity function (distribution) for short GRBs
     Function and associated parameters and cases are taken from Ghirlanda et al. 2016
   :param lpeak: float or array of float containing peak luminosities
   """
   # al1, al2, lb = -0.53, -3.4, 2.8 # Short
-  if version == 0:
+  if version == 0 or version == 1 or version == 2:
     al1_l, al2_l, lb_l = -0.65, -3, 10 ** 52.05
     if type(lpeak) is float or type(lpeak) is int:
       if lpeak < lb_l:
@@ -1276,35 +1356,14 @@ def lpeak_function_long(lpeak, version):
     raise ValueError("Please use a correct version for lpeak_function_long")
 
 
-def lpeak_function_short(luminosity):
-  """
-  Version 0
-    Luminosity function (distribution) for short GRBs
-    Function and associated parameters and cases are taken from Ghirlanda et al. 2016
-  :param luminosity: float or array of float containing peak luminosities
-  """
-  # al1, al2, lb = -0.53, -3.4, 2.8 # Short
-  # al1, al2, lb -0.65, -3, 10**(52.05)   # Long
-
-  if type(luminosity) is float or type(luminosity) is int:
-    if luminosity < lb:
-      return (luminosity / lb)**(alpha1)
-    else:
-      return (luminosity / lb)**(alpha2)
-  elif type(luminosity) is np.ndarray:
-    return np.where(luminosity < lb, (luminosity / lb)**(alpha1), (luminosity / lb)**(alpha2))
-  else:
-    raise TypeError("Please use a correct type for luminosity, only accepted are float or numpy ndarray")
-
-
 def redshift_distribution_long(red, version):
   """
-  Version 0
+  Version 0-1-2
     redshift distribution for long GRBs
     Function and associated parameters and cases are taken from Sarah Antier's thesis
   :param red: float or array of float containing redshifts
   """
-  if version == 0:
+  if version == 0 or version == 1 or version == 2:
     red0, n1, n2, z1 = 0.42, 2.07, -0.7, 3.6
     if type(red) is float or type(red) is int:
       if red <= z1:
@@ -1321,12 +1380,12 @@ def redshift_distribution_long(red, version):
 
 def redshift_distribution_short(red, version):
   """
-  Version 0
+  Version 0-1-2
     redshift distribution for short GRBs
     Function and associated parameters and cases are taken from Ghirlanda et al. 2016
   :param red: float or array of float containing redshifts
   """
-  if version == 0:
+  if version == 0 or version == 1 or version == 2:
     p1, zp, p2 = 2.8, 2.3, 3.5
     if type(red) is float or type(red) is int or type(red) is np.ndarray:
       return (1 + p1 * red) / (1 + (red / zp)**p2)
@@ -1338,11 +1397,11 @@ def redshift_distribution_short(red, version):
 
 def red_rate_long(red, version):
   """
-  Version 0
+  Version 0-1-2
     Function to obtain the number of long GRB and to pick them according to their distribution
     Parameters from Sarah Antier's thesis
   """
-  if version == 0:
+  if version == 0 or version == 1 or version == 2:
     vol_com = Planck18.differential_comoving_volume(red).to_value("Gpc3 / sr")  # Change from Mpc3 / sr to Gpc3 / sr
     return 4 * np.pi * redshift_distribution_long(red, version) / (1 + red) * vol_com
   else:
@@ -1351,25 +1410,32 @@ def red_rate_long(red, version):
 
 def red_rate_short(red, rate0, version):
   """
-  Version 0
+  Version 0-1-2
     Function to obtain the number of short GRB and to pick them according to their distribution
     Parameters from Ghirlanda et al. 2016
   """
-  if version == 0:
+  if version == 0 or version == 1 or version == 2:
     vol_com = Planck18.differential_comoving_volume(red).to_value("Gpc3 / sr")  # Change from Mpc3 / sr to Gpc3 / sr
     return rate0 * 4 * np.pi * redshift_distribution_short(red, version) / (1 + red) * vol_com
   else:
     raise ValueError("Please use a correct version for red_rate_short")
 
 
-def epeak_distribution_short(epeak, version):
+def sbplaw(x, A, xb, alpha1, alpha2, delta):
+  return A * (x/xb)**(-alpha1) * (1/2*(1+(x/xb)**(1/delta)))**((alpha1-alpha2)*delta)
+
+
+def epeak_distribution_long(epeak, version):
   """
-  Version 0
+  Version 0-1
     Peak energy distribution for short GRBs
     Function and associated parameters and cases are taken from Ghirlanda et al. 2016
+  Version 2
+    Distribution corresponding to the Epeak obs by Fermi GBM
+    !! Returns the log of Epeak !!
   :param epeak: float or array of float containing peak energies
   """
-  if version == 0:
+  if version == 0 or version == 1:
     a1, a2, epb = -0.53, 4, 1600  # Took -a1 because the results were coherent only this way
     if type(epeak) is float or type(epeak) is int:
       if epeak <= epb:
@@ -1380,19 +1446,56 @@ def epeak_distribution_short(epeak, version):
       return np.where(epeak <= epb, (epeak / epb)**(-a1), (epeak / epb)**(-a2))
     else:
       raise TypeError("Please use a correct type for epeak, only accepted are float or numpy ndarray")
+  elif version == 2:
+    # # A, xb, alpha1, alpha2, delta = 200,  2.20, -5.17, 7.95, 0.048
+    # A, xb, alpha1, alpha2, delta = 82, 2.17, -7.49, 8.58, 0.049
+    # return sbplaw(epeak, A, xb, alpha1, alpha2, delta)
+    ampl, skewness, mu, sigma = 80,  1.6,  1.9,  0.44
+    return ampl * skewnorm.pdf(epeak, skewness, mu, sigma)
+  else:
+    raise ValueError("Please use a correct version for epeak_distribution_short")
+
+
+def epeak_distribution_short(epeak, version):
+  """
+  Version 0-1
+    Peak energy distribution for short GRBs
+    Function and associated parameters and cases are taken from Ghirlanda et al. 2016
+  Version 2
+    Distribution corresponding to the Epeak obs by Fermi GBM
+    !! Returns the log of Epeak !!
+  :param epeak: float or array of float containing peak energies
+  """
+  if version == 0 or version == 1:
+    a1, a2, epb = -0.53, 4, 1600  # Took -a1 because the results were coherent only this way
+    if type(epeak) is float or type(epeak) is int:
+      if epeak <= epb:
+        return (epeak / epb)**(-a1)
+      else:
+        return (epeak / epb)**(-a2)
+    elif type(epeak) is np.ndarray:
+      return np.where(epeak <= epb, (epeak / epb)**(-a1), (epeak / epb)**(-a2))
+    else:
+      raise TypeError("Please use a correct type for epeak, only accepted are float or numpy ndarray")
+  elif version == 2:
+    # # A, xb, alpha1, alpha2, delta = 8.2,  3.33, -5.89, 35.,  0.12
+    # A, xb, alpha1, alpha2, delta = 11.9, 3.16, -4.87, 35., 0.05
+    # return sbplaw(epeak, A, xb, alpha1, alpha2, delta)
+    ampl, skewness, mu, sigma = 16, -5.2, 3.15, 0.66
+    return ampl * skewnorm.pdf(epeak, skewness, mu, sigma)
   else:
     raise ValueError("Please use a correct version for epeak_distribution_short")
 
 
 def amati_long(epeak, version):
   """
-  Version 0
+  Version 0-1-2
     Amatie relation (Amati, 2006) linking Epeak and Eiso (peak energy and isotropic equivalent energy)
   :param epeak: float or array of float containing peak energies if reversed = True or isotropic equivalent energies if False
   :returns: Eiso
   """
-  if version == 0:
-    if type(epeak) is float or type(epeak) is int or type(epeak) is np.ndarray:
+  if version == 0 or version == 1 or version == 2:
+    if type(epeak) is float or type(epeak) is int or type(epeak) is np.float64 or type(epeak) is np.ndarray:
       return 10**(52 + np.log10(epeak / 110) / 0.51)
     else:
       raise TypeError("Please use a correct type for energy, only accepted are float or numpy ndarray")
@@ -1402,14 +1505,14 @@ def amati_long(epeak, version):
 
 def amati_short(epeak, version):
   """
-  Version 0
+  Version 0-1-2
     Amatie relation (Amati, 2006) linking Epeak and Eiso (peak energy and isotropic equivalent energy)
   :param epeak: float or array of float containing peak energies if reversed = True or isotropic equivalent energies if False
   :returns: Eiso
   """
-  if version == 0:
+  if version == 0 or version == 1 or version == 2:
     ma, qa = 1.1, 0.042
-    if type(epeak) is float or type(epeak) is int or type(epeak) is np.ndarray:
+    if type(epeak) is float or type(epeak) is int or type(epeak) is np.float64 or type(epeak) is np.ndarray:
       return 10**(51 + (np.log10(epeak / 670) - qa) / ma)
     else:
       raise TypeError("Please use a correct type for energy, only accepted are float or numpy ndarray")
@@ -1417,7 +1520,22 @@ def amati_short(epeak, version):
     raise ValueError("Please use a correct version for amati_short")
 
 
-def yonetoku_long(lpeak, version):
+def yonetoku_long(epeak, version):
+  """
+  Version 2
+    Yonetoku relation for long GRBs (Yonetoku et al, 2010)
+  :returns: Peak Luminosity
+  """
+  if version == 2:
+    id1, s_id1, id2, s_id2 = 52.43, 0.037, 1.60, 0.082
+    rand1 = np.random.normal(id1, s_id1)
+    rand2 = np.random.normal(id2, s_id2)
+    return 10 ** rand1 * (epeak / 355) ** rand2
+  else:
+    raise ValueError("Please use a correct version for Yonetoku long")
+
+
+def yonetoku_reverse_long(lpeak, version):
   """
   Version 0
     Yonetoku relation (Yonetoku et al, 2010)
@@ -1442,7 +1560,7 @@ def yonetoku_short(epeak, version):
   """
   Version 0
     Yonetoku relation (Yonetoku et al, 2014) from Ghirlanda et al, 2016
-  Version 1
+  Version 1-2
     Yonetoku relation for short GRBs (Tsutsui et al, 2013)
   :returns: Peak luminosity
   """
@@ -1452,7 +1570,7 @@ def yonetoku_short(epeak, version):
       return 10 ** (52 + (np.log10(epeak / 670) - qy) / my)
     else:
       raise TypeError("Please use a correct type for energy, only accepted are float or numpy ndarray")
-  elif version == 1:
+  elif version == 1 or version == 2:
     id1, s_id1, id2, s_id2 = 52.29, 0.066, 1.59, 0.11
     rand1 = np.random.normal(id1, s_id1)
     rand2 = np.random.normal(id2, s_id2)
@@ -1463,11 +1581,11 @@ def yonetoku_short(epeak, version):
 
 def t90_long_log_distri(time, version):
   """
-  Version 0
+  Version 0-1-2
     Distribution of T90 based on GBM t90 >= 2 with a sbpl
       Not optimal as no correlation with other parameters is considered
   """
-  if version == 0:
+  if version == 0 or version == 1 or version == 2:
     ampl, skewness, mu, sigma = 54.18322289, -2.0422097,  1.89431034,  0.74602339
     return ampl * skewnorm.pdf(time, skewness, mu, sigma)
   else:
@@ -1476,11 +1594,11 @@ def t90_long_log_distri(time, version):
 
 def t90_short_distri(time, version):
   """
-  Version 0
+  Version 0-1-2
     Distribution of T90 based on GBM t90 < 2
       Not optimal as lGRB might biase the distribution
   """
-  if version == 0:
+  if version == 0 or version == 1 or version == 2:
     if type(time) is float or type(time) is int:
       if time <= 0.75:
         return 10**(1.7 + np.log10(time))
@@ -1494,35 +1612,6 @@ def t90_short_distri(time, version):
     raise ValueError("Please use a correct version for t90_short_distri")
 
 
-def normalisation_calc(ind1, ind2):
-  """
-
-  """
-  xb = (ind1-ind2) / (ind1+2)
-
-  def temp_func(x):
-    return x ** (ind1 + 1) * np.exp(-(ind1 + 2) * x)
-
-  IntEner = np.logspace(-5, np.log10(xb), 10000)
-  IntFlu = temp_func(IntEner)
-  IntNorm = trapezoid(IntFlu, x=IntEner)
-  norm = 1 / (IntNorm - np.exp(ind2 - ind1) / (ind2 + 2) * xb ** (ind1 + 2))
-  return norm
-
-def band_norm(ener, norm, ind1, ind2):
-  """
-  Normalized Band function as described in Sarah Antier's thesis
-  """
-  xb = (ind1-ind2) / (ind1+2)
-  if type(ener) is float or type(ener) is int:
-    if ener <= xb:
-      return norm * ener**ind1 * np.exp(-(ind1+2) * ener)
-    else:
-      return norm * ener**ind2 * np.exp(ind2-ind1) * xb**(ind1-ind2)
-  elif type(ener) is np.ndarray:
-    return np.where(ener <= xb, norm * ener**ind1 * np.exp(-(ind1+2) * ener), norm * ener**ind2 * np.exp(ind2-ind1) * xb**(ind1-ind2))
-  else:
-    raise TypeError("Please use a correct type for ener, only accepted are float or numpy ndarray")
 
 
 

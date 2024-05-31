@@ -308,12 +308,12 @@ class GRBFullData:
 
       compton_hist = np.histogram(self.compton_time, bins=bins)[0]
       com_argmax = np.argmax(compton_hist)
-      com_max_hist = hit_hist[com_argmax]
+      com_max_hist = compton_hist[com_argmax]
       self.compton_snrs.append(calc_snr(com_max_hist, self.compton_b_rate * int_time))
 
       single_hist = np.histogram(self.single_time, bins=bins)[0]
       sin_argmax = np.argmax(single_hist)
-      sin_max_hist = hit_hist[sin_argmax]
+      sin_max_hist = single_hist[sin_argmax]
       self.single_snrs.append(calc_snr(sin_max_hist, self.single_b_rate * int_time))
 
   def set_beneficial_compton(self, threshold=2.6):
