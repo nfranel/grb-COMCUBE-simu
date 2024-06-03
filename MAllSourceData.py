@@ -175,7 +175,7 @@ class AllSourceData:
               if sat is not None:
                 sat.anticorr()
 
-  def analyze(self, sats_analysis=False):
+  def analyze(self, sats_analysis=True):
     """
     Proceed to the analysis of polarigrams for all satellites and constellation (unless specified) for all data
     and calculates some probabilities

@@ -48,9 +48,11 @@ class AllSatData(list):
     list.__init__(self, temp_list)
     # Attribute meaningful after the creation of the constellation
     self.const_data = None
+    # self.make_const(sim_duration, source_fluence, off_sats, options, const=None)
+    # self.analyze(sim_duration, source_fluence, sats_analysis)
     # self.index_down = None
 
-  def analyze(self, source_duration, source_fluence, sats_analysis):
+  def analyze(self, source_duration, source_fluence, sats_analysis=True):
     """
     Proceed to the analysis for all satellites and constellation (unless specified)
     :param source_duration: duration of the source
