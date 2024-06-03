@@ -130,14 +130,14 @@ class GRBFullData:
           self.single_ener.append(reading[0])
           self.single_time.append(reading[1])
           single_pos.append(reading[2])
-      self.compton_ener = np.array(self.compton_ener, dtype="float32")
-      self.compton_second = np.array(self.compton_second, dtype="float32")
-      self.single_ener = np.array(self.single_ener, dtype="float32")
-      compton_firstpos = np.array(compton_firstpos, dtype="float32")
-      compton_secpos = np.array(compton_secpos, dtype="float32")
-      single_pos = np.array(single_pos, dtype="float32")
-      self.compton_time = np.array(self.compton_time, dtype="float32")
-      self.single_time = np.array(self.single_time, dtype="float32")
+      self.compton_ener = np.array(self.compton_ener, dtype="float16")
+      self.compton_second = np.array(self.compton_second, dtype="float16")
+      self.single_ener = np.array(self.single_ener, dtype="float16")
+      compton_firstpos = np.array(compton_firstpos, dtype="float16")
+      compton_secpos = np.array(compton_secpos, dtype="float16")
+      single_pos = np.array(single_pos, dtype="float16")
+      self.compton_time = np.array(self.compton_time, dtype="float16")
+      self.single_time = np.array(self.single_time, dtype="float16")
 
       #################################################################################################################
       #                     Filling the fields
@@ -148,7 +148,7 @@ class GRBFullData:
       self.pol, self.polar_from_position = angle(compton_secpos - compton_firstpos, self.grb_dec_sat_frame, self.grb_ra_sat_frame, source_name, num_sim, num_sat)
 
       # Calculating the arm and extracting the indexes of correct arm events (arm in deg)
-      self.arm_pol = np.array(self.polar_from_position - self.polar_from_energy, dtype="float32")
+      self.arm_pol = np.array(self.polar_from_position - self.polar_from_energy, dtype="float16")
       accepted_arm_pol = np.where(np.abs(self.arm_pol) <= armcut, True, False)
       # Restriction of the values according to arm cut
       self.compton_ener = self.compton_ener[accepted_arm_pol]
@@ -157,8 +157,8 @@ class GRBFullData:
       compton_secpos = compton_secpos[accepted_arm_pol]
       self.compton_time = self.compton_time[accepted_arm_pol]
       self.polar_from_energy = self.polar_from_energy[accepted_arm_pol]
-      self.polar_from_position = np.array(self.polar_from_position[accepted_arm_pol], dtype="float32")
-      self.pol = np.array(self.pol[accepted_arm_pol], dtype="float32")
+      self.polar_from_position = np.array(self.polar_from_position[accepted_arm_pol], dtype="float16")
+      self.pol = np.array(self.pol[accepted_arm_pol], dtype="float16")
       self.hit_time = np.concatenate((self.compton_time, self.compton_time, self.single_time))
 
       # Correcting the angle correction for azimuthal angle according to cosima's polarization definition
@@ -279,7 +279,6 @@ class GRBFullData:
     # Calculation of mdp
     #################################################################################################################
     self.mdp = calc_mdp(self.compton_cr * source_duration, self.compton_b_rate * source_duration, self.mu100_ref)
-
 
   def calculates_snrs(self, source_duration):
     """
