@@ -120,7 +120,6 @@ class GRBFullData:
       for event in data_pol:
         reading = readevt(event, ergcut)
         if len(reading) == 5:
-          # print("Reading\n")
           self.compton_second.append(reading[0])
           self.compton_ener.append(reading[1])
           self.compton_time.append(reading[2])
