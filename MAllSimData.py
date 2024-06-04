@@ -99,22 +99,8 @@ class AllSimData(list):
           temp_list.append(AllSatData(source_prefix, num_sim, sat_info, sim_duration, bkg_data, mu_data, info_source, options))
           self.n_sim_det += 1
 
-    ################ Temporary #
-    # list.__init__(self, temp_list)
-    # off_sats = []
-    # for sat_ite in range(3):
-    #   temp_offsat = []
-    #   while len(temp_offsat) != sat_ite:
-    #     rand_sat = np.random.randint(3)
-    #     if rand_sat not in temp_offsat:
-    #       temp_offsat.append(rand_sat)
-    #   off_sats.append(temp_offsat)
-
     for sim_ite, sim in enumerate(self):
       if sim is not None:
-        ################ Temporary #
-        # sim.make_const(sim_duration, self.source_fluence, off_sats, options, const=None)
-        # sim.analyze(sim_duration, self.source_fluence)
         if output_message is not None:
           output_message += f"\n  Total of {sim.loading_count} files loaded for simulation {sim_ite}"
     print(output_message)
