@@ -99,6 +99,8 @@ class AllSimData(list):
           temp_list.append(AllSatData(source_prefix, num_sim, sat_info, sim_duration, bkg_data, mu_data, info_source, options))
           self.n_sim_det += 1
 
+    list.__init__(self, temp_list)
+
     for sim_ite, sim in enumerate(self):
       if sim is not None:
         if output_message is not None:
