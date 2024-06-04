@@ -59,7 +59,7 @@ class GRBFullData:
     self.compton_ener = []                      # 1D concatenation        # Compton
     self.compton_second = []                    # 1D concatenation        # Compton
     self.single_ener = []                       # 1D concatenation        # Single
-    # self.hit_time = []                          # 1D concatenation        # Trigger quality selection
+    self.hit_time = []                          # 1D concatenation        # Trigger quality selection
     self.compton_time = []                      # 1D concatenation        # Compton
     self.single_time = []                       # 1D concatenation        # Single
     self.pol = None                             # 1D concatenation        # Compton
@@ -87,10 +87,6 @@ class GRBFullData:
     self.hits_snrs = None                       # Not changed             #
     self.compton_snrs = None                    # Not changed             #
     self.single_snrs = None                     # Not changed             #
-    # self.snr_compton = None
-    # self.snr_single = None
-    # self.snr_compton_t90 = None
-    # self.snr_single_t90 = None
     ###################################################################################################################
     # Attributes that are used while making const
     self.n_sat_detect = 1                       # Summed                  #
@@ -99,12 +95,12 @@ class GRBFullData:
     self.dsssd = 0                              # Summed                  # Trigger quality selection ?
     self.side = 0                               # Summed                  # Trigger quality selection ?
     ###################################################################################################################
-    self.const_beneficial_compton = True       # Appened                 #
-    self.const_beneficial_single = True        # Appened                 #
-    # self.const_beneficial_trigger_4s = np.zeros(9, dtype=np.int16)  # List sum                  #
-    # self.const_beneficial_trigger_3s = np.zeros(9, dtype=np.int16)  # List sum                  #
-    # self.const_beneficial_trigger_2s = np.zeros(9, dtype=np.int16)  # List sum                  #
-    # self.const_beneficial_trigger_1s = np.zeros(9, dtype=np.int16)  # List sum                  #
+    self.const_beneficial_compton = False       # Appened                 #
+    self.const_beneficial_single = False        # Appened                 #
+    self.const_beneficial_trigger_4s = np.zeros(9, dtype=np.int16)  # List sum                  #
+    self.const_beneficial_trigger_3s = np.zeros(9, dtype=np.int16)  # List sum                  #
+    self.const_beneficial_trigger_2s = np.zeros(9, dtype=np.int16)  # List sum                  #
+    self.const_beneficial_trigger_1s = np.zeros(9, dtype=np.int16)  # List sum                  #
 
     ###################################################################################################################
     #                   Reading data from file
@@ -158,7 +154,7 @@ class GRBFullData:
       self.polar_from_energy = self.polar_from_energy[accepted_arm_pol]
       self.polar_from_position = np.array(self.polar_from_position[accepted_arm_pol], dtype="float32")
       self.pol = np.array(self.pol[accepted_arm_pol], dtype="float32")
-      # self.hit_time = np.concatenate((self.compton_time, self.compton_time, self.single_time))
+      self.hit_time = np.concatenate((self.compton_time, self.compton_time, self.single_time))
 
       # Correcting the angle correction for azimuthal angle according to cosima's polarization definition
       # And setting the attribute stating if the correction is applied or not
@@ -207,9 +203,9 @@ class GRBFullData:
       # TODO testing
       self.analyze(source_duration, source_fluence)
 
-      # self.set_beneficial_compton()
-      # self.set_beneficial_single()
-      # self.set_beneficial_trigger()
+      self.set_beneficial_compton()
+      self.set_beneficial_single()
+      self.set_beneficial_trigger()
 
   def cor(self):
     """
@@ -286,22 +282,22 @@ class GRBFullData:
     """
     integration_times = [0.016, 0.032, 0.064, 0.128, 0.256, 0.512, 1.024, 2.048, 4.096, source_duration]
 
-    # self.hits_snrs = []
-    # self.compton_snrs = []
+    self.hits_snrs = []
+    self.compton_snrs = []
     self.single_snrs = []
 
     for int_time in integration_times:
       bins = np.arange(0, source_duration + int_time, int_time)
 
-      # hit_hist = np.histogram(self.hit_time, bins=bins)[0]
-      # hit_argmax = np.argmax(hit_hist)
-      # hit_max_hist = hit_hist[hit_argmax]
-      # self.hits_snrs.append(calc_snr(hit_max_hist, self.hit_b_rate * int_time))
+      hit_hist = np.histogram(self.hit_time, bins=bins)[0]
+      hit_argmax = np.argmax(hit_hist)
+      hit_max_hist = hit_hist[hit_argmax]
+      self.hits_snrs.append(calc_snr(hit_max_hist, self.hit_b_rate * int_time))
 
-      # compton_hist = np.histogram(self.compton_time, bins=bins)[0]
-      # com_argmax = np.argmax(compton_hist)
-      # com_max_hist = compton_hist[com_argmax]
-      # self.compton_snrs.append(calc_snr(com_max_hist, self.compton_b_rate * int_time))
+      compton_hist = np.histogram(self.compton_time, bins=bins)[0]
+      com_argmax = np.argmax(compton_hist)
+      com_max_hist = compton_hist[com_argmax]
+      self.compton_snrs.append(calc_snr(com_max_hist, self.compton_b_rate * int_time))
 
       single_hist = np.histogram(self.single_time, bins=bins)[0]
       sin_argmax = np.argmax(single_hist)
