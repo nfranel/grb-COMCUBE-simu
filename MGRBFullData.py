@@ -41,7 +41,7 @@ class GRBFullData:
     # Attributes for the sat
     self.compton_b_rate = 0                     # Summed                  # Compton
     self.single_b_rate = 0                      # Summed                  # Single
-    self.hit_b_rate = 0                         # Summed                  # Trigger quality selection
+    # self.hit_b_rate = 0                         # Summed                  # Trigger quality selection
     self.sat_dec_wf = None                      # Not changed             #
     self.sat_ra_wf = None                       # Not changed             #
     self.num_sat = num_sat                      # Appened                 #
@@ -59,7 +59,7 @@ class GRBFullData:
     self.compton_ener = []                      # 1D concatenation        # Compton
     self.compton_second = []                    # 1D concatenation        # Compton
     self.single_ener = []                       # 1D concatenation        # Single
-    self.hit_time = []                          # 1D concatenation        # Trigger quality selection
+    # self.hit_time = []                          # 1D concatenation        # Trigger quality selection
     self.compton_time = []                      # 1D concatenation        # Compton
     self.single_time = []                       # 1D concatenation        # Single
     self.pol = None                             # 1D concatenation        # Compton
@@ -91,9 +91,9 @@ class GRBFullData:
     # Attributes that are used while making const
     self.n_sat_detect = 1                       # Summed                  #
     # Attributes that are used while determining the deterctor where the interaction occured
-    self.calor = 0                              # Summed                  # Trigger quality selection ?
-    self.dsssd = 0                              # Summed                  # Trigger quality selection ?
-    self.side = 0                               # Summed                  # Trigger quality selection ?
+    # self.calor = 0                              # Summed                  # Trigger quality selection ?
+    # self.dsssd = 0                              # Summed                  # Trigger quality selection ?
+    # self.side = 0                               # Summed                  # Trigger quality selection ?
     ###################################################################################################################
     self.const_beneficial_compton = True       # Appened                 #
     self.const_beneficial_single = True        # Appened                 #
