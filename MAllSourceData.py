@@ -66,7 +66,7 @@ class AllSourceData:
     self.init_correction = False
     self.snr_min = 5
     self.options = [self.erg_cut, self.armcut, self.geometry, self.init_correction, self.polarigram_bins]
-    self.dysfunctional_sats = False
+    self.dysfunctional_sats = True
 
     # Compiling the position finder
     subprocess.call(f"make -f Makefile PRG=find_detector", shell=True)
