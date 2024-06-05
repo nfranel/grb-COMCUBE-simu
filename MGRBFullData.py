@@ -63,10 +63,10 @@ class GRBFullData:
     self.compton_time = []                      # 1D concatenation        # Compton
     self.single_time = []                       # 1D concatenation        # Single
     self.pol = None                             # 1D concatenation        # Compton
-    self.polar_from_position = None             # 1D concatenation        # Compton
+    # self.polar_from_position = None             # 1D concatenation        # Compton
     # This polar angle is the one considered as compton scatter angle by mimrec
-    self.polar_from_energy = None               # 1D concatenation        # Compton
-    self.arm_pol = None                         # 1D concatenation        # Compton
+    # self.polar_from_energy = None               # 1D concatenation        # Compton
+    # self.arm_pol = None                         # 1D concatenation        # Compton
     self.azim_angle_corrected = False           # Set to true             #
     compton_firstpos = []
     compton_secpos = []
@@ -139,21 +139,22 @@ class GRBFullData:
       #################################################################################################################
       # Calculating the polar angle with energy values and compton azim and polar scattering angles from the kinematics
       # polar and position angle stored in deg
-      self.polar_from_energy = calculate_polar_angle(self.compton_second, self.compton_ener)
-      self.pol, self.polar_from_position = angle(compton_secpos - compton_firstpos, self.grb_dec_sat_frame, self.grb_ra_sat_frame, source_name, num_sim, num_sat)
+      # self.polar_from_energy = calculate_polar_angle(self.compton_second, self.compton_ener)
+      # self.pol, self.polar_from_position = angle(compton_secpos - compton_firstpos, self.grb_dec_sat_frame, self.grb_ra_sat_frame, source_name, num_sim, num_sat)
+      self.pol = angle(compton_secpos - compton_firstpos, self.grb_dec_sat_frame, self.grb_ra_sat_frame, source_name, num_sim, num_sat)[0]
 
       # Calculating the arm and extracting the indexes of correct arm events (arm in deg)
-      self.arm_pol = np.array(self.polar_from_position - self.polar_from_energy, dtype="float32")
-      accepted_arm_pol = np.where(np.abs(self.arm_pol) <= armcut, True, False)
+      # self.arm_pol = np.array(self.polar_from_position - self.polar_from_energy, dtype="float32")
+      # accepted_arm_pol = np.where(np.abs(self.arm_pol) <= armcut, True, False)
       # Restriction of the values according to arm cut
-      self.compton_ener = self.compton_ener[accepted_arm_pol]
-      self.compton_second = self.compton_second[accepted_arm_pol]
-      compton_firstpos = compton_firstpos[accepted_arm_pol]
-      compton_secpos = compton_secpos[accepted_arm_pol]
-      self.compton_time = self.compton_time[accepted_arm_pol]
-      self.polar_from_energy = self.polar_from_energy[accepted_arm_pol]
-      self.polar_from_position = np.array(self.polar_from_position[accepted_arm_pol], dtype="float32")
-      self.pol = np.array(self.pol[accepted_arm_pol], dtype="float32")
+      # self.compton_ener = self.compton_ener[accepted_arm_pol]
+      # self.compton_second = self.compton_second[accepted_arm_pol]
+      # compton_firstpos = compton_firstpos[accepted_arm_pol]
+      # compton_secpos = compton_secpos[accepted_arm_pol]
+      # self.compton_time = self.compton_time[accepted_arm_pol]
+      # self.polar_from_energy = self.polar_from_energy[accepted_arm_pol]
+      # self.polar_from_position = np.array(self.polar_from_position[accepted_arm_pol], dtype="float32")
+      # self.pol = np.array(self.pol[accepted_arm_pol], dtype="float32")
       # self.hit_time = np.concatenate((self.compton_time, self.compton_time, self.single_time))
 
       # Correcting the angle correction for azimuthal angle according to cosima's polarization definition

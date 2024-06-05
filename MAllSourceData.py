@@ -66,6 +66,7 @@ class AllSourceData:
     self.init_correction = False
     self.snr_min = 5
     self.options = [self.erg_cut, self.armcut, self.geometry, self.init_correction, self.polarigram_bins]
+    self.dysfunctional_sats = False
 
     # Compiling the position finder
     subprocess.call(f"make -f Makefile PRG=find_detector", shell=True)
@@ -234,7 +235,7 @@ class AllSourceData:
       if source is not None:
         for sim in source:
           if sim is not None:
-            sim.make_const(source.source_duration, source.source_fluence, off_sats, self.options, const=const)
+            sim.make_const(source.source_duration, source.source_fluence, off_sats, self.options, const=const, dysfunction_enabled=self.dysfunctional_sats)
     if not self.init_correction:
       self.azi_angle_anticorr()
 

@@ -47,10 +47,10 @@ class GRBSample:
     # Short GRB attributes
     #################################################################################################################
     # PARAMETERS
-    self.al1_s, self.al2_s, self.lb_s = 0.53, 3.4, 2.8
+    self.al1_s, self.al2_s, self.lb_s = 0.53, 3.4, 2.8 # PUT DISPERSION
     self.band_low_short = -0.6
     self.band_high_short = -2.5
-    self.short_rate = 0.20  # +0.04 -0.07 [Gpc-3.yr-1]
+    self.short_rate = 0.20  # +0.04 -0.07 [Gpc-3.yr-1] # Ghirlanda 2016
     self.nshort = None  # func to calculate ?
 
     #################################################################################################################
