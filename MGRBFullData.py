@@ -60,8 +60,8 @@ class GRBFullData:
     self.compton_second = []                    # 1D concatenation        # Compton
     self.single_ener = []                       # 1D concatenation        # Single
     # self.hit_time = []                          # 1D concatenation        # Trigger quality selection
-    self.compton_time = []                      # 1D concatenation        # Compton
-    self.single_time = []                       # 1D concatenation        # Single
+    # self.compton_time = []                      # 1D concatenation        # Compton
+    # self.single_time = []                       # 1D concatenation        # Single
     self.pol = None                             # 1D concatenation        # Compton
     # self.polar_from_position = None             # 1D concatenation        # Compton
     # This polar angle is the one considered as compton scatter angle by mimrec
@@ -86,7 +86,7 @@ class GRBFullData:
     self.mdp = None                             # Not changed             #
     # self.hits_snrs = None                       # Not changed             #
     # self.compton_snrs = None                    # Not changed             #
-    self.single_snrs = None                     # Not changed             #
+    # self.single_snrs = None                     # Not changed             #
     ###################################################################################################################
     # Attributes that are used while making const
     self.n_sat_detect = 1                       # Summed                  #
@@ -118,12 +118,12 @@ class GRBFullData:
         if len(reading) == 5:
           self.compton_second.append(reading[0])
           self.compton_ener.append(reading[1])
-          self.compton_time.append(reading[2])
+          # self.compton_time.append(reading[2])
           compton_firstpos.append(reading[3])
           compton_secpos.append(reading[4])
         elif len(reading) == 3:
           self.single_ener.append(reading[0])
-          self.single_time.append(reading[1])
+          # self.single_time.append(reading[1])
           single_pos.append(reading[2])
       self.compton_ener = np.array(self.compton_ener, dtype="float32")
       self.compton_second = np.array(self.compton_second, dtype="float32")
@@ -131,8 +131,8 @@ class GRBFullData:
       compton_firstpos = np.array(compton_firstpos, dtype="float32")
       compton_secpos = np.array(compton_secpos, dtype="float32")
       single_pos = np.array(single_pos, dtype="float32")
-      self.compton_time = np.array(self.compton_time, dtype="float32")
-      self.single_time = np.array(self.single_time, dtype="float32")
+      # self.compton_time = np.array(self.compton_time, dtype="float32")
+      # self.single_time = np.array(self.single_time, dtype="float32")
 
       #################################################################################################################
       #                     Filling the fields
@@ -269,7 +269,7 @@ class GRBFullData:
     #################################################################################################################
     # Calculation of effective area
     #################################################################################################################
-    self.calculates_snrs(source_duration)
+    # self.calculates_snrs(source_duration)
 
     #################################################################################################################
     # Calculation of mdp
@@ -283,22 +283,22 @@ class GRBFullData:
     """
     integration_times = [0.016, 0.032, 0.064, 0.128, 0.256, 0.512, 1.024, 2.048, 4.096, source_duration]
 
-    # self.hits_snrs = []
-    # self.compton_snrs = []
+    self.hits_snrs = []
+    self.compton_snrs = []
     self.single_snrs = []
 
     for int_time in integration_times:
       bins = np.arange(0, source_duration + int_time, int_time)
 
-      # hit_hist = np.histogram(self.hit_time, bins=bins)[0]
-      # hit_argmax = np.argmax(hit_hist)
-      # hit_max_hist = hit_hist[hit_argmax]
-      # self.hits_snrs.append(calc_snr(hit_max_hist, self.hit_b_rate * int_time))
-      #
-      # compton_hist = np.histogram(self.compton_time, bins=bins)[0]
-      # com_argmax = np.argmax(compton_hist)
-      # com_max_hist = compton_hist[com_argmax]
-      # self.compton_snrs.append(calc_snr(com_max_hist, self.compton_b_rate * int_time))
+      hit_hist = np.histogram(self.hit_time, bins=bins)[0]
+      hit_argmax = np.argmax(hit_hist)
+      hit_max_hist = hit_hist[hit_argmax]
+      self.hits_snrs.append(calc_snr(hit_max_hist, self.hit_b_rate * int_time))
+
+      compton_hist = np.histogram(self.compton_time, bins=bins)[0]
+      com_argmax = np.argmax(compton_hist)
+      com_max_hist = compton_hist[com_argmax]
+      self.compton_snrs.append(calc_snr(com_max_hist, self.compton_b_rate * int_time))
 
       single_hist = np.histogram(self.single_time, bins=bins)[0]
       sin_argmax = np.argmax(single_hist)
