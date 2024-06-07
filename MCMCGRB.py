@@ -1,17 +1,17 @@
 import seaborn as sns
 import pandas as pd
-import numpy as np
 import matplotlib.pyplot as plt
-from scipy.integrate import quad, trapezoid, simpson, IntegrationWarning
-from scipy.stats import skewnorm
+from scipy.integrate import quad
+# from scipy.stats import skewnorm
 from catalog import Catalog
-from funcmod import *
-from scipy.optimize import curve_fit
+from funcmod import extract_lc, calc_flux_gbm
+from funcsample import *
+# from scipy.optimize import curve_fit
 from scipy.stats import gaussian_kde
-import warnings
+# import warnings
 
-from astropy.cosmology import WMAP9, Planck18
-from astropy.modeling.powerlaws import SmoothlyBrokenPowerLaw1D, ExponentialCutoffPowerLaw1D
+from astropy.cosmology import Planck18
+# from astropy.modeling.powerlaws import SmoothlyBrokenPowerLaw1D, ExponentialCutoffPowerLaw1D
 
 
 class GRBSample:
@@ -32,7 +32,7 @@ class GRBSample:
     self.epmax = 1e5
     self.thetaj_min = 0
     self.thetaj_max = 15
-    self.lmin = 1e47  # erg/s
+    self.lmin = 1e48  # erg/s
     self.lmax = 1e53
     self.n_year = 10
     gbmduty = 0.587

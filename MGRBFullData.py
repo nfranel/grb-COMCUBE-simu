@@ -169,7 +169,7 @@ class GRBFullData:
       #################################################################################################################
       if sat_info is not None:
         self.sat_dec_wf, self.sat_ra_wf, self.compton_b_rate, self.single_b_rate = affect_bkg(sat_info, burst_time, bkg_data)
-        self.hit_b_rate = self.compton_b_rate * 2 + self.single_b_rate
+        # self.hit_b_rate = self.compton_b_rate * 2 + self.single_b_rate
       self.mu100_ref, self.mu100_err_ref, self.s_eff_compton_ref, self.s_eff_single_ref = closest_mufile(self.grb_dec_sat_frame, self.grb_ra_sat_frame, mu_data)
       # Putting the azimuthal scattering angle between the correct bins for creating histograms
       self.single = len(self.single_ener)
@@ -180,27 +180,28 @@ class GRBFullData:
       #################################################################################################################
       #     Finding the detector of interaction for each event
       #################################################################################################################
-      self.compton_first_detector, self.compton_sec_detector, self.single_detector = find_detector(compton_firstpos, compton_secpos, single_pos, geometry)
-      hits = np.array([])
-      if len(self.compton_first_detector) > 0:
-        hits = np.concatenate((hits, self.compton_first_detector[:, 1]))
-      if len(self.compton_sec_detector) > 0:
-        hits = np.concatenate((hits, self.compton_sec_detector[:, 1]))
-      if len(self.single_detector) > 0:
-        hits = np.concatenate((hits, self.single_detector[:, 1]))
-      self.calor = 0
-      self.dsssd = 0
-      self.side = 0
-      for hit in hits:
-        if hit == "Calor":
-          self.calor += 1
-        elif hit.startswith("SideDet"):
-          self.side += 1
-        elif hit.startswith("Layer"):
-          self.dsssd += 1
-        else:
-          print("Error, unknown interaction volume")
-      self.total_hits = self.calor + self.dsssd + self.side
+      # self.compton_first_detector, self.compton_sec_detector, self.single_detector = find_detector(compton_firstpos, compton_secpos, single_pos, geometry)
+      # hits = np.array([])
+      # if len(self.compton_first_detector) > 0:
+      #   hits = np.concatenate((hits, self.compton_first_detector[:, 1]))
+      # if len(self.compton_sec_detector) > 0:
+      #   hits = np.concatenate((hits, self.compton_sec_detector[:, 1]))
+      # if len(self.single_detector) > 0:
+      #   hits = np.concatenate((hits, self.single_detector[:, 1]))
+      # self.calor = 0
+      # self.dsssd = 0
+      # self.side = 0
+      # for hit in hits:
+      #   if hit == "Calor":
+      #     self.calor += 1
+      #   elif hit.startswith("SideDet"):
+      #     self.side += 1
+      #   elif hit.startswith("Layer"):
+      #     self.dsssd += 1
+      #   else:
+      #     print("Error, unknown interaction volume")
+      # self.total_hits = self.calor + self.dsssd + self.side
+
       # TODO testing
       self.analyze(source_duration, source_fluence)
 

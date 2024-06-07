@@ -7,6 +7,7 @@
 import subprocess
 # Developped modules imports
 from funcmod import *
+from funcsample import calc_flux_sample
 from MAllSatData import AllSatData
 
 
