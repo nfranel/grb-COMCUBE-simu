@@ -114,92 +114,76 @@ def acc_reject(func, func_args, xmin, xmax):
       return variable
 
 
-def lpeak_function_long(lpeak, version):
+def lpeak_function_long(lpeak):
   """
-  Version 0-1-2
+  Version
     Luminosity function (distribution) for short GRBs
     Function and associated parameters and cases are taken from Ghirlanda et al. 2016
   :param lpeak: float or array of float containing peak luminosities
   """
-  # al1, al2, lb = -0.53, -3.4, 2.8 # Short
-  if version == 0 or version == 1 or version == 2:
-    al1_l, al2_l, lb_l = -0.65, -3, 10 ** 52.05
-    if type(lpeak) is float or type(lpeak) is int:
-      if lpeak < lb_l:
-        return (lpeak / lb_l)**(al1_l)
-      else:
-        return (lpeak / lb_l)**(al2_l)
-    elif type(lpeak) is np.ndarray:
-      return np.where(lpeak < lb_l, (lpeak / lb_l)**(al1_l), (lpeak / lb_l)**(al2_l))
+  al1_l, al2_l, lb_l = -0.65, -3, 10 ** 52.05
+  if type(lpeak) is float or type(lpeak) is int:
+    if lpeak < lb_l:
+      return (lpeak / lb_l)**(al1_l)
     else:
-      raise TypeError("Please use a correct type for luminosity, only accepted are float or numpy ndarray")
+      return (lpeak / lb_l)**(al2_l)
+  elif type(lpeak) is np.ndarray:
+    return np.where(lpeak < lb_l, (lpeak / lb_l)**(al1_l), (lpeak / lb_l)**(al2_l))
   else:
-    raise ValueError("Please use a correct version for lpeak_function_long")
+    raise TypeError("Please use a correct type for luminosity, only accepted are float or numpy ndarray")
 
 
-def redshift_distribution_long(red, version):
+def redshift_distribution_long(red):
   """
-  Version 0-1-2
+  Version
     redshift distribution for long GRBs
     Function and associated parameters and cases are taken from Sarah Antier's thesis
   :param red: float or array of float containing redshifts
   """
-  if version == 0 or version == 1 or version == 2:
-    red0, n1, n2, z1 = 0.42, 2.07, -0.7, 3.6
-    if type(red) is float or type(red) is int:
-      if red <= z1:
-        return red0 * (1 + red)**n1
-      else:
-        return red0 * (1 + z1)**(n1 - n2) * (1 + red)**n2
-    elif type(red) is np.ndarray:
-      return np.where(red <= z1, red0 * (1 + red)**n1, red0 * (1 + z1)**(n1 - n2) * (1 + red)**n2)
+  red0, n1, n2, z1 = 0.42, 2.07, -0.7, 3.6
+  if type(red) is float or type(red) is int:
+    if red <= z1:
+      return red0 * (1 + red)**n1
     else:
-      raise TypeError("Please use a correct type for red, only accepted are float or numpy ndarray")
+      return red0 * (1 + z1)**(n1 - n2) * (1 + red)**n2
+  elif type(red) is np.ndarray:
+    return np.where(red <= z1, red0 * (1 + red)**n1, red0 * (1 + z1)**(n1 - n2) * (1 + red)**n2)
   else:
-    raise ValueError("Please use a correct version for redshift_distribution_long")
+    raise TypeError("Please use a correct type for red, only accepted are float or numpy ndarray")
 
 
-def redshift_distribution_short(red, version):
+def redshift_distribution_short(red):
   """
-  Version 0-1-2
+  Version
     redshift distribution for short GRBs
     Function and associated parameters and cases are taken from Ghirlanda et al. 2016
   :param red: float or array of float containing redshifts
   """
-  if version == 0 or version == 1 or version == 2:
-    p1, zp, p2 = 2.8, 2.3, 3.5
-    if type(red) is float or type(red) is int or type(red) is np.ndarray:
-      return (1 + p1 * red) / (1 + (red / zp)**p2)
-    else:
-      raise TypeError("Please use a correct type for red, only accepted are float or numpy ndarray")
+  p1, zp, p2 = 2.8, 2.3, 3.5
+  if type(red) is float or type(red) is int or type(red) is np.ndarray:
+    return (1 + p1 * red) / (1 + (red / zp)**p2)
   else:
-    raise ValueError("Please use a correct version for redshift_distribution_short")
+    raise TypeError("Please use a correct type for red, only accepted are float or numpy ndarray")
 
 
-def red_rate_long(red, version):
+def red_rate_long(red):
   """
-  Version 0-1-2
+  Version
     Function to obtain the number of long GRB and to pick them according to their distribution
     Parameters from Sarah Antier's thesis
   """
-  if version == 0 or version == 1 or version == 2:
-    vol_com = Planck18.differential_comoving_volume(red).to_value("Gpc3 / sr")  # Change from Mpc3 / sr to Gpc3 / sr
-    return 4 * np.pi * redshift_distribution_long(red, version) / (1 + red) * vol_com
-  else:
-    raise ValueError("Please use a correct version for red_rate_long")
+  vol_com = Planck18.differential_comoving_volume(red).to_value("Gpc3 / sr")  # Change from Mpc3 / sr to Gpc3 / sr
+  return 4 * np.pi * redshift_distribution_long(red) / (1 + red) * vol_com
 
 
-def red_rate_short(red, rate0, version):
+def red_rate_short(red, rate0):
   """
-  Version 0-1-2
+  Version
     Function to obtain the number of short GRB and to pick them according to their distribution
     Parameters from Ghirlanda et al. 2016
   """
-  if version == 0 or version == 1 or version == 2:
-    vol_com = Planck18.differential_comoving_volume(red).to_value("Gpc3 / sr")  # Change from Mpc3 / sr to Gpc3 / sr
-    return rate0 * 4 * np.pi * redshift_distribution_short(red, version) / (1 + red) * vol_com
-  else:
-    raise ValueError("Please use a correct version for red_rate_short")
+  vol_com = Planck18.differential_comoving_volume(red).to_value("Gpc3 / sr")  # Change from Mpc3 / sr to Gpc3 / sr
+  return rate0 * 4 * np.pi * redshift_distribution_short(red) / (1 + red) * vol_com
 
 
 def sbplaw(x, A, xb, alpha1, alpha2, delta):
@@ -208,7 +192,7 @@ def sbplaw(x, A, xb, alpha1, alpha2, delta):
 
 def epeak_distribution_long(epeak, version):
   """
-  Version 0-1
+  Version 1
     Peak energy distribution for short GRBs
     Function and associated parameters and cases are taken from Ghirlanda et al. 2016
   Version 2
@@ -216,7 +200,7 @@ def epeak_distribution_long(epeak, version):
     !! Returns the log of Epeak !!
   :param epeak: float or array of float containing peak energies
   """
-  if version == 0 or version == 1:
+  if version == 1:
     a1, a2, epb = -0.53, 4, 1600  # Took -a1 because the results were coherent only this way
     if type(epeak) is float or type(epeak) is int:
       if epeak <= epb:
@@ -228,9 +212,6 @@ def epeak_distribution_long(epeak, version):
     else:
       raise TypeError("Please use a correct type for epeak, only accepted are float or numpy ndarray")
   elif version == 2:
-    # # A, xb, alpha1, alpha2, delta = 200,  2.20, -5.17, 7.95, 0.048
-    # A, xb, alpha1, alpha2, delta = 82, 2.17, -7.49, 8.58, 0.049
-    # return sbplaw(epeak, A, xb, alpha1, alpha2, delta)
     ampl, skewness, mu, sigma = 80,  1.6,  1.9,  0.44
     return ampl * skewnorm.pdf(epeak, skewness, mu, sigma)
   else:
@@ -239,7 +220,7 @@ def epeak_distribution_long(epeak, version):
 
 def epeak_distribution_short(epeak, version):
   """
-  Version 0-1
+  Version 1
     Peak energy distribution for short GRBs
     Function and associated parameters and cases are taken from Ghirlanda et al. 2016
   Version 2
@@ -247,7 +228,7 @@ def epeak_distribution_short(epeak, version):
     !! Returns the log of Epeak !!
   :param epeak: float or array of float containing peak energies
   """
-  if version == 0 or version == 1:
+  if version == 1:
     a1, a2, epb = -0.53, 4, 1600  # Took -a1 because the results were coherent only this way
     if type(epeak) is float or type(epeak) is int:
       if epeak <= epb:
@@ -259,61 +240,49 @@ def epeak_distribution_short(epeak, version):
     else:
       raise TypeError("Please use a correct type for epeak, only accepted are float or numpy ndarray")
   elif version == 2:
-    # # A, xb, alpha1, alpha2, delta = 8.2,  3.33, -5.89, 35.,  0.12
-    # A, xb, alpha1, alpha2, delta = 11.9, 3.16, -4.87, 35., 0.05
-    # return sbplaw(epeak, A, xb, alpha1, alpha2, delta)
     ampl, skewness, mu, sigma = 16, -5.2, 3.15, 0.66
     return ampl * skewnorm.pdf(epeak, skewness, mu, sigma)
   else:
     raise ValueError("Please use a correct version for epeak_distribution_short")
 
 
-def amati_long(epeak, version):
+def amati_long(epeak,):
   """
-  Version 0-1-2
+  Version
     Amatie relation (Amati, 2006) linking Epeak and Eiso (peak energy and isotropic equivalent energy)
   :param epeak: float or array of float containing peak energies if reversed = True or isotropic equivalent energies if False
   :returns: Eiso
   """
-  if version == 0 or version == 1 or version == 2:
-    if type(epeak) is float or type(epeak) is int or type(epeak) is np.float64 or type(epeak) is np.ndarray:
-      return 10**(52 + np.log10(epeak / 110) / 0.51)
-    else:
-      raise TypeError("Please use a correct type for energy, only accepted are float or numpy ndarray")
+  if type(epeak) is float or type(epeak) is int or type(epeak) is np.float64 or type(epeak) is np.ndarray:
+    return 10**(52 + np.log10(epeak / 110) / 0.51)
   else:
-    raise ValueError("Please use a correct version for amati_long")
+    raise TypeError("Please use a correct type for energy, only accepted are float or numpy ndarray")
 
 
-def amati_short(epeak, version):
+def amati_short(epeak):
   """
-  Version 0-1-2
+  Version
     Amatie relation (Amati, 2006) linking Epeak and Eiso (peak energy and isotropic equivalent energy)
   :param epeak: float or array of float containing peak energies if reversed = True or isotropic equivalent energies if False
   :returns: Eiso
   """
-  if version == 0 or version == 1 or version == 2:
-    ma, qa = 1.1, 0.042
-    if type(epeak) is float or type(epeak) is int or type(epeak) is np.float64 or type(epeak) is np.ndarray:
-      return 10**(51 + (np.log10(epeak / 670) - qa) / ma)
-    else:
-      raise TypeError("Please use a correct type for energy, only accepted are float or numpy ndarray")
+  ma, qa = 1.1, 0.042
+  if type(epeak) is float or type(epeak) is int or type(epeak) is np.float64 or type(epeak) is np.ndarray:
+    return 10**(51 + (np.log10(epeak / 670) - qa) / ma)
   else:
-    raise ValueError("Please use a correct version for amati_short")
+    raise TypeError("Please use a correct type for energy, only accepted are float or numpy ndarray")
 
 
-def yonetoku_long(epeak, version):
+def yonetoku_long(epeak):
   """
-  Version 2
+  Version
     Yonetoku relation for long GRBs (Yonetoku et al, 2010)
   :returns: Peak Luminosity
   """
-  if version == 2:
-    id1, s_id1, id2, s_id2 = 52.43, 0.037, 1.60, 0.082
-    rand1 = np.random.normal(id1, s_id1)
-    rand2 = np.random.normal(id2, s_id2)
-    return 10 ** rand1 * (epeak / 355) ** rand2
-  else:
-    raise ValueError("Please use a correct version for Yonetoku long")
+  id1, s_id1, id2, s_id2 = 52.43, 0.037, 1.60, 0.082
+  rand1 = np.random.normal(id1, s_id1)
+  rand2 = np.random.normal(id2, s_id2)
+  return 10 ** rand1 * (epeak / 355) ** rand2
 
 
 def yonetoku_reverse_long(lpeak, version):

@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.colors as colors
-from funcmod import comp, band, plaw, sbpl, calc_flux_sample, calc_flux_gbm
+from funcmod import comp, band, plaw, sbpl, calc_flux_gbm
 
 # Version 2, Created by Adrien Laviron, updated by Nathan Franel
 
