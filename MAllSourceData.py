@@ -62,6 +62,7 @@ class AllSourceData:
       print("Warning : wrong option for the polarigram bins, it should be fixed (default), limited or optimized. Hence the option has been set to default value.")
       self.polarigram_bins = "fixed"
     # Setup of some options
+    self.rest_cat_file = "./GBM/rest_frame_properties.txt"
     self.save_time = True
     self.init_correction = False
     self.snr_min = 5
@@ -88,7 +89,7 @@ class AllSourceData:
       self.n_source = len(self.namelist)
     else:
       if self.simmode == "GBM":
-        cat_data = Catalog(self.cat_file, self.sttype)
+        cat_data = Catalog(self.cat_file, self.sttype, self.rest_cat_file)
       elif self.simmode == "sampled":
         cat_data = SampleCatalog(self.cat_file, self.sttype)
       else:
@@ -760,7 +761,7 @@ class AllSourceData:
     :param mode: mode to give colormap options to the plot
       mode can be "no_cm" or "t90"
     """
-    cat_data = Catalog(self.cat_file, self.sttype)
+    cat_data = Catalog(self.cat_file, self.sttype, self.rest_cat_file)
     cat_data.grb_map_plot(mode)
 
   def spectral_information(self):
@@ -768,7 +769,7 @@ class AllSourceData:
     Displays the spectral information of the GRBs including the proportion of different best fit models and the
     corresponding parameters
     """
-    cat_data = Catalog(self.cat_file, self.sttype)
+    cat_data = Catalog(self.cat_file, self.sttype, self.rest_cat_file)
     cat_data.spectral_information()
 
   def mdp_histogram(self, number_off_sat=0, mdp_limit=1, cumul=1, n_bins=30, x_scale='linear', y_scale="log"):

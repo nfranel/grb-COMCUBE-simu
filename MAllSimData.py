@@ -38,21 +38,27 @@ class AllSimData(list):
       self.source_fluence = None
       self.source_energy_fluence = None
     else:
-      self.source_name = cat_data.name[source_ite]
-      self.source_duration = float(cat_data.t90[source_ite])
       if cat_data.cat_type == "GBM":
+        self.source_name = cat_data.df.name[source_ite]
+        self.source_duration = cat_data.df.t90[source_ite]
         # Retrieving pflux and mean flux : the photon flux at the peak flux (or mean photon flux) of the burst [photons/cm2/s]
-        self.best_fit_model = getattr(cat_data, "flnc_best_fitting_model")[source_ite].rstrip()
-        if f"{getattr(cat_data, 'pflx_best_fitting_model')[source_ite].rstrip()}" == "":
-          self.best_fit_p_flux = None
+        self.best_fit_model = cat_data.df.flnc_best_fitting_model[source_ite]
+        p_model = cat_data.df.pflx_best_fitting_model[source_ite]
+        if type(p_model) == str:
+          self.best_fit_p_flux = cat_data.df[f"{p_model}_phtflux"][source_ite]
         else:
-          self.best_fit_p_flux = float(getattr(cat_data, f"{getattr(cat_data, 'pflx_best_fitting_model')[source_ite].rstrip()}_phtflux")[source_ite])
-        self.best_fit_mean_flux = float(getattr(cat_data, f"{getattr(cat_data, 'flnc_best_fitting_model')[source_ite].rstrip()}_phtflux")[source_ite])
+          if np.isnan(p_model):
+            self.best_fit_p_flux = None
+          else:
+            raise ValueError("A value for pflx_best_fitting_model is not set properly")
+        self.best_fit_mean_flux = cat_data.df[f"{self.best_fit_model}_phtflux"][source_ite]
         # Retrieving fluence of the source [photons/cm²]
         self.source_fluence = calc_flux_gbm(cat_data, source_ite, options[0]) * self.source_duration
         # Retrieving energy fluence of the source [erg/cm²]
-        self.source_energy_fluence = float(cat_data.fluence[source_ite])
+        self.source_energy_fluence = cat_data.df.fluence[source_ite]
       elif cat_data.cat_type == "sampled":
+        self.source_name = cat_data.name[source_ite]
+        self.source_duration = float(cat_data.t90[source_ite])
         self.best_fit_model = "band"
         self.best_fit_p_flux = None
         self.best_fit_mean_flux = float(cat_data.mean_flux[source_ite])

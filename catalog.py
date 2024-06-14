@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.colors as colors
 from funcmod import comp, band, plaw, sbpl, calc_flux_gbm
@@ -6,64 +7,45 @@ from funcmod import comp, band, plaw, sbpl, calc_flux_gbm
 # Version 2, Created by Adrien Laviron, updated by Nathan Franel
 
 
+def treat_item(item_ev, item):
+  """
+  Convert the event of an item to float, only strip the string otherwise, if the item has no value the value is set to None
+  :param item_ev: str, item event
+  :param item: str, name of the item treated
+  """
+  striped_item_ev = item_ev.strip()
+  try:
+    float_item_ev = float(striped_item_ev)
+    return float_item_ev
+  except ValueError:
+    if striped_item_ev == "":
+      return np.nan
+    else:
+      if item == "ra" or item == "dec":
+        return np.sum(np.array(striped_item_ev.split(" ")).astype(float) / [1, 60, 3600])
+      else:
+        return striped_item_ev
+
+
 class Catalog:
-  def __init__(self, data=None, sttype=None):
+  def __init__(self, datafile=None, sttype=None, rest_frame_file=None):
     """
     Instanciates a catalog
-    :param data: None or string, data to put in the catalog
+    :param datafile: None or string, data to put in the catalog
     :param sttype: See Catalog.fill
     """
     self.cat_type = "GBM"
-    # Fields added for some clarity
-    # Peak parameters
-    self.pflx_best_fitting_model = None
-    self.pflx_plaw_phtflux = None
-    self.pflx_comp_phtflux = None
-    self.pflx_band_phtflux = None
-    self.pflx_sbpl_phtflux = None
-    # Spectra parameters
-    self.flnc_best_fitting_model = None
-    self.flnc_plaw_ampl = None
-    self.flnc_plaw_index = None
-    self.flnc_plaw_pivot = None
-    self.flnc_comp_ampl = None
-    self.flnc_comp_index = None
-    self.flnc_comp_epeak = None
-    self.flnc_comp_pivot = None
-    self.flnc_band_ampl = None
-    self.flnc_band_alpha = None
-    self.flnc_band_beta = None
-    self.flnc_band_epeak = None
-    self.flnc_sbpl_ampl = None
-    self.flnc_sbpl_indx1 = None
-    self.flnc_sbpl_indx2 = None
-    self.flnc_sbpl_brken = None
-    self.flnc_sbpl_brksc = None
-    self.flnc_sbpl_pivot = None
-    # Lightcurve calculation attributes
-    self.t90_start = None
-    self.duration_energy_low = None
-    self.duration_energy_high = None
-    self.back_interval_low_start = None
-    self.back_interval_low_stop = None
-    self.back_interval_high_start = None
-    self.back_interval_high_stop = None
-    self.bcat_detector_mask = None
-    self.scat_detector_mask = None
-    self.flnc_spectrum_start = None
-    self.flnc_spectrum_stop = None
-
-    # Catalog attributes
-    self.name = None
-    self.t90 = None
-    self.fluence = None
-    self.length = 0
-    self.data = None
+    self.df = None
+    self.datafile = None
     self.sttype = None
-    self.dec = None
-    self.ra = None
-    if not (data is None or sttype is None):
-      self.fill(data, sttype)
+    self.rest_frame_file = None
+    self.length = 0
+    if not (datafile is None or sttype is None or rest_frame_file is None):
+      self.sttype = sttype
+      self.datafile = datafile
+      self.rest_frame_file = rest_frame_file
+      self.fill()
+    # TODO change in gencommands de launch_sim_time
 
   def __len__(self):
     """
@@ -74,6 +56,12 @@ class Catalog:
   def formatsttype(self):
     """
     Formats self.sttype, the standardized type of text data file
+    sttype: iterable of len 5:
+      first header event (int)
+      event separator (str)
+      first event (int)
+      item separator (str)
+      last event (int) OR list of the sources wanted (list)
     """
     for i in range(5):
       if self.sttype[i] == "n":
@@ -86,79 +74,72 @@ class Catalog:
         else:
           self.sttype[i] = int(self.sttype[i])
 
-  def tofloat(self, item, default=0):
-    """
-    Convert an item of all events to float
-    :param item: str, item
-    :param default: default value, default=0
-    """
-    if not (hasattr(self, item)):
-      raise AttributeError("Catalog does not contain item {}".format(item))
-    for i in range(self.length):
-      try:
-        getattr(self, item)[i] = float(getattr(self, item)[i])
-      except ValueError:
-        getattr(self, item)[i] = default
-
-  def tofloats(self, items, defaults=0):
-    """
-    Convert several items of all events to float
-    :param items: list of str, items
-    :param defaults: value or list of values, default values, default=0
-    """
-    if not (hasattr(defaults, "__iter__")):
-      defaults = np.full(len(items), defaults)
-    for item, default in zip(items, defaults):
-      self.tofloat(item, default)
-
-  def fill(self, data, sttype):
+  def fill(self):
     """
     Fills a Catalog with data
-    :param data: string, data file name
-    :param sttype: iterable of len 5:
-      first header event (int)
-      event separator (str)
-      first event (int)
-      item separator (str)
-      last event (int) OR list of the sources wanted (list)
     """
-    self.data = data
-    self.sttype = sttype
+    # Opening GBM data and removing undesired lines
     self.formatsttype()
-    with open(data) as f:
-      d = f.read().split(sttype[1])
-    if type(sttype[4]) is int:
-      events = d[sttype[2]:sttype[4]]
+    with open(self.datafile) as f:
+      d = f.read().split(self.sttype[1])
+    if type(self.sttype[4]) is int:
+      events = d[self.sttype[2]:self.sttype[4]]
       if events[-1] == '':
         events = events[:-1]
-    elif type(sttype[4]) is list:
-      events = d[sttype[2]:]
+    elif type(self.sttype[4]) is list:
+      events = d[self.sttype[2]:]
       if events[-1] == '':
         events = events[:-1]
-      events = [event for event in events if event.split(sttype[3])[1] in sttype[4]]
+      events = [event for event in events if event.split(self.sttype[3])[1] in self.sttype[4]]
     else:
       events = []
     self.length = len(events)
     if events[-1] == "":
       self.length -= 1
-    header = d[sttype[0]]
-    items = [i.strip() for i in header.split(sttype[3])]
-    c = 0  # Compteur d'Empty
-    for i in range(len(items)):
-      if items[i] == "":
-        items[i] = "Empty{}".format(c)
-        c += 1
-    for item in items:
-      setattr(self, item, list())
-    for e in events:
-      for item, value in zip(items, e.split(sttype[3])):
-        getattr(self, item).append(value)
+    header = d[self.sttype[0]]
+    # Selecting item names
+    items_gbm = [i.strip() for i in header.split(self.sttype[3])]
+    if items_gbm[0] == "":
+      items_gbm = items_gbm[1:]
+    if items_gbm[-1] == "":
+      items_gbm = items_gbm[:-1]
 
-  def items(self):
-    """
-    List all knowns items
-    """
-    return list(self.__dict__.keys())[3:]
+    # Opening GBM rest frame data and removing undesired lines and columns
+    with open(self.rest_frame_file) as f:
+      d = f.read().split("\n")
+    rf_events = d[54:]
+    while rf_events[-1] == '':
+      rf_events = rf_events[:-1]
+    # Selecting item names
+    items_rest_frame = ["rest_name", 'rest_k_comp', 'rest_eiso_comp', 'rest_eiso_err_comp', 'rest_liso_comp', 'rest_liso_err_comp', 'rest_epeak_comp', 'rest_epeak_err_comp',
+                        'rest_k_band', 'rest_eiso_band', 'rest_eiso_err_band', 'rest_liso_band', 'rest_liso_err_band', 'rest_epeak_band', 'rest_epeak_err_band']
+    rest_names = []
+    rest_values = []
+    for ev in rf_events:
+      line = ev.split("|")[2:-4]
+      rest_names.append(f"GRB{line[0]}")
+      rest_values.append(list(map(float, line[1:])))
+    items = items_gbm + items_rest_frame[1:]
+    index_name = items_gbm.index("name")
+    data_tab = []
+    for ev in events:
+      line = ev.split(self.sttype[3])
+      if line[0] == "":
+        line = line[1:]
+      if line[-1] == "":
+        line = line[:-1]
+      grb_name = line[index_name]
+      data_row = []
+      for item_ite in range(len(items_gbm)):
+        data_row.append(treat_item(line[item_ite], items_gbm[item_ite]))
+      if grb_name in rest_names:
+        # Searching for the index in case the 2 list don't have the same order or if there is some GRB in rest data not in GBM data
+        id_grb = rest_names.index(grb_name)
+        data_row += rest_values[id_grb]
+      else:
+        data_row += [np.nan] * 14
+      data_tab.append(data_row)
+    self.df = pd.DataFrame(data=data_tab, columns=items)
 
   def grb_map_plot(self, mode="no_cm"):
     """
@@ -166,10 +147,8 @@ class Catalog:
     :param mode: no_cm or t90, use t90 to give a color to the pointsbased on the GRB duration
     """
     # Extracting dec and ra from catalog and transforms decimal degrees into degrees into the right frame
-    thetap = [np.sum(np.array(dec.split(" ")).astype(float) / [1, 60, 3600]) if len(dec.split("+")) == 2 else np.sum(np.array(dec.split(" ")).astype(float) / [1, -60, -3600]) for dec in self.dec]
-    thetap = np.deg2rad(np.array(thetap))
-    phip = [np.sum(np.array(ra.split(" ")).astype(float) / [1, 60, 3600]) if len(ra.split("+")) == 2 else np.sum(np.array(ra.split(" ")).astype(float) / [1, -60, -3600]) for ra in self.ra]
-    phip = np.mod(np.deg2rad(np.array(phip)) + np.pi, 2 * np.pi) - np.pi
+    thetap = self.df.dec.values
+    phip = np.mod(np.array(self.df.ra.values) + 180, 360) - 180
 
     plt.subplot(111, projection="aitoff")
     plt.xlabel("RA (°)")
@@ -179,8 +158,7 @@ class Catalog:
     if mode == "no_cm":
       plt.scatter(phip, thetap, s=12, marker="*")
     elif mode == "t90":
-      self.tofloat("t90")
-      sc = plt.scatter(phip, thetap, s=12, marker="*", c=self.t90, norm=colors.LogNorm())
+      sc = plt.scatter(phip, thetap, s=12, marker="*", c=self.df.t90.values, norm=colors.LogNorm())
       cbar = plt.colorbar(sc)
       cbar.set_label("GRB Duration - T90 (s)", rotation=270, labelpad=20)
     plt.show()
@@ -192,82 +170,41 @@ class Catalog:
     :param nbins: number of bins for the histograms of spectra parameters
     """
     # Containers for the different model parameters
-    # Powerlaw model
-    plaw_ampl = []
-    plaw_index = []
-    plaw_pivot = []
-    # Comptonized model
-    comp_ampl = []
-    comp_index = []
-    comp_epeak = []
-    comp_pivot = []
+    df_band = self.df.loc[self.df.flnc_best_fitting_model == "flnc_band"]
+    df_comp = self.df.loc[self.df.flnc_best_fitting_model == "flnc_comp"]
+    df_sbpl = self.df.loc[self.df.flnc_best_fitting_model == "flnc_sbpl"]
+    df_plaw = self.df.loc[self.df.flnc_best_fitting_model == "flnc_plaw"]
     # Band model
-    band_ampl = []
-    band_alpha = []
-    band_beta = []
-    band_epeak = []
+    band_ampl = df_band.flnc_band_ampl.values
+    band_alpha = df_band.flnc_band_alpha.values
+    band_beta = df_band.flnc_band_beta.values
+    band_epeak = df_band.flnc_band_epeak.values
+    # Comptonized model
+    comp_ampl = df_comp.flnc_comp_ampl.values
+    comp_index = df_comp.flnc_comp_index.values
+    comp_epeak = df_comp.flnc_comp_epeak.values
+    comp_pivot = df_comp.flnc_comp_pivot.values
     # Smoothly broken powerlaw model
-    sbpl_ampl = []
-    sbpl_indx1 = []
-    sbpl_indx2 = []
-    sbpl_brken = []
-    sbpl_brksc = []
-    sbpl_pivot = []
-    for ite in range(len(self.name)):
-      model = self.flnc_best_fitting_model[ite].rstrip()
-      if model == "flnc_plaw":
-        self.tofloat('flnc_plaw_ampl')
-        self.tofloat('flnc_plaw_index')
-        self.tofloat('flnc_plaw_pivot')
-        plaw_ampl.append(self.flnc_plaw_ampl[ite])
-        plaw_index.append(self.flnc_plaw_index[ite])
-        plaw_pivot.append(self.flnc_plaw_pivot[ite])
-
-      elif model == "flnc_comp":
-        self.tofloat('flnc_comp_ampl')
-        self.tofloat('flnc_comp_index')
-        self.tofloat('flnc_comp_epeak')
-        self.tofloat('flnc_comp_pivot')
-        comp_ampl.append(self.flnc_comp_ampl[ite])
-        comp_index.append(self.flnc_comp_index[ite])
-        comp_epeak.append(self.flnc_comp_epeak[ite])
-        comp_pivot.append(self.flnc_comp_pivot[ite])
-
-      elif model == "flnc_band":
-        self.tofloat('flnc_band_ampl')
-        self.tofloat('flnc_band_alpha')
-        self.tofloat('flnc_band_beta')
-        self.tofloat('flnc_band_epeak')
-        band_ampl.append(self.flnc_band_ampl[ite])
-        band_alpha.append(self.flnc_band_alpha[ite])
-        band_beta.append(self.flnc_band_beta[ite])
-        band_epeak.append(self.flnc_band_epeak[ite])
-
-      elif model == "flnc_sbpl":
-        self.tofloat('flnc_sbpl_ampl')
-        self.tofloat('flnc_sbpl_indx1')
-        self.tofloat('flnc_sbpl_indx2')
-        self.tofloat('flnc_sbpl_brken')
-        self.tofloat('flnc_sbpl_brksc')
-        self.tofloat('flnc_sbpl_pivot')
-        sbpl_ampl.append(self.flnc_sbpl_ampl[ite])
-        sbpl_indx1.append(self.flnc_sbpl_indx1[ite])
-        sbpl_indx2.append(self.flnc_sbpl_indx2[ite])
-        sbpl_brken.append(self.flnc_sbpl_brken[ite])
-        sbpl_brksc.append(self.flnc_sbpl_brksc[ite])
-        sbpl_pivot.append(self.flnc_sbpl_pivot[ite])
+    sbpl_ampl = df_sbpl.flnc_sbpl_ampl.values
+    sbpl_indx1 = df_sbpl.flnc_sbpl_indx1.values
+    sbpl_indx2 = df_sbpl.flnc_sbpl_indx2.values
+    sbpl_brken = df_sbpl.flnc_sbpl_brken.values
+    sbpl_brksc = df_sbpl.flnc_sbpl_brksc.values
+    sbpl_pivot = df_sbpl.flnc_sbpl_pivot.values
+    # Powerlaw model
+    plaw_ampl = df_plaw.flnc_plaw_ampl.values
+    plaw_index = df_plaw.flnc_plaw_index.values
+    plaw_pivot = df_plaw.flnc_plaw_pivot.values
 
     # Plot the proportion of the different models
-    prop, ax = plt.subplots(1, 1)
-    plt.get_current_fig_manager().window.showMaximized()
+    prop, ax = plt.subplots(1, 1, figsize=(10, 6))
     labels = ["plaw", "comp", "band", "sbpl"]
     values = [len(plaw_ampl), len(comp_ampl), len(band_ampl), len(sbpl_ampl)]
     ax.pie(values, labels=labels, autopct=lambda x: int(19.28*x))
     plt.show()
 
     # Plot the distributions of the models' parameters
-    plaw, (ax1, ax2, ax3) = plt.subplots(1, 3)
-    plt.get_current_fig_manager().window.showMaximized()
+    plaw_plot, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(27, 6))
     plt.suptitle("plaw parameters")
     ax1.hist(plaw_ampl, bins=nbins)
     ax2.hist(plaw_index, bins=nbins)
@@ -283,8 +220,7 @@ class Catalog:
     plt.show()
 
     # Plot the distributions of the models' parameters
-    plaw, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2)
-    plt.get_current_fig_manager().window.showMaximized()
+    comp_plot, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(20, 12))
     plt.suptitle("comp parameters")
     ax1.hist(comp_ampl, bins=nbins)
     ax2.hist(comp_index, bins=nbins)
@@ -295,7 +231,6 @@ class Catalog:
     print(f"comp mean epeak : {np.mean(comp_epeak)}")
     print(f"comp mean pivot : {np.mean(comp_pivot)}")
 
-
     ax1.set(xlabel="Amplitude (photon/cm2/s/keV)", ylabel="Number of GRBs")
     ax2.set(xlabel="Index", ylabel="Number of GRBs")
     ax3.set(xlabel="Peak energy (keV)", ylabel="Number of GRBs")
@@ -304,8 +239,7 @@ class Catalog:
     plt.show()
 
     # Plot the distributions of the models' parameters
-    band, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2)
-    plt.get_current_fig_manager().window.showMaximized()
+    band_plot, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(20, 12))
     plt.suptitle("band parameters")
     ax1.hist(band_ampl, bins=nbins)
     ax2.hist(band_alpha, bins=nbins)
@@ -316,7 +250,6 @@ class Catalog:
     print(f"band mean beta : {np.mean(band_beta)}")
     print(f"band mean pivot : {np.mean(band_epeak)}")
 
-
     ax1.set(xlabel="Amplitude (photon/cm2/s/keV)", ylabel="Number of GRBs")
     ax2.set(xlabel="Alpha index", ylabel="Number of GRBs")
     ax3.set(xlabel="Beta index", ylabel="Number of GRBs")
@@ -325,8 +258,7 @@ class Catalog:
     plt.show()
 
     # Plot the distributions of the models' parameters
-    sbpl, ((ax1, ax2, ax3), (ax4, ax5, ax6)) = plt.subplots(2, 3)
-    plt.get_current_fig_manager().window.showMaximized()
+    sbpl_plot, ((ax1, ax2, ax3), (ax4, ax5, ax6)) = plt.subplots(2, 3, figsize=(27, 12))
     plt.suptitle("sbpl parameters")
     ax1.hist(sbpl_ampl, bins=nbins)
     ax2.hist(sbpl_indx1, bins=nbins)
@@ -340,7 +272,6 @@ class Catalog:
     print(f"sbpl mean brken : {np.mean(sbpl_brken)}")
     print(f"sbpl mean brksc : {np.mean(sbpl_brksc)}")
     print(f"sbpl mean pivot : {np.mean(sbpl_pivot)}")
-
 
     ax1.set(xlabel="Amplitude (photon/cm2/s/keV)", ylabel="Number of GRBs")
     ax2.set(xlabel="Index 1", ylabel="Number of GRBs")
@@ -424,94 +355,44 @@ class Catalog:
     plt.show()
 
   def grb_distribution(self):
-    gbm_epeak = []
     gbm_ph_flux = []
-    gbm_t90 = []
-    gbm_ph_fluence = []
-    gbm_en_fluence = []
-    gbm_en_flux = []
-    gbm_alpha = []
-    gbm_beta = []
-
-    short_gbm_epeak = []
-    short_gbm_ph_flux = []
-    short_gbm_t90 = []
-    short_gbm_ph_fluence = []
-    short_gbm_en_fluence = []
-    short_gbm_en_flux = []
-    short_gbm_alpha = []
-    short_gbm_beta = []
-
-    long_gbm_epeak = []
     long_gbm_ph_flux = []
-    long_gbm_t90 = []
-    long_gbm_ph_fluence = []
-    long_gbm_en_fluence = []
-    long_gbm_en_flux = []
-    long_gbm_alpha = []
-    long_gbm_beta = []
-
-    for ite_gbm, gbm_ep in enumerate(self.flnc_band_epeak):
-      if gbm_ep.strip() != "":
-        epeak = float(gbm_ep)
+    short_gbm_ph_flux = []
+    all_df = self.df.loc[np.logical_not(np.isnan(self.df.flnc_band_epeak))]
+    long_df = all_df.loc[all_df.t90 > 2]
+    short_df = all_df.loc[all_df.t90 <= 2]
+    for ite_gbm, gbm_ep in enumerate(self.df.flnc_band_epeak):
+      if not np.isnan(gbm_ep):
         ph_flux = calc_flux_gbm(self, ite_gbm, (10, 1000))
-        t90 = float(self.t90[ite_gbm])
-        ph_fluence = ph_flux * t90
-        en_fluence = float(self.fluence[ite_gbm])
-        en_flux = en_fluence / t90
-        alpha = float(self.flnc_band_alpha[ite_gbm])
-        beta = float(self.flnc_band_beta[ite_gbm])
-
-        gbm_epeak.append(epeak)
         gbm_ph_flux.append(ph_flux)
-        gbm_t90.append(t90)
-        gbm_ph_fluence.append(ph_fluence)
-        gbm_en_fluence.append(en_fluence)
-        gbm_en_flux.append(en_flux)
-        gbm_alpha.append(alpha)
-        gbm_beta.append(beta)
-
-        if t90 <= 2:
-          short_gbm_epeak.append(epeak)
-          short_gbm_ph_flux.append(ph_flux)
-          short_gbm_t90.append(t90)
-          short_gbm_ph_fluence.append(ph_fluence)
-          short_gbm_en_fluence.append(en_fluence)
-          short_gbm_en_flux.append(en_flux)
-          short_gbm_alpha.append(alpha)
-          short_gbm_beta.append(beta)
-        else:
-          long_gbm_epeak.append(epeak)
+        if self.df.t90[ite_gbm] > 2:
           long_gbm_ph_flux.append(ph_flux)
-          long_gbm_t90.append(t90)
-          long_gbm_ph_fluence.append(ph_fluence)
-          long_gbm_en_fluence.append(en_fluence)
-          long_gbm_en_flux.append(en_flux)
-          long_gbm_alpha.append(alpha)
-          long_gbm_beta.append(beta)
-      else:
-        print("Information : Find null Epeak in catalog")
+        else:
+          short_gbm_ph_flux.append(ph_flux)
+    gbm_ph_flux = np.array(gbm_ph_flux)
+    long_gbm_ph_flux = np.array(long_gbm_ph_flux)
+    short_gbm_ph_flux = np.array(short_gbm_ph_flux)
 
     dist_fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(27, 12))
     nbin = 60
     gbmcorrec = 1 / 0.587 / 10
-    lenall = len(gbm_epeak)
-    lenlong = len(long_gbm_epeak)
-    lenshort = len(short_gbm_epeak)
+    lenall = len(all_df)
+    lenlong = len(long_df)
+    lenshort = len(short_df)
 
-    epmin, epmax = np.min(gbm_epeak), np.max(gbm_epeak)
+    epmin, epmax = np.min(all_df.flnc_band_epeak.values), np.max(all_df.flnc_band_epeak.values)
     bins1 = np.logspace(np.log10(epmin), np.log10(epmax), nbin)
-    ax1.hist(gbm_epeak, bins=bins1, histtype="step", color="blue", label=f"GBM, {lenall} GRB", weights=[gbmcorrec] * lenall)
-    ax1.hist(long_gbm_epeak, bins=bins1, histtype="step", color="red", label=f"GBM long, {lenlong} GRB", weights=[gbmcorrec] * lenlong)
-    ax1.hist(short_gbm_epeak, bins=bins1, histtype="step", color="green", label=f"GBM short, {lenshort} GRB", weights=[gbmcorrec] * lenshort)
+    ax1.hist(all_df.flnc_band_epeak.values, bins=bins1, histtype="step", color="blue", label=f"GBM, {lenall} GRB", weights=[gbmcorrec] * lenall)
+    ax1.hist(long_df.flnc_band_epeak.values, bins=bins1, histtype="step", color="red", label=f"GBM long, {lenlong} GRB", weights=[gbmcorrec] * lenlong)
+    ax1.hist(short_df.flnc_band_epeak.values, bins=bins1, histtype="step", color="green", label=f"GBM short, {lenshort} GRB", weights=[gbmcorrec] * lenshort)
     ax1.set(title="Ep distributions", xlabel="Peak energy (keV)", ylabel="Number of GRB", xscale="log", yscale="log")
     ax1.legend()
 
-    ph_fluence_min, ph_fluence_max = np.min(gbm_ph_fluence), np.max(gbm_ph_fluence)
+    ph_fluence_min, ph_fluence_max = np.min(gbm_ph_flux * all_df.t90.values), np.max(gbm_ph_flux * all_df.t90.values)
     bins2 = np.logspace(np.log10(ph_fluence_min), np.log10(ph_fluence_max), nbin)
-    ax2.hist(gbm_ph_fluence, bins=bins2, histtype="step", color="blue", label=f"GBM, {lenall} GRB", weights=[gbmcorrec] * lenall)
-    ax2.hist(long_gbm_ph_fluence, bins=bins2, histtype="step", color="red", label=f"GBM long, {lenlong} GRB", weights=[gbmcorrec] * lenlong)
-    ax2.hist(short_gbm_ph_fluence, bins=bins2, histtype="step", color="green", label=f"GBM short, {lenshort} GRB", weights=[gbmcorrec] * lenshort)
+    ax2.hist(gbm_ph_flux * all_df.t90.values, bins=bins2, histtype="step", color="blue", label=f"GBM, {lenall} GRB", weights=[gbmcorrec] * lenall)
+    ax2.hist(long_gbm_ph_flux * long_df.t90.values, bins=bins2, histtype="step", color="red", label=f"GBM long, {lenlong} GRB", weights=[gbmcorrec] * lenlong)
+    ax2.hist(short_gbm_ph_flux * short_df.t90.values, bins=bins2, histtype="step", color="green", label=f"GBM short, {lenshort} GRB", weights=[gbmcorrec] * lenshort)
     ax2.set(title="Fluence distributions", xlabel="Photon fluence (photon/cm²)", ylabel="Number of GRB", xscale="log", yscale="log")
     ax2.legend()
 
@@ -523,11 +404,11 @@ class Catalog:
     ax3.set(title="Mean flux distributions", xlabel="Photon flux (photon/cm²/s)", ylabel="Number of GRB", xscale="log", yscale="log")
     ax3.legend()
 
-    t90_min, t90_max = np.min(gbm_t90), np.max(gbm_t90)
+    t90_min, t90_max = np.min(all_df.t90.values), np.max(all_df.t90.values)
     bins4 = np.logspace(np.log10(t90_min), np.log10(t90_max), nbin)
-    ax4.hist(gbm_t90, bins=bins4, histtype="step", color="blue", label=f"GBM, {lenall} GRB", weights=[gbmcorrec] * lenall)
-    ax4.hist(long_gbm_t90, bins=bins4, histtype="step", color="red", label=f"GBM long, {lenlong} GRB", weights=[gbmcorrec] * lenlong)
-    ax4.hist(short_gbm_t90, bins=bins4, histtype="step", color="green", label=f"GBM short, {lenshort} GRB", weights=[gbmcorrec] * lenshort)
+    ax4.hist(all_df.t90.values, bins=bins4, histtype="step", color="blue", label=f"GBM, {lenall} GRB", weights=[gbmcorrec] * lenall)
+    ax4.hist(long_df.t90.values, bins=bins4, histtype="step", color="red", label=f"GBM long, {lenlong} GRB", weights=[gbmcorrec] * lenlong)
+    ax4.hist(short_df.t90.values, bins=bins4, histtype="step", color="green", label=f"GBM short, {lenshort} GRB", weights=[gbmcorrec] * lenshort)
     ax4.set(title="T90 distributions", xlabel="T90 (s)", ylabel="Number of GRB", xscale="log", yscale="log")
     ax4.legend()
 
@@ -645,3 +526,5 @@ class SampleCatalog:
     List all knowns items
     """
     return list(self.__dict__.keys())[3:]
+
+

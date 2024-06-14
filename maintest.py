@@ -99,6 +99,65 @@ ax.grid(True, which='major', linestyle='--', color='black', alpha=0.3)
 plt.show()
 
 
+
+
+
+
+
+
+
+
+
+for ite in range(len(cat)):
+  if cat.flnc_band_redchisq[ite].strip() != "" and cat.flnc_comp_redchisq[ite].strip() != "" and cat.flnc_sbpl_redchisq[ite].strip() != "" and cat.flnc_plaw_redchisq[ite].strip() != "":
+    print(f"Best fit : {cat.flnc_best_fitting_model[ite].strip()},   band : {float(cat.flnc_band_redchisq[ite].strip())},  comp :  {float(cat.flnc_comp_redchisq[ite].strip())}, sbpl : {float(cat.flnc_sbpl_redchisq[ite].strip())},  plaw : {float(cat.flnc_plaw_redchisq[ite].strip())}")
+
+
+count, countsup, band, band_comp, band_sbpl, band_plaw = 0, 0, 0, 0, 0, 0
+bf_band, bf_comp, bf_sbpl, bf_plaw = [], [], [], []
+for ite in range(len(cat)):
+  if cat.flnc_band_redchisq[ite].strip() != "" and cat.flnc_comp_redchisq[ite].strip() != "" and cat.flnc_sbpl_redchisq[ite].strip() != "" and cat.flnc_plaw_redchisq[ite].strip() != "":
+    count += 1
+    model = cat.flnc_best_fitting_model[ite].strip()
+    ph_flux = float(getattr(cat, f"{model}_phtflux")[ite])
+    if ph_flux > 1:
+      countsup += 1
+      if cat.flnc_best_fitting_model[ite].strip() == "flnc_band":
+        band += 1
+        bf_band.append(float(cat.flnc_band_redchisq[ite].strip()))
+        # print(float(cat.flnc_band_redchisq[ite].strip()))
+      elif cat.flnc_best_fitting_model[ite].strip() == "flnc_comp":
+        diff = (float(cat.flnc_band_redchisq[ite].strip()) - float(cat.flnc_comp_redchisq[ite].strip())) / float(cat.flnc_comp_redchisq[ite].strip())
+        bf_comp.append(float(cat.flnc_comp_redchisq[ite].strip()))
+        if diff < 0.05:
+          band_comp += 1
+      elif cat.flnc_best_fitting_model[ite].strip() == "flnc_sbpl":
+        diff = (float(cat.flnc_band_redchisq[ite].strip()) - float(cat.flnc_sbpl_redchisq[ite].strip())) / float(cat.flnc_sbpl_redchisq[ite].strip())
+        bf_sbpl.append(float(cat.flnc_sbpl_redchisq[ite].strip()))
+        if diff < 0.05:
+          band_sbpl += 1
+      elif cat.flnc_best_fitting_model[ite].strip() == "flnc_plaw":
+        diff = (float(cat.flnc_band_redchisq[ite].strip()) - float(cat.flnc_plaw_redchisq[ite].strip())) / float(cat.flnc_plaw_redchisq[ite].strip())
+        bf_plaw.append(float(cat.flnc_plaw_redchisq[ite].strip()))
+        if diff < 0.05:
+          band_plaw += 1
+
+bins = np.linspace(0, 10, 100)
+fig, ax = plt.subplots(1, 1,  figsize=(10, 6))
+ax.hist(bf_band, bins=bins, histtype="step", label="band redchi")
+ax.hist(bf_comp, bins=bins, histtype="step", label="comp redchi")
+ax.hist(bf_sbpl, bins=bins, histtype="step", label="sbpl redchi")
+ax.hist(bf_plaw, bins=bins, histtype="step", label="plaw redchi")
+ax.legend()
+plt.show()
+
+
+
+
+
+
+
+
 #######################################################################################################################
 # Looking for comparable bursts
 #######################################################################################################################

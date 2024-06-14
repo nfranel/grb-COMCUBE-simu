@@ -12,7 +12,6 @@ from apexpy import Apex
 # Developped modules imports
 from funcmod import *
 from MmuSeffContainer import MuSeffContainer
-from catalog import Catalog
 from MLogData import LogData
 
 

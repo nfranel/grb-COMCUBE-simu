@@ -1,6 +1,8 @@
 import numpy as np
 import gzip
-from scipy.integrate import quad, trapezoid
+from scipy.integrate import quad, simpson, IntegrationWarning
+import warnings
+
 from scipy.stats import skewnorm
 from time import time
 import os
@@ -33,6 +35,26 @@ def printv(message, verbose):
   """
   if verbose:
     print(message)
+
+
+def use_scipyquad(func, low_edge, high_edge, func_args=(), x_logscale=False):
+  """
+  Proceed to the quad integration using scipy quad and handle the integration warning by using simpson integration method from scipy if the warning is raised
+  """
+  if type(func_args) != tuple:
+    raise TypeError(f"Function use_scipyquad takes func_args as tuple only, {type(func_args)} given")
+  try:
+    warnings.simplefilter("error", category=IntegrationWarning)
+    int_spectrum, err = quad(func, low_edge, high_edge, args=func_args)
+    return int_spectrum, err
+  except IntegrationWarning:
+    if x_logscale:
+      int_x = np.logspace(np.log10(low_edge), np.log10(high_edge), 10000001)
+    else:
+      int_x = np.linspace(low_edge, high_edge, 10000001)
+    int_y = func(int_x, *func_args)
+    int_spectrum = simpson(int_y, x=int_x)
+    return int_spectrum, None
 
 
 def horizon_angle(h, earthradius=R_earth, atmosphereheight=40):
@@ -580,76 +602,23 @@ def calc_flux_gbm(catalog, index, ergcut):
   :param ergcut: energy window over which the fluence is calculated
   :returns: the number of photons per cm² for a given energy range, averaged over the duration of the sim : ncount/cm²/s
   """
-  catalog.tofloat('flnc_spectrum_start')
-  catalog.tofloat('flnc_spectrum_stop')
-  catalog.tofloat('pflx_plaw_ampl')
-  catalog.tofloat('pflx_plaw_index')
-  catalog.tofloat('pflx_plaw_pivot')
-  catalog.tofloat('pflx_comp_ampl')
-  catalog.tofloat('pflx_comp_index')
-  catalog.tofloat('pflx_comp_epeak')
-  catalog.tofloat('pflx_comp_pivot')
-  catalog.tofloat('pflx_band_ampl')
-  catalog.tofloat('pflx_band_alpha')
-  catalog.tofloat('pflx_band_beta')
-  # The next one is not converted here because if can be null in some specific cases
-  # catalog.tofloat('pflx_band_epeak')
-  catalog.tofloat('pflx_sbpl_ampl')
-  catalog.tofloat('pflx_sbpl_indx1')
-  catalog.tofloat('pflx_sbpl_indx2')
-  catalog.tofloat('pflx_sbpl_brken')
-  catalog.tofloat('pflx_sbpl_brksc')
-  catalog.tofloat('pflx_sbpl_pivot')
-  catalog.tofloat('flnc_plaw_ampl')
-  catalog.tofloat('flnc_plaw_index')
-  catalog.tofloat('flnc_plaw_pivot')
-  catalog.tofloat('flnc_comp_ampl')
-  catalog.tofloat('flnc_comp_index')
-  catalog.tofloat('flnc_comp_epeak')
-  catalog.tofloat('flnc_comp_pivot')
-  catalog.tofloat('flnc_band_ampl')
-  catalog.tofloat('flnc_band_alpha')
-  catalog.tofloat('flnc_band_beta')
-  # The next one is not converted here because if can be null in some specific cases
-  # catalog.tofloat('flnc_band_epeak')
-  catalog.tofloat('flnc_sbpl_ampl')
-  catalog.tofloat('flnc_sbpl_indx1')
-  catalog.tofloat('flnc_sbpl_indx2')
-  catalog.tofloat('flnc_sbpl_brken')
-  catalog.tofloat('flnc_sbpl_brksc')
-  catalog.tofloat('flnc_sbpl_pivot')
-
-  model = catalog.flnc_best_fitting_model[index].strip()
-  if model == "pflx_plaw":
-    func = lambda x: plaw(x, catalog.pflx_plaw_ampl[index], catalog.pflx_plaw_index[index],
-                          catalog.pflx_plaw_pivot[index])
-  elif model == "pflx_comp":
-    func = lambda x: comp(x, catalog.pflx_comp_ampl[index], catalog.pflx_comp_index[index],
-                          catalog.pflx_comp_epeak[index], catalog.pflx_comp_pivot[index])
-  elif model == "pflx_band":
-    func = lambda x: band(x, catalog.pflx_band_ampl[index], catalog.pflx_band_alpha[index],
-                          catalog.pflx_band_beta[index], float(catalog.pflx_band_epeak[index]))
-  elif model == "pflx_sbpl":
-    func = lambda x: sbpl(x, catalog.pflx_sbpl_ampl[index], catalog.pflx_sbpl_indx1[index],
-                          catalog.pflx_sbpl_indx2[index], catalog.pflx_sbpl_brken[index],
-                          catalog.pflx_sbpl_brksc[index], catalog.pflx_sbpl_pivot[index])
-  elif model == "flnc_plaw":
-    func = lambda x: plaw(x, catalog.flnc_plaw_ampl[index], catalog.flnc_plaw_index[index],
-                          catalog.flnc_plaw_pivot[index])
+  model = catalog.df.flnc_best_fitting_model[index]
+  if model == "flnc_band":
+    func = band
+    func_args = (catalog.df.flnc_band_ampl[index], catalog.df.flnc_band_alpha[index], catalog.df.flnc_band_beta[index], catalog.df.flnc_band_epeak[index])
   elif model == "flnc_comp":
-    func = lambda x: comp(x, catalog.flnc_comp_ampl[index], catalog.flnc_comp_index[index],
-                          catalog.flnc_comp_epeak[index], catalog.flnc_comp_pivot[index])
-  elif model == "flnc_band":
-    func = lambda x: band(x, catalog.flnc_band_ampl[index], catalog.flnc_band_alpha[index],
-                          catalog.flnc_band_beta[index], float(catalog.flnc_band_epeak[index]))
+    func = comp
+    func_args = (catalog.df.flnc_comp_ampl[index], catalog.df.flnc_comp_index[index], catalog.df.flnc_comp_epeak[index], catalog.df.flnc_comp_pivot[index])
   elif model == "flnc_sbpl":
-    func = lambda x: sbpl(x, catalog.flnc_sbpl_ampl[index], catalog.flnc_sbpl_indx1[index],
-                          catalog.flnc_sbpl_indx2[index], catalog.flnc_sbpl_brken[index],
-                          catalog.flnc_sbpl_brksc[index], catalog.flnc_sbpl_pivot[index])
+    func = sbpl
+    func_args = (catalog.df.flnc_sbpl_ampl[index], catalog.df.flnc_sbpl_indx1[index], catalog.df.flnc_sbpl_indx2[index], catalog.df.flnc_sbpl_brken[index], catalog.df.flnc_sbpl_brksc[index], catalog.df.flnc_sbpl_pivot[index])
+  elif model == "flnc_plaw":
+    func = plaw
+    func_args = (catalog.df.flnc_plaw_ampl[index], catalog.df.flnc_plaw_index[index], catalog.df.flnc_plaw_pivot[index])
   else:
     print("Could not find best fit model for {} (indicated {}). Aborting this GRB.".format(catalog.name[index], model))
     return
-  return quad(func, ergcut[0], ergcut[1])[0]
+  return use_scipyquad(func, ergcut[0], ergcut[1], func_args=func_args, x_logscale=True)[0]
 
 
 def duty_calc(inclination):  # TODO : limits on variables CHANGE IT WITH THE NEW

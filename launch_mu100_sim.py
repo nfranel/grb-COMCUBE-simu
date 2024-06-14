@@ -10,7 +10,7 @@ import numpy as np
 import multiprocessing as mp
 import argparse
 # Developped modules imports
-from funcmod import band, read_mupar, quad
+from funcmod import band, read_mupar, use_scipyquad
 
 
 def make_directories(geomfile):
@@ -194,11 +194,9 @@ if __name__ == "__main__":
     # Creating the required directories
     make_directories(geometry)
     # Calculating the flux corresponding to the spectrum, ampl is taken so that flux = 10cm²/s
-    func = lambda x: band(x, bandparam[0], bandparam[1], bandparam[2], bandparam[3], bandparam[4])
-    band_flux = quad(func, 10, 1000)[0]
+    band_flux = use_scipyquad(band, 10, 1000, func_args=(bandparam[0], bandparam[1], bandparam[2], bandparam[3], bandparam[4]), x_logscale=True)[0]
     # Creating the parameter list
-    parameters = make_parameters(decs, ras, geometry, source_base, spectra, poltime, unpoltime, band_flux, revanfile,
-                                 mimrecfile)
+    parameters = make_parameters(decs, ras, geometry, source_base, spectra, poltime, unpoltime, band_flux, revanfile, mimrecfile)
     print("===================================================================")
     print(f"{len(parameters)} Commands have been parsed")
     print("===================================================================")

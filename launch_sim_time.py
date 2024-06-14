@@ -43,14 +43,12 @@ def gen_commands(args):
   """
   args.commands = []
   args.geometry, args.rcf, args.mcf, args.simmode, args.spectrafilepath, args.grbfile, args.csf, args.prefix, args.sttype, args.simulationsperevent, args.simtime, args.position, args.satellites = read_grbpar(args.parameterfile)
+  cat_rest_info = "./GBM/rest_frame_properties.txt"
   if args.simmode == "GBM":
-    c = Catalog(args.grbfile, args.sttype)
+    cat = Catalog(args.grbfile, args.sttype, cat_rest_info)
     vprint("Running with GBM data on flnc mode.", __verbose__, 0)
-    items = "flnc_plaw_ampl,flnc_plaw_pivot,flnc_plaw_index,flnc_plaw_phtflux,flnc_comp_ampl,flnc_comp_epeak,flnc_comp_index,flnc_comp_pivot,flnc_comp_phtflux,flnc_band_ampl,flnc_band_epeak,flnc_band_alpha,flnc_band_beta,flnc_band_phtflux,flnc_sbpl_ampl,flnc_sbpl_pivot,flnc_sbpl_indx1,flnc_sbpl_brken,flnc_sbpl_brksc,flnc_sbpl_indx2,flnc_sbpl_phtflux".split(",")
-    defaults = [0, 100, 0, 0, 0, 1, 0, 100, 0, 0, 1, 0, 0, 0, 0, 100, 0, 0, 0, 0, 0]
-    c.tofloats(items, defaults)
   elif args.simmode == "sampled":
-    c = SampleCatalog(args.grbfile, args.sttype)
+    cat = SampleCatalog(args.grbfile, args.sttype)
   else:
     raise ValueError("Wrong simulation mode in .par file")
   args.commands = []
@@ -67,19 +65,19 @@ def gen_commands(args):
     if not (args.spectrafilepath.endswith("/")) and os.name == "posix":
       args.spectrafilepath += "/"
     if args.simmode == "sampled":
-      lc_name = c.lc[i]
-      pht_mflx = c.mean_flux[i]
+      lc_name = cat.lc[i]
+      pht_mflx = cat.mean_flux[i]
       n_year = float(args.grbfile.split("years")[0].split("_")[-1])
       spectrafolder = f"{args.spectrafilepath}{n_year}sample/"
-      spectrumfile = "{}{}_spectrum.dat".format(spectrafolder, c.name[i])
+      spectrumfile = "{}{}_spectrum.dat".format(spectrafolder, cat.name[i])
       if not (f"{n_year}sample" in os.listdir(args.spectrafilepath)):
         os.mkdir(spectrafolder)
       # Creation of spectra if they have not been created yet
       if not (spectrumfile in spectrafolder):
         logE = np.logspace(1, 3, 100)  # energy (log scale)
         with open(spectrumfile, "w") as f:
-          norm_val, spec, pht_pflux = norm_band_spec_calc(c.band_low[i], c.band_high[i], c.red[i], c.dl[i], c.ep[i], c.liso[i], logE)
-          f.write(f"#model normalized Band:   norm={norm_val}, alpha={c.band_low[i]}, beta={c.band_high[i]}, epeak={c.ep[i]}keV\n")
+          norm_val, spec, pht_pflux = norm_band_spec_calc(cat.band_low[i], cat.band_high[i], cat.red[i], cat.dl[i], cat.ep[i], cat.liso[i], logE)
+          f.write(f"#model normalized Band:   norm={norm_val}, alpha={cat.band_low[i]}, beta={cat.band_high[i]}, epeak={cat.ep[i]}keV\n")
           f.write(f"# Measured mean flux: {pht_mflx} ph/cm2/s in the 10-1000 keV band\n")
           f.write(f"# Measured peak flux: {pht_pflux} ph/cm2/s in the 10-1000 keV band\n")
           f.write("\nIP LOGLOG\n\n")
@@ -87,40 +85,51 @@ def gen_commands(args):
             f.write(f"DP {E} {spec[ite_E]}\n")
           f.write("\nEN\n\n")
     else:
-      spectrumfile = "{}{}_spectrum.dat".format(args.spectrafilepath, c.name[i])
+      spectrumfile = "{}{}_spectrum.dat".format(args.spectrafilepath, cat.df.name[i])
       lc_name = None
-      model = getattr(c, "flnc_best_fitting_model")[i].strip()
-      pht_mflx = getattr(c, f"{model}_phtflux")[i]
-      pfluxmodel = getattr(c, 'pflx_best_fitting_model')[i].strip()
-      if pfluxmodel == "":
-        pht_pflx = "No value fitted"
+      model = cat.df.flnc_best_fitting_model[i]
+      pht_mflx = cat.df[f"{model}_phtflux"][i]
+      pfluxmodel = cat.df.pflx_best_fitting_model[i]
+      if type(pfluxmodel) == str:
+        pht_pflx = getattr(cat, f"{pfluxmodel}_phtflux")[i]
       else:
-        pht_pflx = getattr(c, f"{pfluxmodel}_phtflux")[i]
+        if np.isnan(pfluxmodel):
+          pht_pflx = "No value fitted"
+        else:
+          raise ValueError("A value for pflx_best_fitting_model is not set properly")
       # Creation of spectra if they have not been created yet
       if not (spectrumfile in os.listdir(args.spectrafilepath)):
         logE = np.logspace(1, 3, 100)  # energy (log scale)
         with open(spectrumfile, "w") as f:
           f.write("#model {}:  ".format(model))
           if model == "flnc_plaw":
-            fun = lambda x: plaw(x, c.flnc_plaw_ampl[i], c.flnc_plaw_index[i], c.flnc_plaw_pivot[i])
-            f.write(f"ampl={c.flnc_plaw_ampl[i]}, index={c.flnc_plaw_index[i]}, pivot={c.flnc_plaw_pivot[i]}keV\n")
+            func_args = (cat.df.flnc_plaw_ampl[i], cat.df.flnc_plaw_index[i], cat.df.flnc_plaw_pivot[i])
+            # fun = lambda x: plaw(x, cat.flnc_plaw_ampl[i], cat.flnc_plaw_index[i], cat.flnc_plaw_pivot[i])
+            fun = plaw
+            f.write(f"ampl={func_args[0]}, index={func_args[1]}, pivot={func_args[2]}keV\n")
           elif model == "flnc_comp":
-            fun = lambda x: comp(x, c.flnc_comp_ampl[i], c.flnc_comp_index[i], c.flnc_comp_epeak[i], c.flnc_comp_pivot[i])
-            f.write(f"ampl={c.flnc_comp_ampl[i]}, index={c.flnc_comp_index[i]}, epeak={c.flnc_comp_epeak[i]}keV, pivot={c.flnc_comp_pivot[i]}keV\n")
+            func_args = (cat.df.flnc_comp_ampl[i], cat.df.flnc_comp_index[i], cat.df.flnc_comp_epeak[i], cat.df.flnc_comp_pivot[i])
+            # fun = lambda x: comp(x, cat.flnc_comp_ampl[i], cat.flnc_comp_index[i], cat.flnc_comp_epeak[i], cat.flnc_comp_pivot[i])
+            fun = comp
+            f.write(f"ampl={func_args[0]}, index={func_args[1]}, epeak={func_args[2]}keV, pivot={func_args[3]}keV\n")
           elif model == "flnc_band":
-            fun = lambda x: band(x, c.flnc_band_ampl[i], c.flnc_band_alpha[i], c.flnc_band_beta[i], c.flnc_band_epeak[i])
-            f.write(f"ampl={c.flnc_band_ampl[i]}, alpha={c.flnc_band_alpha[i]}, beta={c.flnc_band_beta[i]}, epeak={c.flnc_band_epeak[i]}keV\n")
+            func_args = (cat.df.flnc_band_ampl[i], cat.df.flnc_band_alpha[i], cat.df.flnc_band_beta[i], cat.df.flnc_band_epeak[i])
+            # fun = lambda x: band(x, cat.flnc_band_ampl[i], cat.flnc_band_alpha[i], cat.flnc_band_beta[i], cat.flnc_band_epeak[i])
+            fun = band
+            f.write(f"ampl={func_args[0]}, alpha={func_args[1]}, beta={func_args[2]}, epeak={func_args[3]}keV\n")
           elif model == "flnc_sbpl":
-            fun = lambda x: sbpl(x, c.flnc_sbpl_ampl[i], c.flnc_sbpl_indx1[i], c.flnc_sbpl_indx2[i], c.flnc_sbpl_brken[i], c.flnc_sbpl_brksc[i], c.flnc_sbpl_pivot[i])
-            f.write(f"ampl={c.flnc_sbpl_ampl[i]}, index1={c.flnc_sbpl_indx1[i]}, index2={c.flnc_sbpl_indx2[i]}, eb={c.flnc_sbpl_brken[i]}keV, brksc={c.flnc_sbpl_brksc[i]}keV, pivot={c.flnc_sbpl_pivot[i]}keV\n")
+            func_args = (cat.df.flnc_sbpl_ampl[i], cat.df.flnc_sbpl_indx1[i], cat.df.flnc_sbpl_indx2[i], cat.df.flnc_sbpl_brken[i], cat.df.flnc_sbpl_brksc[i], cat.df.flnc_sbpl_pivot[i])
+            # fun = lambda x: sbpl(x, cat.flnc_sbpl_ampl[i], cat.flnc_sbpl_indx1[i], cat.flnc_sbpl_indx2[i], cat.flnc_sbpl_brken[i], cat.flnc_sbpl_brksc[i], cat.flnc_sbpl_pivot[i])
+            fun = sbpl
+            f.write(f"ampl={func_args[0]}, index1={func_args[1]}, index2={func_args[2]}, eb={func_args[3]}keV, brksc={func_args[4]}keV, pivot={func_args[5]}keV\n")
           else:
-            vprint(f"Could not find best fit model for {c.name[i]} (indicated {model}). Aborting this GRB.", __verbose__, 0)
+            vprint(f"Could not find best fit model for {cat.df.name[i]} (indicated {model}). Aborting this GRB.", __verbose__, 0)
             return
           f.write(f"# Measured mean flux: {pht_mflx} ph/cm2/s in the 10-1000 keV band\n")
           f.write(f"# Measured peak flux: {pht_pflx} ph/cm2/s in the 10-1000 keV band\n")
           f.write("\nIP LOGLOG\n\n")
           for E in logE:
-            f.write(f"DP {E} {fun(E)}\n")
+            f.write(f"DP {E} {fun(E, *func_args)}\n")
           f.write("\nEN\n\n")
     for j in range(args.simulationsperevent):
       dec_grb_world_frame, ra_grb_world_frame = random_grb_dec_ra(args.position[0], args.position[1], args.position[2], args.position[3])  # deg
@@ -132,29 +141,29 @@ def gen_commands(args):
         dec_sat_world_frame, ra_sat_world_frame = orbitalparam2decra(s[0], s[1], s[2], nu=true_anomaly)  # deg
         ra_sat_world_frame = np.mod(ra_sat_world_frame - earth_ra_offset, 360)
         if verif_rad_belts(dec_sat_world_frame, ra_sat_world_frame, s[3]):  # checks if sat is in the switch off zone
-          save_log(f"{sim_directory}/simulation_logs.txt", c.name[i], j, k, "Ignored(off)", s[0], s[1], s[2], s[3], rand_time, dec_sat_world_frame, ra_sat_world_frame, dec_grb_world_frame, ra_grb_world_frame, None, None)
+          save_log(f"{sim_directory}/simulation_logs.txt", cat.df.name[i], j, k, "Ignored(off)", s[0], s[1], s[2], s[3], rand_time, dec_sat_world_frame, ra_sat_world_frame, dec_grb_world_frame, ra_grb_world_frame, None, None)
         else:
           theta, phi, thetap, phip, polstr = grb_decrapol_worldf2satf(dec_grb_world_frame, ra_grb_world_frame, dec_sat_world_frame, ra_sat_world_frame)[1:]
           if theta >= horizon_angle(s[3]):  # Source below horizon
-            save_log(f"{sim_directory}/simulation_logs.txt", c.name[i], j, k, "Ignored(horizon)", s[0], s[1], s[2], s[3], rand_time, dec_sat_world_frame, ra_sat_world_frame, dec_grb_world_frame, ra_grb_world_frame, theta, phi)
+            save_log(f"{sim_directory}/simulation_logs.txt", cat.df.name[i], j, k, "Ignored(horizon)", s[0], s[1], s[2], s[3], rand_time, dec_sat_world_frame, ra_sat_world_frame, dec_grb_world_frame, ra_grb_world_frame, theta, phi)
           else:
             # Add command to commands list
             if args.simtime.isdigit():
               simtime = float(args.simtime)
               lc_bool = False
             elif args.simtime == "t90":
-              simtime = float(c.t90[i])
+              simtime = cat.df.t90[i]
               lc_bool = False
             elif args.simtime == "lc":
-              simtime = float(c.t90[i])
+              simtime = cat.df.t90[i]
               lc_bool = True
             else:
               simtime = None
               lc_bool = False
               vprint("simtime in parameter file unknown. Check parameter file.", __verbose__, 0)
-            args.commands.append((not(args.nocosima), not(args.norevan), not(args.nomimrec), c.name[i], k, spectrumfile, pht_mflx, simtime, lc_bool, lc_name, polstr, j, f"{dec_grb_world_frame:.4f}_{ra_grb_world_frame:.4f}_{rand_time:.4f}", theta, phi))
-            save_log(f"{sim_directory}/simulation_logs.txt", c.name[i], j, k, "Simulated", s[0], s[1], s[2], s[3], rand_time, dec_sat_world_frame, ra_sat_world_frame, dec_grb_world_frame, ra_grb_world_frame, theta, phi)
-  for i in range(len(c)):
+            args.commands.append((not(args.nocosima), not(args.norevan), not(args.nomimrec), cat.df.name[i], k, spectrumfile, pht_mflx, simtime, lc_bool, lc_name, polstr, j, f"{dec_grb_world_frame:.4f}_{ra_grb_world_frame:.4f}_{rand_time:.4f}", theta, phi))
+            save_log(f"{sim_directory}/simulation_logs.txt", cat.df.name[i], j, k, "Simulated", s[0], s[1], s[2], s[3], rand_time, dec_sat_world_frame, ra_sat_world_frame, dec_grb_world_frame, ra_grb_world_frame, theta, phi)
+  for i in range(len(cat.df)):
     gen_grb(i)
   return args
 

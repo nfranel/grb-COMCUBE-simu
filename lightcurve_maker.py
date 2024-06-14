@@ -6,14 +6,10 @@ from gbm.background import BackgroundFitter
 from gbm.background.binned import Polynomial
 import gbm
 from gbm.finder import TriggerFtp
-from funcmod import extract_lc
 
 import numpy as np
-from catalog import Catalog
 import subprocess
-import time
-import multiprocessing as mp
-from itertools import repeat
+
 
 def bin_selector(lc, tstart, tstop, minedges, maxedges):
   """
@@ -83,8 +79,6 @@ def save_LC(rates, centroids, fullname):
     f.write("EN")
 
 
-# t1, c1 = extract_lc("./sources/Light_Curves/LightCurve_GRB080714425.dat")
-
 def make_tte_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_mask, bin_size=0.1, ener_range=(10, 1000), show=False, directory="./sources/"):
   """
 
@@ -130,31 +124,6 @@ def make_tte_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_mas
       lc = pha.to_lightcurve(time_range=time_range, energy_range=ener_range)
       lc_select = lc.slice(start_t90, end_t90)
 
-      # fig, ax = plt.subplots(figsize=(10, 6))
-      # ax.step(lc.centroids, lc.rates)
-      # ax.set(xlabel="Time(s)", ylabel="Count rate (count/s)", title=f"Light curve check {name} with tte")
-      # ax.axvline(start_t90, color="black")
-      # ax.axvline(end_t90, color="black")
-      # ax.axvline(bkg_range[0][0], color="red")
-      # ax.axvline(bkg_range[0][1], color="red")
-      # ax.axvline(bkg_range[1][0], color="red")
-      # ax.axvline(bkg_range[1][1], color="red")
-      # low_mean = np.mean(lc.rates[np.where(lc.centroids < bkg_range[0][1], True, False)])
-      # high_mean = np.mean(lc.rates[np.where(lc.centroids > bkg_range[1][0], True, False)])
-      # bkg_rate = (high_mean - low_mean) / (bkg_range[1][0] - bkg_range[0][1]) * (lc.centroids - bkg_range[0][1]) + low_mean
-      # ax.step(lc.centroids, bkg_rate, color="green")
-      # ax.axhline(low_mean, color="blue")
-      # ax.axhline(high_mean, color="red")
-      # for val_ite, val in enumerate(lc.rates):
-      #   if lc.centroids[val_ite] < start_t90:
-      #     ratio = val / low_mean
-      #   else:
-      #     ratio = val / high_mean
-      #   if ratio < 0.5:
-      #     ax.axvline(lc.centroids[val_ite], color="green")
-      # if show:
-      #   plt.show()
-
       ###################################################################################################################
       # Creating background
       ###################################################################################################################
@@ -193,22 +162,6 @@ def make_tte_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_mas
       ###################################################################################################################
       # Ploting if requested and saving the figure and light curves
       ###################################################################################################################
-      # fig, ax = plt.subplots(figsize=(10, 6))
-      # ax.step(lc.centroids, lc.rates)
-      # ax.set(xlabel="Time(s)", ylabel="Count rate (count/s)", title=f"Light curve check {name} with tte")
-      # ax.axvline(start_t90, color="black")
-      # ax.axvline(end_t90, color="black")
-      # ax.axvline(bkg_range[0][0], color="red")
-      # ax.axvline(bkg_range[0][1], color="red")
-      # ax.axvline(bkg_range[1][0], color="red")
-      # ax.axvline(bkg_range[1][1], color="red")
-      # if type(lc_bkgd) is gbm.data.primitives.TimeBins or type(lc) is gbm.background.background.BackgroundRates:
-      #   ax.step(lc.centroids, lc_bkgd.rates, color="green")
-      # elif type(lc_bkgd) is np.ndarray:
-      #   ax.step(lc.centroids, lc_bkgd, color="green")
-      # if show:
-      #   plt.show()
-
       fig, ax = plt.subplots(figsize=(10, 6))
       ax.step(lc_select.centroids, substracted_rates)
       ax.set(xlabel="Time(s)", ylabel="Count rate (count/s)", title=f"Light curve {name} with tte")
@@ -257,31 +210,6 @@ def make_cspec_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_m
   source_rates_select_list = np.array([lc.rates for lc in lc_select_list])
   source_rates_select = np.sum(np.vstack(source_rates_select_list), axis=0)
 
-  # fig, ax = plt.subplots(figsize=(10, 6))
-  # ax.step(lc_list[0].centroids, source_rates)
-  # ax.set(xlabel="Time(s)", ylabel="Count rate (count/s)", title=f"Light curve check {name} with cspec")
-  # ax.axvline(start_t90, color="black")
-  # ax.axvline(end_t90, color="black")
-  # ax.axvline(bkg_range[0][0], color="red")
-  # ax.axvline(bkg_range[0][1], color="red")
-  # ax.axvline(bkg_range[1][0], color="red")
-  # ax.axvline(bkg_range[1][1], color="red")
-  # low_mean = np.mean(source_rates[np.where(lc_list[0].centroids < bkg_range[0][1], True, False)])
-  # high_mean = np.mean(source_rates[np.where(lc_list[0].centroids > bkg_range[1][0], True, False)])
-  # bkg_rate = (high_mean - low_mean) / (bkg_range[1][0] - bkg_range[0][1]) * (lc_list[0].centroids - bkg_range[0][1]) + low_mean
-  # ax.step(lc_list[0].centroids, bkg_rate, color="green")
-  # ax.axhline(low_mean, color="blue")
-  # ax.axhline(high_mean, color="red")
-  # for val_ite, val in enumerate(source_rates):
-  #   if lc_list[0].centroids[val_ite] < start_t90:
-  #     ratio = val / low_mean
-  #   else:
-  #     ratio = val / high_mean
-  #   if ratio < 0.5:
-  #     ax.axvline(lc_list[0].centroids[val_ite], color="green")
-  # if show:
-  #   plt.show()
-
   #####################################################################################################################
   # Creating background
   #####################################################################################################################
@@ -307,19 +235,6 @@ def make_cspec_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_m
   #####################################################################################################################
   # Creating background
   #####################################################################################################################
-  # fig, ax = plt.subplots(figsize=(10, 6))
-  # ax.step(lc_list[0].centroids, source_rates)
-  # ax.set(xlabel="Time(s)", ylabel="Count rate (count/s)", title=f"Light curve check {name} with cspec")
-  # ax.axvline(start_t90, color="black")
-  # ax.axvline(end_t90, color="black")
-  # ax.axvline(bkg_range[0][0], color="red")
-  # ax.axvline(bkg_range[0][1], color="red")
-  # ax.axvline(bkg_range[1][0], color="red")
-  # ax.axvline(bkg_range[1][1], color="red")
-  # ax.step(lc_list[0].centroids, bkgd_rates, color="green")
-  # if show:
-  #   plt.show()
-
   fig, ax = plt.subplots(figsize=(10, 6))
   ax.step(lc_select_list[0].centroids, substracted_rates)
   ax.set(xlabel="Time(s)", ylabel="Count rate (count/s)", title=f"Light curve {name} with cspec")
@@ -378,34 +293,3 @@ def create_lc(cat, GRB_ite, bin_size="auto", ener_range=(10, 1000), show=False, 
 
   print(f"Running {GRBname}, ite : {GRB_ite}")
   return make_tte_lc(GRBname, start_t90, end_t90, time_range, bkg_range, lc_detector_mask, bin_size=bin_size, ener_range=ener_range, show=show, directory=directory)
-
-# cat_all = Catalog("GBM/allGBM.txt", [4, '\n', 5, '|', 4000])
-# unfit = []
-# for ite in range(0, len(cat_all.name)):
-# # for ite in range(589, 591):
-#   ret = create_lc(cat_all, ite, bin_size="auto", show=False)
-#   if ret != 0:
-#     unfit.append((cat_all.name[ite], ite))
-# print(unfit)
-
-# lc_list = subprocess.getoutput("ls ./sources/Light_Curves/").split("\n")
-# lc_names = [name.split(".dat")[0].split("LightCurve_")[1] for name in lc_list]
-# names = cat_all.name
-#
-# not_ready_name = []
-# not_ready_ite = []
-# for cat_ite, name in enumerate(names):
-#   if name not in lc_names:
-#     not_ready_name.append(name)
-#     not_ready_ite.append(cat_ite)
-
-# failed = ['GRB080804456', 'GRB090514734', 'GRB091024380', 'GRB101015558', 'GRB110928180', 'GRB120713226', 'GRB120719146', 'GRB120727681', 'GRB120728434', 'GRB120728934', 'GRB120801920', 'GRB120811649', 'GRB120819048', 'GRB120820585', 'GRB120831901', 'GRB120908873', 'GRB120908938', 'GRB120915000', 'GRB120921877', 'GRB120922939', 'GRB121027038', 'GRB121029350', 'GRB121116459', 'GRB121117018', 'GRB121123421', 'GRB121125356', 'GRB121125469', 'GRB130515056', 'GRB130925173', 'GRB131006367']
-# failed_ite = [17, 200, 327, 549, 768, 943, 947, 948, 949, 950, 952, 955, 960, 961, 968, 971, 972, 978, 986, 987, 1000, 1002, 1009, 1010, 1016, 1019, 1020, 1114, 1203, 1209]
-#
-# ret_list = []
-# for ite in failed_ite:
-#   ret = create_lc(cat_all, ite, bin_size="auto", show=False)
-#   ret_list.append(ret)
-#
-# len(ret_list)
-
