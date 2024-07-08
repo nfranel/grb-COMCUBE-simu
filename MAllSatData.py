@@ -102,30 +102,6 @@ class AllSatData(list):
         in_sight_temp[index] = False
       sat_considered_temp = const[in_sight_temp]
       list_considered_sat.append(sat_considered_temp)
-    ###################################################################################################################
-    # Constellation with 1 off satellite
-    ###################################################################################################################
-    # off_sat = off_sats[0]
-    # in_sight_sat_1off = in_sight_sat
-    # in_sight_sat_1off[off_sat] = False
-    # sat_const_1off = const[in_sight_sat_1off]
-    # const_1off_data = GRBFullData([], None, None, None, None, None, None, source_duration, source_fluence, *options)
-    ###################################################################################################################
-    # Constellation with 2 off satellites
-    ###################################################################################################################
-    # off_sat1 = off_sats[1]
-    # off_sat2 = off_sats[2]
-    # in_sight_sat_2off = in_sight_sat
-    # in_sight_sat_2off[off_sat1] = False
-    # in_sight_sat_2off[off_sat2] = False
-    # sat_const_2off = const[in_sight_sat_2off]
-    # const_2off_data = GRBFullData([], None, None, None, None, None, None, source_duration, source_fluence, *options)
-    ###################################################################################################################
-    # Making of the constellations
-    ###################################################################################################################
-    # list_considered_sat = [sat_const, sat_const_1off, sat_const_2off]
-    # self.const_data = [const_0off_data, const_1off_data, const_2off_data]
-    # self.index_down = [None, (off_sat), (off_sat1, off_sat2)]
     for ite_const, considered_sats in enumerate(list_considered_sat):
       if len(considered_sats) == 0:
         self.const_data[ite_const] = None
