@@ -32,7 +32,7 @@ class GRBSample:
     self.thetaj_min = 0
     self.thetaj_max = 15
     self.lmin = 1e49  # erg/s
-    self.lmax = 1e55
+    self.lmax = 3e54
     self.n_year = 10
     gbmduty = 0.587
     self.gbm_weight = 1 / gbmduty / 10
@@ -58,15 +58,24 @@ class GRBSample:
     self.al1_s, self.al2_s, self.lb_s = 0.53, 3.4, 2.8  # TODO PUT DISPERSION
     self.band_low_short = -0.6
     self.band_high_short = -2.5
+    # Values obtained by fitting gaussian distribution to GBM data
+    # Low en index taken from sGRB distribution while High en index from all GRBs
+    # (not enough data in sGRB alone and sGRB and lGRB are supposed to be quite the same for High en index) (see Ghirlanda, 2015)
+    self.band_low_s_mu, self.band_low_s_sig = -0.57, 0.32
+    self.band_high_s_mu, self.band_high_s_sig = -2.17, 0.31
     self.short_rate = 0.20  # +0.04 -0.07 [Gpc-3.yr-1] # Ghirlanda 2016
     self.nshort = None  # func to calculate ?
-
+# VOIR PRECISEMENT CE QUE CA FAIT QUAND ON DIVISE LE PIC PAR 2 et 3 ET QUAND ON DIVISE LE RATE PAR 2 et 3, ENSUITE SI C'EST PLUS OU MOINS LINEAIRE, ESSAYER DE COMBINER LES 2
     #################################################################################################################
     # long GRB attributes
     #################################################################################################################
-    self.band_low_l_mu, self.band_low_l_sig = -0.87, 0.33
-    self.band_high_l_mu, self.band_high_l_sig = -2.36, 0.31
+    # self.band_low_l_mu, self.band_low_l_sig = -0.87, 0.33
+    # self.band_high_l_mu, self.band_high_l_sig = -2.36, 0.31
+    # Values obtained by fitting gaussian distribution to GBM data
+    self.band_low_l_mu, self.band_low_l_sig = -0.95, 0.31
+    self.band_high_l_mu, self.band_high_l_sig = -2.17, 0.30
     self.t90_mu, self.t90_sig = 58.27, 18
+    self.long_rate = 1.49
     self.nlong = None
 
     #################################################################################################################
@@ -148,8 +157,16 @@ class GRBSample:
 
     if self.version_long == 0 or self.version_long == 1:
       self.nlong = int(self.n_year * use_scipyquad(red_rate_long, self.zmin, self.zmax, func_args=(), x_logscale=False)[0])
-    elif self.version_long == 2:
+    elif self.version_long == 2 or self.version_long == 3:
       self.nlong = int(self.n_year * use_scipyquad(red_rate_long_v2, self.zmin, self.zmax, func_args=(), x_logscale=False)[0])
+    elif type(self.version_long) is list:
+      if self.version_long[0] == 1:
+        self.nlong = int(self.n_year * use_scipyquad(red_rate_long, self.zmin, self.zmax, func_args=(), x_logscale=False)[0])
+      elif self.version_long[0] == 2:
+        self.nlong = int(self.n_year * use_scipyquad(red_rate_long_v2, self.zmin, self.zmax, func_args=(), x_logscale=False)[0])
+      elif self.version_long[0] == 3:
+        self.nlong = int(self.n_year * use_scipyquad(red_rate_long_v3, self.zmin, self.zmax, func_args=(self.long_rate,), x_logscale=False)[0])
+
     else:
       raise ValueError("Please use a correct number for version_long")
 
@@ -385,7 +402,7 @@ class GRBSample:
       # picking according to distributions
       ##################################################################################################################
       z_obs_temp = acc_reject(red_rate_long_v2, [], self.zmin, self.zmax)
-      lpeak_rest_temp = acc_reject(lpeak_function_long_v2, [z_obs_temp], self.lmin, self.lmax)  # / 3.5
+      lpeak_rest_temp = acc_reject(lpeak_function_long, [], self.lmin, self.lmax)  # / 3.5
 
       band_low_obs_temp = -0.9
       band_high_obs_temp = -2.2
@@ -407,16 +424,68 @@ class GRBSample:
       pflux_to_mflux = np.mean(counts) / np.max(counts)
 
       dl_obs_temp = self.cosmo.luminosity_distance(z_obs_temp).value / 1000  # Gpc
-      ep_rest_temp = yonetoku_reverse_long_v2(lpeak_rest_temp)
+      ep_rest_temp = yonetoku_reverse_long(lpeak_rest_temp)
       ep_obs_temp = ep_rest_temp / (1 + z_obs_temp)
       eiso_rest_temp = amati_long(ep_rest_temp)
+    elif type(self.version_long) is list:
+      ##################################################################################################################
+      # picking according to distributions
+      ##################################################################################################################
+      if self.version_long[0] == 1:
+        z_obs_temp = acc_reject(red_rate_long, [], self.zmin, self.zmax)
+      elif self.version_long[0] == 2:
+        z_obs_temp = acc_reject(red_rate_long_v2, [], self.zmin, self.zmax)
+      elif self.version_long[0] == 3:
+        z_obs_temp = acc_reject(red_rate_long_v3, [self.long_rate], self.zmin, self.zmax)
+      else:
+        raise ValueError("Please use a correct number of version")
+
+      if self.version_long[1] == 1:
+        lpeak_rest_temp = acc_reject(lpeak_function_long, [], self.lmin, self.lmax)  # / 3.5
+      elif self.version_long[1] == 2:
+        lpeak_rest_temp = acc_reject(lpeak_function_long_v2, [z_obs_temp], self.lmin, self.lmax)  # / 3.5
+      elif self.version_long[1] == 3:
+        lpeak_rest_temp = acc_reject(lpeak_function_long_v3, [z_obs_temp], self.lmin, self.lmax)  # / 3.5
+      elif self.version_long[1] == 4:
+        lpeak_rest_temp = acc_reject(lpeak_function_long_v4, [], self.lmin, self.lmax)  # / 3.5
+      elif self.version_long[1] == 42:
+        lpeak_rest_temp = acc_reject(lpeak_function_long_v42, [], self.lmin, self.lmax)  # / 3.5
+      else:
+        raise ValueError("Please use a correct number of version")
+
+      # band_low_obs_temp = -0.9
+      # band_high_obs_temp = -2.2
+      band_low_obs_temp = np.random.normal(loc=self.band_low_l_mu, scale=self.band_low_l_sig)
+      band_high_obs_temp = np.random.normal(loc=self.band_high_l_mu, scale=self.band_high_l_sig)
+      if (band_low_obs_temp - band_high_obs_temp) / (band_low_obs_temp + 2) < 0 or band_low_obs_temp < band_high_obs_temp or band_low_obs_temp == -2:
+        ampl_norm = -1
+      else:
+        ampl_norm = normalisation_calc(band_low_obs_temp, band_high_obs_temp)
+      while ampl_norm < 0:
+        band_low_obs_temp = np.random.normal(loc=self.band_low_l_mu, scale=self.band_low_l_sig)
+        band_high_obs_temp = np.random.normal(loc=self.band_high_l_mu, scale=self.band_high_l_sig)
+        if (band_low_obs_temp - band_high_obs_temp) / (band_low_obs_temp + 2) < 0 or band_low_obs_temp < band_high_obs_temp or band_low_obs_temp == -2:
+          ampl_norm = -1
+        else:
+          ampl_norm = normalisation_calc(band_low_obs_temp, band_high_obs_temp)
+
+      t90_obs_temp = 10 ** self.kde_long_log_t90.resample(1)[0][0]
+      lc_temp = self.closest_lc(t90_obs_temp)
+      times, counts = extract_lc(f"./sources/Light_Curves/{lc_temp}")
+      pflux_to_mflux = np.mean(counts) / np.max(counts)
+
+      dl_obs_temp = self.cosmo.luminosity_distance(z_obs_temp).value / 1000  # Gpc
+      ep_rest_temp = yonetoku_reverse_long(lpeak_rest_temp)
+      ep_obs_temp = ep_rest_temp / (1 + z_obs_temp)
+      eiso_rest_temp = amati_long(ep_rest_temp)
+
     else:
       raise ValueError("Please use a correct number of version")
 
     ##################################################################################################################
     # Calculation of spectrum and data saving
     ##################################################################################################################
-    ener_range = np.logspace(1, 5, 100001)
+    ener_range = np.logspace(1, 3, 100001)
     norm_val, spec, temp_peak_flux = norm_band_spec_calc(band_low_obs_temp, band_high_obs_temp, z_obs_temp, dl_obs_temp, ep_rest_temp, lpeak_rest_temp, ener_range, verbose=False)
     temp_mean_flux = temp_peak_flux * pflux_to_mflux
 
@@ -559,9 +628,13 @@ class GRBSample:
     ax1.grid(True, which='major', linestyle='--', color='black', alpha=0.3)
     ax1.grid(True, which='minor', linestyle=':', color='black', alpha=0.2)
 
+    # Alpha are taken from short GRB distribution while beta are taken from the whole set (not enough data in short alone)
+    # (Alpha are supposed to be different for short and long but beta not so much)
+    alpha_gbm, beta_gbm = extract_index(self.gbm_cat.df[self.gbm_cat.df.t90 < 2])[0], extract_index(self.gbm_cat.df)[1]
+
     alpha_bin = np.linspace(np.min(df_short.BandLow), np.max(df_short.BandLow), nbin)
     ax2.hist(df_short.BandLow, bins=alpha_bin, histtype="step", color="blue", label=f"Sample, {n_sample} GRB", weights=[self.sample_weight] * n_sample)
-    ax2.hist(df_gbm_short.BandLow, bins=alpha_bin, histtype="step", color="red", label=f"GBM, {n_gbm} GRB", weights=[self.gbm_weight] * n_gbm)
+    ax2.hist(alpha_gbm, bins=alpha_bin, histtype="step", color="red", label=f"GBM, {n_gbm} GRB", weights=[n_gbm / len(alpha_gbm) * self.gbm_weight] * len(alpha_gbm))
     ax2.set(title="Band low energy index", xlabel="Alpha", ylabel="Number of GRB", xscale="linear", yscale=yscale)
     ax2.legend()
     ax2.grid(True, which='major', linestyle='--', color='black', alpha=0.3)
@@ -569,7 +642,7 @@ class GRBSample:
 
     beta_bin = np.linspace(np.min(df_short.BandHigh), np.max(df_short.BandHigh), nbin)
     ax3.hist(df_short.BandHigh, bins=beta_bin, histtype="step", color="green", label=f"Sample, {n_sample} GRB", weights=[self.sample_weight] * n_sample)
-    ax3.hist(df_gbm_short.BandHigh, bins=beta_bin, histtype="step", color="orange", label=f"GBM, {n_gbm} GRB", weights=[self.gbm_weight] * n_gbm)
+    ax3.hist(beta_gbm, bins=beta_bin, histtype="step", color="orange", label=f"GBM, {n_gbm} GRB", weights=[n_gbm / len(beta_gbm) * self.gbm_weight] * len(beta_gbm))
     ax3.set(title="Band high energy index", xlabel="Beta", ylabel="Number of GRB", xscale="linear", yscale=yscale)
     ax3.legend()
     ax3.grid(True, which='major', linestyle='--', color='black', alpha=0.3)
@@ -638,9 +711,12 @@ class GRBSample:
     ax1.grid(True, which='major', linestyle='--', color='black', alpha=0.3)
     ax1.grid(True, which='minor', linestyle=':', color='black', alpha=0.2)
 
+    # Alpha and beta are taken from long GRB distribution
+    alpha_gbm, beta_gbm = extract_index(self.gbm_cat.df[self.gbm_cat.df.t90 >= 2])
+
     alpha_bin = np.linspace(np.min(df_long.BandLow), np.max(df_long.BandLow), nbin)
     ax2.hist(df_long.BandLow, bins=alpha_bin, histtype="step", color="blue", label=f"Sample, {n_sample} GRB", weights=[self.sample_weight] * n_sample)
-    ax2.hist(df_gbm_long.BandLow, bins=alpha_bin, histtype="step", color="red", label=f"GBM, {n_gbm} GRB", weights=[self.gbm_weight] * n_gbm)
+    ax2.hist(alpha_gbm, bins=alpha_bin, histtype="step", color="red", label=f"GBM, {n_gbm} GRB", weights=[n_gbm / len(alpha_gbm) * self.gbm_weight] * len(alpha_gbm))
     ax2.set(title="Band low energy index", xlabel="Alpha", ylabel="Number of GRB", xscale="linear", yscale=yscale)
     ax2.legend()
     ax2.grid(True, which='major', linestyle='--', color='black', alpha=0.3)
@@ -648,7 +724,7 @@ class GRBSample:
 
     beta_bin = np.linspace(np.min(df_long.BandHigh), np.max(df_long.BandHigh), nbin)
     ax3.hist(df_long.BandHigh, bins=beta_bin, histtype="step", color="green", label=f"Sample, {n_sample} GRB", weights=[self.sample_weight] * n_sample)
-    ax3.hist(df_gbm_long.BandHigh, bins=beta_bin, histtype="step", color="orange", label=f"GBM, {n_gbm} GRB", weights=[self.gbm_weight] * n_gbm)
+    ax3.hist(beta_gbm, bins=beta_bin, histtype="step", color="orange", label=f"GBM, {n_gbm} GRB", weights=[n_gbm / len(beta_gbm) * self.gbm_weight] * len(beta_gbm))
     ax3.set(title="Band high energy index", xlabel="Beta", ylabel="Number of GRB", xscale="linear", yscale=yscale)
     ax3.legend()
     ax3.grid(True, which='major', linestyle='--', color='black', alpha=0.3)
@@ -893,6 +969,150 @@ class GRBSample:
       ax.hist(df_long_sbpl[col_plot[ite_ax]].values, histtype="step", bins=bins, color=colors[2], label='GBM long flnc_sbpl')
       ax.hist(df_long_plaw[col_plot[ite_ax]].values, histtype="step", bins=bins, color=colors[3], label='GBM long flnc_plaw')
     axs[0].legend()
+
+def extract_index(df_used):
+  """
+  Returns the low and high energy index associated with the best model of every GRB
+  Similar way seen in Poolakkil, 2021
+  """
+  df_used.index = range(0, len(df_used), 1)
+  alpha_band = []
+  beta_band = []
+  alpha_comp = []
+  alpha_sbpl = []
+  beta_sbpl = []
+  alpha_plaw = []
+  for ite, model in enumerate(df_used["flnc_best_fitting_model"].values):
+    if model == "flnc_band":
+      alpha_band.append(df_used.flnc_band_alpha[ite])
+      beta_band.append(df_used.flnc_band_beta[ite])
+    elif model == "flnc_comp":
+      alpha_comp.append(df_used.flnc_comp_index[ite])
+    elif model == "flnc_sbpl":
+      alpha_sbpl.append(df_used.flnc_sbpl_indx1[ite])
+      beta_sbpl.append(df_used.flnc_sbpl_indx2[ite])
+    elif model == "flnc_plaw":
+      alpha_plaw.append(df_used.flnc_plaw_index[ite])
+
+  full_alpha = alpha_band + alpha_comp + alpha_sbpl
+  full_beta = beta_band + beta_sbpl
+  return full_alpha, full_beta
+
+
+def fitting_flux(smp, nbin=200, flim=2, showfig=False):
+  """
+  Function to fit and display the fitted distribution of the sample GRB mean flux
+  """
+  flux_min, flux_max = 1e-8, 1e5
+  yscale = "log"
+  flux_bin = np.logspace(np.log10(flux_min), np.log10(flux_max), nbin)
+
+  df_long = smp.sample_df.loc[smp.sample_df.Type == "Sample long"]
+  df_gbm_long = smp.gbm_df.loc[smp.gbm_df.T90 >= 2]
+  n_sample = len(df_long)
+  n_gbm = len(df_gbm_long)
+
+  # fig, ax = plt.subplots(1, 1, figsize=(10, 6))
+  # ax.hist(df_long.MeanFlux, bins=flux_bin, histtype="step", color="blue", label=f"Sample, {n_sample} GRB", weights=[smp.sample_weight] * n_sample)
+  # ax.hist(df_gbm_long.MeanFlux, bins=flux_bin, histtype="step", color="red", label=f"GBM, {n_gbm} GRB", weights=[smp.gbm_weight] * n_gbm)
+  # ax.set(title="Mean flux distributions", xlabel="Photon flux (photon/cm²/s)", ylabel="Number of GRB", xscale="log", yscale=yscale)
+  # ax.legend()
+  # ax.grid(True, which='major', linestyle='--', color='black', alpha=0.3)
+  # ax.grid(True, which='minor', linestyle=':', color='black', alpha=0.2)
+  # plt.show()
+
+  mf_smp_red = df_long.MeanFlux[df_long.MeanFlux > flim]
+  mf_gbm_red = df_gbm_long.MeanFlux[df_gbm_long.MeanFlux > flim]
+  n_sample2 = len(mf_smp_red)
+  n_gbm2 = len(mf_gbm_red)
+
+  # fig, ax = plt.subplots(1, 1, figsize=(10, 6))
+  # h_smp = ax.hist(mf_smp_red, bins=flux_bin, histtype="step", color="blue", label=f"Sample, {n_sample} GRB", weights=[smp.sample_weight] * n_sample2)[0]
+  # h_gbm = ax.hist(mf_gbm_red, bins=flux_bin, histtype="step", color="red", label=f"GBM, {n_gbm} GRB", weights=[smp.gbm_weight] * n_gbm2)[0]
+  # ax.set(title="Mean flux distributions", xlabel="Photon flux (photon/cm²/s)", ylabel="Number of GRB", xscale="log", yscale=yscale)
+  # ax.legend()
+  # ax.grid(True, which='major', linestyle='--', color='black', alpha=0.3)
+  # ax.grid(True, which='minor', linestyle=':', color='black', alpha=0.2)
+  # plt.show()
+
+  def chi2(x, mf_smp_red, mf_gbm_red):
+    bins = flux_bin[np.argmin(np.abs(flux_bin - 3)):]
+    hist1 = np.histogram(mf_smp_red / x, bins=bins, weights=[smp.sample_weight] * n_sample2)[0]
+    hist2 = np.histogram(mf_gbm_red, bins=bins, weights=[smp.gbm_weight] * n_gbm2)[0]
+    return np.sum((hist1 - hist2) ** 2)
+
+  def count_diff(x, mf_smp_red, mf_gbm_red):
+    bins = flux_bin[np.argmin(np.abs(flux_bin - 3)):]
+    hist1 = np.histogram(mf_smp_red / x, bins=bins, weights=[smp.sample_weight] * n_sample2)[0]
+    hist2 = np.histogram(mf_gbm_red, bins=bins, weights=[smp.gbm_weight] * n_gbm2)[0]
+    return np.sum(np.abs(hist1 - hist2))
+
+  step = 1
+  vali = 1
+  print(f"Init correction : {vali}, chi2 = {chi2(vali, mf_smp_red, mf_gbm_red)}")
+  for i in range(100):
+    chii = chi2(vali, mf_smp_red, mf_gbm_red)
+    chif = chi2(vali + step, mf_smp_red, mf_gbm_red)
+    if chii > chif:
+      vali += step
+    else:
+      vali += step
+      step /= -2
+  chi2_ret = [vali, chi2(vali, mf_smp_red, mf_gbm_red)]
+  print(f"Correction : {chi2_ret[0]}, chi2 = {chi2_ret[1]}")
+
+  step2 = 1
+  vali2 = 1
+  print(f"Init correction : {vali2}, count diff = {count_diff(vali2, mf_smp_red, mf_gbm_red)}")
+  for i in range(100):
+    diffi = count_diff(vali2, mf_smp_red, mf_gbm_red)
+    difff = count_diff(vali2 + step2, mf_smp_red, mf_gbm_red)
+    if diffi > difff:
+      vali2 += step2
+    else:
+      vali2 += step2
+      step2 /= -2
+  diff_ret = [vali2, count_diff(vali2, mf_smp_red, mf_gbm_red)]
+  print(f"Correction : {diff_ret[0]}, count diff = {diff_ret[1]}")
+
+  # ai, bi = 0.5, 6
+  # print(f"mid interval [{ai}, {bi}] chi2 value :  {chi2((ai + bi) / 2, mf_smp_red, mf_gbm_red)}")
+  # for i in range(10):
+  #   vala = chi2(ai, mf_smp_red, mf_gbm_red)
+  #   valb = chi2(bi, mf_smp_red, mf_gbm_red)
+  #   if vala > valb:
+  #     ai = (ai + bi) / 2
+  #   else:
+  #     bi = (ai + bi) / 2
+  #   print(f"mid interval [{ai}, {bi}] chi2 value :  {chi2((ai + bi) / 2, mf_smp_red, mf_gbm_red)}")
+
+  if showfig:
+    fig, ax = plt.subplots(1, 1, figsize=(10, 6))
+    h_smp2 = ax.hist(df_long.MeanFlux, bins=flux_bin, histtype="step", color="blue", label=f"Sample, {n_sample} GRB", weights=[smp.sample_weight] * n_sample)
+    h_gbm2 = ax.hist(df_gbm_long.MeanFlux, bins=flux_bin, histtype="step", color="red", label=f"GBM, {n_gbm} GRB", weights=[smp.gbm_weight] * n_gbm)
+    ax.hist(df_long.MeanFlux / vali, bins=flux_bin, histtype="step", color="green", label=f"Sample corr, {n_sample} GRB", weights=[smp.sample_weight] * n_sample)
+    # ax.hist(df_long.MeanFlux / vali, bins=flux_bin, histtype="step", color="orange", label=f"Sample, {n_sample} GRB", weights=[smp.sample_weight] * n_sample)
+    ax.set(title="Mean flux distributions", xlabel="Photon flux (photon/cm²/s)", ylabel="Number of GRB", xscale="log", yscale=yscale)
+    ax.legend()
+    ax.grid(True, which='major', linestyle='--', color='black', alpha=0.3)
+    ax.grid(True, which='minor', linestyle=':', color='black', alpha=0.2)
+    plt.show()
+
+  # yscale = "linear"
+  # fig, ax = plt.subplots(1, 1, figsize=(10, 6))
+  # h_smp2 = ax.hist(df_long.MeanFlux, bins=flux_bin, histtype="step", color="blue", label=f"Sample, {n_sample} GRB", weights=[smp.sample_weight] * n_sample)
+  # h_gbm2 = ax.hist(df_gbm_long.MeanFlux, bins=flux_bin, histtype="step", color="red", label=f"GBM, {n_gbm} GRB", weights=[smp.gbm_weight] * n_gbm)
+  # ax.hist(df_long.MeanFlux / vali, bins=flux_bin, histtype="step", color="green", label=f"Sample, {n_sample} GRB", weights=[smp.sample_weight] * n_sample)
+  # ax.hist(df_long.MeanFlux / vali, bins=flux_bin, histtype="step", color="orange", label=f"Sample, {n_sample} GRB", weights=[smp.sample_weight] * n_sample)
+  # ax.set(title="Mean flux distributions", xlabel="Photon flux (photon/cm²/s)", ylabel="Number of GRB", xscale="log", yscale=yscale)
+  # ax.legend()
+  # ax.grid(True, which='major', linestyle='--', color='black', alpha=0.3)
+  # ax.grid(True, which='minor', linestyle=':', color='black', alpha=0.2)
+  # plt.show()
+
+  return chi2_ret, diff_ret
+
+
 
 # comparer Ep band et comp
 # comp et plaw semblent avoir un flux plus élevé

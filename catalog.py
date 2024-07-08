@@ -45,7 +45,6 @@ class Catalog:
       self.datafile = datafile
       self.rest_frame_file = rest_frame_file
       self.fill()
-    # TODO change in gencommands de launch_sim_time
 
   def __len__(self):
     """

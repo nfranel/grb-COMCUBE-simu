@@ -121,14 +121,15 @@ def lpeak_function_long(lpeak):
     Function and associated parameters and cases are taken from Sarah Antier's thesis
   :param lpeak: float or array of float containing peak luminosities
   """
-  al1_l, al2_l, lb_l = -0.65, -3, 10 ** 52.05
+  # al1_l, al2_l, lb_l = -0.65, -3, (10 ** 52.05) / 5.6
+  al1_l, al2_l, lb_l = -0.65, -3, (10 ** 52.05) / 5
   if type(lpeak) is float or type(lpeak) is int:
     if lpeak < lb_l:
-      return (lpeak / lb_l)**(al1_l)
+      return (lpeak / lb_l)**al1_l
     else:
-      return (lpeak / lb_l)**(al2_l)
+      return (lpeak / lb_l)**al2_l
   elif type(lpeak) is np.ndarray:
-    return np.where(lpeak < lb_l, (lpeak / lb_l)**(al1_l), (lpeak / lb_l)**(al2_l))
+    return np.where(lpeak < lb_l, (lpeak / lb_l)**al1_l, (lpeak / lb_l)**al2_l)
   else:
     raise TypeError("Please use a correct type for luminosity, only accepted are float or numpy ndarray")
 
@@ -149,6 +150,64 @@ def lpeak_function_long_v2(lpeak, red):
       return 1 / (1 + red)**kevo * (lpeak / lb)**(-slope) * np.exp(-lpeak/lb)
   elif type(lpeak) is np.ndarray:
     return np.where(lpeak <= lb, 0, 1 / (1 + red)**kevo * (lpeak / lb)**(-slope) * np.exp(-lpeak/lb))
+  else:
+    raise TypeError("Please use a correct type for luminosity, only accepted are float or numpy ndarray")
+
+
+def lpeak_function_long_v3(lpeak, red):
+  """
+  Version
+    Luminosity function (distribution) for long GRBs
+    Function and associated parameters and cases are taken from Pescalli, 2016
+  :param lpeak: float or array of float containing peak luminosities
+  :param red: Redshift considered
+  """
+  al1_l, al2_l, lb_l = -1.32, -1.84, 10 ** 51.45
+  if type(lpeak) is float or type(lpeak) is int:
+    if lpeak < lb_l:
+      return (1+red)**2.5 * (lpeak / lb_l)**al1_l
+    else:
+      return (1+red)**2.5 * (lpeak / lb_l)**al2_l
+  elif type(lpeak) is np.ndarray:
+    return np.where(lpeak < lb_l, (1+red)**2.5 * (lpeak / lb_l)**al1_l, (1+red)**2.5 * (lpeak / lb_l)**al2_l)
+  else:
+    raise TypeError("Please use a correct type for luminosity, only accepted are float or numpy ndarray")
+
+
+def lpeak_function_long_v4(lpeak):
+  """
+  Version
+    Luminosity function (distribution) for long GRBs
+    Function and associated parameters and cases are taken from Lan G., 2019
+  :param lpeak: float or array of float containing peak luminosities
+  """
+  al1_l, al2_l, lb_l = -0.69, -1.76, 10 ** 53.32
+  if type(lpeak) is float or type(lpeak) is int:
+    if lpeak < lb_l:
+      return 1/lpeak * (lpeak / lb_l)**al1_l
+    else:
+      return 1/lpeak * (lpeak / lb_l)**al2_l
+  elif type(lpeak) is np.ndarray:
+    return np.where(lpeak < lb_l, 1/lpeak * (lpeak / lb_l)**al1_l, 1/lpeak * (lpeak / lb_l)**al2_l)
+  else:
+    raise TypeError("Please use a correct type for luminosity, only accepted are float or numpy ndarray")
+
+
+def lpeak_function_long_v42(lpeak):
+  """
+  Version
+    Luminosity function (distribution) for long GRBs
+    Function and associated parameters and cases are taken from Lan G., 2019
+  :param lpeak: float or array of float containing peak luminosities
+  """
+  al1_l, al2_l, lb_l = -0.69, -1.76, 10 ** 53.32
+  if type(lpeak) is float or type(lpeak) is int:
+    if lpeak < lb_l:
+      return (lpeak / lb_l)**al1_l
+    else:
+      return (lpeak / lb_l)**al2_l
+  elif type(lpeak) is np.ndarray:
+    return np.where(lpeak < lb_l, (lpeak / lb_l)**al1_l, (lpeak / lb_l)**al2_l)
   else:
     raise TypeError("Please use a correct type for luminosity, only accepted are float or numpy ndarray")
 
@@ -191,6 +250,26 @@ def redshift_distribution_long_v2(red):
     raise TypeError("Please use a correct type for red, only accepted are float or numpy ndarray")
 
 
+def redshift_distribution_long_v3(red, red0):
+  """
+  Version
+    redshift distribution for long GRBs
+    Function and associated parameters and cases are taken from Lan G., 2019
+  :param red: float or array of float containing redshifts
+  """
+  # red0, n1, n2, z1 = 1.49, 3.85, -1.07, 2.33
+  n1, n2, z1 = 3.85, -1.07, 2.33
+  if type(red) is float or type(red) is int:
+    if red <= z1:
+      return red0 * (1 + red)**n1
+    else:
+      return red0 * (1 + z1)**(n1 - n2) * (1 + red)**n2
+  elif type(red) is np.ndarray:
+    return np.where(red <= z1, red0 * (1 + red)**n1, red0 * (1 + z1)**(n1 - n2) * (1 + red)**n2)
+  else:
+    raise TypeError("Please use a correct type for red, only accepted are float or numpy ndarray")
+
+
 def redshift_distribution_short(red):
   """
   Version
@@ -223,6 +302,16 @@ def red_rate_long_v2(red):
   """
   vol_com = Planck18.differential_comoving_volume(red).to_value("Gpc3 / sr")  # Change from Mpc3 / sr to Gpc3 / sr
   return 4 * np.pi * redshift_distribution_long_v2(red) / (1 + red) * vol_com
+
+
+def red_rate_long_v3(red, rate0):
+  """
+  Version
+    Function to obtain the number of long GRB and to pick them according to their distribution
+    Function and associated parameters and cases are taken from Jesse Palmerio k05-A-nF
+  """
+  vol_com = Planck18.differential_comoving_volume(red).to_value("Gpc3 / sr")  # Change from Mpc3 / sr to Gpc3 / sr
+  return 4 * np.pi * redshift_distribution_long_v3(red, rate0) / (1 + red) * vol_com
 
 
 
