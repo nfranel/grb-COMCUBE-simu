@@ -355,7 +355,6 @@ class GRBSample:
         else:
           ampl_norm = normalisation_calc(band_low_obs_temp, band_high_obs_temp)
 
-
       t90_obs_temp = 10 ** self.kde_long_log_t90.resample(1)[0][0]
       lc_temp = self.closest_lc(t90_obs_temp)
       times, counts = extract_lc(f"./sources/Light_Curves/{lc_temp}")
