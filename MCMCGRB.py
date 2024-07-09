@@ -187,36 +187,24 @@ class GRBSample:
       with mp.Pool(n_core) as pool:
         long_smp = pool.starmap(self.add_long, zip(range(self.nlong), repeat(verbose)))
     else:
-      long_smp = [self.add_long(smp_ite, repeat(verbose)) for smp_ite in range(self.nlong)]
+      long_smp = [self.add_long(smp_ite, verbose) for smp_ite in range(self.nlong)]
     print(f"Time taken for long bursts : {time() - start_time}s")
-    # data_row = pd.DataFrame(data=long_smp, columns=self.columns)
-    # self.save_grb(f"lGRB{self.n_year}S{sample_number}", t90_obs_temp, lc_temp, temp_mean_flux * t90_obs_temp, temp_mean_flux, z_obs_temp, band_low_obs_temp, band_high_obs_temp, ep_rest_temp, dl_obs_temp, lpeak_rest_temp, eiso_rest_temp, 0)
-
-    # for ite in range(self.nlong):
-    #   self.add_long(ite)
 
     # Short GRBs
     print("nshort : ", self.nshort)
     start_time = time()
-
     if n_core == 'all':
       print("Parallel calculation of the short sample with all threads")
       with mp.Pool() as pool:
-        short_smp = pool.starmap(self.add_short, zip(range(self.nlong), repeat(verbose)))
+        short_smp = pool.starmap(self.add_short, zip(range(self.nshort), repeat(verbose)))
     elif type(n_core) is int:
       print(f"Parallel calculation of the short sample with {n_core} threads")
       with mp.Pool(n_core) as pool:
-        short_smp = pool.starmap(self.add_short, zip(range(self.nlong), repeat(verbose)))
+        short_smp = pool.starmap(self.add_short, zip(range(self.nshort), repeat(verbose)))
     else:
-      short_smp = [self.add_short(smp_ite, repeat(verbose)) for smp_ite in range(self.nshort)]
+      short_smp = [self.add_short(smp_ite, verbose) for smp_ite in range(self.nshort)]
     print(f"Time taken for short bursts : {time() - start_time}s")
-    # data_row = pd.DataFrame(data=long_smp + short_smp, columns=self.columns)
-    # self.save_grb(f"sGRB{self.n_year}S{sample_number}", t90_obs_temp, lc_temp, temp_mean_flux * t90_obs_temp,
-    #               temp_mean_flux, z_obs_temp, self.band_low_short, self.band_high_short,
-    #               ep_rest_temp, dl_obs_temp, lpeak_rest_temp, eiso_rest_temp, 0)
 
-    # for ite in range(self.nshort):
-    #   self.add_short(ite)
     print("Saving the sample : ")
     start_time = time()
     total_smp = long_smp + short_smp

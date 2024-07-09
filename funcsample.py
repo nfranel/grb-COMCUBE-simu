@@ -122,7 +122,7 @@ def lpeak_function_long(lpeak):
   :param lpeak: float or array of float containing peak luminosities
   """
   # al1_l, al2_l, lb_l = -0.65, -3, (10 ** 52.05) / 5.6
-  al1_l, al2_l, lb_l = -0.65, -3, (10 ** 52.05) / 5
+  al1_l, al2_l, lb_l = -0.65, -3, (10 ** 52.05) / 1
   if type(lpeak) is float or type(lpeak) is int:
     if lpeak < lb_l:
       return (lpeak / lb_l)**al1_l

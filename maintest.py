@@ -233,22 +233,22 @@ samp_ep_s = []
 samp_t90_s = []
 samp_ph_flux_s = []
 samp_ph_fluence_s = []
-for ite_samp, name_samp in enumerate(cat_samp.name):
-  samp_ep.append(cat_samp.ep[ite_samp])
-  samp_t90.append(cat_samp.t90[ite_samp])
-  samp_ph_flux.append(cat_samp.mean_flux[ite_samp])
-  samp_ph_fluence.append(cat_samp.fluence[ite_samp])
+for ite_samp, name_samp in enumerate(cat_samp.df.name):
+  samp_ep.append(cat_samp.df.ep_rest[ite_samp])
+  samp_t90.append(cat_samp.df.t90[ite_samp])
+  samp_ph_flux.append(cat_samp.df.mean_flux[ite_samp])
+  samp_ph_fluence.append(cat_samp.df.fluence[ite_samp])
   if name_samp.startswith("sGRB"):
-    samp_ep_s.append(cat_samp.ep[ite_samp])
-    samp_t90_s.append(cat_samp.t90[ite_samp])
-    samp_ph_flux_s.append(cat_samp.mean_flux[ite_samp])
-    samp_ph_fluence_s.append(cat_samp.fluence[ite_samp])
+    samp_ep_s.append(cat_samp.df.ep_rest[ite_samp])
+    samp_t90_s.append(cat_samp.df.t90[ite_samp])
+    samp_ph_flux_s.append(cat_samp.df.mean_flux[ite_samp])
+    samp_ph_fluence_s.append(cat_samp.df.fluence[ite_samp])
   else:
-    samp_ep_l.append(cat_samp.ep[ite_samp])
-    samp_t90_l.append(cat_samp.t90[ite_samp])
-    samp_ph_flux_l.append(cat_samp.mean_flux[ite_samp])
-    samp_ph_fluence_l.append(cat_samp.fluence[ite_samp])
-    samp_name_l.append(cat_samp.name[ite_samp])
+    samp_ep_l.append(cat_samp.df.ep_rest[ite_samp])
+    samp_t90_l.append(cat_samp.df.t90[ite_samp])
+    samp_ph_flux_l.append(cat_samp.df.mean_flux[ite_samp])
+    samp_ph_fluence_l.append(cat_samp.df.fluence[ite_samp])
+    samp_name_l.append(cat_samp.df.name[ite_samp])
     samp_ites_l.append(ite_samp)
 
 
@@ -347,21 +347,21 @@ samp_ep_s = []
 samp_t90_s = []
 samp_ph_flux_s = []
 samp_ph_fluence_s = []
-for ite_samp, name_samp in enumerate(cat_samp.name):
-  samp_ep.append(cat_samp.ep[ite_samp])
-  samp_t90.append(cat_samp.t90[ite_samp])
-  samp_ph_flux.append(cat_samp.mean_flux[ite_samp])
-  samp_ph_fluence.append(cat_samp.fluence[ite_samp])
+for ite_samp, name_samp in enumerate(cat_samp.df.name):
+  samp_ep.append(cat_samp.df.ep_rest[ite_samp])
+  samp_t90.append(cat_samp.df.t90[ite_samp])
+  samp_ph_flux.append(cat_samp.df.mean_flux[ite_samp])
+  samp_ph_fluence.append(cat_samp.df.fluence[ite_samp])
   if name_samp.startswith("sGRB"):
-    samp_ep_s.append(cat_samp.ep[ite_samp])
-    samp_t90_s.append(cat_samp.t90[ite_samp])
-    samp_ph_flux_s.append(cat_samp.mean_flux[ite_samp])
-    samp_ph_fluence_s.append(cat_samp.fluence[ite_samp])
+    samp_ep_s.append(cat_samp.df.ep_rest[ite_samp])
+    samp_t90_s.append(cat_samp.df.t90[ite_samp])
+    samp_ph_flux_s.append(cat_samp.df.mean_flux[ite_samp])
+    samp_ph_fluence_s.append(cat_samp.df.fluence[ite_samp])
   else:
-    samp_ep_l.append(cat_samp.ep[ite_samp])
-    samp_t90_l.append(cat_samp.t90[ite_samp])
-    samp_ph_flux_l.append(cat_samp.mean_flux[ite_samp])
-    samp_ph_fluence_l.append(cat_samp.fluence[ite_samp])
+    samp_ep_l.append(cat_samp.df.ep_rest[ite_samp])
+    samp_t90_l.append(cat_samp.df.t90[ite_samp])
+    samp_ph_flux_l.append(cat_samp.df.mean_flux[ite_samp])
+    samp_ph_fluence_l.append(cat_samp.df.fluence[ite_samp])
 
 number_off_sat = 0
 print("================================================================================================")
@@ -413,12 +413,12 @@ for source in test.alldata:
           const_trigger_counter_4s += 1
         if sat_counter_3s >= 3:
           const_trigger_counter_3s += 1
-          for samp_ite, samp_name in enumerate(cat_samp.name):
+          for samp_ite, samp_name in enumerate(cat_samp.df.name):
             if samp_name == source.source_name:
-              temp_ep = cat_samp.ep[samp_ite]
-              temp_t90 = cat_samp.t90[samp_ite]
-              temp_flux = cat_samp.mean_flux[samp_ite]
-              temp_fluence = cat_samp.fluence[samp_ite]
+              temp_ep = cat_samp.df.ep_rest[samp_ite]
+              temp_t90 = cat_samp.df.t90[samp_ite]
+              temp_flux = cat_samp.df.mean_flux[samp_ite]
+              temp_fluence = cat_samp.df.fluence[samp_ite]
               trig_ep.append(temp_ep)
               trig_t90.append(temp_t90)
               trig_ph_flux.append(temp_flux)
@@ -437,12 +437,12 @@ for source in test.alldata:
           const_trigger_counter_2s += 1
         if sat_counter_1s >= 1:
           const_trigger_counter_1s += 1
-          # for samp_ite, samp_name in enumerate(cat_samp.name):
+          # for samp_ite, samp_name in enumerate(cat_samp.df.name):
           #   if samp_name == source.source_name:
-          #     temp_ep = cat_samp.ep[samp_ite]
-          #     temp_t90 = cat_samp.t90[samp_ite]
-          #     temp_flux = cat_samp.mean_flux[samp_ite]
-          #     temp_fluence = cat_samp.fluence[samp_ite]
+          #     temp_ep = cat_samp.df.ep_rest[samp_ite]
+          #     temp_t90 = cat_samp.df.t90[samp_ite]
+          #     temp_flux = cat_samp.df.mean_flux[samp_ite]
+          #     temp_fluence = cat_samp.df.fluence[samp_ite]
           #     trig_ep.append(temp_ep)
           #     trig_t90.append(temp_t90)
           #     trig_ph_flux.append(temp_flux)

@@ -421,25 +421,32 @@ class SampleCatalog:
     :param datafile: None or string, data to put in the catalog
     """
     self.cat_type = "sampled"
-    self.name = []
-    self.red = []
-    self.dl = []
-    self.ep = []
-    self.band_low = []
-    self.band_high = []
-    self.liso = []
-    self.eiso = []
-    self.thetaj = []
-    self.mean_flux = []
-    self.t90 = []
-    self.fluence = []
-    self.lc = []
+    self.df = None
+    self.datafile = None
+    self.sttype = None
+    self.length = 0
+    self.columns = ["name", "z_obs", "dl", "ep_rest", "alpha", "beta", "liso", "eiso", "thetaj", "mean_flux", "t90", "fluence", "lc"]
+
+    # self.name = []
+    # self.red = []
+    # self.dl = []
+    # self.ep = []
+    # self.band_low = []
+    # self.band_high = []
+    # self.liso = []
+    # self.eiso = []
+    # self.thetaj = []
+    # self.mean_flux = []
+    # self.t90 = []
+    # self.fluence = []
+    # self.lc = []
 
     # Catalog attributes
-    self.length = 0
-    self.sttype = None
-    if datafile is not None and sttype is not None:
-      self.fill(datafile, sttype)
+    if not (datafile is None or sttype is None):
+      self.sttype = sttype
+      self.datafile = datafile
+      self.fill()
+
 
   def __len__(self):
     """
@@ -462,7 +469,7 @@ class SampleCatalog:
         else:
           self.sttype[i] = int(self.sttype[i])
 
-  def fill(self, datafile, sttype):
+  def fill(self):
     """
     Fills a Catalog with data
     :param datafile: string, data file name
@@ -473,57 +480,33 @@ class SampleCatalog:
       item separator (str)
       last event (int) OR list of the sources wanted (list)
     """
-    self.sttype = sttype
     self.formatsttype()
-    with open(datafile) as f:
-      lines = f.read().split(sttype[1])  # Getting rid of the header
-    if type(sttype[4]) is int:
-      events = lines[sttype[2]:sttype[4]]
+    with open(self.datafile) as f:
+      lines = f.read().split(self.sttype[1])  # Getting rid of the header
+    if type(self.sttype[4]) is int:
+      events = lines[self.sttype[2]:self.sttype[4]]
       if events[-1] == '':
         events = events[:-1]
-    elif type(sttype[4]) is list:
-      events = lines[sttype[2]:]
+    elif type(self.sttype[4]) is list:
+      events = lines[self.sttype[2]:]
       if events[-1] == '':
         events = events[:-1]
-      events = [event for event in events if event.split(sttype[3])[1] in sttype[4]]
+      events = [event for event in events if event.split(self.sttype[3])[1] in self.sttype[4]]
     else:
       events = []
     self.length = len(events)
     if events[-1] == "":
       self.length -= 1
+    data_tab = []
     for line in events:
       data = line.split("|")
-      self.name.append(data[0])
-      self.t90.append(float(data[1]))
-      self.lc.append(data[2])
-      self.fluence.append(float(data[3]))
-      self.mean_flux.append(float(data[4]))
-      self.red.append(float(data[5]))
-      self.band_low.append(float(data[6]))
-      self.band_high.append(float(data[7]))
-      self.ep.append(float(data[8]))
-      self.dl.append(float(data[9]))
-      self.liso.append(float(data[10]))
-      self.eiso.append(float(data[11]))
-      self.thetaj.append(float(data[12]))
-    self.name = np.array(self.name)
-    self.red = np.array(self.red)
-    self.dl = np.array(self.dl)
-    self.ep = np.array(self.ep)
-    self.band_low = np.array(self.band_low)
-    self.band_high = np.array(self.band_high)
-    self.liso = np.array(self.liso)
-    self.eiso = np.array(self.eiso)
-    self.thetaj = np.array(self.thetaj)
-    self.mean_flux = np.array(self.mean_flux)
-    self.t90 = np.array(self.t90)
-    self.fluence = np.array(self.fluence)
-    self.lc = np.array(self.lc)
+      row = [data[0], float(data[5]), float(data[9]), float(data[8]), float(data[6]), float(data[7]), float(data[10]), float(data[11]),
+             float(data[12]), float(data[4]), float(data[1]), float(data[3]), data[2]]
+      data_tab.append(row)
+    self.df = pd.DataFrame(data=data_tab, columns=self.columns)
 
   def items(self):
     """
     List all knowns items
     """
     return list(self.__dict__.keys())[3:]
-
-

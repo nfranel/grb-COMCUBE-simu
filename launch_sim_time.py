@@ -65,19 +65,19 @@ def gen_commands(args):
     if not (args.spectrafilepath.endswith("/")) and os.name == "posix":
       args.spectrafilepath += "/"
     if args.simmode == "sampled":
-      lc_name = cat.lc[i]
-      pht_mflx = cat.mean_flux[i]
+      lc_name = cat.df.lc[i]
+      pht_mflx = cat.df.mean_flux[i]
       n_year = float(args.grbfile.split("years")[0].split("_")[-1])
       spectrafolder = f"{args.spectrafilepath}{n_year}sample/"
-      spectrumfile = "{}{}_spectrum.dat".format(spectrafolder, cat.name[i])
+      spectrumfile = "{}{}_spectrum.dat".format(spectrafolder, cat.df.name[i])
       if not (f"{n_year}sample" in os.listdir(args.spectrafilepath)):
         os.mkdir(spectrafolder)
       # Creation of spectra if they have not been created yet
       if not (spectrumfile in spectrafolder):
         logE = np.logspace(1, 3, 100)  # energy (log scale)
         with open(spectrumfile, "w") as f:
-          norm_val, spec, pht_pflux = norm_band_spec_calc(cat.band_low[i], cat.band_high[i], cat.red[i], cat.dl[i], cat.ep[i], cat.liso[i], logE)
-          f.write(f"#model normalized Band:   norm={norm_val}, alpha={cat.band_low[i]}, beta={cat.band_high[i]}, epeak={cat.ep[i]}keV\n")
+          norm_val, spec, pht_pflux = norm_band_spec_calc(cat.df.alpha[i], cat.df.beta[i], cat.df.z_obs[i], cat.df.dl[i], cat.df.ep_rest[i], cat.df.liso[i], logE)
+          f.write(f"#model normalized Band:   norm={norm_val}, alpha={cat.df.alpha[i]}, beta={cat.df.beta[i]}, epeak={cat.df.ep_rest[i]}keV\n")
           f.write(f"# Measured mean flux: {pht_mflx} ph/cm2/s in the 10-1000 keV band\n")
           f.write(f"# Measured peak flux: {pht_pflux} ph/cm2/s in the 10-1000 keV band\n")
           f.write("\nIP LOGLOG\n\n")
@@ -91,7 +91,7 @@ def gen_commands(args):
       pht_mflx = cat.df[f"{model}_phtflux"][i]
       pfluxmodel = cat.df.pflx_best_fitting_model[i]
       if type(pfluxmodel) == str:
-        pht_pflx = getattr(cat, f"{pfluxmodel}_phtflux")[i]
+        pht_pflx = cat.df[f"{pfluxmodel}_phtflux"][i]
       else:
         if np.isnan(pfluxmodel):
           pht_pflx = "No value fitted"
