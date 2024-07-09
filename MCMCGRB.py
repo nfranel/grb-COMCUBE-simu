@@ -1,6 +1,8 @@
 import seaborn as sns
 import pandas as pd
 import matplotlib.pyplot as plt
+import multiprocessing as mp
+from itertools import repeat
 # from scipy.stats import skewnorm
 from catalog import Catalog
 from funcmod import extract_lc, calc_flux_gbm, use_scipyquad
@@ -18,7 +20,7 @@ class GRBSample:
   Class to create GRB samples
   """
 
-  def __init__(self, version_long=None, version_short=None):
+  def __init__(self, version_long=None, version_short=None, n_core="all", verbose=False):
     """
     Initialisation of the different attributes
     """
@@ -33,7 +35,7 @@ class GRBSample:
     self.thetaj_max = 15
     self.lmin = 1e49  # erg/s
     self.lmax = 3e54
-    self.n_year = 10
+    self.n_year = 1
     gbmduty = 0.587
     self.gbm_weight = 1 / gbmduty / 10
     self.sample_weight = 1 / self.n_year
@@ -65,7 +67,6 @@ class GRBSample:
     self.band_high_s_mu, self.band_high_s_sig = -2.17, 0.31
     self.short_rate = 0.20  # +0.04 -0.07 [Gpc-3.yr-1] # Ghirlanda 2016
     self.nshort = None  # func to calculate ?
-# VOIR PRECISEMENT CE QUE CA FAIT QUAND ON DIVISE LE PIC PAR 2 et 3 ET QUAND ON DIVISE LE RATE PAR 2 et 3, ENSUITE SI C'EST PLUS OU MOINS LINEAIRE, ESSAYER DE COMBINER LES 2
     #################################################################################################################
     # long GRB attributes
     #################################################################################################################
@@ -166,7 +167,6 @@ class GRBSample:
         self.nlong = int(self.n_year * use_scipyquad(red_rate_long_v2, self.zmin, self.zmax, func_args=(), x_logscale=False)[0])
       elif self.version_long[0] == 3:
         self.nlong = int(self.n_year * use_scipyquad(red_rate_long_v3, self.zmin, self.zmax, func_args=(self.long_rate,), x_logscale=False)[0])
-
     else:
       raise ValueError("Please use a correct number for version_long")
 
@@ -178,16 +178,57 @@ class GRBSample:
     # Long GRBs
     print("nlong : ", self.nlong)
     start_time = time()
-    for ite in range(self.nlong):
-      self.add_long(ite)
+    if n_core == 'all':
+      print("Parallel calculation of the long sample with all threads")
+      with mp.Pool() as pool:
+        long_smp = pool.starmap(self.add_long, zip(range(self.nlong), repeat(verbose)))
+    elif type(n_core) is int:
+      print(f"Parallel calculation of the long sample with {n_core} threads")
+      with mp.Pool(n_core) as pool:
+        long_smp = pool.starmap(self.add_long, zip(range(self.nlong), repeat(verbose)))
+    else:
+      long_smp = [self.add_long(smp_ite, repeat(verbose)) for smp_ite in range(self.nlong)]
     print(f"Time taken for long bursts : {time() - start_time}s")
+    # data_row = pd.DataFrame(data=long_smp, columns=self.columns)
+    # self.save_grb(f"lGRB{self.n_year}S{sample_number}", t90_obs_temp, lc_temp, temp_mean_flux * t90_obs_temp, temp_mean_flux, z_obs_temp, band_low_obs_temp, band_high_obs_temp, ep_rest_temp, dl_obs_temp, lpeak_rest_temp, eiso_rest_temp, 0)
+
+    # for ite in range(self.nlong):
+    #   self.add_long(ite)
 
     # Short GRBs
     print("nshort : ", self.nshort)
     start_time = time()
-    for ite in range(self.nshort):
-      self.add_short(ite)
+
+    if n_core == 'all':
+      print("Parallel calculation of the short sample with all threads")
+      with mp.Pool() as pool:
+        short_smp = pool.starmap(self.add_short, zip(range(self.nlong), repeat(verbose)))
+    elif type(n_core) is int:
+      print(f"Parallel calculation of the short sample with {n_core} threads")
+      with mp.Pool(n_core) as pool:
+        short_smp = pool.starmap(self.add_short, zip(range(self.nlong), repeat(verbose)))
+    else:
+      short_smp = [self.add_short(smp_ite, repeat(verbose)) for smp_ite in range(self.nshort)]
     print(f"Time taken for short bursts : {time() - start_time}s")
+    # data_row = pd.DataFrame(data=long_smp + short_smp, columns=self.columns)
+    # self.save_grb(f"sGRB{self.n_year}S{sample_number}", t90_obs_temp, lc_temp, temp_mean_flux * t90_obs_temp,
+    #               temp_mean_flux, z_obs_temp, self.band_low_short, self.band_high_short,
+    #               ep_rest_temp, dl_obs_temp, lpeak_rest_temp, eiso_rest_temp, 0)
+
+    # for ite in range(self.nshort):
+    #   self.add_short(ite)
+    print("Saving the sample : ")
+    start_time = time()
+    total_smp = long_smp + short_smp
+    self.sample_df = pd.DataFrame(data=total_smp, columns=self.columns)
+    for sample_number, line in enumerate(total_smp):
+      if line[13] == "Sample short":
+        self.save_grb(f"sGRB{self.n_year}S{sample_number}", line[6], line[8], line[7], line[4], line[0], line[9], line[10], line[2], line[11], line[3], line[12], 0)
+      elif line[13] == "Sample long":
+        self.save_grb(f"lGRB{self.n_year}S{sample_number}", line[6], line[8], line[7], line[4], line[0], line[9], line[10], line[2], line[11], line[3], line[12], 0)
+      else:
+        raise ValueError(f"Error while making the sample, the Type of the burst should be 'Sample short' or 'Sample long' but value is {line[13]}")
+    print(f"Time taken for the saving : {time() - start_time}s")
 
   def gbm_distri(self):
     """
@@ -218,7 +259,7 @@ class GRBSample:
     self.kde_long_band_low = gaussian_kde(df_temp_index_l[df_temp_index_l.BandLow < 0.5].BandLow.values[np.logical_not(np.isnan(df_temp_index_l[df_temp_index_l.BandLow < 0.5].BandLow.values))])
     self.kde_long_band_high = gaussian_kde(df_temp_index_l[df_temp_index_l.BandHigh > -8].BandHigh.values[np.logical_not(np.isnan(df_temp_index_l[df_temp_index_l.BandHigh > -8].BandHigh.values))])
 
-  def add_short(self, sample_number):
+  def add_short(self, sample_number, verbose=False):
     """
     Creates the quatities of a short burst according to distributions
     Based on Lana Salmon's thesis and Ghirlanda et al, 2016
@@ -286,16 +327,20 @@ class GRBSample:
     norm_val, spec, temp_peak_flux = norm_band_spec_calc(self.band_low_short, self.band_high_short, z_obs_temp, dl_obs_temp, ep_rest_temp, lpeak_rest_temp, ener_range, verbose=False)
     temp_mean_flux = temp_peak_flux * pflux_to_mflux
 
-    data_row = pd.DataFrame(data=[[z_obs_temp, ep_obs_temp, ep_rest_temp, lpeak_rest_temp, temp_mean_flux, temp_peak_flux, t90_obs_temp, temp_mean_flux * t90_obs_temp, lc_temp, band_low_obs_temp, band_high_obs_temp,
-                                   dl_obs_temp, eiso_rest_temp, "Sample short", "Sample"]], columns=self.columns)
-    self.sample_df = pd.concat([self.sample_df, data_row], ignore_index=True)
+    # data_row = pd.DataFrame(data=[[z_obs_temp, ep_obs_temp, ep_rest_temp, lpeak_rest_temp, temp_mean_flux, temp_peak_flux, t90_obs_temp, temp_mean_flux * t90_obs_temp, lc_temp, band_low_obs_temp, band_high_obs_temp,
+    #                                dl_obs_temp, eiso_rest_temp, "Sample short", "Sample"]], columns=self.columns)
+    # self.sample_df = pd.concat([self.sample_df, data_row], ignore_index=True)
+    #
+    # # self.thetaj_short.append(acc_reject(skewnorm.pdf, [2, 2.5, 3], self.thetaj_min, self.thetaj_max))
+    # self.save_grb(f"sGRB{self.n_year}S{sample_number}", t90_obs_temp, lc_temp, temp_mean_flux * t90_obs_temp, temp_mean_flux, z_obs_temp, self.band_low_short, self.band_high_short, ep_rest_temp, dl_obs_temp,
+    #               lpeak_rest_temp, eiso_rest_temp, 0)
+    if verbose:
+      print(f"sGRB{sample_number} : ", [z_obs_temp, ep_obs_temp, ep_rest_temp, lpeak_rest_temp, temp_mean_flux, temp_peak_flux, t90_obs_temp, temp_mean_flux * t90_obs_temp, lc_temp, band_low_obs_temp, band_high_obs_temp, dl_obs_temp,
+            eiso_rest_temp, "Sample short", "Sample"])
+    return [z_obs_temp, ep_obs_temp, ep_rest_temp, lpeak_rest_temp, temp_mean_flux, temp_peak_flux, t90_obs_temp, temp_mean_flux * t90_obs_temp, lc_temp, band_low_obs_temp, band_high_obs_temp, dl_obs_temp,
+            eiso_rest_temp, "Sample short", "Sample"]
 
-    # self.thetaj_short.append(acc_reject(skewnorm.pdf, [2, 2.5, 3], self.thetaj_min, self.thetaj_max))
-    self.save_grb(f"sGRB{self.n_year}S{sample_number}", t90_obs_temp, lc_temp, temp_mean_flux * t90_obs_temp,
-                  temp_mean_flux, z_obs_temp, self.band_low_short, self.band_high_short,
-                  ep_rest_temp, dl_obs_temp, lpeak_rest_temp, eiso_rest_temp, 0)
-
-  def add_long(self, sample_number):
+  def add_long(self, sample_number, verbose=False):
     """
     Creates the quatities of a long burst according to distributions
     Based on Sarah Antier's thesis
@@ -493,11 +538,17 @@ class GRBSample:
     # comparer val totale de flux avec K ep**2
 
     # stop
-    data_row = pd.DataFrame(data=[[z_obs_temp, ep_obs_temp, ep_rest_temp, lpeak_rest_temp, temp_mean_flux, temp_peak_flux, t90_obs_temp, temp_mean_flux * t90_obs_temp, lc_temp, band_low_obs_temp, band_high_obs_temp, dl_obs_temp, eiso_rest_temp, "Sample long",
-                                   "Sample"]], columns=self.columns)
-    self.sample_df = pd.concat([self.sample_df, data_row], ignore_index=True)
-
-    self.save_grb(f"lGRB{self.n_year}S{sample_number}", t90_obs_temp, lc_temp, temp_mean_flux * t90_obs_temp, temp_mean_flux, z_obs_temp, band_low_obs_temp, band_high_obs_temp, ep_rest_temp, dl_obs_temp, lpeak_rest_temp, eiso_rest_temp, 0)
+    # data_row = pd.DataFrame(data=[[z_obs_temp, ep_obs_temp, ep_rest_temp, lpeak_rest_temp, temp_mean_flux, temp_peak_flux, t90_obs_temp, temp_mean_flux * t90_obs_temp, lc_temp, band_low_obs_temp, band_high_obs_temp, dl_obs_temp, eiso_rest_temp, "Sample long",
+    #                                "Sample"]], columns=self.columns)
+    # self.sample_df = pd.concat([self.sample_df, data_row], ignore_index=True)
+    #
+    # self.save_grb(f"lGRB{self.n_year}S{sample_number}", t90_obs_temp, lc_temp, temp_mean_flux * t90_obs_temp, temp_mean_flux, z_obs_temp, band_low_obs_temp, band_high_obs_temp, ep_rest_temp, dl_obs_temp,
+    #               lpeak_rest_temp, eiso_rest_temp, 0)
+    if verbose:
+      print(f"lGRB{sample_number} : ", [z_obs_temp, ep_obs_temp, ep_rest_temp, lpeak_rest_temp, temp_mean_flux, temp_peak_flux, t90_obs_temp, temp_mean_flux * t90_obs_temp, lc_temp, band_low_obs_temp, band_high_obs_temp, dl_obs_temp,
+            eiso_rest_temp, "Sample short", "Sample"])
+    return [z_obs_temp, ep_obs_temp, ep_rest_temp, lpeak_rest_temp, temp_mean_flux, temp_peak_flux, t90_obs_temp, temp_mean_flux * t90_obs_temp, lc_temp, band_low_obs_temp, band_high_obs_temp, dl_obs_temp,
+            eiso_rest_temp, "Sample long", "Sample"]
 
   def closest_lc(self, searched_time):
     """
