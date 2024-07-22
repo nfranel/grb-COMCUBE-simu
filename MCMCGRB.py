@@ -35,7 +35,7 @@ class GRBSample:
     self.thetaj_max = 15
     self.lmin = 1e49  # erg/s
     self.lmax = 3e54
-    self.n_year = 1
+    self.n_year = 10
     gbmduty = 0.587
     self.gbm_weight = 1 / gbmduty / 10
     self.sample_weight = 1 / self.n_year
@@ -46,7 +46,7 @@ class GRBSample:
     if version_short is None:
       self.version_short = 1
     else:
-      self.version_short = version_long
+      self.version_short = version_short
     self.cosmo = FlatLambdaCDM(H0=70, Om0=0.3)
     # self.cosmo = Planck18
     self.filename = f"./Sampled/sampled_grb_cat_{self.n_year}years.txt"
@@ -170,12 +170,13 @@ class GRBSample:
     else:
       raise ValueError("Please use a correct number for version_long")
 
-    if self.version_short == 0 or self.version_short == 1:
+    if self.version_short == 0 or self.version_short == 1 or self.version_short == 2:
       self.nshort = int(self.n_year * use_scipyquad(red_rate_short, self.zmin, self.zmax, func_args=(self.short_rate,), x_logscale=False)[0])
     else:
-      raise ValueError("Please use a correct number for version_long")
+      raise ValueError("Please use a correct number for version_short")
 
     # Long GRBs
+    # long_smp = []
     print("nlong : ", self.nlong)
     start_time = time()
     if n_core == 'all':
@@ -304,6 +305,27 @@ class GRBSample:
       dl_obs_temp = self.cosmo.luminosity_distance(z_obs_temp).value / 1000  # Gpc
       eiso_rest_temp = amati_short(ep_rest_temp)
       lpeak_rest_temp = yonetoku_short(ep_rest_temp)  # / 2
+    elif self.version_short == 2:
+      ##################################################################################################################
+      # picking according to distributions
+      ##################################################################################################################
+      z_obs_temp = acc_reject(red_rate_short, [self.short_rate], self.zmin, self.zmax)
+      lpeak_rest_temp = acc_reject(lpeak_function_short, [], self.lmin, self.lmax)
+      ep_rest_temp = acc_reject(epeak_distribution_short, [], self.epmin, self.epmax)
+      ep_obs_temp = ep_rest_temp / (1 + z_obs_temp)
+
+      band_low_obs_temp = -0.6
+      band_high_obs_temp = -2.5
+
+      t90_obs_temp = 10 ** self.kde_short_log_t90.resample(1)[0][0]
+      lc_temp = self.closest_lc(t90_obs_temp)
+      times, counts = extract_lc(f"./sources/Light_Curves/{lc_temp}")
+      pflux_to_mflux = np.mean(counts) / np.max(counts)
+
+      dl_obs_temp = self.cosmo.luminosity_distance(z_obs_temp).value / 1000  # Gpc
+      # ep_rest_temp = acc_reject(epeak_distribution_short, [], self.epmin, self.epmax)
+      # ep_obs_temp = ep_rest_temp / (1 + z_obs_temp)
+      eiso_rest_temp = amati_short(ep_rest_temp)
     else:
       raise ValueError("Please use a correct number of version")
 
@@ -668,7 +690,7 @@ class GRBSample:
 
     # Alpha are taken from short GRB distribution while beta are taken from the whole set (not enough data in short alone)
     # (Alpha are supposed to be different for short and long but beta not so much)
-    alpha_gbm, beta_gbm = extract_index(self.gbm_cat.df[self.gbm_cat.df.t90 < 2])[0], extract_index(self.gbm_cat.df)[1]
+    alpha_gbm, alpha_long, beta_gbm = extract_index(self.gbm_cat.df)
 
     alpha_bin = np.linspace(np.min(df_short.BandLow), np.max(df_short.BandLow), nbin)
     ax2.hist(df_short.BandLow, bins=alpha_bin, histtype="step", color="blue", label=f"Sample, {n_sample} GRB", weights=[self.sample_weight] * n_sample)
@@ -750,7 +772,7 @@ class GRBSample:
     ax1.grid(True, which='minor', linestyle=':', color='black', alpha=0.2)
 
     # Alpha and beta are taken from long GRB distribution
-    alpha_gbm, beta_gbm = extract_index(self.gbm_cat.df[self.gbm_cat.df.t90 >= 2])
+    alpha_gbm, beta_gbm = extract_index(self.gbm_cat.df)[1:]
 
     alpha_bin = np.linspace(np.min(df_long.BandLow), np.max(df_long.BandLow), nbin)
     ax2.hist(df_long.BandLow, bins=alpha_bin, histtype="step", color="blue", label=f"Sample, {n_sample} GRB", weights=[self.sample_weight] * n_sample)
@@ -807,6 +829,89 @@ class GRBSample:
     ax2r.grid(True, which='minor', linestyle=':', color='black', alpha=0.2)
 
     plt.suptitle(f"version : {self.version_long}")
+    plt.show()
+
+  def full_distri(self, yscale="log", nbin=70):
+    """
+    Compare the distribution of the created quatities and the seed distributions
+    """
+    fluence_min, fluence_max = 1e-8, 1e4
+    flux_min, flux_max = 1e-8, 1e5
+
+    df_full = self.sample_df
+    n_sample = len(df_full)
+
+    df_gbm_full = self.gbm_df
+    n_gbm = len(df_gbm_full)
+
+    comp_fig, ((ax1, ax2, ax3, ax1r), (ax4, ax5, ax6, ax2r)) = plt.subplots(2, 4, figsize=(27, 12))
+
+    ax1.hist(df_full.EpeakObs, bins=np.logspace(np.log10(self.epmin), np.log10(self.epmax), nbin), histtype="step", color="blue", label=f"Sample, {n_sample} GRB", weights=[self.sample_weight] * n_sample)
+    ax1.hist(df_gbm_full.EpeakObs, bins=np.logspace(np.log10(self.epmin), np.log10(self.epmax), nbin), histtype="step", color="red", label=f"GBM, {n_gbm} GRB", weights=[self.gbm_weight] * n_gbm)
+    ax1.set(title="Ep distributions", xlabel="Peak energy (keV)", ylabel="Number of GRB", xscale="log", yscale=yscale)
+    ax1.legend()
+    ax1.grid(True, which='major', linestyle='--', color='black', alpha=0.3)
+    ax1.grid(True, which='minor', linestyle=':', color='black', alpha=0.2)
+
+    # Alpha and beta are taken from long GRB distribution
+    alpha_short, alpha_long, beta_gbm = extract_index(self.gbm_cat.df)
+    alpha_gbm = alpha_short + alpha_long
+
+    alpha_bin = np.linspace(np.min(df_full.BandLow), np.max(df_full.BandLow), nbin)
+    ax2.hist(df_full.BandLow, bins=alpha_bin, histtype="step", color="blue", label=f"Sample, {n_sample} GRB", weights=[self.sample_weight] * n_sample)
+    ax2.hist(alpha_gbm, bins=alpha_bin, histtype="step", color="red", label=f"GBM, {n_gbm} GRB", weights=[n_gbm / len(alpha_gbm) * self.gbm_weight] * len(alpha_gbm))
+    ax2.set(title="Band low energy index", xlabel="Alpha", ylabel="Number of GRB", xscale="linear", yscale=yscale)
+    ax2.legend()
+    ax2.grid(True, which='major', linestyle='--', color='black', alpha=0.3)
+    ax2.grid(True, which='minor', linestyle=':', color='black', alpha=0.2)
+
+    beta_bin = np.linspace(np.min(df_full.BandHigh), np.max(df_full.BandHigh), nbin)
+    ax3.hist(df_full.BandHigh, bins=beta_bin, histtype="step", color="green", label=f"Sample, {n_sample} GRB", weights=[self.sample_weight] * n_sample)
+    ax3.hist(beta_gbm, bins=beta_bin, histtype="step", color="orange", label=f"GBM, {n_gbm} GRB", weights=[n_gbm / len(beta_gbm) * self.gbm_weight] * len(beta_gbm))
+    ax3.set(title="Band high energy index", xlabel="Beta", ylabel="Number of GRB", xscale="linear", yscale=yscale)
+    ax3.legend()
+    ax3.grid(True, which='major', linestyle='--', color='black', alpha=0.3)
+    ax3.grid(True, which='minor', linestyle=':', color='black', alpha=0.2)
+
+    fluence_bin = np.logspace(np.log10(fluence_min), np.log10(fluence_max), nbin)
+    ax4.hist(df_full.Fluence, bins=fluence_bin, histtype="step", color="blue", label=f"Sample, {n_sample} GRB", weights=[self.sample_weight] * n_sample)
+    ax4.hist(df_gbm_full.Fluence, bins=fluence_bin, histtype="step", color="red", label=f"GBM, {n_gbm} GRB", weights=[self.gbm_weight] * n_gbm)
+    ax4.set(title="Fluence distributions", xlabel="Photon fluence (photon/cm²)", ylabel="Number of GRB", xscale="log", yscale=yscale)
+    ax4.legend()
+    ax4.grid(True, which='major', linestyle='--', color='black', alpha=0.3)
+    ax4.grid(True, which='minor', linestyle=':', color='black', alpha=0.2)
+
+    flux_bin = np.logspace(np.log10(flux_min), np.log10(flux_max), nbin)
+    ax5.hist(df_full.MeanFlux, bins=flux_bin, histtype="step", color="blue", label=f"Sample, {n_sample} GRB", weights=[self.sample_weight] * n_sample)
+    ax5.hist(df_gbm_full.MeanFlux, bins=flux_bin, histtype="step", color="red", label=f"GBM, {n_gbm} GRB", weights=[self.gbm_weight] * n_gbm)
+    ax5.set(title="Mean flux distributions", xlabel="Photon flux (photon/cm²/s)", ylabel="Number of GRB", xscale="log", yscale=yscale)
+    ax5.legend()
+    ax5.grid(True, which='major', linestyle='--', color='black', alpha=0.3)
+    ax5.grid(True, which='minor', linestyle=':', color='black', alpha=0.2)
+
+    ax6.hist(df_full.T90, bins=np.logspace(np.log10(2), 3, nbin), histtype="step", color="blue", label=f"Sample, {n_sample} GRB", weights=[self.sample_weight] * n_sample)
+    ax6.hist(df_gbm_full.T90, bins=np.logspace(np.log10(2), 3, nbin), histtype="step", color="red", label=f"GBM, {n_gbm} GRB", weights=[self.gbm_weight] * n_gbm)
+    ax6.set(title="T90 distributions", xlabel="T90 (s)", ylabel="Number of GRB", xscale="log", yscale=yscale)
+    ax6.legend()
+    ax6.grid(True, which='major', linestyle='--', color='black', alpha=0.3)
+    ax6.grid(True, which='minor', linestyle=':', color='black', alpha=0.2)
+
+    ax1r.hist(df_full.Redshift, bins=np.linspace(self.zmin, self.zmax, nbin), histtype="step", color="blue", label=f"Sample, {n_sample} GRB", weights=[self.sample_weight] * n_sample)
+    ax1r.hist(df_gbm_full.Redshift, bins=np.linspace(self.zmin, self.zmax, nbin), histtype="step", color="red", label=f"GBM, {n_gbm} GRB", weights=[self.gbm_weight] * n_gbm)
+    ax1r.set(title="Redshift distribution", xlabel="Redshift", ylabel="Number of GRB", xscale="linear", yscale=yscale)
+    ax1r.legend()
+    ax1r.grid(True, which='major', linestyle='--', color='black', alpha=0.3)
+    ax1r.grid(True, which='minor', linestyle=':', color='black', alpha=0.2)
+
+    lum_bin = np.logspace(np.log10(self.lmin), np.log10(self.lmax), nbin)
+    ax2r.hist(df_full.PeakLuminosity, bins=lum_bin, histtype="step", color="blue", label=f"Sample, {n_sample} GRB", weights=[self.sample_weight] * n_sample)
+    ax2r.hist(df_gbm_full.PeakLuminosity, bins=lum_bin, histtype="step", color="red", label=f"GBM, {n_gbm} GRB", weights=[self.gbm_weight] * n_gbm)
+    ax2r.set(title="Peak luminosity distribution", xlabel="Peak Luminosity (erg/s)", ylabel="Number of GRB", xscale="log", yscale=yscale)
+    ax2r.legend()
+    ax2r.grid(True, which='major', linestyle='--', color='black', alpha=0.3)
+    ax2r.grid(True, which='minor', linestyle=':', color='black', alpha=0.2)
+
+    plt.suptitle(f"version long and short : {self.version_long}, {self.version_short}")
     plt.show()
 
   def red_lum_dist(self, yscale="log", nbin=50):
@@ -1008,33 +1113,60 @@ class GRBSample:
       ax.hist(df_long_plaw[col_plot[ite_ax]].values, histtype="step", bins=bins, color=colors[3], label='GBM long flnc_plaw')
     axs[0].legend()
 
-def extract_index(df_used):
+def extract_index(df_full):
   """
   Returns the low and high energy index associated with the best model of every GRB
   Similar way seen in Poolakkil, 2021
+  :param df_full: This is the dataframe for long and short events
+  Remark :  beta is taken from band and sbpl (makes sense for these 2 only)
+            alpha is taken from comp, band and sbpl. plaw is offset then not considered
   """
-  df_used.index = range(0, len(df_used), 1)
-  alpha_band = []
+  df_full.index = range(0, len(df_full), 1)
+  df_long = df_full.loc[df_full.t90 > 2]
+  df_long.index = range(0, len(df_long), 1)
+  df_short = df_full.loc[df_full.t90 <= 2]
+  df_short.index = range(0, len(df_short), 1)
+  # Recovering the beta from short and long
   beta_band = []
-  alpha_comp = []
-  alpha_sbpl = []
   beta_sbpl = []
-  alpha_plaw = []
-  for ite, model in enumerate(df_used["flnc_best_fitting_model"].values):
+  for ite, model in enumerate(df_full["flnc_best_fitting_model"].values):
     if model == "flnc_band":
-      alpha_band.append(df_used.flnc_band_alpha[ite])
-      beta_band.append(df_used.flnc_band_beta[ite])
-    elif model == "flnc_comp":
-      alpha_comp.append(df_used.flnc_comp_index[ite])
+      beta_band.append(df_full.flnc_band_beta[ite])
     elif model == "flnc_sbpl":
-      alpha_sbpl.append(df_used.flnc_sbpl_indx1[ite])
-      beta_sbpl.append(df_used.flnc_sbpl_indx2[ite])
+      beta_sbpl.append(df_full.flnc_sbpl_indx2[ite])
+  # Recovering the alpha from short
+  alpha_band_short = []
+  alpha_comp_short = []
+  alpha_sbpl_short = []
+  alpha_plaw_short = []
+  for ite, model in enumerate(df_short["flnc_best_fitting_model"].values):
+    if model == "flnc_band":
+      alpha_band_short.append(df_short.flnc_band_alpha[ite])
+    elif model == "flnc_comp":
+      alpha_comp_short.append(df_short.flnc_comp_index[ite])
+    elif model == "flnc_sbpl":
+      alpha_sbpl_short.append(df_short.flnc_sbpl_indx1[ite])
     elif model == "flnc_plaw":
-      alpha_plaw.append(df_used.flnc_plaw_index[ite])
+      alpha_plaw_short.append(df_short.flnc_plaw_index[ite])
+  # Recovering the alpha from long
+  alpha_band_long = []
+  alpha_comp_long = []
+  alpha_sbpl_long = []
+  alpha_plaw_long = []
+  for ite, model in enumerate(df_long["flnc_best_fitting_model"].values):
+    if model == "flnc_band":
+      alpha_band_long.append(df_long.flnc_band_alpha[ite])
+    elif model == "flnc_comp":
+      alpha_comp_long.append(df_long.flnc_comp_index[ite])
+    elif model == "flnc_sbpl":
+      alpha_sbpl_long.append(df_long.flnc_sbpl_indx1[ite])
+    elif model == "flnc_plaw":
+      alpha_plaw_long.append(df_long.flnc_plaw_index[ite])
 
-  full_alpha = alpha_band + alpha_comp + alpha_sbpl
-  full_beta = beta_band + beta_sbpl
-  return full_alpha, full_beta
+  alpha_short = alpha_band_short + alpha_comp_short + alpha_sbpl_short
+  alpha_long = alpha_band_long + alpha_comp_long + alpha_sbpl_long
+  beta = beta_band + beta_sbpl
+  return alpha_short, alpha_long, beta
 
 
 def fitting_flux(smp, nbin=200, flim=2, showfig=False):
@@ -1085,10 +1217,11 @@ def fitting_flux(smp, nbin=200, flim=2, showfig=False):
     hist2 = np.histogram(mf_gbm_red, bins=bins, weights=[smp.gbm_weight] * n_gbm2)[0]
     return np.sum(np.abs(hist1 - hist2))
 
-  step = 1
-  vali = 1
+  step = 0.1
+  vali = 0.1
   print(f"Init correction : {vali}, chi2 = {chi2(vali, mf_smp_red, mf_gbm_red)}")
   for i in range(100):
+    print(step)
     chii = chi2(vali, mf_smp_red, mf_gbm_red)
     chif = chi2(vali + step, mf_smp_red, mf_gbm_red)
     if chii > chif:
@@ -1099,8 +1232,8 @@ def fitting_flux(smp, nbin=200, flim=2, showfig=False):
   chi2_ret = [vali, chi2(vali, mf_smp_red, mf_gbm_red)]
   print(f"Correction : {chi2_ret[0]}, chi2 = {chi2_ret[1]}")
 
-  step2 = 1
-  vali2 = 1
+  step2 = 0.1
+  vali2 = 0.1
   print(f"Init correction : {vali2}, count diff = {count_diff(vali2, mf_smp_red, mf_gbm_red)}")
   for i in range(100):
     diffi = count_diff(vali2, mf_smp_red, mf_gbm_red)

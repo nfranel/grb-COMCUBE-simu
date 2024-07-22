@@ -12,6 +12,9 @@ Gpc_to_cm = 1 * astropy.units.Gpc
 Gpc_to_cm = Gpc_to_cm.to_value("cm")
 
 
+############################################################################################################################################################
+# Spectra
+############################################################################################################################################################
 def normalisation_calc(ind1, ind2):
   """
 
@@ -99,6 +102,13 @@ def calc_flux_sample(catalog, index, ergcut):
   return pflux
 
 
+def sbplaw(x, A, xb, alpha1, alpha2, delta):
+  return A * (x/xb)**(-alpha1) * (1/2*(1+(x/xb)**(1/delta)))**((alpha1-alpha2)*delta)
+
+
+############################################################################################################################################################
+# Distributions
+############################################################################################################################################################
 def acc_reject(func, func_args, xmin, xmax):
   """
   Proceeds to an acceptance rejection method
@@ -114,6 +124,24 @@ def acc_reject(func, func_args, xmin, xmax):
       return variable
 
 
+def broken_plaw(val, ind1, ind2, val_b):
+  """
+  Proken power law function
+  """
+  if type(val) is float or type(val) is int:
+    if val < val_b:
+      return (val / val_b)**ind1
+    else:
+      return (val / val_b)**ind2
+  elif type(val) is np.ndarray:
+    return np.where(val < val_b, (val / val_b)**ind1, (val / val_b)**ind2)
+  else:
+    raise TypeError("Please use a correct type for broken powerlaw, only accepted are float, int or numpy ndarray")
+
+
+############################################################################################################################################################
+# Long distri
+############################################################################################################################################################
 def lpeak_function_long(lpeak):
   """
   Version
@@ -122,16 +150,8 @@ def lpeak_function_long(lpeak):
   :param lpeak: float or array of float containing peak luminosities
   """
   # al1_l, al2_l, lb_l = -0.65, -3, (10 ** 52.05) / 5.6
-  al1_l, al2_l, lb_l = -0.65, -3, (10 ** 52.05) / 1
-  if type(lpeak) is float or type(lpeak) is int:
-    if lpeak < lb_l:
-      return (lpeak / lb_l)**al1_l
-    else:
-      return (lpeak / lb_l)**al2_l
-  elif type(lpeak) is np.ndarray:
-    return np.where(lpeak < lb_l, (lpeak / lb_l)**al1_l, (lpeak / lb_l)**al2_l)
-  else:
-    raise TypeError("Please use a correct type for luminosity, only accepted are float or numpy ndarray")
+  al1_l, al2_l, lb_l = -0.65, -3, (10 ** 52.05) / 4.5
+  return broken_plaw(lpeak, al1_l, al2_l, lb_l)
 
 
 def lpeak_function_long_v2(lpeak, red):
@@ -163,15 +183,7 @@ def lpeak_function_long_v3(lpeak, red):
   :param red: Redshift considered
   """
   al1_l, al2_l, lb_l = -1.32, -1.84, 10 ** 51.45
-  if type(lpeak) is float or type(lpeak) is int:
-    if lpeak < lb_l:
-      return (1+red)**2.5 * (lpeak / lb_l)**al1_l
-    else:
-      return (1+red)**2.5 * (lpeak / lb_l)**al2_l
-  elif type(lpeak) is np.ndarray:
-    return np.where(lpeak < lb_l, (1+red)**2.5 * (lpeak / lb_l)**al1_l, (1+red)**2.5 * (lpeak / lb_l)**al2_l)
-  else:
-    raise TypeError("Please use a correct type for luminosity, only accepted are float or numpy ndarray")
+  return (1+red)**2.5 * broken_plaw(lpeak, al1_l, al2_l, lb_l)
 
 
 def lpeak_function_long_v4(lpeak):
@@ -182,15 +194,7 @@ def lpeak_function_long_v4(lpeak):
   :param lpeak: float or array of float containing peak luminosities
   """
   al1_l, al2_l, lb_l = -0.69, -1.76, 10 ** 53.32
-  if type(lpeak) is float or type(lpeak) is int:
-    if lpeak < lb_l:
-      return 1/lpeak * (lpeak / lb_l)**al1_l
-    else:
-      return 1/lpeak * (lpeak / lb_l)**al2_l
-  elif type(lpeak) is np.ndarray:
-    return np.where(lpeak < lb_l, 1/lpeak * (lpeak / lb_l)**al1_l, 1/lpeak * (lpeak / lb_l)**al2_l)
-  else:
-    raise TypeError("Please use a correct type for luminosity, only accepted are float or numpy ndarray")
+  return 1/lpeak * broken_plaw(lpeak, al1_l, al2_l, lb_l)
 
 
 def lpeak_function_long_v42(lpeak):
@@ -201,15 +205,7 @@ def lpeak_function_long_v42(lpeak):
   :param lpeak: float or array of float containing peak luminosities
   """
   al1_l, al2_l, lb_l = -0.69, -1.76, 10 ** 53.32
-  if type(lpeak) is float or type(lpeak) is int:
-    if lpeak < lb_l:
-      return (lpeak / lb_l)**al1_l
-    else:
-      return (lpeak / lb_l)**al2_l
-  elif type(lpeak) is np.ndarray:
-    return np.where(lpeak < lb_l, (lpeak / lb_l)**al1_l, (lpeak / lb_l)**al2_l)
-  else:
-    raise TypeError("Please use a correct type for luminosity, only accepted are float or numpy ndarray")
+  return broken_plaw(lpeak, al1_l, al2_l, lb_l)
 
 
 def redshift_distribution_long(red):
@@ -270,20 +266,6 @@ def redshift_distribution_long_v3(red, red0):
     raise TypeError("Please use a correct type for red, only accepted are float or numpy ndarray")
 
 
-def redshift_distribution_short(red):
-  """
-  Version
-    redshift distribution for short GRBs
-    Function and associated parameters and cases are taken from Ghirlanda et al. 2016
-  :param red: float or array of float containing redshifts
-  """
-  p1, zp, p2 = 2.8, 2.3, 3.5
-  if type(red) is float or type(red) is int or type(red) is np.ndarray:
-    return (1 + p1 * red) / (1 + (red / zp)**p2)
-  else:
-    raise TypeError("Please use a correct type for red, only accepted are float or numpy ndarray")
-
-
 def red_rate_long(red):
   """
   Version
@@ -314,6 +296,46 @@ def red_rate_long_v3(red, rate0):
   return 4 * np.pi * redshift_distribution_long_v3(red, rate0) / (1 + red) * vol_com
 
 
+def epeak_distribution_long(epeak):
+  """
+  Version
+    Peak energy distribution for short GRBs
+    Function and associated parameters and cases are taken from Ghirlanda et al. 2016
+  :param epeak: float or array of float containing peak energies
+  """
+  a1, a2, epb = 0.53, -4, 1600  # Took -a1 because the results were coherent only this way
+  return broken_plaw(epeak, a1, a2, epb)
+  # ampl, skewness, mu, sigma = 80,  1.6,  1.9,  0.44
+  # return ampl * skewnorm.pdf(epeak, skewness, mu, sigma)
+
+
+def t90_long_log_distri(time):
+  """
+  Version
+    Distribution of T90 based on GBM t90 >= 2 with a sbpl
+      Not optimal as no correlation with other parameters is considered
+  """
+  ampl, skewness, mu, sigma = 54.18322289, -2.0422097,  1.89431034,  0.74602339
+  return ampl * skewnorm.pdf(time, skewness, mu, sigma)
+
+
+############################################################################################################################################################
+# Short distri
+############################################################################################################################################################
+def redshift_distribution_short(red):
+  """
+  Version
+    redshift distribution for short GRBs
+    Function and associated parameters and cases are taken from Ghirlanda et al. 2016
+  :param red: float or array of float containing redshifts
+  """
+  p1, zp, p2 = 2.8, 2.3, 3.5
+  # p1, zp, p2 = 3.1, 2.5, 3.6 # test
+  if type(red) is float or type(red) is int or type(red) is np.ndarray:
+    return (1 + p1 * red) / (1 + (red / zp)**p2)
+  else:
+    raise TypeError("Please use a correct type for red, only accepted are float or numpy ndarray")
+
 
 def red_rate_short(red, rate0):
   """
@@ -325,30 +347,16 @@ def red_rate_short(red, rate0):
   return rate0 * 4 * np.pi * redshift_distribution_short(red) / (1 + red) * vol_com
 
 
-def sbplaw(x, A, xb, alpha1, alpha2, delta):
-  return A * (x/xb)**(-alpha1) * (1/2*(1+(x/xb)**(1/delta)))**((alpha1-alpha2)*delta)
-
-
-def epeak_distribution_long(epeak):
+def lpeak_function_short(lpeak):
   """
   Version
-    Peak energy distribution for short GRBs
+    Luminosity function (distribution) for short GRBs
     Function and associated parameters and cases are taken from Ghirlanda et al. 2016
-  :param epeak: float or array of float containing peak energies
+  :param lpeak: float or array of float containing peak luminosities
   """
-  a1, a2, epb = -0.53, 4, 1600  # Took -a1 because the results were coherent only this way
-  if type(epeak) is float or type(epeak) is int:
-    if epeak <= epb:
-      return (epeak / epb)**(-a1)
-    else:
-      return (epeak / epb)**(-a2)
-  elif type(epeak) is np.ndarray:
-    return np.where(epeak <= epb, (epeak / epb)**(-a1), (epeak / epb)**(-a2))
-  else:
-    raise TypeError("Please use a correct type for epeak, only accepted are float or numpy ndarray")
-
-    # ampl, skewness, mu, sigma = 80,  1.6,  1.9,  0.44
-    # return ampl * skewnorm.pdf(epeak, skewness, mu, sigma)
+  # al1_l, al2_l, lb_l = -0.53, -3.4, 2.8e52
+  al1_l, al2_l, lb_l = 0.15, -2, 0.63e52 # test
+  return broken_plaw(lpeak, al1_l, al2_l, lb_l)
 
 
 def epeak_distribution_short(epeak):
@@ -358,22 +366,33 @@ def epeak_distribution_short(epeak):
     Function and associated parameters and cases are taken from Ghirlanda et al. 2016
   :param epeak: float or array of float containing peak energies
   """
-  a1, a2, epb = -0.53, 4, 1600  # Took -a1 because the results were coherent only this way
-  if type(epeak) is float or type(epeak) is int:
-    if epeak <= epb:
-      return (epeak / epb)**(-a1)
-    else:
-      return (epeak / epb)**(-a2)
-  elif type(epeak) is np.ndarray:
-    return np.where(epeak <= epb, (epeak / epb)**(-a1), (epeak / epb)**(-a2))
-  else:
-    raise TypeError("Please use a correct type for epeak, only accepted are float or numpy ndarray")
-
-
+  a1, a2, epb = 0.53, -4, 1600  # Took -a1 because the results were coherent only this way
+  # a1, a2, epb = 0.61, -2.8, 2200  # test
+  return broken_plaw(epeak, a1, a2, epb)
   # ampl, skewness, mu, sigma = 16, -5.2, 3.15, 0.66
   # return ampl * skewnorm.pdf(epeak, skewness, mu, sigma)
 
 
+def t90_short_distri(time):
+  """
+  Version
+    Distribution of T90 based on GBM t90 < 2
+      Not optimal as lGRB might biase the distribution
+  """
+  if type(time) is float or type(time) is int:
+    if time <= 0.75:
+      return 10**(1.7 + np.log10(time))
+    else:
+      return 10**(0.13 - 3.1 * np.log10(time))
+  elif type(time) is np.ndarray:
+    return np.where(time <= 0.75, 10**(1.7*np.log10(time)), 10**(0.13 - 3.17 * np.log10(time)))
+  else:
+    raise TypeError("Please use a correct type for time, only accepted are float or numpy ndarray")
+
+
+############################################################################################################################################################
+# correlations long
+############################################################################################################################################################
 def amati_long(epeak):
   """
   Version
@@ -383,20 +402,6 @@ def amati_long(epeak):
   """
   if type(epeak) is float or type(epeak) is int or type(epeak) is np.float64 or type(epeak) is np.ndarray:
     return 10**(52 + np.log10(epeak / 110) / 0.51)
-  else:
-    raise TypeError("Please use a correct type for energy, only accepted are float or numpy ndarray")
-
-
-def amati_short(epeak):
-  """
-  Version
-    Amatie relation (Amati, 2006) linking Epeak and Eiso (peak energy and isotropic equivalent energy)
-  :param epeak: float or array of float containing peak energies if reversed = True or isotropic equivalent energies if False
-  :returns: Eiso
-  """
-  ma, qa = 1.1, 0.042
-  if type(epeak) is float or type(epeak) is int or type(epeak) is np.float64 or type(epeak) is np.ndarray:
-    return 10**(51 + (np.log10(epeak / 670) - qa) / ma)
   else:
     raise TypeError("Please use a correct type for energy, only accepted are float or numpy ndarray")
 
@@ -441,6 +446,23 @@ def yonetoku_reverse_long_v2(lpeak):
   return ep0 * (lpeak/l0)**alpha * 10**(np.sqrt(1+alpha**2)*np.random.normal(loc=0, scale=sig_ep))
 
 
+############################################################################################################################################################
+# correlations short
+############################################################################################################################################################
+def amati_short(epeak):
+  """
+  Version
+    Amatie relation (Amati, 2006) linking Epeak and Eiso (peak energy and isotropic equivalent energy)
+  :param epeak: float or array of float containing peak energies if reversed = True or isotropic equivalent energies if False
+  :returns: Eiso
+  """
+  ma, qa = 1.1, 0.042
+  if type(epeak) is float or type(epeak) is int or type(epeak) is np.float64 or type(epeak) is np.ndarray:
+    return 10**(51 + (np.log10(epeak / 670) - qa) / ma)
+  else:
+    raise TypeError("Please use a correct type for energy, only accepted are float or numpy ndarray")
+
+
 def yonetoku_short(epeak):
   """
   Version
@@ -453,36 +475,20 @@ def yonetoku_short(epeak):
   else:
     raise TypeError("Please use a correct type for energy, only accepted are float or numpy ndarray")
 
+def yonetoku_reverse_short(lpeak):
+  """
+  Version
+    Yonetoku relation (Yonetoku et al, 2014) from Ghirlanda et al, 2016
+  :returns: Epeak
+  """
+  qy, my = 0.034, 0.84
+  if type(lpeak) is float or type(lpeak) is int or type(lpeak) is np.ndarray or type(lpeak) is np.float64:
+    return 670 * 10**(qy + my * np.log10(lpeak / 10**52))
+  else:
+    raise TypeError("Please use a correct type for energy, only accepted are float or numpy ndarray")
+
   # tsutsui
   # id1, s_id1, id2, s_id2 = 52.29, 0.066, 1.59, 0.11
   # rand1 = np.random.normal(id1, s_id1)
   # rand2 = np.random.normal(id2, s_id2)
   # return 10 ** rand1 * (epeak / 774.5) ** rand2
-
-
-def t90_long_log_distri(time):
-  """
-  Version
-    Distribution of T90 based on GBM t90 >= 2 with a sbpl
-      Not optimal as no correlation with other parameters is considered
-  """
-  ampl, skewness, mu, sigma = 54.18322289, -2.0422097,  1.89431034,  0.74602339
-  return ampl * skewnorm.pdf(time, skewness, mu, sigma)
-
-
-def t90_short_distri(time):
-  """
-  Version
-    Distribution of T90 based on GBM t90 < 2
-      Not optimal as lGRB might biase the distribution
-  """
-  if type(time) is float or type(time) is int:
-    if time <= 0.75:
-      return 10**(1.7 + np.log10(time))
-    else:
-      return 10**(0.13 - 3.1 * np.log10(time))
-  elif type(time) is np.ndarray:
-    return np.where(time <= 0.75, 10**(1.7*np.log10(time)), 10**(0.13 - 3.17 * np.log10(time)))
-  else:
-    raise TypeError("Please use a correct type for time, only accepted are float or numpy ndarray")
-
