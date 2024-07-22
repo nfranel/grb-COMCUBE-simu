@@ -148,10 +148,11 @@ class GRBFullData:
       accepted_arm_pol = np.where(np.abs(self.arm_pol) <= armcut, True, False)
       # Restriction of the values according to arm cut
       self.compton_ener = self.compton_ener[accepted_arm_pol]
+      print("avant arm ener ", self.compton_ener)
       self.compton_second = self.compton_second[accepted_arm_pol]
       compton_firstpos = compton_firstpos[accepted_arm_pol]
       compton_secpos = compton_secpos[accepted_arm_pol]
-      print(self.compton_time)
+      print("avant arm time", self.compton_time)
       self.compton_time = self.compton_time[accepted_arm_pol]
       self.polar_from_energy = self.polar_from_energy[accepted_arm_pol]
       self.polar_from_position = np.array(self.polar_from_position[accepted_arm_pol], dtype="float32")
