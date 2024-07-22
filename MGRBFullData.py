@@ -118,12 +118,12 @@ class GRBFullData:
         if len(reading) == 5:
           self.compton_second.append(reading[0])
           self.compton_ener.append(reading[1])
-          # self.compton_time.append(reading[2])
+          self.compton_time.append(reading[2])
           compton_firstpos.append(reading[3])
           compton_secpos.append(reading[4])
         elif len(reading) == 3:
           self.single_ener.append(reading[0])
-          # self.single_time.append(reading[1])
+          self.single_time.append(reading[1])
           single_pos.append(reading[2])
       self.compton_ener = np.array(self.compton_ener, dtype="float32")
       self.compton_second = np.array(self.compton_second, dtype="float32")
@@ -272,7 +272,7 @@ class GRBFullData:
     #################################################################################################################
     # Calculation of effective area
     #################################################################################################################
-    # self.calculates_snrs(source_duration)
+    self.calculates_snrs(source_duration)
 
     #################################################################################################################
     # Calculation of mdp
