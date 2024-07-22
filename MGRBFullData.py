@@ -151,6 +151,7 @@ class GRBFullData:
       self.compton_second = self.compton_second[accepted_arm_pol]
       compton_firstpos = compton_firstpos[accepted_arm_pol]
       compton_secpos = compton_secpos[accepted_arm_pol]
+      print(self.compton_time)
       self.compton_time = self.compton_time[accepted_arm_pol]
       self.polar_from_energy = self.polar_from_energy[accepted_arm_pol]
       self.polar_from_position = np.array(self.polar_from_position[accepted_arm_pol], dtype="float32")
