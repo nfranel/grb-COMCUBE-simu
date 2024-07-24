@@ -571,7 +571,7 @@ def affect_bkg(info_sat, burst_time, bkg_list):
   ra_sat_world_frame = np.mod(ra_sat_world_frame - earth_ra_offset, 360)
   mag_dec_sat_world_frame, mag_ra_sat_world_frame = geo_to_mag(dec_sat_world_frame, ra_sat_world_frame, info_sat[3])
   count_rates = closest_bkg_values(mag_dec_sat_world_frame, mag_ra_sat_world_frame, info_sat[3], bkg_list)[:2]
-  return dec_sat_world_frame, ra_sat_world_frame, count_rates[0], count_rates[1]
+  return dec_sat_world_frame, ra_sat_world_frame, info_sat[3], count_rates[0], count_rates[1]
 
 
 def closest_mufile(grb_dec_sf, grb_ra_sf, mu_list):  # TODO : limits on variables

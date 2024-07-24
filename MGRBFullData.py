@@ -44,6 +44,7 @@ class GRBFullData:
     self.hit_b_rate = 0                         # Summed                  # Trigger quality selection
     self.sat_dec_wf = None                      # Not changed             #
     self.sat_ra_wf = None                       # Not changed             #
+    self.sat_alt = None                         # Not changed             #
     self.num_sat = num_sat                      # Appened                 #
     ###################################################################################################################
     # Attributes from the mu100 files
@@ -168,7 +169,7 @@ class GRBFullData:
       #        Filling the fields with bkg and mu100 files
       #################################################################################################################
       if sat_info is not None:
-        self.sat_dec_wf, self.sat_ra_wf, self.compton_b_rate, self.single_b_rate = affect_bkg(sat_info, burst_time, bkg_data)
+        self.sat_dec_wf, self.sat_ra_wf, self.sat_alt, self.compton_b_rate, self.single_b_rate = affect_bkg(sat_info, burst_time, bkg_data)
         self.hit_b_rate = self.compton_b_rate * 2 + self.single_b_rate
       self.mu100_ref, self.mu100_err_ref, self.s_eff_compton_ref, self.s_eff_single_ref = closest_mufile(self.grb_dec_sat_frame, self.grb_ra_sat_frame, mu_data)
       # Putting the azimuthal scattering angle between the correct bins for creating histograms
