@@ -112,7 +112,7 @@ class AllSatData(list):
           ###############################################################################################################
           # The fieldselected here stay as they are with their basic initialisation (most of the time None)
           # Fields to be used soon : "fits", "pa", "fit_compton_cr", "pa_err", "fit_compton_cr_err", "fit_goodness",
-          if item not in ["sat_dec_wf", "sat_ra_wf", "sat_dec_wf", "grb_dec_sat_frame", "grb_ra_sat_frame", "expected_pa",
+          if item not in ["sat_dec_wf", "sat_ra_wf", "sat_alt", "grb_dec_sat_frame", "grb_ra_sat_frame", "expected_pa",
                           "mdp", "hits_snrs", "compton_snrs", "single_snrs"]:
             #############################################################################################################
             # Filtering the satellites for some items
