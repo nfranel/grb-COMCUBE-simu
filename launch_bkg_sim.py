@@ -77,7 +77,7 @@ def make_tmp_source(alt, lat, geom, source_model, spectrapath, simduration):
   :returns: name of the temporary source file, name of the simulation without the extension
   """
   fname = f"tmp_{os.getpid()}.source"
-  geom_name = geometry.split(".geo.setup")[0].split("/")[-1]
+  geom_name = geom.split(".geo.setup")[0].split("/")[-1]
   sname = f"./bkg/sim_{geom_name}/sim/bkg_{alt:.1f}_{lat:.1f}_{simduration:.0f}s"
   source_list = ["SecondaryElectrons", "AtmosphericNeutrons", "AlbedoPhotons", "SecondaryPositrons", "SecondaryProtonsUpward", "SecondaryProtonsDownward", "PrimaryElectrons", "CosmicPhotons", "PrimaryPositrons", "PrimaryProtons"]
   with open(source_model) as f:

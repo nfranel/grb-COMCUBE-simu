@@ -115,6 +115,7 @@ def magnetic_latitude_convert(altitude, lat_range=np.linspace(90, -90, 721), lon
   plt.show()
 
 
+
 def calc_duty(inc, ohm, omega, alt, show=False, show_sat=False):
   """
   Calculates the duty cycle caused by the radiation belts
