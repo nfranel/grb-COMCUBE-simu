@@ -265,8 +265,22 @@ def read_bkgpar(parfile):
     elif line.startswith("@altitudes"):
       altitudes = list(map(float, line.split(" ")[1:]))
     elif line.startswith("@latitudes"):
-      latitudes = list(map(int, line.split(" ")[1:]))
-      latitudes = np.linspace(latitudes[0], latitudes[1], latitudes[2])
+      values = line.split(" ")[1:]
+      if values[0].startswith("[") and values[-1].endswith("]"):
+        values[0] = values[0][1:]
+        values[-1] = values[-1][:-1]
+        try:
+          latitudes = np.array(list(map(int, values)))
+        except ValueError:
+          raise ValueError("Problem while reading the background parameter file, latitude list should be int separated by a space and between brackets")
+      elif len(values) == 3:
+        try:
+          latitudes = list(map(int, values))
+          latitudes = np.linspace(latitudes[0], latitudes[1], latitudes[2])
+        except ValueError:
+          raise ValueError("Problem while reading the background parameter file, latitude range should be 3 int separated by a space")
+      else:
+        raise ValueError("Problem while reading the background parameter file, latitude should be a range or a list of value as described in the header")
   return geom, revanf, mimrecf, source_base, spectra, simtime, latitudes, altitudes
 
 
