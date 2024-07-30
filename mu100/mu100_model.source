@@ -1,7 +1,7 @@
 # cosima source file for background simulation of mu100 at different angles
 
 Version         1
-Geometry        /data-nathan/grb-COMCUBE-simu/COMCUBE_M7/COMCUBE_v134.geo.setup
+Geometry        /data-nathan/grb-COMCUBE-simu/geom/COMCUBE_v15.geo.setup
 
 # Physics list
 PhysicsListHD                        QGSP-BIC-HP

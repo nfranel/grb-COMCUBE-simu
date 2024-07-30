@@ -22,13 +22,13 @@
 ### Parameters :
 ############################################################
 @geometry ./geom/COMCUBE_v134.geo.setup
-@revancfgfile ./cfgs/revan303.cfg
+@revancfgfile ./cfgs/revanv1.cfg
 @mimrecfile ./cfgs/mimrec10-1000single.cfg
 
 @cosimasourcefile ./mu100/mu100_model.source
 @spectrafilepath ./sources/
 
-@bandparam 10 -0.8 -2.2 200 100
+@bandparam 0.1 -0.8 -2.2 200 100
 @poltime 300
 @unpoltime 300
 @decposition 0 114 115
