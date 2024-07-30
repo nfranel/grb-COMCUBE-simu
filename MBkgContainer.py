@@ -133,7 +133,7 @@ class BkgContainer(list):
             f.write("NewBkg\n")
             f.write(f"{decbkg}\n")
             f.write(f"{altbkg}\n")
-            try:
+            if len(compton_ener) > 0:
               for ite in range(len(compton_second) - 1):
                 f.write(f"{compton_second[ite]}|")
               f.write(f"{compton_second[-1]}\n")
@@ -153,6 +153,7 @@ class BkgContainer(list):
                 f.write(f"{string}|")
               string = f"{compton_secpos[-1][0]}_{compton_secpos[-1][1]}_{compton_secpos[-1][2]}"
               f.write(f"{string}\n")
+            if len(single_ener) > 0:
               for ite in range(len(single_ener) - 1):
                 f.write(f"{single_ener[ite]}|")
               f.write(f"{single_ener[-1]}\n")
@@ -164,10 +165,6 @@ class BkgContainer(list):
                 f.write(f"{string}|")
               string = f"{single_pos[-1][0]}_{single_pos[-1][1]}_{single_pos[-1][2]}"
               f.write(f"{string}\n")
-            except IndexError:
-              print("compton_second, compton_ener, compton_time, compton_firstpos, compton_secpos")
-              print(compton_second, compton_ener, compton_time, compton_firstpos, compton_secpos)
-              raise IndexError("A corriger")
             compton_index = np.where(compton_ener >= ergcut[0], np.where(compton_ener <= ergcut[1], True, False), False)
             single_index = np.where(single_ener >= ergcut[0], np.where(single_ener <= ergcut[1], True, False), False)
             compton_ener = compton_ener[compton_index]
