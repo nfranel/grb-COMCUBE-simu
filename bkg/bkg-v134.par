@@ -15,8 +15,8 @@
 #@simtime            : Duration of simulation (usually 3600 s)
 #@altitudes          : Altitudes simulated (separated by a blank space)
 #@latitudes          : Latitudes simulated
-                        range : (Initial value, final value, number of values)
-                        list : as much values as wanted with this format [val1 val2 val3 valn]
+#                        range : (Initial value, final value, number of values)
+#                        list : as much values as wanted with this format [val1 val2 val3 valn]
 
 ############################################################
 ### Parameters :
