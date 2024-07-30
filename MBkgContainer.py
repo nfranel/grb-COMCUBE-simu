@@ -133,37 +133,41 @@ class BkgContainer(list):
             f.write("NewBkg\n")
             f.write(f"{decbkg}\n")
             f.write(f"{altbkg}\n")
-            for ite in range(len(compton_second) - 1):
-              f.write(f"{compton_second[ite]}|")
-            f.write(f"{compton_second[-1]}\n")
-            for ite in range(len(compton_ener) - 1):
-              f.write(f"{compton_ener[ite]}|")
-            f.write(f"{compton_ener[-1]}\n")
-            for ite in range(len(compton_time) - 1):
-              f.write(f"{compton_time[ite]}|")
-            f.write(f"{compton_time[-1]}\n")
-            for ite in range(len(compton_firstpos) - 1):
-              string = f"{compton_firstpos[ite][0]}_{compton_firstpos[ite][1]}_{compton_firstpos[ite][2]}"
-              f.write(f"{string}|")
-            string = f"{compton_firstpos[-1][0]}_{compton_firstpos[-1][1]}_{compton_firstpos[-1][2]}"
-            f.write(f"{string}\n")
-            for ite in range(len(compton_secpos) - 1):
-              string = f"{compton_secpos[ite][0]}_{compton_secpos[ite][1]}_{compton_secpos[ite][2]}"
-              f.write(f"{string}|")
-            string = f"{compton_secpos[-1][0]}_{compton_secpos[-1][1]}_{compton_secpos[-1][2]}"
-            f.write(f"{string}\n")
-            for ite in range(len(single_ener) - 1):
-              f.write(f"{single_ener[ite]}|")
-            f.write(f"{single_ener[-1]}\n")
-            for ite in range(len(single_time) - 1):
-              f.write(f"{single_time[ite]}|")
-            f.write(f"{single_time[-1]}\n")
-            for ite in range(len(single_pos) - 1):
-              string = f"{single_pos[ite][0]}_{single_pos[ite][1]}_{single_pos[ite][2]}"
-              f.write(f"{string}|")
-            string = f"{single_pos[-1][0]}_{single_pos[-1][1]}_{single_pos[-1][2]}"
-            f.write(f"{string}\n")
-
+            try:
+              for ite in range(len(compton_second) - 1):
+                f.write(f"{compton_second[ite]}|")
+              f.write(f"{compton_second[-1]}\n")
+              for ite in range(len(compton_ener) - 1):
+                f.write(f"{compton_ener[ite]}|")
+              f.write(f"{compton_ener[-1]}\n")
+              for ite in range(len(compton_time) - 1):
+                f.write(f"{compton_time[ite]}|")
+              f.write(f"{compton_time[-1]}\n")
+              for ite in range(len(compton_firstpos) - 1):
+                string = f"{compton_firstpos[ite][0]}_{compton_firstpos[ite][1]}_{compton_firstpos[ite][2]}"
+                f.write(f"{string}|")
+              string = f"{compton_firstpos[-1][0]}_{compton_firstpos[-1][1]}_{compton_firstpos[-1][2]}"
+              f.write(f"{string}\n")
+              for ite in range(len(compton_secpos) - 1):
+                string = f"{compton_secpos[ite][0]}_{compton_secpos[ite][1]}_{compton_secpos[ite][2]}"
+                f.write(f"{string}|")
+              string = f"{compton_secpos[-1][0]}_{compton_secpos[-1][1]}_{compton_secpos[-1][2]}"
+              f.write(f"{string}\n")
+              for ite in range(len(single_ener) - 1):
+                f.write(f"{single_ener[ite]}|")
+              f.write(f"{single_ener[-1]}\n")
+              for ite in range(len(single_time) - 1):
+                f.write(f"{single_time[ite]}|")
+              f.write(f"{single_time[-1]}\n")
+              for ite in range(len(single_pos) - 1):
+                string = f"{single_pos[ite][0]}_{single_pos[ite][1]}_{single_pos[ite][2]}"
+                f.write(f"{string}|")
+              string = f"{single_pos[-1][0]}_{single_pos[-1][1]}_{single_pos[-1][2]}"
+              f.write(f"{string}\n")
+            except IndexError:
+              print("compton_second, compton_ener, compton_time, compton_firstpos, compton_secpos")
+              print(compton_second, compton_ener, compton_time, compton_firstpos, compton_secpos)
+              raise IndexError("A corriger")
             compton_index = np.where(compton_ener >= ergcut[0], np.where(compton_ener <= ergcut[1], True, False), False)
             single_index = np.where(single_ener >= ergcut[0], np.where(single_ener <= ergcut[1], True, False), False)
             compton_ener = compton_ener[compton_index]
