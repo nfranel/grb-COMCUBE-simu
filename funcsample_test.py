@@ -470,10 +470,8 @@ def yonetoku_short(epeak):
   :returns: Peak luminosity
   """
   qy, my = 0.034, 0.84
-  if type(epeak) is float or type(epeak) is int or type(epeak) is np.ndarray or type(epeak) is np.float64:
-    return 10 ** (52 + (np.log10(epeak / 670) - qy) / my)
-  else:
-    raise TypeError("Please use a correct type for energy, only accepted are float or numpy ndarray")
+  return 1e52 * (epeak/(670 * 10 ** qy))**(1/my)
+
 
 def yonetoku_reverse_short(lpeak):
   """
@@ -482,11 +480,7 @@ def yonetoku_reverse_short(lpeak):
   :returns: Epeak
   """
   qy, my = 0.034, 0.84
-  if type(lpeak) is float or type(lpeak) is int or type(lpeak) is np.ndarray or type(lpeak) is np.float64:
-    return 670 * 10**(qy + my * np.log10(lpeak / 10**52))
-  else:
-    raise TypeError("Please use a correct type for energy, only accepted are float or numpy ndarray")
-
+  return 670 * 10 ** qy * (lpeak / 10 ** 52) ** my
   # tsutsui
   # id1, s_id1, id2, s_id2 = 52.29, 0.066, 1.59, 0.11
   # rand1 = np.random.normal(id1, s_id1)
