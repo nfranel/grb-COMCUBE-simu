@@ -6,7 +6,7 @@ from itertools import repeat
 # from scipy.stats import skewnorm
 from catalog import Catalog
 from funcmod import extract_lc, calc_flux_gbm, use_scipyquad
-from funcsample import *
+from funcsample_test import *
 # from scipy.optimize import curve_fit
 from scipy.stats import gaussian_kde
 # import warnings
