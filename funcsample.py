@@ -106,6 +106,26 @@ def sbplaw(x, A, xb, alpha1, alpha2, delta):
   return A * (x/xb)**(-alpha1) * (1/2*(1+(x/xb)**(1/delta)))**((alpha1-alpha2)*delta)
 
 
+def pick_lognormal_alpha_beta(mu_alpha, sig_alpha, mu_beta, sig_beta):
+  """
+  Used to obtain alpha and beta using lognormal distributions so that the spectrum is feasible (norm>0)
+  """
+  band_low_obs_temp = np.random.normal(loc=mu_alpha, scale=sig_alpha)
+  band_high_obs_temp = np.random.normal(loc=mu_beta, scale=sig_beta)
+  if (band_low_obs_temp - band_high_obs_temp) / (band_low_obs_temp + 2) < 0 or band_low_obs_temp < band_high_obs_temp or band_low_obs_temp == -2:
+    ampl_norm = -1
+  else:
+    ampl_norm = normalisation_calc(band_low_obs_temp, band_high_obs_temp)
+  while ampl_norm < 0:
+    band_low_obs_temp = np.random.normal(loc=mu_alpha, scale=sig_alpha)
+    band_high_obs_temp = np.random.normal(loc=mu_beta, scale=sig_beta)
+    if (band_low_obs_temp - band_high_obs_temp) / (band_low_obs_temp + 2) < 0 or band_low_obs_temp < band_high_obs_temp or band_low_obs_temp == -2:
+      ampl_norm = -1
+    else:
+      ampl_norm = normalisation_calc(band_low_obs_temp, band_high_obs_temp)
+  return band_low_obs_temp, band_high_obs_temp
+
+
 ############################################################################################################################################################
 # Distributions
 ############################################################################################################################################################
@@ -142,80 +162,13 @@ def broken_plaw(val, ind1, ind2, val_b):
 ############################################################################################################################################################
 # Long distri
 ############################################################################################################################################################
-def lpeak_function_long(lpeak):
-  """
-  Version
-    Luminosity function (distribution) for long GRBs
-    Function and associated parameters and cases are taken from Sarah Antier's thesis
-  :param lpeak: float or array of float containing peak luminosities
-  """
-  # al1_l, al2_l, lb_l = -0.65, -3, (10 ** 52.05) / 5.6
-  al1_l, al2_l, lb_l = -0.65, -3, (10 ** 52.05) / 4.5
-  return broken_plaw(lpeak, al1_l, al2_l, lb_l)
-
-
-def lpeak_function_long_v2(lpeak, red):
-  """
-  Version
-    Luminosity function (distribution) for long GRBs
-    Function and associated parameters and cases are taken from Jesse Palmerio k05-A-nF
-  :param lpeak: float or array of float containing peak luminosities
-  """
-  lmin, kevo, lb, slope = 10**49.7, 0.5, 10**53.01, 1.42
-  lpeak = lpeak / (1 + red)**kevo
-  if type(lpeak) is float or type(lpeak) is int:
-    if lpeak <= lmin:
-      return 0
-    else:
-      return 1 / (1 + red)**kevo * (lpeak / lb)**(-slope) * np.exp(-lpeak/lb)
-  elif type(lpeak) is np.ndarray:
-    return np.where(lpeak <= lb, 0, 1 / (1 + red)**kevo * (lpeak / lb)**(-slope) * np.exp(-lpeak/lb))
-  else:
-    raise TypeError("Please use a correct type for luminosity, only accepted are float or numpy ndarray")
-
-
-def lpeak_function_long_v3(lpeak, red):
-  """
-  Version
-    Luminosity function (distribution) for long GRBs
-    Function and associated parameters and cases are taken from Pescalli, 2016
-  :param lpeak: float or array of float containing peak luminosities
-  :param red: Redshift considered
-  """
-  al1_l, al2_l, lb_l = -1.32, -1.84, 10 ** 51.45
-  return (1+red)**2.5 * broken_plaw(lpeak, al1_l, al2_l, lb_l)
-
-
-def lpeak_function_long_v4(lpeak):
-  """
-  Version
-    Luminosity function (distribution) for long GRBs
-    Function and associated parameters and cases are taken from Lan G., 2019
-  :param lpeak: float or array of float containing peak luminosities
-  """
-  al1_l, al2_l, lb_l = -0.69, -1.76, 10 ** 53.32
-  return 1/lpeak * broken_plaw(lpeak, al1_l, al2_l, lb_l)
-
-
-def lpeak_function_long_v42(lpeak):
-  """
-  Version
-    Luminosity function (distribution) for long GRBs
-    Function and associated parameters and cases are taken from Lan G., 2019
-  :param lpeak: float or array of float containing peak luminosities
-  """
-  al1_l, al2_l, lb_l = -0.69, -1.76, 10 ** 53.32
-  return broken_plaw(lpeak, al1_l, al2_l, lb_l)
-
-
-def redshift_distribution_long(red):
+def redshift_distribution_long(red, red0, n1, n2, z1):
   """
   Version
     redshift distribution for long GRBs
-    Function and associated parameters and cases are taken from Sarah Antier's thesis
+    Function and associated parameters and cases are taken from Lan G., 2019
   :param red: float or array of float containing redshifts
   """
-  red0, n1, n2, z1 = 0.42, 2.07, -0.7, 3.6
   if type(red) is float or type(red) is int:
     if red <= z1:
       return red0 * (1 + red)**n1
@@ -227,73 +180,14 @@ def redshift_distribution_long(red):
     raise TypeError("Please use a correct type for red, only accepted are float or numpy ndarray")
 
 
-def redshift_distribution_long_v2(red):
-  """
-  Version
-    redshift distribution for long GRBs
-    Function and associated parameters and cases are taken from Jesse Palmerio k05-A-nF
-  :param red: float or array of float containing redshifts
-  """
-  n0, na, nb, zm = 1.8, 1.24, -0.21, 2.11
-  if type(red) is float or type(red) is int:
-    if red < zm:
-      return n0 * np.exp(na * red)
-    else:
-      return n0 * np.exp(nb * red) * np.exp((na - nb) * zm)
-  elif type(red) is np.ndarray:
-    return np.where(red < zm, n0 * np.exp(na * red), n0 * np.exp(nb * red) * np.exp((na - nb) * zm))
-  else:
-    raise TypeError("Please use a correct type for red, only accepted are float or numpy ndarray")
-
-
-def redshift_distribution_long_v3(red, red0):
-  """
-  Version
-    redshift distribution for long GRBs
-    Function and associated parameters and cases are taken from Lan G., 2019
-  :param red: float or array of float containing redshifts
-  """
-  # red0, n1, n2, z1 = 1.49, 3.85, -1.07, 2.33
-  n1, n2, z1 = 3.85, -1.07, 2.33
-  if type(red) is float or type(red) is int:
-    if red <= z1:
-      return red0 * (1 + red)**n1
-    else:
-      return red0 * (1 + z1)**(n1 - n2) * (1 + red)**n2
-  elif type(red) is np.ndarray:
-    return np.where(red <= z1, red0 * (1 + red)**n1, red0 * (1 + z1)**(n1 - n2) * (1 + red)**n2)
-  else:
-    raise TypeError("Please use a correct type for red, only accepted are float or numpy ndarray")
-
-
-def red_rate_long(red):
-  """
-  Version
-    Function to obtain the number of long GRB and to pick them according to their distribution
-    Parameters from Sarah Antier's thesis
-  """
-  vol_com = Planck18.differential_comoving_volume(red).to_value("Gpc3 / sr")  # Change from Mpc3 / sr to Gpc3 / sr
-  return 4 * np.pi * redshift_distribution_long(red) / (1 + red) * vol_com
-
-
-def red_rate_long_v2(red):
+def red_rate_long(red, rate0, n1, n2, z1):
   """
   Version
     Function to obtain the number of long GRB and to pick them according to their distribution
     Function and associated parameters and cases are taken from Jesse Palmerio k05-A-nF
   """
   vol_com = Planck18.differential_comoving_volume(red).to_value("Gpc3 / sr")  # Change from Mpc3 / sr to Gpc3 / sr
-  return 4 * np.pi * redshift_distribution_long_v2(red) / (1 + red) * vol_com
-
-
-def red_rate_long_v3(red, rate0):
-  """
-  Version
-    Function to obtain the number of long GRB and to pick them according to their distribution
-    Function and associated parameters and cases are taken from Jesse Palmerio k05-A-nF
-  """
-  vol_com = Planck18.differential_comoving_volume(red).to_value("Gpc3 / sr")  # Change from Mpc3 / sr to Gpc3 / sr
-  return 4 * np.pi * redshift_distribution_long_v3(red, rate0) / (1 + red) * vol_com
+  return 4 * np.pi * redshift_distribution_long(red, rate0, n1, n2, z1) / (1 + red) * vol_com
 
 
 def epeak_distribution_long(epeak):
@@ -322,41 +216,24 @@ def t90_long_log_distri(time):
 ############################################################################################################################################################
 # Short distri
 ############################################################################################################################################################
-def redshift_distribution_short(red):
+def redshift_distribution_short(red, p1, zp, p2):
   """
   Version
     redshift distribution for short GRBs
     Function and associated parameters and cases are taken from Ghirlanda et al. 2016
   :param red: float or array of float containing redshifts
   """
-  p1, zp, p2 = 2.8, 2.3, 3.5
-  # p1, zp, p2 = 3.1, 2.5, 3.6 # test
-  if type(red) is float or type(red) is int or type(red) is np.ndarray:
-    return (1 + p1 * red) / (1 + (red / zp)**p2)
-  else:
-    raise TypeError("Please use a correct type for red, only accepted are float or numpy ndarray")
+  return (1 + p1 * red) / (1 + (red / zp)**p2)
 
 
-def red_rate_short(red, rate0):
+def red_rate_short(red, rate0, p1, zp, p2):
   """
   Version
     Function to obtain the number of short GRB and to pick them according to their distribution
     Parameters from Ghirlanda et al. 2016
   """
   vol_com = Planck18.differential_comoving_volume(red).to_value("Gpc3 / sr")  # Change from Mpc3 / sr to Gpc3 / sr
-  return rate0 * 4 * np.pi * redshift_distribution_short(red) / (1 + red) * vol_com
-
-
-def lpeak_function_short(lpeak):
-  """
-  Version
-    Luminosity function (distribution) for short GRBs
-    Function and associated parameters and cases are taken from Ghirlanda et al. 2016
-  :param lpeak: float or array of float containing peak luminosities
-  """
-  # al1_l, al2_l, lb_l = -0.53, -3.4, 2.8e52
-  al1_l, al2_l, lb_l = 0.15, -2, 0.63e52 # test
-  return broken_plaw(lpeak, al1_l, al2_l, lb_l)
+  return rate0 * 4 * np.pi * redshift_distribution_short(red, p1, zp, p2) / (1 + red) * vol_com
 
 
 def epeak_distribution_short(epeak):
@@ -366,7 +243,7 @@ def epeak_distribution_short(epeak):
     Function and associated parameters and cases are taken from Ghirlanda et al. 2016
   :param epeak: float or array of float containing peak energies
   """
-  a1, a2, epb = 0.53, -4, 1600  # Took -a1 because the results were coherent only this way
+  a1, a2, epb = -0.53, -4, 1600  # Took -a1 because the results were coherent only this way
   # a1, a2, epb = 0.61, -2.8, 2200  # test
   return broken_plaw(epeak, a1, a2, epb)
   # ampl, skewness, mu, sigma = 16, -5.2, 3.15, 0.66
@@ -427,23 +304,11 @@ def yonetoku_reverse_long(lpeak):
   """
   ampl, l0, ind1 = 372, 1e52, 0.5
   return ampl * (lpeak / l0) ** ind1
-
   # yonetoku
   # id1, s_id1, id2, s_id2 = 52.43, 0.037, 1.60, 0.082
   # rand1 = np.random.normal(id1, s_id1)
   # rand2 = np.random.normal(id2, s_id2)
   # return 355 * (lpeak/10**rand1)**(1/rand2)
-
-
-def yonetoku_reverse_long_v2(lpeak):
-  """
-  Version
-    Yonetoku relation (Yonetoku et al, 2010)
-    Function and associated parameters and cases are taken from Jesse Palmerio k05-A-nF
-  :returns: Peak energy
-  """
-  ep0, alpha, sig_ep, l0 = 10**2.80, 0.27, 0.44, 1.6e52
-  return ep0 * (lpeak/l0)**alpha * 10**(np.sqrt(1+alpha**2)*np.random.normal(loc=0, scale=sig_ep))
 
 
 ############################################################################################################################################################
@@ -470,10 +335,8 @@ def yonetoku_short(epeak):
   :returns: Peak luminosity
   """
   qy, my = 0.034, 0.84
-  if type(epeak) is float or type(epeak) is int or type(epeak) is np.ndarray or type(epeak) is np.float64:
-    return 10 ** (52 + (np.log10(epeak / 670) - qy) / my)
-  else:
-    raise TypeError("Please use a correct type for energy, only accepted are float or numpy ndarray")
+  return 1e52 * (epeak/(670 * 10 ** qy))**(1/my)
+
 
 def yonetoku_reverse_short(lpeak):
   """
@@ -482,11 +345,7 @@ def yonetoku_reverse_short(lpeak):
   :returns: Epeak
   """
   qy, my = 0.034, 0.84
-  if type(lpeak) is float or type(lpeak) is int or type(lpeak) is np.ndarray or type(lpeak) is np.float64:
-    return 670 * 10**(qy + my * np.log10(lpeak / 10**52))
-  else:
-    raise TypeError("Please use a correct type for energy, only accepted are float or numpy ndarray")
-
+  return 670 * 10 ** qy * (lpeak / 10 ** 52) ** my
   # tsutsui
   # id1, s_id1, id2, s_id2 = 52.29, 0.066, 1.59, 0.11
   # rand1 = np.random.normal(id1, s_id1)
