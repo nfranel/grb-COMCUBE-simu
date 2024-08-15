@@ -35,7 +35,7 @@ class GRBSample:
     self.thetaj_max = 15
     self.lmin = 1e49  # erg/s
     self.lmax = 3e54
-    self.n_year = 2
+    self.n_year = 10
     gbmduty = 0.587
     self.gbm_weight = 1 / gbmduty / 10
     self.sample_weight = 1 / self.n_year
@@ -76,7 +76,7 @@ class GRBSample:
     # ==== Redshift
     # Function and associated parameters and cases are taken from Lan G., 2019
     # self.long_rate = 1.49 / 6.7  # +0.63 -0.64
-    self.long_rate = 0.22  # +0.63 -0.64
+    self.long_rate = 0.22  # +0.63 -0.64   # initial value is 1.49 (divided by 6.7) but this division was needed for a realistic ratio of Long/short GRBs
     self.ind1_z_l = 3.85  # +0.48 -0.45
     self.ind2_z_l = -1.07  # +0.98 -1.12
     self.zb_l = 2.33  # +0.39 -0.24
@@ -290,7 +290,7 @@ class GRBSample:
     ##################################################################################################################
     z_obs_temp = acc_reject(red_rate_long, [self.long_rate, self.ind1_z_l, self.ind2_z_l, self.zb_l], self.zmin, self.zmax)
 
-    lpeak_rest_temp = acc_reject(broken_plaw, [self.ind1_l, self.ind2_l, self.lb_l], self.lmin, self.lmax)  # / 3.5
+    lpeak_rest_temp = acc_reject(broken_plaw, [self.ind1_l, self.ind2_l, self.lb_l], self.lmin, self.lmax)
 
     band_low_obs_temp, band_high_obs_temp = pick_lognormal_alpha_beta(self.band_low_l_mu, self.band_low_l_sig, self.band_high_l_mu, self.band_high_l_sig)
 
