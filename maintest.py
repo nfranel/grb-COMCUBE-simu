@@ -28,9 +28,12 @@ init_time = time()
 # grb_sim_param = "/pdisk/ESA/COMCUBEv15--500km--0-45-97.5--27sat--long/polGBM.par"
 # grb_sim_param = "/pdisk/ESA/COMCUBEv15--500km--5-5-45--27sat--long/polGBM.par"
 # grb_sim_param = "/pdisk/ESA/COMCUBEv15--500km--0-45-97.5--36sat--long/polGBM.par"
-grb_sim_param = "/pdisk/ESA/COMCUBEv15--500km--0-0-0--27sat--short/polGBM.par"
+# grb_sim_param = "/pdisk/ESA/COMCUBEv15--500km--0-0-0--27sat--short/polGBM.par"
 # grb_sim_param = "/pdisk/ESA/COMCUBEv15--500km--0-45-97.5--27sat--short/polGBM.par"
 # grb_sim_param = "/pdisk/ESA/COMCUBEv15--500km--5-5-45--27sat--short/polGBM.par"
+
+grb_sim_param = "/pdisk/ESA/COMCUBEv15--500km--0-0-0--27sat--lc-sampled/polGBM.par"
+
 bkg_param = "./bkg/bkg-v15.par"
 mu_param = "./mu100/mu100-v15.par"
 # bkg_param = "./bkg/bkg-v134.par"

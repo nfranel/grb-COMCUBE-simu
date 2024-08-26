@@ -29,5 +29,5 @@
 @spectrafilepath ./bkg/bkg_source_spectra/
 
 @simtime 3600
-@altitudes [550]
+@altitudes 550
 @latitudes -90 90 91
