@@ -57,11 +57,11 @@ class AllSimData(list):
         # Retrieving energy fluence of the source [erg/cm²]
         self.source_energy_fluence = cat_data.df.fluence[source_ite]
       elif cat_data.cat_type == "sampled":
-        self.source_name = cat_data.name[source_ite]
-        self.source_duration = float(cat_data.t90[source_ite])
+        self.source_name = cat_data.df.name[source_ite]
+        self.source_duration = float(cat_data.df.t90[source_ite])
         self.best_fit_model = "band"
         self.best_fit_p_flux = None
-        self.best_fit_mean_flux = float(cat_data.mean_flux[source_ite])
+        self.best_fit_mean_flux = float(cat_data.df.mean_flux[source_ite])
         self.source_fluence = calc_flux_sample(cat_data, source_ite, options[0]) * self.source_duration
         self.source_energy_fluence = None
       else:

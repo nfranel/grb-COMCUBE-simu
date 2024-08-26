@@ -630,7 +630,7 @@ def calc_flux_gbm(catalog, index, ergcut):
     func = plaw
     func_args = (catalog.df.flnc_plaw_ampl[index], catalog.df.flnc_plaw_index[index], catalog.df.flnc_plaw_pivot[index])
   else:
-    print("Could not find best fit model for {} (indicated {}). Aborting this GRB.".format(catalog.name[index], model))
+    print("Could not find best fit model for {} (indicated {}). Aborting this GRB.".format(catalog.df.name[index], model))
     return
   return use_scipyquad(func, ergcut[0], ergcut[1], func_args=func_args, x_logscale=True)[0]
 

@@ -98,7 +98,7 @@ def calc_flux_sample(catalog, index, ergcut):
   :returns: the number of photons per cm² for a given energy range, averaged over the duration of the sim : ncount/cm²/s
   """
   ener_range = np.logspace(np.log10(ergcut[0]), np.log10(ergcut[1]), 100001)
-  norm_val, spec, pflux = norm_band_spec_calc(catalog.band_low[index], catalog.band_high[index], catalog.red[index], catalog.dl[index], catalog.ep[index], catalog.liso[index], ener_range)
+  norm_val, spec, pflux = norm_band_spec_calc(catalog.df.alpha[index], catalog.df.beta[index], catalog.df.z_obs[index], catalog.df.dl[index], catalog.df.ep_rest[index], catalog.df.liso[index], ener_range)
   return pflux
 
 
