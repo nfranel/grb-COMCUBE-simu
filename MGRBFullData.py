@@ -18,14 +18,12 @@ class GRBFullData:
   """
   Class containing the data for 1 GRB, for 1 sim, and 1 satellite
   """
-  def __init__(self, data_list, sat_info, burst_time, sim_duration, num_sat, bkg_data, mu_data, source_duration,
-               source_fluence, ergcut, armcut, geometry, corr, polarigram_bins):
+  def __init__(self, data_list, sim_duration, source_duration, source_fluence, corr, polarigram_bins):
     """
     :param data_list: list of files to read (should be containing only 1)
     :param sat_info: orbital information about the satellite detecting the source
     :param burst_time: time at which the detection was made
     :param sim_duration: duration of the simulation
-    :param num_sat: number of the satellite detecting the source
     :param bkg_data: list of background data to affect the correct count rates to this simulation
     :param mu_data: list of mu100 data to affect the correct mu100 and effective area to this simulation
     :param ergcut: energy cut to use
@@ -37,6 +35,7 @@ class GRBFullData:
     ###################################################################################################################
     #  Attributes declaration    +    way they are treated with constellation
     ###################################################################################################################
+    self.array_dtype = "float32"
     ###################################################################################################################
     # Attributes for the sat
     self.compton_b_rate = 0                     # Summed                  # Compton
@@ -45,7 +44,7 @@ class GRBFullData:
     self.sat_dec_wf = None                      # Not changed             #
     self.sat_ra_wf = None                       # Not changed             #
     self.sat_alt = None                         # Not changed             #
-    self.num_sat = num_sat                      # Appened                 #
+    self.num_sat = None                         # Appened                 #
     ###################################################################################################################
     # Attributes from the mu100 files
     self.mu100_ref = None                       # Weighted mean           # Compton
@@ -57,21 +56,27 @@ class GRBFullData:
     # Attributes filled with file reading (or to be used from this moment)
     self.grb_dec_sat_frame = None               # Not changed             #
     self.grb_ra_sat_frame = None                # Not changed             #
+    self.expected_pa = None                     # Not changed             #
     self.compton_ener = []                      # 1D concatenation        # Compton
     self.compton_second = []                    # 1D concatenation        # Compton
     self.single_ener = []                       # 1D concatenation        # Single
-    self.hit_time = []                          # 1D concatenation        # Trigger quality selection
     self.compton_time = []                      # 1D concatenation        # Compton
     self.single_time = []                       # 1D concatenation        # Single
+    self.hit_time = []                          # 1D concatenation        # Trigger quality selection
     self.pol = None                             # 1D concatenation        # Compton
     self.polar_from_position = None             # 1D concatenation        # Compton
     # This polar angle is the one considered as compton scatter angle by mimrec
     self.polar_from_energy = None               # 1D concatenation        # Compton
     self.arm_pol = None                         # 1D concatenation        # Compton
     self.azim_angle_corrected = False           # Set to true             #
+    ###################################################################################################################
+    # interaction position attributes
     compton_firstpos = []
     compton_secpos = []
     single_pos = []
+    self.compton_first_detector = []            # 1D concatenation        # Compton
+    self.compton_sec_detector = []              # 1D concatenation        # Compton
+    self.single_detector = []                   # 1D concatenation        # Single
     ###################################################################################################################
     # Attributes filled after the reading
     # Set using extracted data
@@ -82,7 +87,6 @@ class GRBFullData:
     self.compton = 0                            # Summed                  # Compton
     self.compton_cr = 0                         # Summed                  # Compton
 
-    self.expected_pa = None                     # Not changed             #
     self.bins = None                            # All the same            #
     self.mdp = None                             # Not changed             #
     self.hits_snrs = None                       # Not changed             #
@@ -95,6 +99,7 @@ class GRBFullData:
     self.calor = 0                              # Summed                  # Trigger quality selection ?
     self.dsssd = 0                              # Summed                  # Trigger quality selection ?
     self.side = 0                               # Summed                  # Trigger quality selection ?
+    self.total_hits = 0
     ###################################################################################################################
     self.const_beneficial_compton = True       # Appened                 #
     self.const_beneficial_single = True        # Appened                 #
@@ -106,58 +111,25 @@ class GRBFullData:
     ###################################################################################################################
     #                   Reading data from file
     ###################################################################################################################
-    if len(data_list) == 0:  # Empty object for the constellation making
+    if data_list is None:  # Empty list object for the constellation making
       self.n_sat_detect = 0
-    else:
-      dec_world_frame, ra_world_frame, source_name, num_sim, num_sat = fname2decra(data_list[0])
-      dec_sat_wf, ra_sat_wf = sat_info_2_decra(sat_info, burst_time)
-      self.expected_pa, self.grb_dec_sat_frame, self.grb_ra_sat_frame = grb_decrapol_worldf2satf(dec_world_frame, ra_world_frame, dec_sat_wf, ra_sat_wf)[:3]
-      # Extracting the data from first file
-      data_pol = readfile(data_list[0])
-      for event in data_pol:
-        reading = readevt(event, ergcut)
-        if len(reading) == 5:
-          self.compton_second.append(reading[0])
-          self.compton_ener.append(reading[1])
-          self.compton_time.append(reading[2])
-          compton_firstpos.append(reading[3])
-          compton_secpos.append(reading[4])
-        elif len(reading) == 3:
-          self.single_ener.append(reading[0])
-          self.single_time.append(reading[1])
-          single_pos.append(reading[2])
-      self.compton_ener = np.array(self.compton_ener, dtype="float32")
-      self.compton_second = np.array(self.compton_second, dtype="float32")
-      self.single_ener = np.array(self.single_ener, dtype="float32")
-      compton_firstpos = np.array(compton_firstpos, dtype="float32")
-      compton_secpos = np.array(compton_secpos, dtype="float32")
-      single_pos = np.array(single_pos, dtype="float32")
-      self.compton_time = np.array(self.compton_time, dtype="float32")
-      self.single_time = np.array(self.single_time, dtype="float32")
+    elif type(data_list) is str:
+      #################################################################################################################
+      #                     Filling the fields by reading the extracted sim files
+      #################################################################################################################
+      self.read_saved_grb(data_list)
 
       #################################################################################################################
-      #                     Filling the fields
+      #        Counting events
       #################################################################################################################
-      # Calculating the polar angle with energy values and compton azim and polar scattering angles from the kinematics
-      # polar and position angle stored in deg
-      self.polar_from_energy = calculate_polar_angle(self.compton_second, self.compton_ener)
-      self.pol, self.polar_from_position = angle(compton_secpos - compton_firstpos, self.grb_dec_sat_frame, self.grb_ra_sat_frame, source_name, num_sim, num_sat)
-      self.pol = angle(compton_secpos - compton_firstpos, self.grb_dec_sat_frame, self.grb_ra_sat_frame, source_name, num_sim, num_sat)[0]
+      self.single = len(self.single_ener)
+      self.single_cr = self.single / sim_duration
+      self.compton = len(self.compton_ener)
+      self.compton_cr = self.compton / sim_duration
 
-      # Calculating the arm and extracting the indexes of correct arm events (arm in deg)
-      self.arm_pol = np.array(self.polar_from_position - self.polar_from_energy, dtype="float32")
-      accepted_arm_pol = np.where(np.abs(self.arm_pol) <= armcut, True, False)
-      # Restriction of the values according to arm cut
-      self.compton_ener = self.compton_ener[accepted_arm_pol]
-      self.compton_second = self.compton_second[accepted_arm_pol]
-      compton_firstpos = compton_firstpos[accepted_arm_pol]
-      compton_secpos = compton_secpos[accepted_arm_pol]
-      self.compton_time = self.compton_time[accepted_arm_pol]
-      self.polar_from_energy = self.polar_from_energy[accepted_arm_pol]
-      self.polar_from_position = np.array(self.polar_from_position[accepted_arm_pol], dtype="float32")
-      self.pol = np.array(self.pol[accepted_arm_pol], dtype="float32")
-      self.hit_time = np.concatenate((self.compton_time, self.compton_time, self.single_time))
-
+      #################################################################################################################
+      #        Setting bins and correcting the polarigram
+      #################################################################################################################
       # Correcting the angle correction for azimuthal angle according to cosima's polarization definition
       # And setting the attribute stating if the correction is applied or not
       # Putting the correction before the filtering may cause some issues
@@ -166,49 +138,61 @@ class GRBFullData:
         self.corr()
 
       #################################################################################################################
-      #        Filling the fields with bkg and mu100 files
+      #        Conducting other calculations
       #################################################################################################################
-      if sat_info is not None:
-        self.sat_dec_wf, self.sat_ra_wf, self.sat_alt, self.compton_b_rate, self.single_b_rate = affect_bkg(sat_info, burst_time, bkg_data)
-        self.hit_b_rate = self.compton_b_rate * 2 + self.single_b_rate
-      self.mu100_ref, self.mu100_err_ref, self.s_eff_compton_ref, self.s_eff_single_ref = closest_mufile(self.grb_dec_sat_frame, self.grb_ra_sat_frame, mu_data)
-      # Putting the azimuthal scattering angle between the correct bins for creating histograms
-      self.single = len(self.single_ener)
-      self.single_cr = self.single / sim_duration
-      self.compton = len(self.compton_ener)
-      self.compton_cr = self.compton / sim_duration
-
-      #################################################################################################################
-      #     Finding the detector of interaction for each event
-      #################################################################################################################
-      self.compton_first_detector, self.compton_sec_detector, self.single_detector = find_detector(compton_firstpos, compton_secpos, single_pos, geometry)
-      hits = np.array([])
-      if len(self.compton_first_detector) > 0:
-        hits = np.concatenate((hits, self.compton_first_detector[:, 1]))
-      if len(self.compton_sec_detector) > 0:
-        hits = np.concatenate((hits, self.compton_sec_detector[:, 1]))
-      if len(self.single_detector) > 0:
-        hits = np.concatenate((hits, self.single_detector[:, 1]))
-      self.calor = 0
-      self.dsssd = 0
-      self.side = 0
-      for hit in hits:
-        if hit == "Calor":
-          self.calor += 1
-        elif hit.startswith("SideDet"):
-          self.side += 1
-        elif hit.startswith("Layer"):
-          self.dsssd += 1
-        else:
-          print("Error, unknown interaction volume")
-      self.total_hits = self.calor + self.dsssd + self.side
-
       # TODO testing
       self.analyze(source_duration, source_fluence)
 
       self.set_beneficial_compton()
       self.set_beneficial_single()
       self.set_beneficial_trigger()
+    else:
+      raise TypeError("Impossible to create the data container : the data must be None or a string")
+
+  def read_saved_grb(self, filename):
+    with open(filename, "r") as f:
+      lines = f.read().split("\n")[1:]
+    # Specific to satellite
+    self.sat_dec_wf = float(lines[0])
+    self.sat_ra_wf = float(lines[1])
+    self.sat_alt = float(lines[2])
+    self.num_sat = int(lines[3])
+    self.compton_b_rate = float(lines[4])
+    self.single_b_rate = float(lines[5])
+    self.hit_b_rate = float(lines[6])
+    # Information from mu files
+    self.mu100_ref = float(lines[7])
+    self.mu100_err_ref = float(lines[8])
+    self.s_eff_compton_ref = float(lines[9])
+    self.s_eff_single_ref = float(lines[10])
+    # GRB position and polarisation
+    self.grb_dec_sat_frame = float(lines[11])
+    self.grb_ra_sat_frame = float(lines[12])
+    self.expected_pa = float(lines[13])
+    # Value arrays
+    self.compton_ener = numerical_array_extract(lines[14], self.array_dtype)
+    self.compton_second = numerical_array_extract(lines[15], self.array_dtype)
+    self.single_ener = numerical_array_extract(lines[16], self.array_dtype)
+    self.compton_time = numerical_array_extract(lines[17], self.array_dtype)
+    self.single_time = numerical_array_extract(lines[18], self.array_dtype)
+    self.hit_time = numerical_array_extract(lines[19], self.array_dtype)
+    self.pol = numerical_array_extract(lines[20], self.array_dtype)
+    self.polar_from_position = numerical_array_extract(lines[21], self.array_dtype)
+    self.polar_from_energy = numerical_array_extract(lines[22], self.array_dtype)
+    self.arm_pol = numerical_array_extract(lines[23], self.array_dtype)
+    self.compton_first_detector = det_pos_array_extract(lines[24])
+    self.compton_sec_detector = det_pos_array_extract(lines[25])
+    self.single_detector = det_pos_array_extract(lines[26])
+    if len(self.single_detector) != len(self.single_time):
+      print("============ERROR=============")
+    # Detector counts
+    self.calor = int(lines[27])
+    self.dsssd = int(lines[28])
+    self.side = int(lines[29])
+    self.total_hits = int(lines[30])
+    # return (sat_dec_wf, sat_ra_wf, sat_alt, num_sat, compton_b_rate, single_b_rate, hit_b_rate, mu100_ref, mu100_err_ref, s_eff_compton_ref, s_eff_single_ref, grb_dec_sat_frame, grb_ra_sat_frame, expected_pa,
+    #         compton_ener, compton_second, single_ener, compton_time, single_time, hit_time, pol, polar_from_position, polar_from_energy, arm_pol, compton_first_detector, compton_sec_detector, single_detector,
+    #         calor, dsssd, side, total_hits)
 
   def cor(self):
     """

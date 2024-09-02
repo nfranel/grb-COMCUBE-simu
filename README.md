@@ -3,9 +3,13 @@
 # TODO add information on visualitation.py and 
 
 Python requirements :
-  - numpy, matplotlib, scipy, pandas, argparse, multiprocessing, subprocess, time, os, gzip, inspect, itertools
+  - numpy, matplotlib, scipy, pandas, argparse, multiprocessing, subprocess, time, os, gzip, inspect, itertools, pyqt, pyside2
   - Special requirements :
     - astropy, cartopy
+  - optional requirements : seaborn
+  - To install modules that are not default : 
+      - conda install numpy matplotlib scipy pandas astropy cartopy pyqt pyside2
+      - pip install numpy matplotlib scipy pandas astropy cartopy pyqt pyside2
     
 Other requirements :
   - make

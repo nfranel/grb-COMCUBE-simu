@@ -151,7 +151,7 @@ def fname2decratime(fname):
   :param fname: *.tra or *.tra.gz filename
   :returns: dec, RA, time at which the burst happened, sourcename, number of the sim, number of the sat
   """
-  data = fname.split("/")[-1] # to get rid of the first part of the prefix (and the potential "_" in it)
+  data = fname.split("/")[-1]  # to get rid of the first part of the prefix (and the potential "_" in it)
   data = data.split("_")
   return float(data[4]), float(data[5]), float(".".join(data[6].split(".")[:2])), data[1], int(data[3]), int(data[2].split("sat")[1])
 
@@ -378,6 +378,179 @@ def readevt(event, ergcut=None):
         return [None]
   else:
     raise TypeError(f"An event has an unidentified type")
+
+
+def save_value(file, value):
+  if value is None:
+    file.write(f"None\n")
+  else:
+    if type(value) is np.ndarray or type(value) is list:
+      if len(value) == 0:
+        file.write(f"\n")
+      else:
+        for ite in range(len(value) - 1):
+          file.write(f"{value[ite]}|")
+        file.write(f"{value[-1]}\n")
+    elif type(value) is int or type(value) is float or type(value) is np.float64:
+      file.write(f"{value}\n")
+    else:
+      raise TypeError(f"Uncorrect type for value saved : {value}, type {type(value)}")
+
+
+def save_grb_data(data_file, filename, sat_info_list, bkg_data, mu_data, ergcut, armcut, geometry, force=False):
+  array_dtype = "float32"
+  sim_dir, fname = filename.split("/extracted/")
+  if fname in os.listdir(f"{sim_dir}/extracted") and not force:
+    print("Checking for already extracted files", end="\r")
+  else:
+    if fname in os.listdir(f"{sim_dir}/extracted"):
+      print("Extracted file exists, re-writing is forced", end="\r")
+    else:
+      print("Extracted files does not exist : Extraction in progress", end="\r")
+    with open(filename, "w") as f:
+      dec_world_frame, ra_world_frame, burst_time, source_name, num_sim, num_sat = fname2decratime(data_file)
+      sat_info = sat_info_list[num_sat]
+      dec_sat_wf, ra_sat_wf = sat_info_2_decra(sat_info, burst_time)
+      expected_pa, grb_dec_sat_frame, grb_ra_sat_frame = grb_decrapol_worldf2satf(dec_world_frame, ra_world_frame, dec_sat_wf, ra_sat_wf)[:3]
+      # Extracting the data from first file
+      data_pol = readfile(data_file)
+      compton_second = []
+      compton_ener = []
+      compton_time = []
+      compton_firstpos = []
+      compton_secpos = []
+      single_ener = []
+      single_time = []
+      single_pos = []
+      for event in data_pol:
+        reading = readevt(event, ergcut)
+        if len(reading) == 5:
+          compton_second.append(reading[0])
+          compton_ener.append(reading[1])
+          compton_time.append(reading[2])
+          compton_firstpos.append(reading[3])
+          compton_secpos.append(reading[4])
+        elif len(reading) == 3:
+          single_ener.append(reading[0])
+          single_time.append(reading[1])
+          single_pos.append(reading[2])
+      compton_ener = np.array(compton_ener, dtype=array_dtype)
+      compton_second = np.array(compton_second, dtype=array_dtype)
+      single_ener = np.array(single_ener, dtype=array_dtype)
+      compton_firstpos = np.array(compton_firstpos, dtype=array_dtype)
+      compton_secpos = np.array(compton_secpos, dtype=array_dtype)
+      single_pos = np.array(single_pos, dtype=array_dtype)
+      compton_time = np.array(compton_time, dtype=array_dtype)
+      single_time = np.array(single_time, dtype=array_dtype)
+
+      #################################################################################################################
+      #                     Filling the fields
+      #################################################################################################################
+      # Calculating the polar angle with energy values and compton azim and polar scattering angles from the kinematics
+      # polar and position angle stored in deg
+      polar_from_energy = calculate_polar_angle(compton_second, compton_ener)
+      pol, polar_from_position = angle(compton_secpos - compton_firstpos, grb_dec_sat_frame, grb_ra_sat_frame, source_name, num_sim, num_sat)
+      pol = angle(compton_secpos - compton_firstpos, grb_dec_sat_frame, grb_ra_sat_frame, source_name, num_sim, num_sat)[0]
+
+      # Calculating the arm and extracting the indexes of correct arm events (arm in deg)
+      arm_pol = np.array(polar_from_position - polar_from_energy, dtype=array_dtype)
+      accepted_arm_pol = np.where(np.abs(arm_pol) <= armcut, True, False)
+      # Restriction of the values according to arm cut
+      compton_ener = compton_ener[accepted_arm_pol]
+      compton_second = compton_second[accepted_arm_pol]
+      compton_firstpos = compton_firstpos[accepted_arm_pol]
+      compton_secpos = compton_secpos[accepted_arm_pol]
+      compton_time = compton_time[accepted_arm_pol]
+      polar_from_energy = polar_from_energy[accepted_arm_pol]
+      polar_from_position = np.array(polar_from_position[accepted_arm_pol], dtype=array_dtype)
+      pol = np.array(pol[accepted_arm_pol], dtype=array_dtype)
+      hit_time = np.concatenate((compton_time, compton_time, single_time))
+
+      #################################################################################################################
+      #        Filling the fields with bkg and mu100 files
+      #################################################################################################################
+      if sat_info is not None:
+        sat_dec_wf, sat_ra_wf, sat_alt, compton_b_rate, single_b_rate = affect_bkg(sat_info, burst_time, bkg_data)
+        hit_b_rate = compton_b_rate * 2 + single_b_rate
+      else:
+        raise ValueError("Satellite information given is None. Please give satellite information for the analyse to work.")
+      mu100_ref, mu100_err_ref, s_eff_compton_ref, s_eff_single_ref = closest_mufile(grb_dec_sat_frame, grb_ra_sat_frame, mu_data)
+
+      #################################################################################################################
+      #     Finding the detector of interaction for each event
+      #################################################################################################################
+      compton_first_detector, compton_sec_detector, single_detector = find_detector(compton_firstpos, compton_secpos, single_pos, num_sat, geometry)
+      hits = np.array([])
+      if len(compton_first_detector) > 0:
+        hits = np.concatenate((hits, compton_first_detector))
+      if len(compton_sec_detector) > 0:
+        hits = np.concatenate((hits, compton_sec_detector))
+      if len(single_detector) > 0:
+        hits = np.concatenate((hits, single_detector))
+      calor = 0
+      dsssd = 0
+      side = 0
+      for hit in hits:
+        if hit.startswith("Calor"):
+          calor += 1
+        elif hit.startswith("SideDet"):
+          side += 1
+        elif hit.startswith("Layer"):
+          dsssd += 1
+        else:
+          print("Error, unknown interaction volume")
+      total_hits = calor + dsssd + side
+      # Saving information
+      f.write(f"Extracted file of simfile : {data_file} with ergcut : {ergcut[0]}-{ergcut[1]} and armcut : {armcut}\n")
+      # Specific to satellite
+      save_value(f, sat_dec_wf)
+      save_value(f, sat_ra_wf)
+      save_value(f, sat_alt)
+      save_value(f, num_sat)
+      save_value(f, compton_b_rate)
+      save_value(f, single_b_rate)
+      save_value(f, hit_b_rate)
+      # Information from mu files
+      save_value(f, mu100_ref)
+      save_value(f, mu100_err_ref)
+      save_value(f, s_eff_compton_ref)
+      save_value(f, s_eff_single_ref)
+      # GRB position and polarisation
+      save_value(f, grb_dec_sat_frame)
+      save_value(f, grb_ra_sat_frame)
+      save_value(f, expected_pa)
+      # Value arrays
+      save_value(f, compton_ener)
+      save_value(f, compton_second)
+      save_value(f, single_ener)
+      save_value(f, compton_time)
+      save_value(f, single_time)
+      save_value(f, hit_time)
+      save_value(f, pol)
+      save_value(f, polar_from_position)
+      save_value(f, polar_from_energy)
+      save_value(f, arm_pol)
+      save_value(f, compton_first_detector)
+      save_value(f, compton_sec_detector)
+      save_value(f, single_detector)
+      # Detector counts
+      save_value(f, calor)
+      save_value(f, dsssd)
+      save_value(f, side)
+      save_value(f, total_hits)
+
+
+def numerical_array_extract(value, array_dtype):
+  if len(value.split("|")) == 1 and value.split("|")[0] == "":
+    return np.array([])
+  else:
+    return np.array(value.split("|"), dtype=array_dtype)
+
+def det_pos_array_extract(value):
+  if len(value.split("|")) == 1 and value.split("|")[0] == "":
+    return np.array([])
+  else:
+    return np.array(value.split("|"))
 
 
 def angle(scatter_vector, grb_dec_sf, grb_ra_sf, source_name, num_sim, num_sat):  # TODO : limits on variables
@@ -1031,7 +1204,7 @@ def random_grb_dec_ra(lat_min, lat_max, lon_min, lon_max):
   return dec, ra
 
 
-def execute_finder(file, events, geometry, cpp_routine="find_detector"):
+def execute_finder(file, events, sat_num, geometry, cpp_routine="find_detector"):
   """
   Executes the "find_detector" c++ routine that find the detector of interaction of different position of interaction
   stored in a file
@@ -1049,16 +1222,18 @@ def execute_finder(file, events, geometry, cpp_routine="find_detector"):
   with open(f"{file}save.txt", "r") as save_file:
     lines = save_file.read().split("\n")[:-1]
     for line in lines:
-      positions.append(line.split(" "))
+      dets = line.split(" ")
+      positions.append(f"{dets[1]}-{dets[0].split('Instrument')[-1]}-sat_{sat_num}")
   return np.array(positions, dtype=str)
 
 
-def find_detector(pos_firt_compton, pos_sec_compton, pos_single, geometry):
+def find_detector(pos_first_compton, pos_sec_compton, pos_single, sat_num, geometry):
   """
-  Execute the position finder for different arrays pos_firt_compton, pos_sec_compton, pos_single
-  :param pos_firt_compton: array containing the position of the first compton interaction
+  Execute the position finder for different arrays pos_first_compton, pos_sec_compton, pos_single
+  :param pos_first_compton: array containing the position of the first compton interaction
   :param pos_sec_compton: array containing the position of the second compton interaction
   :param pos_single: array containing the position of the single event interaction
+  :param sat_num: Number of the satellite that made the detection
   :param geometry: geometry to use
   :returns: 3 arrays containing a list [Instrument unit of the interaction, detector where interaction happened]
   """
@@ -1066,18 +1241,18 @@ def find_detector(pos_firt_compton, pos_sec_compton, pos_single, geometry):
   file_fc = f"temp_pos_fc_{pid}"
   file_sc = f"temp_pos_sc_{pid}"
   file_s = f"temp_pos_s_{pid}"
-  if len(pos_firt_compton) >= 1:
-    det_first_compton = execute_finder(file_fc, pos_firt_compton, geometry)
+  if len(pos_first_compton) >= 1:
+    det_first_compton = execute_finder(file_fc, pos_first_compton, sat_num, geometry)
     subprocess.call(f"rm {file_fc}*", shell=True)
   else:
     det_first_compton = np.array([])
-  if len(pos_firt_compton) >= 1:
-    det_sec_compton = execute_finder(file_sc, pos_sec_compton, geometry)
+  if len(pos_sec_compton) >= 1:
+    det_sec_compton = execute_finder(file_sc, pos_sec_compton, sat_num, geometry)
     subprocess.call(f"rm {file_sc}*", shell=True)
   else:
     det_sec_compton = np.array([])
-  if len(pos_firt_compton) >= 1:
-    det_single = execute_finder(file_s, pos_single, geometry)
+  if len(pos_single) >= 1:
+    det_single = execute_finder(file_s, pos_single, sat_num, geometry)
     subprocess.call(f"rm {file_s}*", shell=True)
   else:
     det_single = np.array([])

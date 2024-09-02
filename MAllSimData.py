@@ -15,7 +15,7 @@ class AllSimData(list):
   """
   Class containing all the data for 1 GRB (or other source) for a full set of trafiles
   """
-  def __init__(self, sim_prefix, source_ite, cat_data, n_sim, sat_info, param_sim_duration, bkg_data, mu_data, options):
+  def __init__(self, all_sim_data, source_ite, cat_data, sat_info, param_sim_duration, options):
     """
     :param sim_prefix: prefix used for simulations
     :param source_ite: iteration of the source simulated
@@ -29,43 +29,34 @@ class AllSimData(list):
     """
     temp_list = []
     self.n_sim_det = 0
-    if type(cat_data) is list:
-      self.source_name = cat_data[0][source_ite]
-      self.source_duration = float(cat_data[1][source_ite])
-      self.best_fit_model = None
+    if cat_data.cat_type == "GBM":
+      self.source_name = cat_data.df.name[source_ite]
+      self.source_duration = cat_data.df.t90[source_ite]
+      # Retrieving pflux and mean flux : the photon flux at the peak flux (or mean photon flux) of the burst [photons/cm2/s]
+      self.best_fit_model = cat_data.df.flnc_best_fitting_model[source_ite]
+      p_model = cat_data.df.pflx_best_fitting_model[source_ite]
+      if type(p_model) == str:
+        self.best_fit_p_flux = cat_data.df[f"{p_model}_phtflux"][source_ite]
+      else:
+        if np.isnan(p_model):
+          self.best_fit_p_flux = None
+        else:
+          raise ValueError("A value for pflx_best_fitting_model is not set properly")
+      self.best_fit_mean_flux = cat_data.df[f"{self.best_fit_model}_phtflux"][source_ite]
+      # Retrieving fluence of the source [photons/cm²]
+      self.source_fluence = calc_flux_gbm(cat_data, source_ite, options[0]) * self.source_duration
+      # Retrieving energy fluence of the source [erg/cm²]
+      self.source_energy_fluence = cat_data.df.fluence[source_ite]
+    elif cat_data.cat_type == "sampled":
+      self.source_name = cat_data.df.name[source_ite]
+      self.source_duration = float(cat_data.df.t90[source_ite])
+      self.best_fit_model = "band"
       self.best_fit_p_flux = None
-      self.best_fit_mean_flux = None
-      self.source_fluence = None
+      self.best_fit_mean_flux = float(cat_data.df.mean_flux[source_ite])
+      self.source_fluence = calc_flux_sample(cat_data, source_ite, options[0]) * self.source_duration
       self.source_energy_fluence = None
     else:
-      if cat_data.cat_type == "GBM":
-        self.source_name = cat_data.df.name[source_ite]
-        self.source_duration = cat_data.df.t90[source_ite]
-        # Retrieving pflux and mean flux : the photon flux at the peak flux (or mean photon flux) of the burst [photons/cm2/s]
-        self.best_fit_model = cat_data.df.flnc_best_fitting_model[source_ite]
-        p_model = cat_data.df.pflx_best_fitting_model[source_ite]
-        if type(p_model) == str:
-          self.best_fit_p_flux = cat_data.df[f"{p_model}_phtflux"][source_ite]
-        else:
-          if np.isnan(p_model):
-            self.best_fit_p_flux = None
-          else:
-            raise ValueError("A value for pflx_best_fitting_model is not set properly")
-        self.best_fit_mean_flux = cat_data.df[f"{self.best_fit_model}_phtflux"][source_ite]
-        # Retrieving fluence of the source [photons/cm²]
-        self.source_fluence = calc_flux_gbm(cat_data, source_ite, options[0]) * self.source_duration
-        # Retrieving energy fluence of the source [erg/cm²]
-        self.source_energy_fluence = cat_data.df.fluence[source_ite]
-      elif cat_data.cat_type == "sampled":
-        self.source_name = cat_data.df.name[source_ite]
-        self.source_duration = float(cat_data.df.t90[source_ite])
-        self.best_fit_model = "band"
-        self.best_fit_p_flux = None
-        self.best_fit_mean_flux = float(cat_data.df.mean_flux[source_ite])
-        self.source_fluence = calc_flux_sample(cat_data, source_ite, options[0]) * self.source_duration
-        self.source_energy_fluence = None
-      else:
-        raise ValueError("Wrong catalog type")
+      raise ValueError("Wrong catalog type")
     if param_sim_duration.isdigit():
       sim_duration = float(param_sim_duration)
     elif param_sim_duration == "t90" or param_sim_duration == "lc":
@@ -74,45 +65,31 @@ class AllSimData(list):
       sim_duration = None
       print("Warning : unusual sim duration, please check the parameter file.")
 
-    # These probabilities use a lot of memory, Make it differently ?
-    self.proba_single_detec_fov = None
-    self.proba_compton_image_fov = None
-    self.const_single_proba_detec_fov = None
-    self.const_proba_compton_image_fov = None
-    self.proba_single_detec_sky = None
-    self.proba_compton_image_sky = None
-    self.const_single_proba_detec_sky = None
-    self.const_proba_compton_image_sky = None
-    self.proba_compton_detec_fov = None
-    self.const_compton_proba_detec_fov = None
-    self.proba_compton_detec_sky = None
-    self.const_compton_proba_detec_sky = None
-
-    output_message = None
-    source_prefix = f"{sim_prefix}_{self.source_name}"
-    flist = subprocess.getoutput("ls {}_*".format(source_prefix)).split("\n")
-
-    if flist[0].startswith("ls: cannot access"):
-      print(f"No file to be loaded for source {self.source_name}")
-    else:
-      output_message = f"{len(flist)} files to be loaded for source {self.source_name} : "
-    for num_sim in range(n_sim):
-      flist = subprocess.getoutput("ls {}_*_{:04d}_*".format(source_prefix, num_sim)).split("\n")
-      if len(flist) >= 1:
-        if flist[0].startswith("ls: cannot access"):
-          temp_list.append(None)
-        else:
-          info_source = [self.source_duration, self.source_fluence]
-          temp_list.append(AllSatData(source_prefix, num_sim, sat_info, sim_duration, bkg_data, mu_data, info_source, options))
-          self.n_sim_det += 1
+    output_message = f"{np.count_nonzero(np.array(all_sim_data).flatten() != None)} files to be loaded for source {self.source_name} : "
+    for sim_ite, all_sat_data in enumerate(all_sim_data):
+      not_none = np.count_nonzero(np.where(all_sat_data != None, 1, 0))
+      output_message += f"\n  Total of {not_none} files loaded for simulation {sim_ite}"
+      if not_none != 0:
+        self.n_sim_det += 1
+      info_source = [self.source_duration, self.source_fluence]
+      temp_list.append(AllSatData(all_sat_data, sat_info, sim_duration, info_source, options))
+    print(output_message)
 
     list.__init__(self, temp_list)
 
-    for sim_ite, sim in enumerate(self):
-      if sim is not None:
-        if output_message is not None:
-          output_message += f"\n  Total of {sim.loading_count} files loaded for simulation {sim_ite}"
-    print(output_message)
+    # # These probabilities use a lot of memory, Make it differently ?
+    # self.proba_single_detec_fov = None
+    # self.proba_compton_image_fov = None
+    # self.const_single_proba_detec_fov = None
+    # self.const_proba_compton_image_fov = None
+    # self.proba_single_detec_sky = None
+    # self.proba_compton_image_sky = None
+    # self.const_single_proba_detec_sky = None
+    # self.const_proba_compton_image_sky = None
+    # self.proba_compton_detec_fov = None
+    # self.const_compton_proba_detec_fov = None
+    # self.proba_compton_detec_sky = None
+    # self.const_compton_proba_detec_sky = None
 
   # todo change it
   # def set_probabilities(self, n_sat, snr_min=5, n_image_min=50):

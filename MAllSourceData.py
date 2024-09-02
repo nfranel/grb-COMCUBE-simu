@@ -98,16 +98,51 @@ class AllSourceData:
       self.n_source = len(self.namelist)
 
     # Extracting the information from the simulation files
+    if "extracted" not in os.listdir(self.sim_prefix.split('/sim/')[0]):
+      os.mkdir(f"{self.sim_prefix.split('/sim/')[0]}/extracted")
+    tobe_extracted = []
+    extracted_name = []
+    presence_list = np.zeros((self.n_source, self.n_sim, self.n_sat), dtype=object)
+    for source_ite in range(self.n_source):
+      for num_sim in range(self.n_sim):
+        for num_sat in range(self.n_sat):
+          simfile = subprocess.getoutput(f"ls {self.sim_prefix}_{cat_data.df.name[source_ite]}_sat{num_sat}_{num_sim:04d}_*.inc1.id1.extracted.tra").split("\n")
+          if len(simfile) == 1:
+            if simfile[0].startswith("ls: cannot access"):
+              # print(f"No file to be Extracted for source {cat_data.df.name[source_ite]}, sim {num_sim}, sat {num_sat}")
+              presence_list[source_ite][num_sim][num_sat] = None
+            else:
+              tobe_extracted.append(simfile[0])
+              ext_name = f"{self.sim_prefix.split('/sim/')[0]}/extracted/{self.sim_prefix.split('/sim/')[1]}_extracted{cat_data.df.name[source_ite]}_sat{num_sat}_{num_sim:04d}_erg-{self.erg_cut[0]}-{self.erg_cut[1]}_arm-{self.armcut}.txt"
+              extracted_name.append(ext_name)
+              presence_list[source_ite][num_sim][num_sat] = ext_name
+          else:
+            raise FileExistsError(f"Too many files found for source {cat_data.df.name[source_ite]} simulation {num_sim:04d} satellite {num_sat}. Only 1 file should be found.")
+
+    # Extracting the information from the simulation files
     if parallel == 'all':
       print("Parallel extraction of the data with all threads")
       with mp.Pool() as pool:
-        self.alldata = pool.starmap(AllSimData, zip(repeat(self.sim_prefix), range(self.n_source), repeat(cat_data), repeat(self.n_sim), repeat(self.sat_info), repeat(self.sim_duration), repeat(self.bkgdata), repeat(self.muSeffdata), repeat(self.options)))
+        self.alldata = pool.starmap(save_grb_data, zip(tobe_extracted, extracted_name, repeat(self.sat_info), repeat(self.bkgdata), repeat(self.muSeffdata), repeat(self.erg_cut), repeat(self.armcut), repeat(self.geometry)))
     elif type(parallel) is int:
       print(f"Parallel extraction of the data with {parallel} threads")
       with mp.Pool(parallel) as pool:
-        self.alldata = pool.starmap(AllSimData, zip(repeat(self.sim_prefix), range(self.n_source), repeat(cat_data), repeat(self.n_sim), repeat(self.sat_info), repeat(self.sim_duration), repeat(self.bkgdata), repeat(self.muSeffdata), repeat(self.options)))
+        self.alldata = pool.starmap(save_grb_data, zip(tobe_extracted, extracted_name, repeat(self.sat_info), repeat(self.bkgdata), repeat(self.muSeffdata), repeat(self.erg_cut), repeat(self.armcut), repeat(self.geometry)))
     else:
-      self.alldata = [AllSimData(self.sim_prefix, source_ite, cat_data, self.n_sim, self.sat_info, self.sim_duration, self.bkgdata, self.muSeffdata, self.options) for source_ite in range(self.n_source)]
+      self.alldata = [save_grb_data(tobe_extracted[ext_ite], extracted_name[ext_ite], self.sat_info, self.bkgdata, self.muSeffdata, *self.options[:3]) for ext_ite in range(len(tobe_extracted))]
+    print("====================================== Extraction finished ======================================")
+
+    # Reading the information from the extracted simulation files
+    if parallel == 'all':
+      print("Parallel extraction of the data with all threads")
+      with mp.Pool() as pool:
+        self.alldata = pool.starmap(AllSimData, zip(presence_list, range(self.n_source), repeat(cat_data), repeat(self.sat_info), repeat(self.sim_duration), repeat(self.options)))
+    elif type(parallel) is int:
+      print(f"Parallel extraction of the data with {parallel} threads")
+      with mp.Pool(parallel) as pool:
+        self.alldata = pool.starmap(AllSimData, zip(presence_list, range(self.n_source), repeat(cat_data), repeat(self.sat_info), repeat(self.sim_duration), repeat(self.options)))
+    else:
+      self.alldata = [AllSimData(presence_list[source_ite], source_ite, cat_data, self.sat_info, self.sim_duration, self.options) for source_ite in range(self.n_source)]
 
     # Setting some informations used for obtaining the GRB count rates
     self.com_duty = 1  # self.n_sim_simulated / (self.n_sim_simulated + self.n_sim_in_radbelt)

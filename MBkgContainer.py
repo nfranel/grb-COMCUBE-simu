@@ -174,19 +174,19 @@ class BkgContainer(list):
             compton_firstpos = compton_firstpos[compton_index]
             compton_secpos = compton_secpos[compton_index]
             single_pos = single_pos[single_index]
-            compton_first_detector, compton_sec_detector, single_detector = find_detector(compton_firstpos, compton_secpos, single_pos, self.geometry)
+            compton_first_detector, compton_sec_detector, single_detector = find_detector(compton_firstpos, compton_secpos, single_pos, "bkg", self.geometry)
             hits = np.array([])
             if len(compton_first_detector) > 0:
-              hits = np.concatenate((hits, compton_first_detector[:, 1]))
+              hits = np.concatenate((hits, compton_first_detector))
             if len(compton_sec_detector) > 0:
-              hits = np.concatenate((hits, compton_sec_detector[:, 1]))
+              hits = np.concatenate((hits, compton_sec_detector))
             if len(single_detector) > 0:
-              hits = np.concatenate((hits, single_detector[:, 1]))
+              hits = np.concatenate((hits, single_detector))
             calor = 0
             dsssd = 0
             side = 0
             for hit in hits:
-              if hit == "Calor":
+              if hit.startswith("Calor"):
                 calor += 1
               elif hit.startswith("SideDet"):
                 side += 1
@@ -206,7 +206,6 @@ class BkgContainer(list):
             fcond.write(f"{dsssd}\n")
             fcond.write(f"{side}\n")
             fcond.write(f"{total_hits}\n")
-
 
   def read_data(self, file, save_time, ergcut, data_type="cond"):
     """
@@ -262,20 +261,19 @@ class BkgContainer(list):
         compton_firstpos = compton_firstpos[compton_index]
         compton_secpos = compton_secpos[compton_index]
         single_pos = single_pos[single_index]
-        compton_first_detector, compton_sec_detector, single_detector = find_detector(compton_firstpos, compton_secpos,
-                                                                                      single_pos, self.geometry)
+        compton_first_detector, compton_sec_detector, single_detector = find_detector(compton_firstpos, compton_secpos, single_pos, "bkg", self.geometry)
         hits = np.array([])
         if len(compton_first_detector) > 0:
-          hits = np.concatenate((hits, compton_first_detector[:, 1]))
+          hits = np.concatenate((hits, compton_first_detector))
         if len(compton_sec_detector) > 0:
-          hits = np.concatenate((hits, compton_sec_detector[:, 1]))
+          hits = np.concatenate((hits, compton_sec_detector))
         if len(single_detector) > 0:
-          hits = np.concatenate((hits, single_detector[:, 1]))
+          hits = np.concatenate((hits, single_detector))
         calor = 0
         dsssd = 0
         side = 0
         for hit in hits:
-          if hit == "Calor":
+          if hit.startswith("Calor"):
             calor += 1
           elif hit.startswith("SideDet"):
             side += 1
@@ -348,19 +346,19 @@ class BkgData:
       self.compton = len(self.compton_ener)
       self.compton_cr = self.compton / sim_duration
 
-      self.compton_first_detector, self.compton_sec_detector, self.single_detector = find_detector(compton_firstpos, compton_secpos, single_pos, geometry)
+      self.compton_first_detector, self.compton_sec_detector, self.single_detector = find_detector(compton_firstpos, compton_secpos, single_pos, "bkg", geometry)
       hits = np.array([])
       if len(self.compton_first_detector) > 0:
-        hits = np.concatenate((hits, self.compton_first_detector[:, 1]))
+        hits = np.concatenate((hits, self.compton_first_detector))
       if len(self.compton_sec_detector) > 0:
-        hits = np.concatenate((hits, self.compton_sec_detector[:, 1]))
+        hits = np.concatenate((hits, self.compton_sec_detector))
       if len(self.single_detector) > 0:
-        hits = np.concatenate((hits, self.single_detector[:, 1]))
+        hits = np.concatenate((hits, self.single_detector))
       self.calor = 0
       self.dsssd = 0
       self.side = 0
       for hit in hits:
-        if hit == "Calor":
+        if hit.startswith("Calor"):
           self.calor += 1
         elif hit.startswith("SideDet"):
           self.side += 1

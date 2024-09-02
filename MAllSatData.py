@@ -14,7 +14,7 @@ class AllSatData(list):
   """
   Class containing all the data for 1 simulation of 1 GRB (or other source) for a full set of trafiles
   """
-  def __init__(self, source_prefix, num_sim, sat_info, sim_duration, bkg_data, mu_data, info_source, options):
+  def __init__(self, all_sat_data, sat_info, sim_duration, info_source, options):
     """
     :param source_prefix: prefix used for simulations + source name
     :param num_sim: number of the simulation
@@ -28,27 +28,20 @@ class AllSatData(list):
     # Attributes relative to the simulations without any analysis
     self.n_sat_receiving = 0
     self.n_sat = len(sat_info)
-    self.dec_world_frame = None
-    self.ra_world_frame = None
-    self.grb_burst_time = None
-    self.loading_count = 0
-    for num_sat in range(self.n_sat):
-      flist = subprocess.getoutput(f"ls {source_prefix}_sat{num_sat}_{num_sim:04d}_*.inc1.id1.extracted.tra").split("\n")
-      if not flist[0].startswith("ls: cannot access") and self.dec_world_frame is None:
-        self.dec_world_frame, self.ra_world_frame, self.grb_burst_time = fname2decratime(flist[0])[:3]
-      if len(flist) == 1:
-        if flist[0].startswith("ls: cannot access"):
-          temp_list.append(None)
-        else:
-          temp_list.append(GRBFullData(flist, sat_info[num_sat], self.grb_burst_time, sim_duration, num_sat, bkg_data, mu_data, *info_source, *options))
-          self.n_sat_receiving += 1
-          self.loading_count += 1
+    self.dec_world_frame = None  # TODO keep
+    self.ra_world_frame = None  # TODO keep
+    self.grb_burst_time = None  # TODO keep
+
+    for grb_ext_file in all_sat_data:
+      if grb_ext_file is not None:
+        temp_list.append(GRBFullData(grb_ext_file, sim_duration, *info_source, *options[-2:]))
+        self.n_sat_receiving += 1
       else:
-        print(f'WARNING : Unusual number of file : {flist}')
+        temp_list.append(None)
     list.__init__(self, temp_list)
+
     # Attribute meaningful after the creation of the constellation
     self.const_data = None
-    # self.index_down = None
 
   def analyze(self, source_duration, source_fluence, sats_analysis=True):
     """
@@ -96,7 +89,7 @@ class AllSatData(list):
     else:
       number_const = 1
     for const_ite in range(number_const):
-      self.const_data.append(GRBFullData([], None, None, None, None, None, None, source_duration, source_fluence, *options))
+      self.const_data.append(GRBFullData(None, None, None, None, None, None))
       in_sight_temp = in_sight_sat
       for index in off_sats[const_ite]:
         in_sight_temp[index] = False
@@ -119,20 +112,20 @@ class AllSatData(list):
             #############################################################################################################
             if item in ["compton_b_rate", "mu100_ref", "mu100_err_ref", "s_eff_compton_ref", "compton_ener",
                         "compton_second", "compton_time", "pol", "polar_from_position", "polar_from_energy", "arm_pol",
-                        "s_eff_compton", "compton", "compton_cr"]:
+                        "s_eff_compton", "compton", "compton_cr", "compton_first_detector", "compton_sec_detector"]:
               selected_sats = []
               for index_sat in considered_sats:
                 if self[index_sat].const_beneficial_compton:
                   selected_sats.append(index_sat)
               selected_sats = np.array(selected_sats)
             elif item in ["single_b_rate", "s_eff_single_ref", "single_ener", "single_time", "s_eff_single", "single",
-                          "single_cr"]:
+                          "single_cr", "single_detector"]:
               selected_sats = []
               for index_sat in considered_sats:
                 if self[index_sat].const_beneficial_single:
                   selected_sats.append(index_sat)
               selected_sats = np.array(selected_sats)
-            elif item in ["hit_b_rate", "hit_time", "calor", "dsssd", "side"]:
+            elif item in ["hit_b_rate", "hit_time", "calor", "dsssd", "side", "total_hits"]:
               selected_sats = []
               for index_sat in considered_sats:
                 if np.sum(self[index_sat].const_beneficial_trigger_3s) >= 1:  # todo test it
@@ -141,11 +134,14 @@ class AllSatData(list):
             else:
               selected_sats = considered_sats
             #############################################################################################################
+            # Putting together the values
+            #############################################################################################################
+            #############################################################################################################
             # All the same
             #############################################################################################################
             # Values supposed to be the same for all sat and all sims so it doesn't change and is set using 1 sat
             # Field to be used soon : "polarigram_error"
-            if item in ["bins"]:
+            if item in ["bins", "array_dtype"]:
               setattr(self.const_data[ite_const], item, getattr(self[selected_sats[0]], item))
             #############################################################################################################
             # Set to true
@@ -158,7 +154,7 @@ class AllSatData(list):
             # Values summed
             elif item in ["compton_b_rate", "single_b_rate", "hit_b_rate", "s_eff_compton_ref", "s_eff_single_ref",
                           "s_eff_compton", "s_eff_single", "single", "single_cr", "compton", "compton_cr", "n_sat_detect",
-                          "calor", "dsssd", "side"]:
+                          "calor", "dsssd", "side", "total_hits"]:
               temp_val = 0
               for num_sat in selected_sats:
                 temp_val += getattr(self[num_sat], item)
@@ -166,9 +162,10 @@ class AllSatData(list):
             #############################################################################################################
             # 1D concatenation
             #############################################################################################################
-            # Values stored in a 1D array that have to be concanated (except unpol that needs another verification)
+            # Values stored in a 1D array that have to be concatenated (except unpol that needs another verification)
             elif item in ["compton_ener", "compton_second", "single_ener", "hit_time", "compton_time", "single_time",
-                          "pol", "polar_from_position", "polar_from_energy", "arm_pol"]:
+                          "pol", "polar_from_position", "polar_from_energy", "arm_pol", "compton_first_detector",
+                          "compton_sec_detector", "single_detector"]:
               temp_array = np.array([])
               for num_sat in selected_sats:
                 temp_array = np.concatenate((temp_array, getattr(self[num_sat], item)))
@@ -229,4 +226,4 @@ class AllSatData(list):
                 temp_list += getattr(self[num_sat], item)
               setattr(self.const_data[ite_const], item, temp_list)
             else:
-              raise AttributeError("Item not found")
+              raise AttributeError(f"Item '{item}' not found")
