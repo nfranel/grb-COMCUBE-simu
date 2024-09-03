@@ -184,7 +184,7 @@ class AllSourceData:
         num_sat, num_sim = simfile.split("/")[-1].split("_")[2:4]
         num_sat = int(num_sat.split("sat")[-1])
         num_sim = int(num_sim)
-        tobe_ext.append(simfile[0])
+        tobe_ext.append(simfile)
         temp_name = f"{self.sim_prefix.split('/sim/')[0]}/extracted/{self.sim_prefix.split('/sim/')[1]}_extracted{cat.df.name[source_ite]}_sat{num_sat}_{num_sim:04d}_erg-{self.erg_cut[0]}-{self.erg_cut[1]}_arm-{self.armcut}.txt"
         ext_name.append(temp_name)
         pres_list[source_ite][num_sim][num_sat] = temp_name
