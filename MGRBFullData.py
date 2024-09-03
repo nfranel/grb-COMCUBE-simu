@@ -151,7 +151,7 @@ class GRBFullData:
 
   def read_saved_grb(self, filename):
     with open(filename, "r") as f:
-      lines = f.read().split("\n")[1:]
+      lines = f.read().split("\n")[2:]
     # Specific to satellite
     self.sat_dec_wf = float(lines[0])
     self.sat_ra_wf = float(lines[1])

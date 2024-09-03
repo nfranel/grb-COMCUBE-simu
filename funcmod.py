@@ -37,6 +37,29 @@ def printv(message, verbose):
     print(message)
 
 
+def printcom(comment):
+  print()
+  if type(comment) is list:
+    print("=========================================================================================================================")
+    for com in comment:
+      print(f"= {com}")
+    print("=========================================================================================================================")
+  elif type(comment) is str:
+    print("=========================================================================================================================")
+    print(f"= {comment}")
+    print("=========================================================================================================================")
+  else:
+    raise TypeError("The type of the comment should be str or a list of str")
+
+
+def endtask(taskname, timevar=None):
+  if timevar is None:
+    print(f"======      {taskname} finished      ======")
+  else:
+    print(f"======      {taskname} finished  -  processing time : {time() - timevar} seconds      ======")
+    print()
+
+
 def use_scipyquad(func, low_edge, high_edge, func_args=(), x_logscale=False):
   """
   Proceed to the quad integration using scipy quad and handle the integration warning by using simpson integration method from scipy if the warning is raised
@@ -450,7 +473,6 @@ def save_grb_data(data_file, filename, sat_info_list, bkg_data, mu_data, ergcut,
       # polar and position angle stored in deg
       polar_from_energy = calculate_polar_angle(compton_second, compton_ener)
       pol, polar_from_position = angle(compton_secpos - compton_firstpos, grb_dec_sat_frame, grb_ra_sat_frame, source_name, num_sim, num_sat)
-      pol = angle(compton_secpos - compton_firstpos, grb_dec_sat_frame, grb_ra_sat_frame, source_name, num_sim, num_sat)[0]
 
       # Calculating the arm and extracting the indexes of correct arm events (arm in deg)
       arm_pol = np.array(polar_from_position - polar_from_energy, dtype=array_dtype)
@@ -502,6 +524,7 @@ def save_grb_data(data_file, filename, sat_info_list, bkg_data, mu_data, ergcut,
       total_hits = calor + dsssd + side
       # Saving information
       f.write(f"Extracted file of simfile : {data_file} with ergcut : {ergcut[0]}-{ergcut[1]} and armcut : {armcut}\n")
+      f.write(f"{dec_world_frame}|{ra_world_frame}|{burst_time}|{source_name}|{num_sim}\n")
       # Specific to satellite
       save_value(f, sat_dec_wf)
       save_value(f, sat_ra_wf)

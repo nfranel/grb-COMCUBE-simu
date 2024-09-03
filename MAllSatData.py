@@ -28,10 +28,14 @@ class AllSatData(list):
     # Attributes relative to the simulations without any analysis
     self.n_sat_receiving = 0
     self.n_sat = len(sat_info)
-    self.dec_world_frame = None  # TODO keep
-    self.ra_world_frame = None  # TODO keep
-    self.grb_burst_time = None  # TODO keep
+    self.dec_world_frame = None
+    self.ra_world_frame = None
+    self.grb_burst_time = None
 
+    # Setting grb world frame dec, ra and burst time
+    self.read_grb_siminfo(all_sat_data)
+
+    # Creating the list containing the GRB data if the simulation happened
     for grb_ext_file in all_sat_data:
       if grb_ext_file is not None:
         temp_list.append(GRBFullData(grb_ext_file, sim_duration, *info_source, *options[-2:]))
@@ -40,8 +44,18 @@ class AllSatData(list):
         temp_list.append(None)
     list.__init__(self, temp_list)
 
-    # Attribute meaningful after the creation of the constellation
+    # Initializing the const_data key, that will be containing the constellation data container
     self.const_data = None
+
+  def read_grb_siminfo(self, filelist):
+    for filename in filelist:
+      if filename is not None:
+        with open(filename, "r") as f:
+          line = f.read().split("\n")[1].split("|")
+        self.dec_world_frame = float(line[0])
+        self.ra_world_frame = float(line[1])
+        self.grb_burst_time = float(line[2])
+        return
 
   def analyze(self, source_duration, source_fluence, sats_analysis=True):
     """

@@ -42,6 +42,14 @@ class AllSourceData:
       int   number of cores over which the parallelization is made
       "all" all cores are used
     """
+    printcom([f"Analyze of the simulation with : "
+              f"   parfile : {grb_param}",
+              f"   bkgparfile : {bkg_param}",
+              f"   muparfile : {mu_s_eff_param}",
+              f"   ergcut : {erg_cut[0]}-{erg_cut[1]}",
+              f"   armcut : {armcut}"])
+
+    printcom("Step 1 - Creating general attributes, extracting grb parfile information and compiling position finder")
     # General parameters
     self.grb_param = grb_param
     self.bkg_param = bkg_param
@@ -71,18 +79,30 @@ class AllSourceData:
 
     # Compiling the position finder
     subprocess.call(f"make -f Makefile PRG=find_detector", shell=True)
+    endtask("Step 1")
 
     # Setting the background files
+    printcom("Step 2 - Extracting background data")
+    init_time = time()
     self.bkgdata = BkgContainer(self.bkg_param, self.save_time, self.erg_cut)
+    endtask("Step 2", timevar=init_time)
 
     # Setting the background files
+    printcom("Step 3 - Extracting mu100 and Seff data")
+    init_time = time()
     self.muSeffdata = MuSeffContainer(self.muSeff_param, self.erg_cut, self.armcut)
+    endtask("Step 3", timevar=init_time)
 
     # Log information
     # log = LogData("/pdisk/ESA/test--400km--0-0-0--27sat")
+    printcom("Step 4 - Loading log data and simulation statistics")
+    init_time = time()
     self.n_sim_simulated, self.n_sim_below_horizon, self.n_sim_in_radbelt = LogData(self.sim_prefix.split("/sim/")[0]).detection_statistics()
+    endtask("Step 4", timevar=init_time)
 
     # Setting the catalog and the attributes associated
+    printcom("Step 5 - Loading catalog data and duty cycle information")
+    init_time = time()
     if self.cat_file == "None":
       cat_data = self.extract_sources(self.sim_prefix)
       self.namelist = cat_data[0]
@@ -97,7 +117,26 @@ class AllSourceData:
       self.namelist = cat_data.df.name
       self.n_source = len(self.namelist)
 
+      # Setting some informations used for obtaining the GRB count rates
+      self.com_duty = 1  # self.n_sim_simulated / (self.n_sim_simulated + self.n_sim_in_radbelt)
+      self.com_fov = 1
+      if self.simmode == "GBM":
+        self.cat_duration = 10
+        self.gbm_duty = 0.85
+        self.gbm_fov = (1 - np.cos(np.deg2rad(horizon_angle(565)))) / 2
+      elif self.simmode == "sampled":
+        self.cat_duration = float(self.cat_file.split("_")[-1].split("years")[0])
+        self.gbm_duty = 1
+        self.gbm_fov = 1
+      else:
+        raise ValueError("Wrong simulation mode in .par file")
+      # self.com_duty = 1
+      self.weights = 1 / self.n_sim / self.cat_duration * self.com_duty / self.gbm_duty * self.com_fov / self.gbm_fov
+    endtask("Step 5", timevar=init_time)
+
     # Extracting the information from the simulation files
+    printcom("Step 6 - preparing filenames for simulation files and extracted simulation files")
+    init_time = time()
     if "extracted" not in os.listdir(self.sim_prefix.split('/sim/')[0]):
       os.mkdir(f"{self.sim_prefix.split('/sim/')[0]}/extracted")
     tobe_extracted = []
@@ -115,23 +154,30 @@ class AllSourceData:
               tobe_extracted.append(simfile[0])
               ext_name = f"{self.sim_prefix.split('/sim/')[0]}/extracted/{self.sim_prefix.split('/sim/')[1]}_extracted{cat_data.df.name[source_ite]}_sat{num_sat}_{num_sim:04d}_erg-{self.erg_cut[0]}-{self.erg_cut[1]}_arm-{self.armcut}.txt"
               extracted_name.append(ext_name)
+
               presence_list[source_ite][num_sim][num_sat] = ext_name
           else:
             raise FileExistsError(f"Too many files found for source {cat_data.df.name[source_ite]} simulation {num_sim:04d} satellite {num_sat}. Only 1 file should be found.")
+    endtask("Step 6", timevar=init_time)
 
+    printcom("Step 7 - Extracting the information from the simulation files")
+    init_time = time()
     # Extracting the information from the simulation files
     if parallel == 'all':
       print("Parallel extraction of the data with all threads")
       with mp.Pool() as pool:
-        self.alldata = pool.starmap(save_grb_data, zip(tobe_extracted, extracted_name, repeat(self.sat_info), repeat(self.bkgdata), repeat(self.muSeffdata), repeat(self.erg_cut), repeat(self.armcut), repeat(self.geometry)))
+        pool.starmap(save_grb_data, zip(tobe_extracted, extracted_name, repeat(self.sat_info), repeat(self.bkgdata), repeat(self.muSeffdata), repeat(self.erg_cut), repeat(self.armcut), repeat(self.geometry)))
     elif type(parallel) is int:
       print(f"Parallel extraction of the data with {parallel} threads")
       with mp.Pool(parallel) as pool:
-        self.alldata = pool.starmap(save_grb_data, zip(tobe_extracted, extracted_name, repeat(self.sat_info), repeat(self.bkgdata), repeat(self.muSeffdata), repeat(self.erg_cut), repeat(self.armcut), repeat(self.geometry)))
+        pool.starmap(save_grb_data, zip(tobe_extracted, extracted_name, repeat(self.sat_info), repeat(self.bkgdata), repeat(self.muSeffdata), repeat(self.erg_cut), repeat(self.armcut), repeat(self.geometry)))
     else:
-      self.alldata = [save_grb_data(tobe_extracted[ext_ite], extracted_name[ext_ite], self.sat_info, self.bkgdata, self.muSeffdata, *self.options[:3]) for ext_ite in range(len(tobe_extracted))]
-    print("====================================== Extraction finished ======================================")
+      [save_grb_data(tobe_extracted[ext_ite], extracted_name[ext_ite], self.sat_info, self.bkgdata, self.muSeffdata, *self.options[:3]) for ext_ite in range(len(tobe_extracted))]
+    endtask("Step 7", timevar=init_time)
 
+
+    printcom("Step 8 - Loading log data and simulation statistics")
+    init_time = time()
     # Reading the information from the extracted simulation files
     if parallel == 'all':
       print("Parallel extraction of the data with all threads")
@@ -143,22 +189,9 @@ class AllSourceData:
         self.alldata = pool.starmap(AllSimData, zip(presence_list, range(self.n_source), repeat(cat_data), repeat(self.sat_info), repeat(self.sim_duration), repeat(self.options)))
     else:
       self.alldata = [AllSimData(presence_list[source_ite], source_ite, cat_data, self.sat_info, self.sim_duration, self.options) for source_ite in range(self.n_source)]
+    endtask("Step 8", timevar=init_time)
 
-    # Setting some informations used for obtaining the GRB count rates
-    self.com_duty = 1  # self.n_sim_simulated / (self.n_sim_simulated + self.n_sim_in_radbelt)
-    self.com_fov = 1
-    if self.simmode == "GBM":
-      self.cat_duration = 10
-      self.gbm_duty = 0.85
-      self.gbm_fov = (1 - np.cos(np.deg2rad(horizon_angle(565)))) / 2
-    elif self.simmode == "sampled":
-      self.cat_duration = float(self.cat_file.split("_")[-1].split("years")[0])
-      self.gbm_duty = 1
-      self.gbm_fov = 1
-    else:
-      raise ValueError("Wrong simulation mode in .par file")
-    # self.com_duty = 1
-    self.weights = 1 / self.n_sim / self.cat_duration * self.com_duty / self.gbm_duty * self.com_fov / self.gbm_fov
+
 
 # TODO finish the comments and rework the methods !
   def extract_sources(self, prefix, duration=None):
