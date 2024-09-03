@@ -5,6 +5,7 @@
 
 # Package imports
 import subprocess
+import glob
 import os
 import multiprocessing as mp
 import argparse
@@ -42,7 +43,8 @@ def make_spectra(params):
     os.mkdir(f"{spectrapath}/source-dat--alt_{alt:.1f}--lat_{lat:.1f}")
   os.chdir("./bkg")
   subprocess.call(f"python CreateBackgroundSpectrumMEGAlib.py -i {lat} -a {alt}", shell=True)
-  source_spectra = subprocess.getoutput(f"ls *_Spec_{alt:.1f}km_{lat:.1f}deg.dat").split("\n")
+  # source_spectra = subprocess.getoutput(f"ls *_Spec_{alt:.1f}km_{lat:.1f}deg.dat").split("\n")
+  source_spectra = glob.glob(f"*_Spec_{alt:.1f}km_{lat:.1f}deg.dat")
   os.chdir("..")
   for spectrum in source_spectra:
     subprocess.call(f"mv ./bkg/{spectrum} {spectrapath}/source-dat--alt_{alt:.1f}--lat_{lat:.1f}", shell=True)

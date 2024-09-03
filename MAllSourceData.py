@@ -11,6 +11,7 @@ import matplotlib.pyplot as plt
 import matplotlib as mpl
 import cartopy.crs as ccrs
 import numpy as np
+import glob
 
 # Developped modules imports
 from funcmod import *
@@ -139,25 +140,7 @@ class AllSourceData:
     init_time = time()
     if "extracted" not in os.listdir(self.sim_prefix.split('/sim/')[0]):
       os.mkdir(f"{self.sim_prefix.split('/sim/')[0]}/extracted")
-    tobe_extracted = []
-    extracted_name = []
-    presence_list = np.zeros((self.n_source, self.n_sim, self.n_sat), dtype=object)
-    for source_ite in range(self.n_source):
-      for num_sim in range(self.n_sim):
-        for num_sat in range(self.n_sat):
-          simfile = subprocess.getoutput(f"ls {self.sim_prefix}_{cat_data.df.name[source_ite]}_sat{num_sat}_{num_sim:04d}_*.inc1.id1.extracted.tra").split("\n")
-          if len(simfile) == 1:
-            if simfile[0].startswith("ls: cannot access"):
-              # print(f"No file to be Extracted for source {cat_data.df.name[source_ite]}, sim {num_sim}, sat {num_sat}")
-              presence_list[source_ite][num_sim][num_sat] = None
-            else:
-              tobe_extracted.append(simfile[0])
-              ext_name = f"{self.sim_prefix.split('/sim/')[0]}/extracted/{self.sim_prefix.split('/sim/')[1]}_extracted{cat_data.df.name[source_ite]}_sat{num_sat}_{num_sim:04d}_erg-{self.erg_cut[0]}-{self.erg_cut[1]}_arm-{self.armcut}.txt"
-              extracted_name.append(ext_name)
-
-              presence_list[source_ite][num_sim][num_sat] = ext_name
-          else:
-            raise FileExistsError(f"Too many files found for source {cat_data.df.name[source_ite]} simulation {num_sim:04d} satellite {num_sat}. Only 1 file should be found.")
+    tobe_extracted, extracted_name, presence_list = self.filenames_creation(cat_data)
     endtask("Step 6", timevar=init_time)
 
     printcom("Step 7 - Extracting the information from the simulation files")
@@ -191,6 +174,36 @@ class AllSourceData:
       self.alldata = [AllSimData(presence_list[source_ite], source_ite, cat_data, self.sat_info, self.sim_duration, self.options) for source_ite in range(self.n_source)]
     endtask("Step 8", timevar=init_time)
 
+  def filenames_creation(self, cat):
+    tobe_ext = []
+    ext_name = []
+    pres_list = np.empty((self.n_source, self.n_sim, self.n_sat), dtype=object)
+    for source_ite in range(self.n_source):
+      simfiles = glob.glob(f"{self.sim_prefix}_{cat.df.name[source_ite]}_*.inc1.id1.extracted.tra")
+      for simfile in simfiles:
+        num_sat, num_sim = simfile.split("/")[-1].split("_")[2:4]
+        num_sat = int(num_sat.split("sat")[-1])
+        num_sim = int(num_sim)
+        tobe_ext.append(simfile[0])
+        temp_name = f"{self.sim_prefix.split('/sim/')[0]}/extracted/{self.sim_prefix.split('/sim/')[1]}_extracted{cat.df.name[source_ite]}_sat{num_sat}_{num_sim:04d}_erg-{self.erg_cut[0]}-{self.erg_cut[1]}_arm-{self.armcut}.txt"
+        ext_name.append(temp_name)
+        pres_list[source_ite][num_sim][num_sat] = temp_name
+
+    # for source_ite in range(self.n_source):
+    #   for num_sim in range(self.n_sim):
+    #     for num_sat in range(self.n_sat):
+    #       simfile = subprocess.getoutput(f"ls {self.sim_prefix}_{cat.df.name[source_ite]}_sat{num_sat}_{num_sim:04d}_*.inc1.id1.extracted.tra").split("\n")
+    #       if len(simfile) == 1:
+    #         if simfile[0].startswith("ls: cannot access"):
+    #           pres_list[source_ite][num_sim][num_sat] = None
+    #         else:
+    #           tobe_ext.append(simfile[0])
+    #           temp_name = f"{self.sim_prefix.split('/sim/')[0]}/extracted/{self.sim_prefix.split('/sim/')[1]}_extracted{cat.df.name[source_ite]}_sat{num_sat}_{num_sim:04d}_erg-{self.erg_cut[0]}-{self.erg_cut[1]}_arm-{self.armcut}.txt"
+    #           ext_name.append(temp_name)
+    #           pres_list[source_ite][num_sim][num_sat] = temp_name
+    #       else:
+    #         raise FileExistsError(f"Too many files found for source {cat.df.name[source_ite]} simulation {num_sim:04d} satellite {num_sat}. Only 1 file should be found.")
+    return tobe_ext, ext_name, pres_list
 
 
 # TODO finish the comments and rework the methods !
@@ -212,7 +225,8 @@ class AllSourceData:
         duration = None
         print("Warning : unusual sim duration, please check the parameter file.")
 
-    flist = subprocess.getoutput(f"ls {prefix}_*").split("\n")
+    # flist = subprocess.getoutput(f"ls {prefix}_*").split("\n")
+    flist = glob.glob(f"{prefix}_*")
     source_names = []
     if len(flist) >= 1 and not flist[0].startswith("ls: cannot access"):
       temp_sourcelist = []

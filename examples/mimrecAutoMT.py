@@ -74,6 +74,7 @@
 
 import multiprocessing as mp
 import subprocess
+import glob
 import time
 
 # =============================================================================== #
@@ -95,8 +96,10 @@ def genCommands(path):
   coms = []
   geom = f"{repository_path}/grb-COMCUBE-simu/COMCUBE_M7/{geometry}"
   mimfile = f"{repository_path}/grb-COMCUBE-simu/cfgs/{mimrecfile}"
-  if not(path.endswith("/")): path += "/"
-  flist = subprocess.getoutput("ls {}".format(path)).split("\n")
+  if not (path.endswith("/")):
+    path += "/"
+  # flist = subprocess.getoutput("ls {}".format(path)).split("\n")
+  flist = glob.glob(f"{path}")
   for f in flist:
     coms.append("mimrec -g {0} -c {1} -f {2}{3} -x -n; mv {2}{3} {4}".format(geom, mimfile, path, f, rawsim_folder))
   return coms
