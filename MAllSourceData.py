@@ -158,7 +158,6 @@ class AllSourceData:
       [save_grb_data(tobe_extracted[ext_ite], extracted_name[ext_ite], self.sat_info, self.bkgdata, self.muSeffdata, *self.options[:3]) for ext_ite in range(len(tobe_extracted))]
     endtask("Step 7", timevar=init_time)
 
-
     printcom("Step 8 - Loading log data and simulation statistics")
     init_time = time()
     # Reading the information from the extracted simulation files
@@ -265,12 +264,16 @@ class AllSourceData:
     and calculates some probabilities
     :param sats_analysis: True if the analysis is done both on the sat data and on the constellation data
     """
+    printcom("Analyze of the data - Analyzing the data after extraction and creation of the constellations")
+    init_time = time()
     for source_ite, source in enumerate(self.alldata):
       if source is not None:
         for sim_ite, sim in enumerate(source):
           if sim is not None:
             sim.analyze(source.source_duration, source.source_fluence, sats_analysis)
         # source.set_probabilities(n_sat=self.n_sat, snr_min=self.snr_min, n_image_min=50)  # todo change it
+    endtask("Analyze of the data", timevar=init_time)
+
 
   def set_beneficial(self, threshold_mdp):
     """
@@ -292,6 +295,8 @@ class AllSourceData:
     ! The polarigrams have to be corrected to combine the polarigrams !
     :param const: Which satellite are considered for the constellation if none, all of them are
     """
+    printcom("Creation of the constellations")
+    init_time = time()
     ###################################################################################################################
     # Setting some satellites off
     ###################################################################################################################
@@ -303,12 +308,6 @@ class AllSourceData:
         if rand_sat not in temp_offsat:
           temp_offsat.append(rand_sat)
       off_sats.append(temp_offsat)
-
-    # off_sats[0] = np.random.randint(self.n_sat)
-    # off_sats[1] = np.random.randint(self.n_sat)
-    # off_sats[2] = np.random.randint(self.n_sat)
-    # while off_sats[2] == off_sats[1]:
-    #   off_sats[2] = np.random.randint(self.n_sat)
     ###################################################################################################################
     # Making of the constellations  -  with corrected polarigrams (if not corrected they can't be added)
     ###################################################################################################################
@@ -321,6 +320,8 @@ class AllSourceData:
             sim.make_const(source.source_duration, source.source_fluence, off_sats, self.options, const=const, dysfunction_enabled=self.dysfunctional_sats)
     if not self.init_correction:
       self.azi_angle_anticorr()
+    endtask("Creation of the constellations", timevar=init_time)
+
 
   def source_search(self, source_name, verbose=True):
     """
