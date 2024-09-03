@@ -274,7 +274,6 @@ class AllSourceData:
         # source.set_probabilities(n_sat=self.n_sat, snr_min=self.snr_min, n_image_min=50)  # todo change it
     endtask("Analyze of the data", timevar=init_time)
 
-
   def set_beneficial(self, threshold_mdp):
     """
     Sets const_beneficial_compton and const_beneficial_compton to True is the value for a satellite is worth considering
@@ -321,7 +320,6 @@ class AllSourceData:
     if not self.init_correction:
       self.azi_angle_anticorr()
     endtask("Creation of the constellations", timevar=init_time)
-
 
   def source_search(self, source_name, verbose=True):
     """
