@@ -287,22 +287,24 @@ class AllSourceData:
                 sat.set_beneficial_compton(threshold=threshold_mdp)
                 sat.set_beneficial_single()
 
-  def make_const(self, const=None):
+  def make_const(self, list_number_of_down=None, const=None):
     """
     This function is used to combine results from different satellites
     Results are then stored in the key const_data
     ! The polarigrams have to be corrected to combine the polarigrams !
     :param const: Which satellite are considered for the constellation if none, all of them are
     """
+    if list_number_of_down is None:
+      list_number_of_down = [0]
     printcom("Creation of the constellations")
     init_time = time()
     ###################################################################################################################
     # Setting some satellites off
     ###################################################################################################################
     off_sats = []
-    for sat_ite in range(self.n_sat):
+    for num_down in list_number_of_down:
       temp_offsat = []
-      while len(temp_offsat) != sat_ite:
+      while len(temp_offsat) != num_down:
         rand_sat = np.random.randint(self.n_sat)
         if rand_sat not in temp_offsat:
           temp_offsat.append(rand_sat)

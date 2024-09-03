@@ -99,7 +99,7 @@ class AllSatData(list):
     list_considered_sat = []
     self.const_data = []
     if dysfunction_enabled:
-      number_const = self.n_sat
+      number_const = len(off_sats)
     else:
       number_const = 1
     for const_ite in range(number_const):
