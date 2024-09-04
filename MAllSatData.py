@@ -75,7 +75,7 @@ class AllSatData(list):
     else:
       print("Constellation not set : please use make_const method if you want to analyze the constellation's results")
 
-  def make_const(self, source_duration, source_fluence, off_sats, options, const=None, dysfunction_enabled=True):
+  def make_const(self, source_duration, source_fluence, num_of_down_per_const, off_sats, options, const=None, dysfunction_enabled=True):
     """
     Creates a constellation of several satellites by putting together the results
     :param source_duration: duration of the source
@@ -99,14 +99,15 @@ class AllSatData(list):
     list_considered_sat = []
     self.const_data = []
     if dysfunction_enabled:
-      number_const = len(off_sats)
+      number_const = len(num_of_down_per_const)
     else:
       number_const = 1
     for const_ite in range(number_const):
       self.const_data.append(GRBFullData(None, None, None, None, None, None))
       in_sight_temp = in_sight_sat
-      for index in off_sats[const_ite]:
-        in_sight_temp[index] = False
+      if off_sats[const_ite] is not None:
+        for index in off_sats[const_ite]:
+          in_sight_temp[index] = False
       sat_considered_temp = const[in_sight_temp]
       list_considered_sat.append(sat_considered_temp)
     for ite_const, considered_sats in enumerate(list_considered_sat):

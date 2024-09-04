@@ -287,28 +287,31 @@ class AllSourceData:
                 sat.set_beneficial_compton(threshold=threshold_mdp)
                 sat.set_beneficial_single()
 
-  def make_const(self, list_number_of_down=None, const=None):
+  def make_const(self, number_of_down_per_const=None, const=None):
     """
     This function is used to combine results from different satellites
     Results are then stored in the key const_data
     ! The polarigrams have to be corrected to combine the polarigrams !
     :param const: Which satellite are considered for the constellation if none, all of them are
     """
-    if list_number_of_down is None:
-      list_number_of_down = [0]
+    if number_of_down_per_const is None:
+      number_of_down_per_const = [0]
     printcom("Creation of the constellations")
     init_time = time()
     ###################################################################################################################
     # Setting some satellites off
     ###################################################################################################################
     off_sats = []
-    for num_down in list_number_of_down:
-      temp_offsat = []
-      while len(temp_offsat) != num_down:
-        rand_sat = np.random.randint(self.n_sat)
-        if rand_sat not in temp_offsat:
-          temp_offsat.append(rand_sat)
-      off_sats.append(temp_offsat)
+    for num_down in number_of_down_per_const:
+      if num_down == 0:
+        off_sats.append(None)
+      else:
+        temp_offsat = []
+        while len(temp_offsat) != num_down:
+          rand_sat = np.random.randint(self.n_sat)
+          if rand_sat not in temp_offsat:
+            temp_offsat.append(rand_sat)
+        off_sats.append(temp_offsat)
     ###################################################################################################################
     # Making of the constellations  -  with corrected polarigrams (if not corrected they can't be added)
     ###################################################################################################################
@@ -318,7 +321,7 @@ class AllSourceData:
       if source is not None:
         for sim in source:
           if sim is not None:
-            sim.make_const(source.source_duration, source.source_fluence, off_sats, self.options, const=const, dysfunction_enabled=self.dysfunctional_sats)
+            sim.make_const(source.source_duration, source.source_fluence, number_of_down_per_const, off_sats, self.options, const=const, dysfunction_enabled=self.dysfunctional_sats)
     if not self.init_correction:
       self.azi_angle_anticorr()
     endtask("Creation of the constellations", timevar=init_time)
