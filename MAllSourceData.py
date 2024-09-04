@@ -301,8 +301,9 @@ class AllSourceData:
     ###################################################################################################################
     # Setting some satellites off
     ###################################################################################################################
-    off_sats = []
+    off_sats = []  # TODO put a verification to see if there is at least 1 value in the list number_of_down_per_const
     for num_down in number_of_down_per_const:
+      print(num_down)
       if num_down == 0:
         off_sats.append(None)
       else:
@@ -310,6 +311,7 @@ class AllSourceData:
         while len(temp_offsat) != num_down:
           rand_sat = np.random.randint(self.n_sat)
           if rand_sat not in temp_offsat:
+            print("Removing 1 sat")
             temp_offsat.append(rand_sat)
         off_sats.append(temp_offsat)
     ###################################################################################################################
