@@ -69,7 +69,7 @@ for ite_const, num_down in enumerate(test.number_of_down_per_const):
   print(f"================== Number of satellite down : {ite_const} ==================")
 
   print("=                        triggers count                        =")
-  test.count_triggers(number_off_sat=ite_const, graphs=False)
+  test.count_triggers(const_index=ite_const, graphs=False)
   # print("=                        MDP histogram                        =")
   # test.mdp_histogram()
   number_detected = 0
