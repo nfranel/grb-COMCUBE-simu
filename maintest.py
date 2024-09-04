@@ -65,7 +65,7 @@ for info in test.sat_info:
 for inc in inclinations:
   print(f"     inclination {inc} : {calc_duty(inc, 0, 0, 500)}")
 mdp30list = []
-for ite_const in range(test.n_sat):
+for ite_const, num_down in enumerate(test.number_of_down_per_const):
   print(f"================== Number of satellite down : {ite_const} ==================")
 
   print("=                        triggers count                        =")

@@ -77,6 +77,7 @@ class AllSourceData:
     self.snr_min = 5
     self.options = [self.erg_cut, self.armcut, self.geometry, self.init_correction, self.polarigram_bins]
     self.dysfunctional_sats = True
+    self.number_of_down_per_const = [0]
 
     # Compiling the position finder
     subprocess.call(f"make -f Makefile PRG=find_detector", shell=True)
@@ -287,22 +288,20 @@ class AllSourceData:
                 sat.set_beneficial_compton(threshold=threshold_mdp)
                 sat.set_beneficial_single()
 
-  def make_const(self, number_of_down_per_const=None, const=None):
+  def make_const(self, const=None):
     """
     This function is used to combine results from different satellites
     Results are then stored in the key const_data
     ! The polarigrams have to be corrected to combine the polarigrams !
     :param const: Which satellite are considered for the constellation if none, all of them are
     """
-    if number_of_down_per_const is None:
-      number_of_down_per_const = [0]
     printcom("Creation of the constellations")
     init_time = time()
     ###################################################################################################################
     # Setting some satellites off
     ###################################################################################################################
     off_sats = []  # TODO put a verification to see if there is at least 1 value in the list number_of_down_per_const
-    for num_down in number_of_down_per_const:
+    for num_down in self.number_of_down_per_const:
       print(num_down)
       if num_down == 0:
         off_sats.append(None)
@@ -323,7 +322,7 @@ class AllSourceData:
       if source is not None:
         for sim in source:
           if sim is not None:
-            sim.make_const(source.source_duration, source.source_fluence, number_of_down_per_const, off_sats, self.options, const=const, dysfunction_enabled=self.dysfunctional_sats)
+            sim.make_const(source.source_duration, source.source_fluence, self.number_of_down_per_const, off_sats, self.options, const=const, dysfunction_enabled=self.dysfunctional_sats)
     if not self.init_correction:
       self.azi_angle_anticorr()
     endtask("Creation of the constellations", timevar=init_time)
@@ -487,12 +486,12 @@ class AllSourceData:
     else:
       print("Type error for savefile, must be str or None")
 
-  def count_triggers(self, number_off_sat=0, weighted=True, graphs=False):
+  def count_triggers(self, const_index=0, weighted=True, graphs=False):
     """
     Function to count and print the number of triggers using different criterions
     """
     print("================================================================================================")
-    print(f"== Triggers according to GBM method with   {number_off_sat}   down satellite")
+    print(f"== Triggers according to GBM method with   {self.number_of_down_per_const[const_index]}   down satellite")
     print("================================================================================================")
     total_in_view = 0
     const_trigger_counter_4s = 0
@@ -508,10 +507,10 @@ class AllSourceData:
         for ite_sim, sim in enumerate(source):
           if sim is not None:
             total_in_view += 1
-            if sim.const_data[number_off_sat] is not None:
-              if True in (sim.const_data[number_off_sat].const_beneficial_trigger_4s >= 4):
+            if sim.const_data[const_index] is not None:
+              if True in (sim.const_data[const_index].const_beneficial_trigger_4s >= 4):
                 const_trigger_counter_4s += 1
-              if True in (sim.const_data[number_off_sat].const_beneficial_trigger_3s >= 3):
+              if True in (sim.const_data[const_index].const_beneficial_trigger_3s >= 3):
                 const_trigger_counter_3s += 1
               else:
                 no_trig_name.append(source.source_name)
@@ -520,9 +519,9 @@ class AllSourceData:
                 no_trig_e_fluence.append(source.source_energy_fluence)
                 # if len(no_trig_name) <= 30 and graphs:
                 #   print("Not triggered : ", source.source_name, source.source_duration, sim.dec_world_frame, source.source_energy_fluence)
-              if True in (sim.const_data[number_off_sat].const_beneficial_trigger_2s >= 2):
+              if True in (sim.const_data[const_index].const_beneficial_trigger_2s >= 2):
                 const_trigger_counter_2s += 1
-              if True in (sim.const_data[number_off_sat].const_beneficial_trigger_1s >= 1):
+              if True in (sim.const_data[const_index].const_beneficial_trigger_1s >= 1):
                 const_trigger_counter_1s += 1
 
     print(f"   Trigger for at least 4 satellites :        {const_trigger_counter_4s:.2f} triggers")
@@ -536,7 +535,7 @@ class AllSourceData:
       no_trig_dec = np.array(no_trig_dec, dtype=float)
       no_trig_e_fluence = np.array(no_trig_e_fluence, dtype=float)
 
-      t1 = f"Not triggered GRB distribution with {number_off_sat} satellite down\n{len(no_trig_duration)} not triggered over {total_in_view} GRB simulated"
+      t1 = f"Not triggered GRB distribution with {self.number_of_down_per_const[const_index]} satellite down\n{len(no_trig_duration)} not triggered over {total_in_view} GRB simulated"
       fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(27, 6))
       fig.suptitle(t1)
       ax1.hist(no_trig_duration, bins=20, histtype="step")
@@ -550,7 +549,7 @@ class AllSourceData:
       plt.show()
 
 
-  # def count_triggers(self, number_off_sat=0):
+  # def count_triggers(self, const_index=0):
   #   """
   #   Function to count and print the number of triggers using different criterions
   #   """
@@ -604,11 +603,11 @@ class AllSourceData:
   #                 sat_reduced_t90_triggers += 1
   #           # Calculation for the whole constellation
   #           if source.best_fit_p_flux is None:
-  #             const_peak_snr = sim.const_data[number_off_sat].snr_single
+  #             const_peak_snr = sim.const_data[const_index].snr_single
   #           else:
-  #             const_peak_snr = calc_snr(rescale_cr_to_GBM_pf(sim.const_data[number_off_sat].single_cr, source.best_fit_mean_flux, source.best_fit_p_flux), sim.const_data[number_off_sat].single_b_rate)
+  #             const_peak_snr = calc_snr(rescale_cr_to_GBM_pf(sim.const_data[const_index].single_cr, source.best_fit_mean_flux, source.best_fit_p_flux), sim.const_data[const_index].single_b_rate)
   #           # 1s mean triggers
-  #           if sim.const_data[number_off_sat].snr_single >= self.snr_min:
+  #           if sim.const_data[const_index].snr_single >= self.snr_min:
   #             single_instant_trigger_by_const += 1
   #           if sat_instant_triggers >= 1:
   #             single_instant_trigger_by_sat += 1
@@ -622,7 +621,7 @@ class AllSourceData:
   #           if sat_reduced_peak_triggers >= 3:
   #             single_peak_trigger_by_comparison += 1
   #           # T90 mean triggers
-  #           if sim.const_data[number_off_sat].snr_single_t90 >= self.snr_min:
+  #           if sim.const_data[const_index].snr_single_t90 >= self.snr_min:
   #             single_t90_trigger_by_const += 1
   #           if sat_t90_triggers >= 1:
   #             single_t90_trigger_by_sat += 1
@@ -681,18 +680,18 @@ class AllSourceData:
   #                 sat_snr_list.append(snr_list)
   #                 if max(snr_list) > 3:
   #                   sat_trigg += 1
-  #           if sim.const_data[number_off_sat] is not None:
-  #             if len(np.concatenate((sim.const_data[number_off_sat].compton_time, sim.const_data[number_off_sat].single_time))) == 0:
+  #           if sim.const_data[const_index] is not None:
+  #             if len(np.concatenate((sim.const_data[const_index].compton_time, sim.const_data[const_index].single_time))) == 0:
   #               const_snr = [0]
   #             else:
-  #               temp_hist = [np.histogram(np.concatenate((sim.const_data[number_off_sat].compton_time, sim.const_data[number_off_sat].single_time)), bins=list_bin)[0] for list_bin in list_bins]
+  #               temp_hist = [np.histogram(np.concatenate((sim.const_data[const_index].compton_time, sim.const_data[const_index].single_time)), bins=list_bin)[0] for list_bin in list_bins]
   #               arg_max_bin = [np.argmax(val_hist) for val_hist in temp_hist]
   #               # for index1, arg_max1 in enumerate(arg_max_bin):
   #               #   for index2, arg_max2 in enumerate(arg_max_bin[index1 + 1:]):
   #               #     if not compatibility_test(centroid_bins[index1][arg_max1], bin_widths[index1], centroid_bins[index1 + 1 + index2][arg_max2], bin_widths[index1 + 1 + index2]):
   #               # print(f"Incompatibility between bins {bin_widths[index1]} and {bin_widths[index2]} for {source.source_name}, sim {ite_sim} and constellation")
   #               # print(f"     Centroids of the incompatible bins : {centroid_bins[index1][arg_max1]} and {centroid_bins[index1 + 1 + index2][arg_max2]}")
-  #               const_snr = [calc_snr(temp_hist[index][arg_max_bin[index]], (sim.const_data[number_off_sat].single_b_rate + sim.const_data[number_off_sat].compton_b_rate) * bin_widths[index]) for index in range(len(arg_max_bin))]
+  #               const_snr = [calc_snr(temp_hist[index][arg_max_bin[index]], (sim.const_data[const_index].single_b_rate + sim.const_data[const_index].compton_b_rate) * bin_widths[index]) for index in range(len(arg_max_bin))]
   #           else:
   #             const_snr = [0]
   #           if sat_trigg >= 4:
@@ -860,7 +859,7 @@ class AllSourceData:
     cat_data = Catalog(self.cat_file, self.sttype, self.rest_cat_file)
     cat_data.spectral_information()
 
-  def mdp_histogram(self, number_off_sat=0, mdp_limit=1, cumul=1, n_bins=30, x_scale='linear', y_scale="log"):
+  def mdp_histogram(self, const_index=0, mdp_limit=1, cumul=1, n_bins=30, x_scale='linear', y_scale="log"):
     """
     Display and histogram representing the number of grb of a certain mdp per year
     :param selected_sat: int or string, which sat is selected, if "const" the constellation is selected
@@ -884,11 +883,11 @@ class AllSourceData:
       if source is not None:
         for sim in source:
           if sim is not None:
-            if sim.const_data[number_off_sat] is not None:
+            if sim.const_data[const_index] is not None:
               number_detected += 1
-              if sim.const_data[number_off_sat].mdp is not None:
-                if sim.const_data[number_off_sat].mdp <= mdp_limit:
-                  mdp_list.append(sim.const_data[number_off_sat].mdp * 100)
+              if sim.const_data[const_index].mdp is not None:
+                if sim.const_data[const_index].mdp <= mdp_limit:
+                  mdp_list.append(sim.const_data[const_index].mdp * 100)
 
     fig, ax = plt.subplots(1, 1, figsize=(10, 6))
     ax.hist(mdp_list, bins=n_bins, cumulative=cumul, histtype="step", weights=[self.weights] * len(mdp_list),
@@ -906,7 +905,7 @@ class AllSourceData:
     ax.grid(axis='both')
     plt.show()
 
-  def snr_histogram(self, snr_type="compton", number_off_sat=0, cumul=0, n_bins=30, x_scale="log", y_scale="log"):
+  def snr_histogram(self, snr_type="compton", const_index=0, cumul=0, n_bins=30, x_scale="log", y_scale="log"):
     """
     Display and histogram representing the number of grb that have at least a certain snr per year
     :param snr_type: "compton" or "single" to consider either compton events or single events
@@ -937,9 +936,9 @@ class AllSourceData:
         for sim in source:
           if sim is not None:
             if snr_type == "compton":
-              snr_list.append(sim.const_data[number_off_sat].snr_compton_t90)
+              snr_list.append(sim.const_data[const_index].snr_compton_t90)
             elif snr_type == "single":
-              snr_list.append(sim.const_data[number_off_sat].snr_single_t90)
+              snr_list.append(sim.const_data[const_index].snr_single_t90)
 
     fig, ax = plt.subplots(1, 1, figsize=(10, 6))
     if x_scale == "log":
