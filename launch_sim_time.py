@@ -56,8 +56,8 @@ def gen_commands(args):
   with open(f"{sim_directory}/simulation_logs.txt", "w") as f:
     f.write("========================================================================\n")
     f.write("                    Log file for the simulations                        \n")
-    f.write("GRB name | simulation number | satellite number | status of the simulation | sat inclination | sat RA of ascending node | sat argument of periapsis | altitude | random time of simulation | sat dec world frame | sat ra world frame | grb dec world frame | grb ra world frame | grb dec sat frame | grb ra sat frame\n")
-    f.write("name | sim_num | sat_num | status | inc | ohm | omega | alt | rand_time | sat_decwf | sat_rawf | grb_decwf | grb_rawf | grb_decsf | grb_rasf\n")
+    f.write("GRB name | GRB index | simulation number | satellite number | status of the simulation | sat inclination | sat RA of ascending node | sat argument of periapsis | altitude | random time of simulation | sat dec world frame | sat ra world frame | grb dec world frame | grb ra world frame | grb dec sat frame | grb ra sat frame\n")
+    f.write("name | grb_num | sim_num | sat_num | status | inc | ohm | omega | alt | rand_time | sat_decwf | sat_rawf | grb_decwf | grb_rawf | grb_decsf | grb_rasf\n")
     f.write("Angles in degrees and altitude in km\n")
     f.write("========================================================================\n")
   def gen_grb(i): # Generate a single GRB command
@@ -141,11 +141,11 @@ def gen_commands(args):
         dec_sat_world_frame, ra_sat_world_frame = orbitalparam2decra(s[0], s[1], s[2], nu=true_anomaly)  # deg
         ra_sat_world_frame = np.mod(ra_sat_world_frame - earth_ra_offset, 360)
         if verif_rad_belts(dec_sat_world_frame, ra_sat_world_frame, s[3]):  # checks if sat is in the switch off zone
-          save_log(f"{sim_directory}/simulation_logs.txt", cat.df.name[i], j, k, "Ignored(off)", s[0], s[1], s[2], s[3], rand_time, dec_sat_world_frame, ra_sat_world_frame, dec_grb_world_frame, ra_grb_world_frame, None, None)
+          save_log(f"{sim_directory}/simulation_logs.txt", cat.df.name[i], i, j, k, "Ignored(off)", s[0], s[1], s[2], s[3], rand_time, dec_sat_world_frame, ra_sat_world_frame, dec_grb_world_frame, ra_grb_world_frame, None, None)
         else:
           theta, phi, thetap, phip, polstr = grb_decrapol_worldf2satf(dec_grb_world_frame, ra_grb_world_frame, dec_sat_world_frame, ra_sat_world_frame)[1:]
           if theta >= horizon_angle(s[3]):  # Source below horizon
-            save_log(f"{sim_directory}/simulation_logs.txt", cat.df.name[i], j, k, "Ignored(horizon)", s[0], s[1], s[2], s[3], rand_time, dec_sat_world_frame, ra_sat_world_frame, dec_grb_world_frame, ra_grb_world_frame, theta, phi)
+            save_log(f"{sim_directory}/simulation_logs.txt", cat.df.name[i], i, j, k, "Ignored(horizon)", s[0], s[1], s[2], s[3], rand_time, dec_sat_world_frame, ra_sat_world_frame, dec_grb_world_frame, ra_grb_world_frame, theta, phi)
           else:
             # Add command to commands list
             if args.simtime.isdigit():
@@ -162,7 +162,7 @@ def gen_commands(args):
               lc_bool = False
               vprint("simtime in parameter file unknown. Check parameter file.", __verbose__, 0)
             args.commands.append((not(args.nocosima), not(args.norevan), not(args.nomimrec), cat.df.name[i], k, spectrumfile, pht_mflx, simtime, lc_bool, lc_name, polstr, j, f"{dec_grb_world_frame:.4f}_{ra_grb_world_frame:.4f}_{rand_time:.4f}", theta, phi))
-            save_log(f"{sim_directory}/simulation_logs.txt", cat.df.name[i], j, k, "Simulated", s[0], s[1], s[2], s[3], rand_time, dec_sat_world_frame, ra_sat_world_frame, dec_grb_world_frame, ra_grb_world_frame, theta, phi)
+            save_log(f"{sim_directory}/simulation_logs.txt", cat.df.name[i], i, j, k, "Simulated", s[0], s[1], s[2], s[3], rand_time, dec_sat_world_frame, ra_sat_world_frame, dec_grb_world_frame, ra_grb_world_frame, theta, phi)
   for i in range(len(cat.df)):
     gen_grb(i)
   return args
