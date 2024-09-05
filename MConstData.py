@@ -100,12 +100,12 @@ class ConstData:
     self.side = 0                               # Summed                  # Trigger quality selection ?
     self.total_hits = 0
     ###################################################################################################################
-    # self.const_beneficial_compton = True       # Appened                 #
-    # self.const_beneficial_single = True        # Appened                 #
-    # self.const_beneficial_trigger_4s = np.zeros(9, dtype=np.int16)  # List sum                  #
-    # self.const_beneficial_trigger_3s = np.zeros(9, dtype=np.int16)  # List sum                  #
-    # self.const_beneficial_trigger_2s = np.zeros(9, dtype=np.int16)  # List sum                  #
-    # self.const_beneficial_trigger_1s = np.zeros(9, dtype=np.int16)  # List sum                  #
+    self.const_beneficial_compton = True       # Appened                 #
+    self.const_beneficial_single = True        # Appened                 #
+    self.const_beneficial_trigger_4s = np.zeros(9, dtype=np.int16)  # List sum                  #
+    self.const_beneficial_trigger_3s = np.zeros(9, dtype=np.int16)  # List sum                  #
+    self.const_beneficial_trigger_2s = np.zeros(9, dtype=np.int16)  # List sum                  #
+    self.const_beneficial_trigger_1s = np.zeros(9, dtype=np.int16)  # List sum                  #
 
   def analyze(self, source_duration, source_fluence):
     """

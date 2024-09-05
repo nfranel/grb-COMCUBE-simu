@@ -133,7 +133,7 @@ class AllSourceData:
     # log = LogData("/pdisk/ESA/test--400km--0-0-0--27sat")
     printcom("Step 5 - Loading log data and simulation statistics")
     init_time = time()
-    self.n_sim_simulated, self.n_sim_below_horizon, self.n_sim_in_radbelt, grb_names, grb_det_ites, sim_det_ites, sat_det_ites = LogData(self.sim_prefix.split("/sim/")[0]).detection_statistics(cat_data)
+    self.n_sim_simulated, self.n_sim_below_horizon, self.n_sim_in_radbelt, grb_names, grb_det_ites, sim_det_ites, sat_det_ites, suffix_ite = LogData(self.sim_prefix.split("/sim/")[0]).detection_statistics(cat_data)
     endtask("Step 5", timevar=init_time)
 
     # Extracting the information from the simulation files
@@ -141,7 +141,7 @@ class AllSourceData:
     init_time = time()
     if "extracted" not in os.listdir(self.sim_prefix.split('/sim/')[0]):
       os.mkdir(f"{self.sim_prefix.split('/sim/')[0]}/extracted")
-    tobe_extracted, extracted_name, presence_list = self.filenames_creation(grb_names, grb_det_ites, sim_det_ites, sat_det_ites)
+    tobe_extracted, extracted_name, presence_list = self.filenames_creation(grb_names, grb_det_ites, sim_det_ites, sat_det_ites, suffix_ite)
     endtask("Step 6", timevar=init_time)
 
     printcom("Step 7 - Extracting the information from the simulation files")
@@ -174,7 +174,7 @@ class AllSourceData:
       self.alldata = [AllSimData(presence_list[source_ite], source_ite, cat_data, self.sat_info, self.sim_duration, self.options) for source_ite in range(self.n_source)]
     endtask("Step 8", timevar=init_time)
 
-  def filenames_creation(self, grb_names, grb_det_ites, sim_det_ites, sat_det_ites):
+  def filenames_creation(self, grb_names, grb_det_ites, sim_det_ites, sat_det_ites, suffix_ite):
     tobe_ext = []
     ext_name = []
     pres_list = np.empty((self.n_source, self.n_sim, self.n_sat), dtype=object)
@@ -184,7 +184,7 @@ class AllSourceData:
       # num_sat, num_sim = simfile.split("/")[-1].split("_")[2:4]
       # num_sat = int(num_sat.split("sat")[-1])
       # num_sim = int(num_sim)
-      temp_simfile = f"{self.sim_prefix}_{grbname}_sat{sat_det_ites[ite]}_{sim_det_ites[ite]:04d}_*.inc1.id1.extracted.tra"
+      temp_simfile = f"{self.sim_prefix}_{grbname}_sat{sat_det_ites[ite]}_{sim_det_ites[ite]:04d}_{suffix_ite[ite]}.inc1.id1.extracted.tra"
       tobe_ext.append(temp_simfile)
       temp_name = f"{self.sim_prefix.split('/sim/')[0]}/extracted/{self.sim_prefix.split('/sim/')[1]}_extracted{grbname}_sat{sat_det_ites[ite]}_{sim_det_ites[ite]:04d}_erg-{self.erg_cut[0]}-{self.erg_cut[1]}_arm-{self.armcut}.txt"
       ext_name.append(temp_name)

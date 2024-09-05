@@ -8,6 +8,7 @@ import subprocess
 # Developped modules imports
 from funcmod import *
 from MGRBFullData import GRBFullData
+from MConstData import ConstData
 
 
 class AllSatData(list):
@@ -271,7 +272,7 @@ class AllSatData(list):
     else:
       number_const = 1
     for const_ite in range(number_const):
-      self.const_data.append(GRBFullData(None, None, None, None, None, None))
+      self.const_data.append(ConstData())
       in_sight_temp = in_sight_sat
       if off_sats[const_ite] is not None:
         for index in off_sats[const_ite]:
@@ -354,8 +355,18 @@ class AllSatData(list):
             #############################################################################################################
             # Appened
             #############################################################################################################
-            elif item in ["num_sat"]:
+            elif item in ["num_sat", "const_beneficial_compton", "const_beneficial_single"]:
               temp_list = []
               for num_sat in selected_sats:
                 temp_list.append(getattr(self[num_sat], item))
               setattr(self.const_data[ite_const], item, np.array(temp_list))
+            #############################################################################################################
+            # List sum
+            #############################################################################################################
+            elif item in ["const_beneficial_trigger_4s", "const_beneficial_trigger_3s", "const_beneficial_trigger_2s", "const_beneficial_trigger_1s"]:
+              temp_list = np.zeros(9, dtype=np.int16)
+              for num_sat in selected_sats:
+                temp_list += getattr(self[num_sat], item)
+              setattr(self.const_data[ite_const], item, temp_list)
+            else:
+              raise AttributeError(f"Item '{item}' not found")

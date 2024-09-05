@@ -102,8 +102,8 @@ class LogData:
     print(f"   Number of ignored simulation : {len(self.name) - simulated}")
     print(f"       With {horizon} ignored because the source is bellow the atmosphere")
     print(f"       With {off} ignored because the satellite is switch off")
-    ret_name, ret_name_ite, ret_sim_ite, ret_sat_ite = self.detected_iteration_values(cat)
-    return simulated, horizon, off, ret_name, ret_name_ite, ret_sim_ite, ret_sat_ite
+    ret_name, ret_name_ite, ret_sim_ite, ret_sat_ite, ret_suffix_ite = self.detected_iteration_values(cat)
+    return simulated, horizon, off, ret_name, ret_name_ite, ret_sim_ite, ret_sat_ite, ret_suffix_ite
 
   def detected_iteration_values(self, cat):
     name_temp = self.name[0]
@@ -112,6 +112,7 @@ class LogData:
     ret_name_ite = []
     ret_sim_ite = []
     ret_sat_ite = []
+    ret_suffix_ite = []
     for ite, name in enumerate(self.name):
       if name_temp != name:
         ite_grb += 1
@@ -123,4 +124,6 @@ class LogData:
         ret_name_ite.append(ite_grb)
         ret_sim_ite.append(self.sim_num[ite])
         ret_sat_ite.append(self.sat_num[ite])
-    return ret_name, ret_name_ite, ret_sim_ite, ret_sat_ite
+        ret_suffix_ite.append(f"{self.grb_decwf[ite]:.4f}_{self.grb_rawf[ite]:.4f}_{self.rand_time[ite]:.4f}")
+    return ret_name, ret_name_ite, ret_sim_ite, ret_sat_ite, ret_suffix_ite
+
