@@ -124,6 +124,6 @@ class LogData:
         ret_name_ite.append(ite_grb)
         ret_sim_ite.append(self.sim_num[ite])
         ret_sat_ite.append(self.sat_num[ite])
-        ret_suffix_ite.append(f"{self.grb_decwf[ite]:.4f}_{self.grb_rawf[ite]:.4f}_{self.rand_time[ite]:.4f}")
+        ret_suffix_ite.append(f"{self.grb_decwf[ite]:.1f}_{self.grb_rawf[ite]:.1f}_{self.rand_time[ite]:.4f}")
     return ret_name, ret_name_ite, ret_sim_ite, ret_sat_ite, ret_suffix_ite
 

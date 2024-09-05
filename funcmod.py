@@ -431,7 +431,7 @@ def save_grb_data(data_file, filename, sat_info_list, bkg_data, mu_data, ergcut,
     else:
       print("Extracted files does not exist : Extraction in progress", end="\r")
     with open(filename, "w") as f:
-      print(data_file)
+      # print(data_file)
       dec_world_frame, ra_world_frame, burst_time, source_name, num_sim, num_sat = fname2decratime(data_file)
       sat_info = sat_info_list[num_sat]
       dec_sat_wf, ra_sat_wf = sat_info_2_decra(sat_info, burst_time)
