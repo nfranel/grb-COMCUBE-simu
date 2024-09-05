@@ -5,6 +5,8 @@
 
 # Package imports
 import numpy as np
+
+
 # Developped modules imports
 
 
@@ -87,7 +89,7 @@ class LogData:
     self.grb_decsf = np.array(self.grb_decsf)
     self.grb_rasf = np.array(self.grb_rasf)
 
-  def detection_statistics(self):
+  def detection_statistics(self, cat):
     """
     Prints the detection statistics for a set a simulation
     """
@@ -100,4 +102,25 @@ class LogData:
     print(f"   Number of ignored simulation : {len(self.name) - simulated}")
     print(f"       With {horizon} ignored because the source is bellow the atmosphere")
     print(f"       With {off} ignored because the satellite is switch off")
-    return simulated, horizon, off
+    ret_name, ret_name_ite, ret_sim_ite, ret_sat_ite = self.detected_iteration_values(cat)
+    return simulated, horizon, off, ret_name, ret_name_ite, ret_sim_ite, ret_sat_ite
+
+  def detected_iteration_values(self, cat):
+    name_temp = self.name[0]
+    ite_grb = 0
+    ret_name = []
+    ret_name_ite = []
+    ret_sim_ite = []
+    ret_sat_ite = []
+    for ite, name in enumerate(self.name):
+      if name_temp != name:
+        ite_grb += 1
+        name_temp = name
+      if ite_grb >= len(cat.df.name):
+        break
+      if self.status[ite] == "Simulated":
+        ret_name.append(name)
+        ret_name_ite.append(ite_grb)
+        ret_sim_ite.append(self.sim_num[ite])
+        ret_sat_ite.append(self.sat_num[ite])
+    return ret_name, ret_name_ite, ret_sim_ite, ret_sat_ite

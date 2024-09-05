@@ -95,15 +95,8 @@ class AllSourceData:
     self.muSeffdata = MuSeffContainer(self.muSeff_param, self.erg_cut, self.armcut)
     endtask("Step 3", timevar=init_time)
 
-    # Log information
-    # log = LogData("/pdisk/ESA/test--400km--0-0-0--27sat")
-    printcom("Step 4 - Loading log data and simulation statistics")
-    init_time = time()
-    self.n_sim_simulated, self.n_sim_below_horizon, self.n_sim_in_radbelt = LogData(self.sim_prefix.split("/sim/")[0]).detection_statistics()
-    endtask("Step 4", timevar=init_time)
-
     # Setting the catalog and the attributes associated
-    printcom("Step 5 - Loading catalog data and duty cycle information")
+    printcom("Step 4 - Loading catalog data and duty cycle information")
     init_time = time()
     if self.cat_file == "None":
       cat_data = self.extract_sources(self.sim_prefix)
@@ -134,6 +127,13 @@ class AllSourceData:
         raise ValueError("Wrong simulation mode in .par file")
       # self.com_duty = 1
       self.weights = 1 / self.n_sim / self.cat_duration * self.com_duty / self.gbm_duty * self.com_fov / self.gbm_fov
+    endtask("Step 4", timevar=init_time)
+
+    # Log information
+    # log = LogData("/pdisk/ESA/test--400km--0-0-0--27sat")
+    printcom("Step 5 - Loading log data and simulation statistics")
+    init_time = time()
+    self.n_sim_simulated, self.n_sim_below_horizon, self.n_sim_in_radbelt, grb_names, grb_det_ites, sim_det_ites, sat_det_ites = LogData(self.sim_prefix.split("/sim/")[0]).detection_statistics(cat_data)
     endtask("Step 5", timevar=init_time)
 
     # Extracting the information from the simulation files
@@ -141,7 +141,7 @@ class AllSourceData:
     init_time = time()
     if "extracted" not in os.listdir(self.sim_prefix.split('/sim/')[0]):
       os.mkdir(f"{self.sim_prefix.split('/sim/')[0]}/extracted")
-    tobe_extracted, extracted_name, presence_list = self.filenames_creation(cat_data)
+    tobe_extracted, extracted_name, presence_list = self.filenames_creation(grb_names, grb_det_ites, sim_det_ites, sat_det_ites)
     endtask("Step 6", timevar=init_time)
 
     printcom("Step 7 - Extracting the information from the simulation files")
@@ -174,20 +174,21 @@ class AllSourceData:
       self.alldata = [AllSimData(presence_list[source_ite], source_ite, cat_data, self.sat_info, self.sim_duration, self.options) for source_ite in range(self.n_source)]
     endtask("Step 8", timevar=init_time)
 
-  def filenames_creation(self, cat):
+  def filenames_creation(self, grb_names, grb_det_ites, sim_det_ites, sat_det_ites):
     tobe_ext = []
     ext_name = []
     pres_list = np.empty((self.n_source, self.n_sim, self.n_sat), dtype=object)
-    for source_ite in range(self.n_source):
-      simfiles = glob.glob(f"{self.sim_prefix}_{cat.df.name[source_ite]}_*.inc1.id1.extracted.tra")
-      for simfile in simfiles:
-        num_sat, num_sim = simfile.split("/")[-1].split("_")[2:4]
-        num_sat = int(num_sat.split("sat")[-1])
-        num_sim = int(num_sim)
-        tobe_ext.append(simfile)
-        temp_name = f"{self.sim_prefix.split('/sim/')[0]}/extracted/{self.sim_prefix.split('/sim/')[1]}_extracted{cat.df.name[source_ite]}_sat{num_sat}_{num_sim:04d}_erg-{self.erg_cut[0]}-{self.erg_cut[1]}_arm-{self.armcut}.txt"
-        ext_name.append(temp_name)
-        pres_list[source_ite][num_sim][num_sat] = temp_name
+    # for source_ite in range(self.n_source):
+      # simfiles = glob.glob(f"{self.sim_prefix}_{cat.df.name[source_ite]}_*.inc1.id1.extracted.tra")
+    for ite, grbname in enumerate(grb_names):
+      # num_sat, num_sim = simfile.split("/")[-1].split("_")[2:4]
+      # num_sat = int(num_sat.split("sat")[-1])
+      # num_sim = int(num_sim)
+      temp_simfile = f"{self.sim_prefix}_{grbname}_sat{sat_det_ites[ite]}_{sim_det_ites[ite]:04d}_*.inc1.id1.extracted.tra"
+      tobe_ext.append(temp_simfile)
+      temp_name = f"{self.sim_prefix.split('/sim/')[0]}/extracted/{self.sim_prefix.split('/sim/')[1]}_extracted{grbname}_sat{sat_det_ites[ite]}_{sim_det_ites[ite]:04d}_erg-{self.erg_cut[0]}-{self.erg_cut[1]}_arm-{self.armcut}.txt"
+      ext_name.append(temp_name)
+      pres_list[grb_det_ites[ite]][sim_det_ites[ite]][sat_det_ites[ite]] = temp_name
 
     # for source_ite in range(self.n_source):
     #   for num_sim in range(self.n_sim):
@@ -288,7 +289,7 @@ class AllSourceData:
                 sat.set_beneficial_compton(threshold=threshold_mdp)
                 sat.set_beneficial_single()
 
-  def make_const(self, const=None):
+  def make_const(self, condensed_const=True, const=None):
     """
     This function is used to combine results from different satellites
     Results are then stored in the key const_data
@@ -321,7 +322,10 @@ class AllSourceData:
       if source is not None:
         for sim in source:
           if sim is not None:
-            sim.make_const(source.source_duration, source.source_fluence, self.number_of_down_per_const, off_sats, self.options, const=const, dysfunction_enabled=self.dysfunctional_sats)
+            if condensed_const:
+              sim.make_condensed_const(self.number_of_down_per_const, off_sats, const=const, dysfunction_enabled=self.dysfunctional_sats)
+            else:
+              sim.make_const(source.source_duration, source.source_fluence, self.number_of_down_per_const, off_sats, self.options, const=const, dysfunction_enabled=self.dysfunctional_sats)
     if not self.init_correction:
       self.azi_angle_anticorr()
     endtask("Creation of the constellations", timevar=init_time)
