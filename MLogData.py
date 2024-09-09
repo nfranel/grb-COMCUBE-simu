@@ -17,11 +17,11 @@ class LogData:
   """
   Class containing the data from a log file
   """
-  def __init__(self, sim_directory):
+  def __init__(self, sim_prefix):
     """
     :param sim_directory: Directory where the simulation data is saved
     """
-    self.sim_directory = sim_directory
+    self.sim_directory, self.data_prefix = sim_prefix.split("/sim/")
     self.keys_description = None
     self.keys = None
     self.name = []
@@ -91,7 +91,7 @@ class LogData:
     self.grb_decsf = np.array(self.grb_decsf)
     self.grb_rasf = np.array(self.grb_rasf)
 
-  def detection_statistics(self, cat, prefix):
+  def detection_statistics(self, cat, existing_check=False):
     """
     Prints the detection statistics for a set a simulation
     """
@@ -104,9 +104,10 @@ class LogData:
     print(f"   Number of ignored simulation : {len(self.name) - simulated}")
     print(f"       With {horizon} ignored because the source is bellow the atmosphere")
     print(f"       With {off} ignored because the satellite is switch off")
-    error_message = self.check_existing_files(cat, prefix)
-    if error_message != "":
-      raise FileNotFoundError(f"Some simulation files are not found : \n{error_message}")
+    if existing_check:
+      error_message = self.check_existing_files(cat,)
+      if error_message != "":
+        raise FileNotFoundError(f"Some simulation files are not found : \n{error_message}")
     ret_name, ret_name_ite, ret_sim_ite, ret_sat_ite, ret_suffix_ite = self.detected_iteration_values(cat)
     return simulated, horizon, off, ret_name, ret_name_ite, ret_sim_ite, ret_sat_ite, ret_suffix_ite
 
@@ -127,13 +128,12 @@ class LogData:
         ret_suffix_ite.append(f"{self.grb_decwf[ite]:.4f}_{self.grb_rawf[ite]:.4f}_{self.rand_time[ite]:.4f}")
     return ret_name, ret_grb_ite, ret_sim_ite, ret_sat_ite, ret_suffix_ite
 
-  def check_existing_files(self, cat, prefix):
-    sim_prefix = prefix.split("/sim/")[-1]
+  def check_existing_files(self, cat):
     error_list = ""
     for ite, name in enumerate(self.name):
       if self.grb_num[ite] >= len(cat.df.name):
         break
       if self.status[ite] == "Simulated":
-        if not (f"{sim_prefix}_{name}_sat{self.sat_num[ite]}_{self.sim_num[ite]:04d}_{self.grb_decwf[ite]:.4f}_{self.grb_rawf[ite]:.4f}_{self.rand_time[ite]:.4f}.inc1.id1.extracted.tra" in os.listdir(f"{self.sim_directory}/sim")):
+        if not (f"{self.data_prefix}_{name}_sat{self.sat_num[ite]}_{self.sim_num[ite]:04d}_{self.grb_decwf[ite]:.4f}_{self.grb_rawf[ite]:.4f}_{self.rand_time[ite]:.4f}.inc1.id1.extracted.tra" in os.listdir(f"{self.sim_directory}/sim")):
           error_list += f"File not existing for {name}, sim {self.sim_num[ite]}, sat {self.sat_num[ite]}\n"
     return error_list
