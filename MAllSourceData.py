@@ -133,7 +133,7 @@ class AllSourceData:
     # log = LogData("/pdisk/ESA/test--400km--0-0-0--27sat")
     printcom("Step 5 - Loading log data and simulation statistics")
     init_time = time()
-    self.n_sim_simulated, self.n_sim_below_horizon, self.n_sim_in_radbelt, grb_names, grb_det_ites, sim_det_ites, sat_det_ites, suffix_ite = LogData(self.sim_prefix.split("/sim/")[0]).detection_statistics(cat_data)
+    self.n_sim_simulated, self.n_sim_below_horizon, self.n_sim_in_radbelt, grb_names, grb_det_ites, sim_det_ites, sat_det_ites, suffix_ite = LogData(self.sim_prefix.split("/sim/")[0]).detection_statistics(cat_data, self.sim_prefix)
     endtask("Step 5", timevar=init_time)
 
     # Extracting the information from the simulation files

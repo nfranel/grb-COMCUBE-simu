@@ -161,9 +161,6 @@ def gen_commands(args):
               simtime = None
               lc_bool = False
               vprint("simtime in parameter file unknown. Check parameter file.", __verbose__, 0)
-            if cat.df.name[i] in ["GRB080804456", "GRB130215063"]:
-              print("COMMAND : ", (not(args.nocosima), not(args.norevan), not(args.nomimrec), cat.df.name[i], k, spectrumfile, pht_mflx, simtime, lc_bool, lc_name, polstr, j, f"{dec_grb_world_frame:.4f}_{ra_grb_world_frame:.4f}_{rand_time:.4f}", theta, phi))
-              print("LOG : ", f"{sim_directory}/simulation_logs.txt", cat.df.name[i], i, j, k, "Simulated", s[0], s[1], s[2], s[3], rand_time, dec_sat_world_frame, ra_sat_world_frame, dec_grb_world_frame, ra_grb_world_frame, theta, phi)
             args.commands.append((not(args.nocosima), not(args.norevan), not(args.nomimrec), cat.df.name[i], k, spectrumfile, pht_mflx, simtime, lc_bool, lc_name, polstr, j, f"{dec_grb_world_frame:.4f}_{ra_grb_world_frame:.4f}_{rand_time:.4f}", theta, phi))
             save_log(f"{sim_directory}/simulation_logs.txt", cat.df.name[i], i, j, k, "Simulated", s[0], s[1], s[2], s[3], rand_time, dec_sat_world_frame, ra_sat_world_frame, dec_grb_world_frame, ra_grb_world_frame, theta, phi)
   for i in range(len(cat.df)):
@@ -305,7 +302,7 @@ if __name__ == "__main__":
     vprint("Running of {} parameter file with output prefix {}".format(args.parameterfile, args.prefix), __verbose__, 0)
     args = gen_commands(args)
     vprint("{} Commands have been parsed".format(len(args.commands)), __verbose__, 0)
-    # run_sims(args.commands)
+    run_sims(args.commands)
   else:
     vprint("Missing parameter file or geometry - not running.", __verbose__, 0)
 
