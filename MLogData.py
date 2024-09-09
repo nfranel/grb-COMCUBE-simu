@@ -105,7 +105,8 @@ class LogData:
     print(f"       With {horizon} ignored because the source is bellow the atmosphere")
     print(f"       With {off} ignored because the satellite is switch off")
     if existing_check:
-      error_message = self.check_existing_files(cat,)
+      print("   = Checking the existence of all simulations found in the log file =")
+      error_message = self.check_existing_files(cat)
       if error_message != "":
         raise FileNotFoundError(f"Some simulation files are not found : \n{error_message}")
     ret_name, ret_name_ite, ret_sim_ite, ret_sat_ite, ret_suffix_ite = self.detected_iteration_values(cat)
