@@ -135,8 +135,8 @@ class LogData:
       if self.grb_num[ite] >= len(cat.df.name):
         break
       if self.status[ite] == "Simulated":
-        print(f"{self.sim_directory}/sim/")
-        print(f"{self.data_prefix}_{name}_sat{self.sat_num[ite]}_{self.sim_num[ite]:04d}_{self.grb_decwf[ite]:.4f}_{self.grb_rawf[ite]:.4f}_{self.rand_time[ite]:.4f}.inc1.id1.extracted.tra")
+        # print(f"{self.sim_directory}/sim/")
+        # print(f"{self.data_prefix}_{name}_sat{self.sat_num[ite]}_{self.sim_num[ite]:04d}_{self.grb_decwf[ite]:.4f}_{self.grb_rawf[ite]:.4f}_{self.rand_time[ite]:.4f}.inc1.id1.extracted.tra")
         if not (f"{self.data_prefix}_{name}_sat{self.sat_num[ite]}_{self.sim_num[ite]:04d}_{self.grb_decwf[ite]:.4f}_{self.grb_rawf[ite]:.4f}_{self.rand_time[ite]:.4f}.inc1.id1.extracted.tra" in os.listdir(f"{self.sim_directory}/sim/")):
           print("NOT IN")
           error_list += f"File not existing for {name}, sim {self.sim_num[ite]}, sat {self.sat_num[ite]}\n"
