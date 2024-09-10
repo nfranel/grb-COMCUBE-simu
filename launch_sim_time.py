@@ -275,7 +275,7 @@ def run(command, __verbose__):
   # vprint("Process id {} from {} runs {} (verbosity {})".format(os.getpid(), os.getppid(), command, __verbose__), __verbose__, 0)
   if command[3] in ["GRB080804456", "GRB120420858", "GRB130215063", "GRB140603476"]:
     vprint("Process id {} from {} runs {} (verbosity {})".format(os.getpid(), os.getppid(), command, __verbose__), __verbose__, 0)
-    subprocess.call(command, shell=True, stdout=open(os.devnull, 'wb'), stderr=open(os.devnull, 'wb'))
+    subprocess.call(command, shell=True)
   elif __verbose__ < 2:
     subprocess.call(command, shell=True, stdout=open(os.devnull, 'wb'), stderr=open(os.devnull, 'wb'))
   elif __verbose__ < 3:
