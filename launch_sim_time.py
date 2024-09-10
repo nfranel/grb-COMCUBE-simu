@@ -182,7 +182,7 @@ def maketmpsf(command, args, pid):
   """
   Makes a temporary source file for cosima from a standard one and returns its name
   """
-  fname = f"tmp_{pid}.source"
+  fname = f"tmp_{pid}_{command[3]}.source"
   sname = make_sim_name(args, command)
   with open(args.csf) as f:
     lines = f.read().split("\n")
