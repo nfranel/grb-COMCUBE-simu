@@ -237,7 +237,11 @@ def make_cspec_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_m
   lc_select_list = [lc.slice(start_t90, end_t90) for lc in lc_list]
   print("==== 1132 ====")
   for lc in lc_select_list:
-    print(lc.centroids[0], lc.centroids[-1], start_t90, end_t90)
+    # print(lc.centroids[0], lc.centroids[-1], start_t90, end_t90)
+    # lc.centroids = np.linspace(start_t90, end_t90, len(lc.centroids))
+    print(np.linspace(start_t90, end_t90, len(lc.centroids)))
+    print(lc.centroids)
+
 
   source_rates = np.sum(np.vstack(np.array([lc.rates for lc in lc_list])), axis=0)
   print("==== 1133 ====")
