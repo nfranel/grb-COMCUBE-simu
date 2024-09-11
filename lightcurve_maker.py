@@ -239,7 +239,7 @@ def make_cspec_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_m
   # for lc in lc_select_list:
   #   # print(lc.centroids[0], lc.centroids[-1], start_t90, end_t90)
   #   # lc.centroids = np.linspace(start_t90, end_t90, len(lc.centroids))
-  print(np.linspace(lc.centroids[0], lc.centroids[-1], len(lc.centroids)) - lc.centroids)
+  print(np.linspace(lc_select_list[0].centroids[0], lc_select_list[0].centroids[-1], len(lc_select_list[0].centroids)) - lc_select_list[0].centroids)
   # print(type(lc.centroids))
 
 
