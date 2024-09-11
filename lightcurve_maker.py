@@ -278,6 +278,8 @@ def create_lc(cat, ite_grb, bin_size="auto", ener_range=(10, 1000), show=False, 
   spec_detector_mask = cat.df.scat_detector_mask[ite_grb]
   flu_integ_start_time = float(cat.df.flnc_spectrum_start[ite_grb])
   flu_integ_stop_time = float(cat.df.flnc_spectrum_stop[ite_grb])
+  print(GRBname, t90, start_t90, end_t90, time_integ_lower_energy, time_integ_higher_energy, bk_time_low_start,
+        bk_time_low_stop, bk_time_high_start, bk_time_high_stop, lc_detector_mask, spec_detector_mask, flu_integ_start_time, flu_integ_stop_time)
 
   if bin_size == "auto":
     # a and b in 10**(a * log(T90) + b) obtained by fitting these values with lx the T90 and ly the desired bins
