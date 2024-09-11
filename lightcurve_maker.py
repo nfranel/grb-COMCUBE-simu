@@ -13,10 +13,6 @@ import numpy as np
 import subprocess
 from catalog import Catalog
 
-# Warnings gestion
-# import warnings
-# warnings.simplefilter("error", category=RuntimeWarning)
-
 
 def bin_selector(lc, tstart, tstop, minedges, maxedges):
   """
@@ -194,6 +190,7 @@ def make_tte_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_mas
       rm_files(files, directory)
       return 0
 
+
 def make_cspec_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_mask, ener_range=(10, 1000), show=False, directory="./sources/"):
   """
 
@@ -352,7 +349,7 @@ def create_lc(cat, ite_grb, bin_size="auto", ener_range=(10, 1000), show=False, 
 gbm_cat = Catalog("./GBM/allGBM.txt", [4, '\n', 5, '|', 4000], "GBM/rest_frame_properties.txt")
 for grb_ite in [17, 890, 1057, 1350]:
   # for grb_ite in [17]:
-  create_lc(gbm_cat, grb_ite, bin_size="auto", ener_range=(10, 1000), show=True, directory="./sources/")
+  create_lc(gbm_cat, grb_ite, bin_size="auto", ener_range=(10, 1000), show=False, directory="./sources/")
 
 # for grb_ite in range(len(gbm_cat)):
 #   create_lc(gbm_cat, grb_ite, bin_size="auto", ener_range=(10, 1000), show=False, directory="./sources/")
