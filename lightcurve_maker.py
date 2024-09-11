@@ -139,11 +139,7 @@ def make_tte_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_mas
       # Verification of the centroid values
       for value_ite in range(len(lc_select.centroids) - 1):
         if lc_select.centroids[value_ite + 1] <= lc_select.centroids[value_ite]:
-          if lc_select.centroids[value_ite - 1] > 0:
-            lc_select.centroids[value_ite + 1] = 2 * lc_select.centroids[value_ite] - lc_select.centroids[value_ite - 1]
-            print(f"The centroids list has been corrected for {name}")
-          else:
-            raise ValueError("The centroids list has to be corrected for a situation not implemented")
+          raise ValueError("The centroids list has to be corrected, tte correction is not implemented")
       ###################################################################################################################
       # Creating background
       ###################################################################################################################
@@ -239,25 +235,14 @@ def make_cspec_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_m
 
   lc_select_list = [lc.slice(start_t90, end_t90) for lc in lc_list]
   print("==== 1132 ====")
-  # Verification of the centroid values
-  for value_ite in range(len(lc_select_list[0].centroids) - 1):
-    if lc_select_list[0].centroids[value_ite + 1] <= lc_select_list[0].centroids[value_ite]:
-      if lc_select_list[0].centroids[value_ite - 1] > 0:
-        centroid_correction = 2 * lc_select_list[0].centroids[value_ite] - lc_select_list[0].centroids[value_ite - 1]
-        for lc in lc_select_list:
-          lc.centroids[value_ite + 1] = centroid_correction
-        print(f"The centroids list has been corrected for {name}")
-      else:
-        raise ValueError("The centroids list has to be corrected for a situation not implemented")
 
   # for lc in lc_select_list:
   #   # print(lc.centroids[0], lc.centroids[-1], start_t90, end_t90)
   #   # lc.centroids = np.linspace(start_t90, end_t90, len(lc.centroids))
-  print(lc_select_list[0].centroids[1:] - lc_select_list[0].centroids[:-1])
-  print(lc_select_list[0].centroids)
+  # print(lc_select_list[0].centroids[1:] - lc_select_list[0].centroids[:-1])
+  # print(lc_select_list[0].centroids)
   # print(np.linspace(lc_select_list[0].centroids[0], lc_select_list[0].centroids[-1], len(lc_select_list[0].centroids)) - lc_select_list[0].centroids)
   # print(type(lc.centroids))
-
 
   source_rates = np.sum(np.vstack(np.array([lc.rates for lc in lc_list])), axis=0)
   print("==== 1133 ====")
@@ -266,28 +251,52 @@ def make_cspec_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_m
   source_rates_select = np.sum(np.vstack(source_rates_select_list), axis=0)
   print("==== 1135 ====")
 
+  # Verification of the centroid values
+  correct_centroids = False
+  for value_ite in range(len(lc_select_list[0].centroids) - 1):
+    if lc_select_list[0].centroids[value_ite + 1] <= lc_select_list[0].centroids[value_ite]:
+      if lc_select_list[0].centroids[value_ite - 1] > 0:
+        correct_centroids = True
+        print(f"The centroids list has been corrected for {name}")
+      else:
+        raise ValueError("The centroids list has to be corrected for a situation not implemented")
+
   #####################################################################################################################
   # Creating background
   #####################################################################################################################
-  backfitter_list = [BackgroundFitter.from_phaii(cspec, Polynomial, bkg_range) for cspec in cspecs]
-  print("==== 1136 ====")
-  try:
-    print("==== 114 ====")
-    for backfitter in backfitter_list:
-      backfitter.fit(order=1)
-    bkgd_model_list = [backfitter.interpolate_bins(lc_list[0].lo_edges, lc_list[0].hi_edges) for backfitter in backfitter_list]
-    bkgd_lc_list = [bkgd_model.integrate_energy(ener_range[0], ener_range[1]) for bkgd_model in bkgd_model_list]
+  if correct_centroids:
+    temp_selec_cent = lc_select_list[0].centroids
+    temp_cent = lc_list[0].centroids
+    for value_ite in range(len(lc_select_list[0].centroids) - 1):
+      if lc_select_list[0].centroids[value_ite + 1] <= lc_select_list[0].centroids[value_ite]: # no need to check again is value is > 0
+        temp_selec_cent[value_ite + 1] = 2 * lc_select_list[0].centroids[value_ite] - lc_select_list[0].centroids[value_ite - 1]
+    for value_ite in range(len(lc_list[0].centroids) - 1):
+      if lc_list[0].centroids[value_ite + 1] <= lc_list[0].centroids[value_ite]:
+        if lc_list[0].centroids[value_ite - 1] > 0:
+          temp_cent[value_ite + 1] = 2 * lc_list[0].centroids[value_ite] - lc_list[0].centroids[value_ite - 1]
+        else:
+          raise ValueError("The full centroids list has to be corrected for a situation not implemented")
+    low_mean = np.mean(source_rates[np.where(temp_cent < bkg_range[0][1], True, False)])
+    high_mean = np.mean(source_rates[np.where(temp_cent > bkg_range[1][0], True, False)])
+    bkgd_rates = (high_mean - low_mean) / (bkg_range[1][0] - bkg_range[0][1]) * (temp_cent - bkg_range[0][1]) + low_mean
+    used_centroids = temp_selec_cent
+  else:
+    backfitter_list = [BackgroundFitter.from_phaii(cspec, Polynomial, bkg_range) for cspec in cspecs]
+    print("==== 1136 ====")
+    try:
+      print("==== 114 ====")
+      for backfitter in backfitter_list:
+        backfitter.fit(order=1)
+      bkgd_model_list = [backfitter.interpolate_bins(lc_list[0].lo_edges, lc_list[0].hi_edges) for backfitter in backfitter_list]
+      bkgd_lc_list = [bkgd_model.integrate_energy(ener_range[0], ener_range[1]) for bkgd_model in bkgd_model_list]
 
-    bkgd_rates = np.sum(np.vstack(np.array([lc.rates for lc in bkgd_lc_list])), axis=0)
-  except (RuntimeError, np.linalg.LinAlgError):
-    print("==== 115 ====")
-    low_mean = np.mean(source_rates[np.where(lc_list[0].centroids < bkg_range[0][1], True, False)])
-    high_mean = np.mean(source_rates[np.where(lc_list[0].centroids > bkg_range[1][0], True, False)])
-    bkgd_rates = (high_mean - low_mean) / (bkg_range[1][0] - bkg_range[0][1]) * (lc_list[0].centroids - bkg_range[0][1]) + low_mean
-  for value_ite in range(len(lc_list[0].centroids) - 1):
-    if lc_list[0].centroids[value_ite + 1] <= lc_list[0].centroids[value_ite]:
-      print(f" ERROR while creating ?????????????????????? : x values are not in increasing order !")
-      print(lc_list[0].centroids[value_ite + 1])
+      bkgd_rates = np.sum(np.vstack(np.array([lc.rates for lc in bkgd_lc_list])), axis=0)
+    except (RuntimeError, np.linalg.LinAlgError):
+      print("==== 115 ====")
+      low_mean = np.mean(source_rates[np.where(lc_list[0].centroids < bkg_range[0][1], True, False)])
+      high_mean = np.mean(source_rates[np.where(lc_list[0].centroids > bkg_range[1][0], True, False)])
+      bkgd_rates = (high_mean - low_mean) / (bkg_range[1][0] - bkg_range[0][1]) * (lc_list[0].centroids - bkg_range[0][1]) + low_mean
+    used_centroids = lc_select_list[0].centroids
 
   # print(lc_list[0].centroids)
   # print(lc_list[1].centroids)
@@ -303,7 +312,7 @@ def make_cspec_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_m
   # Creating background
   #####################################################################################################################
   fig, ax = plt.subplots(figsize=(10, 6))
-  ax.step(lc_select_list[0].centroids, substracted_rates)
+  ax.step(used_centroids, substracted_rates)
   ax.set(xlabel="Time(s)", ylabel="Count rate (count/s)", title=f"Light curve {name} with cspec")
   ax.axvline(start_t90, color="black")
   ax.axvline(end_t90, color="black")
@@ -312,7 +321,7 @@ def make_cspec_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_m
   else:
     plt.close(fig)
   fig.savefig(f"sources/LC_plots/LightCurve_{name}.png")
-  save_LC(substracted_rates, lc_select_list[0].centroids, f"sources/Light_Curves/LightCurve_{name}.dat")
+  save_LC(substracted_rates, used_centroids, f"sources/Light_Curves/LightCurve_{name}.dat")
   print("==== 117 ====")
 
   #####################################################################################################################
