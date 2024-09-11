@@ -73,6 +73,9 @@ def save_LC(rates, centroids, fullname):
   # Checking the types are the ones expected
   if type(rates) is not np.ndarray or type(centroids) is not np.ndarray:
     raise TypeError("rates and centroids should be numpy arrays")
+  for value_ite in range(len(centroids) - 1):
+    if centroids[value_ite + 1] <= centroids[value_ite]:
+      raise ValueError(f"The x values for {fullname} are not in increasing order, correction needed")
   with open(fullname, "w") as f:
     f.write("# Light curve file, first column is time, second is count rate\n")
     f.write("\n")
