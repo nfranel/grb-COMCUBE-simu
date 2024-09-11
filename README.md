@@ -79,6 +79,7 @@ This git contains :
 - the folder sources is made to 
   - contain the spectra of the sources simulated (best fit spectra obtained from GBM data)
   - contain the spectrum for a typical GRB (band spectrum)
+  - Light curves for GBM bursts
 - the folder example that contains some example files (parameter file, source file)
 
 ############################################################################

@@ -9,6 +9,7 @@ from gbm.finder import TriggerFtp
 
 import numpy as np
 import subprocess
+from catalog import Catalog
 
 
 def bin_selector(lc, tstart, tstop, minedges, maxedges):
@@ -67,12 +68,17 @@ def save_LC(rates, centroids, fullname):
   :param centroids: Centroids of the different bins
   :param fullname: path + name of the file to save the light curves
   """
+  # Checking the types are the ones expected
+  if type(rates) is not np.ndarray or type(centroids) is not np.ndarray:
+    raise TypeError("rates and centroids should be numpy arrays")
+  # Verification of the values
+  for value_ite in range(len(centroids) - 1):
+    if centroids[value_ite + 1] <= centroids[value_ite]:
+      print(f" ERROR while creating {fullname} : x values are not in increasing order !")
   with open(fullname, "w") as f:
     f.write("# Light curve file, first column is time, second is count rate\n")
     f.write("\n")
     f.write("IP LinLin\n")
-    if type(rates) is not np.ndarray or type(centroids) is not np.ndarray:
-      raise TypeError("rates and centroids should be numpy arrays")
     centroids -= centroids[0]
     for ite in range(len(rates)):
       f.write(f"DP {centroids[ite]} {rates[ite]}\n")
@@ -254,24 +260,24 @@ def make_cspec_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_m
   return 0
 
 
-def create_lc(cat, GRB_ite, bin_size="auto", ener_range=(10, 1000), show=False, directory="./sources/"):
+def create_lc(cat, ite_grb, bin_size="auto", ener_range=(10, 1000), show=False, directory="./sources/"):
   """
 
   """
-  GRBname = cat.name[GRB_ite]
-  t90 = float(cat.t90[GRB_ite])
-  start_t90 = float(cat.t90_start[GRB_ite])
+  GRBname = cat.df.name[ite_grb]
+  t90 = float(cat.df.t90[ite_grb])
+  start_t90 = float(cat.df.t90_start[ite_grb])
   end_t90 = start_t90 + t90
-  time_integ_lower_energy = float(cat.duration_energy_low[GRB_ite])
-  time_integ_higher_energy = float(cat.duration_energy_high[GRB_ite])
-  bk_time_low_start = float(cat.back_interval_low_start[GRB_ite])
-  bk_time_low_stop = float(cat.back_interval_low_stop[GRB_ite])
-  bk_time_high_start = float(cat.back_interval_high_start[GRB_ite])
-  bk_time_high_stop = float(cat.back_interval_high_stop[GRB_ite])
-  lc_detector_mask = cat.bcat_detector_mask[GRB_ite]
-  spec_detector_mask = cat.scat_detector_mask[GRB_ite]
-  flu_integ_start_time = float(cat.flnc_spectrum_start[GRB_ite])
-  flu_integ_stop_time = float(cat.flnc_spectrum_stop[GRB_ite])
+  time_integ_lower_energy = float(cat.df.duration_energy_low[ite_grb])
+  time_integ_higher_energy = float(cat.df.duration_energy_high[ite_grb])
+  bk_time_low_start = float(cat.df.back_interval_low_start[ite_grb])
+  bk_time_low_stop = float(cat.df.back_interval_low_stop[ite_grb])
+  bk_time_high_start = float(cat.df.back_interval_high_start[ite_grb])
+  bk_time_high_stop = float(cat.df.back_interval_high_stop[ite_grb])
+  lc_detector_mask = cat.df.bcat_detector_mask[ite_grb]
+  spec_detector_mask = cat.df.scat_detector_mask[ite_grb]
+  flu_integ_start_time = float(cat.df.flnc_spectrum_start[ite_grb])
+  flu_integ_stop_time = float(cat.df.flnc_spectrum_stop[ite_grb])
 
   if bin_size == "auto":
     # a and b in 10**(a * log(T90) + b) obtained by fitting these values with lx the T90 and ly the desired bins
@@ -291,5 +297,10 @@ def create_lc(cat, GRB_ite, bin_size="auto", ener_range=(10, 1000), show=False, 
   bkg_range = [(bk_time_low_start, bk_time_low_stop), (bk_time_high_start, bk_time_high_stop)]
   time_range = (bk_time_low_start, bk_time_high_stop)
 
-  print(f"Running {GRBname}, ite : {GRB_ite}")
+  print(f"Running {GRBname}, ite : {ite_grb}")
   return make_tte_lc(GRBname, start_t90, end_t90, time_range, bkg_range, lc_detector_mask, bin_size=bin_size, ener_range=ener_range, show=show, directory=directory)
+
+
+gbm_cat = Catalog("./GBM/allGBM.txt", [4, '\n', 5, '|', 4000], "GBM/rest_frame_properties.txt")
+for grb_ite in range(len(gbm_cat)):
+  create_lc(gbm_cat, grb_ite, bin_size="auto", ener_range=(10, 1000), show=False, directory="./sources/")
