@@ -350,9 +350,8 @@ def create_lc(cat, ite_grb, bin_size="auto", ener_range=(10, 1000), show=False, 
 
 
 gbm_cat = Catalog("./GBM/allGBM.txt", [4, '\n', 5, '|', 4000], "GBM/rest_frame_properties.txt")
-# for grb_ite in [17, 890, 1057, 1350]:
-for grb_ite in [17]:
+for grb_ite in range(len(gbm_cat)):
   create_lc(gbm_cat, grb_ite, bin_size="auto", ener_range=(10, 1000), show=False, directory="./sources/")
-
-# for grb_ite in range(len(gbm_cat)):
+# for grb_ite in [17, 890, 1057, 1350]:
+# for grb_ite in [17]:
 #   create_lc(gbm_cat, grb_ite, bin_size="auto", ener_range=(10, 1000), show=False, directory="./sources/")
