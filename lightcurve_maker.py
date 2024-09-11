@@ -1,3 +1,5 @@
+from decimal import DivisionByZero
+
 from gbm.data import TTE, Cspec, GbmDetectorCollection
 from gbm.binning.unbinned import bin_by_time
 from gbm.plot import Lightcurve, Spectrum
@@ -10,6 +12,10 @@ from gbm.finder import TriggerFtp
 import numpy as np
 import subprocess
 from catalog import Catalog
+
+# Warnings gestion
+import warnings
+warnings.simplefilter("error", category=RuntimeWarning)
 
 
 def bin_selector(lc, tstart, tstop, minedges, maxedges):
@@ -166,6 +172,8 @@ def make_tte_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_mas
             lc_bkgd = (high_mean - low_mean) / (bkg_range[1][0] - bkg_range[0][1]) * (lc.centroids - bkg_range[0][1]) + low_mean
         else:
           raise ValueError("Need to find another value for the background")
+      except RuntimeWarning:
+        raise DivisionByZero("Division error probably coming from BackgroundFitter")
       print("==== 5 ====")
 
       ###################################################################################################################
@@ -254,6 +262,7 @@ def make_cspec_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_m
     low_mean = np.mean(source_rates[np.where(lc_list[0].centroids < bkg_range[0][1], True, False)])
     high_mean = np.mean(source_rates[np.where(lc_list[0].centroids > bkg_range[1][0], True, False)])
     bkgd_rates = (high_mean - low_mean) / (bkg_range[1][0] - bkg_range[0][1]) * (lc_list[0].centroids - bkg_range[0][1]) + low_mean
+  print(bkgd_rates)
 
   #####################################################################################################################
   # Correcting and combining the rates and selecting the good bins
