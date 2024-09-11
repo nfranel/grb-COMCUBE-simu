@@ -77,10 +77,6 @@ def save_LC(rates, centroids, fullname):
   # Checking the types are the ones expected
   if type(rates) is not np.ndarray or type(centroids) is not np.ndarray:
     raise TypeError("rates and centroids should be numpy arrays")
-  # Verification of the values
-  for value_ite in range(len(centroids) - 1):
-    if centroids[value_ite + 1] <= centroids[value_ite]:
-      print(f" ERROR while creating {fullname} : x values are not in increasing order !")
   with open(fullname, "w") as f:
     f.write("# Light curve file, first column is time, second is count rate\n")
     f.write("\n")
@@ -140,7 +136,14 @@ def make_tte_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_mas
       lc = pha.to_lightcurve(time_range=time_range, energy_range=ener_range)
       lc_select = lc.slice(start_t90, end_t90)
 
-      lc_select.centroids
+      # Verification of the centroid values
+      for value_ite in range(len(lc_select.centroids) - 1):
+        if lc_select.centroids[value_ite + 1] <= lc_select.centroids[value_ite]:
+          if lc_select.centroids[value_ite - 1] > 0:
+            lc_select.centroids[value_ite + 1] = 2 * lc_select.centroids[value_ite] - lc_select.centroids[value_ite - 1]
+            print(f"The centroids list has been corrected for {name}")
+          else:
+            raise ValueError("The centroids list has to be corrected for a situation not implemented")
       ###################################################################################################################
       # Creating background
       ###################################################################################################################
@@ -236,10 +239,22 @@ def make_cspec_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_m
 
   lc_select_list = [lc.slice(start_t90, end_t90) for lc in lc_list]
   print("==== 1132 ====")
+  # Verification of the centroid values
+  # for value_ite in range(len(lc_select_list[0].centroids) - 1):
+  #   if lc_select_list[0].centroids[value_ite + 1] <= lc_select_list[0].centroids[value_ite]:
+  #     if lc_select_list[0].centroids[value_ite - 1] > 0:
+  #       centroid_correction = 2 * lc_select_list[0].centroids[value_ite] - lc_select_list[0].centroids[value_ite - 1]
+  #       for lc in lc_select_list:
+  #         lc.centroids[value_ite + 1] = centroid_correction
+  #       print(f"The centroids list has been corrected for {name}")
+  #     else:
+  #       raise ValueError("The centroids list has to be corrected for a situation not implemented")
+
   # for lc in lc_select_list:
   #   # print(lc.centroids[0], lc.centroids[-1], start_t90, end_t90)
   #   # lc.centroids = np.linspace(start_t90, end_t90, len(lc.centroids))
   print(lc_select_list[0].centroids[1:] - lc_select_list[0].centroids[:-1])
+  print(lc_select_list[0].centroids)
   # print(np.linspace(lc_select_list[0].centroids[0], lc_select_list[0].centroids[-1], len(lc_select_list[0].centroids)) - lc_select_list[0].centroids)
   # print(type(lc.centroids))
 
