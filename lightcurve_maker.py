@@ -229,8 +229,11 @@ def make_cspec_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_m
   print("==== 1132 ====")
 
   source_rates = np.sum(np.vstack(np.array([lc.rates for lc in lc_list])), axis=0)
+  print("==== 1133 ====")
   source_rates_select_list = np.array([lc.rates for lc in lc_select_list])
+  print("==== 1134 ====")
   source_rates_select = np.sum(np.vstack(source_rates_select_list), axis=0)
+  print("==== 1135 ====")
 
   #####################################################################################################################
   # Creating background
