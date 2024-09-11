@@ -265,6 +265,7 @@ def make_cspec_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_m
   # Creating background
   #####################################################################################################################
   if correct_centroids:
+    print("==== new1 ====")
     temp_selec_cent = lc_select_list[0].centroids
     temp_cent = lc_list[0].centroids
     for value_ite in range(len(lc_select_list[0].centroids) - 1):
@@ -280,6 +281,7 @@ def make_cspec_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_m
     high_mean = np.mean(source_rates[np.where(temp_cent > bkg_range[1][0], True, False)])
     bkgd_rates = (high_mean - low_mean) / (bkg_range[1][0] - bkg_range[0][1]) * (temp_cent - bkg_range[0][1]) + low_mean
     used_centroids = temp_selec_cent
+    print("==== new2 ====")
   else:
     backfitter_list = [BackgroundFitter.from_phaii(cspec, Polynomial, bkg_range) for cspec in cspecs]
     print("==== 1136 ====")
@@ -307,6 +309,7 @@ def make_cspec_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_m
   bkgd_rates_select = bin_selector(bkgd_rates, start_t90, end_t90, lc_list[0].lo_edges, lc_list[0].hi_edges)
   substracted_rates = substract_bkg(source_rates_select, bkgd_rates_select)
   print("==== 116 ====")
+  print("==== new3 ====")
 
   #####################################################################################################################
   # Creating background
