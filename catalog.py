@@ -15,8 +15,10 @@ def treat_item(item_ev, item):
   """
   striped_item_ev = item_ev.strip()
   try:
-    float_item_ev = float(striped_item_ev)
-    return float_item_ev
+    if item == "bcat_detector_mask" or item == "scat_detector_mask":
+      return str(striped_item_ev)
+    else:
+      return float(striped_item_ev)
   except ValueError:
     if striped_item_ev == "":
       return np.nan
