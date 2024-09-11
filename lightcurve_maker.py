@@ -266,8 +266,8 @@ def make_cspec_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_m
       print(f" ERROR while creating ?????????????????????? : x values are not in increasing order !")
       print(lc_list[0].centroids[value_ite + 1])
 
-  print(lc_list[0].centroids)
-  print(lc_list[1].centroids)
+  # print(lc_list[0].centroids)
+  # print(lc_list[1].centroids)
 
   #####################################################################################################################
   # Correcting and combining the rates and selecting the good bins
@@ -344,7 +344,8 @@ def create_lc(cat, ite_grb, bin_size="auto", ener_range=(10, 1000), show=False, 
 
 
 gbm_cat = Catalog("./GBM/allGBM.txt", [4, '\n', 5, '|', 4000], "GBM/rest_frame_properties.txt")
-create_lc(gbm_cat, 17, bin_size="auto", ener_range=(10, 1000), show=False, directory="./sources/")
+for grb_ite in [17, 890, 1057, 1350]:
+  create_lc(gbm_cat, grb_ite, bin_size="auto", ener_range=(10, 1000), show=False, directory="./sources/")
 
 # for grb_ite in range(len(gbm_cat)):
 #   create_lc(gbm_cat, grb_ite, bin_size="auto", ener_range=(10, 1000), show=False, directory="./sources/")
