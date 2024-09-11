@@ -224,11 +224,11 @@ def make_cspec_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_m
   #####################################################################################################################
   lc_list = [cspec.to_lightcurve(time_range=time_range, energy_range=ener_range) for cspec in cspecs]
   lc_select_list = [lc.slice(start_t90, end_t90) for lc in lc_list]
+  print("==== 113 ====")
 
   source_rates = np.sum(np.vstack(np.array([lc.rates for lc in lc_list])), axis=0)
   source_rates_select_list = np.array([lc.rates for lc in lc_select_list])
   source_rates_select = np.sum(np.vstack(source_rates_select_list), axis=0)
-  print("==== 113 ====")
 
   #####################################################################################################################
   # Creating background
