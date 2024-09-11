@@ -15,7 +15,7 @@ from catalog import Catalog
 
 # Warnings gestion
 import warnings
-warnings.simplefilter("error", category=RuntimeWarning)
+# warnings.simplefilter("error", category=RuntimeWarning)
 
 
 def bin_selector(lc, tstart, tstop, minedges, maxedges):
