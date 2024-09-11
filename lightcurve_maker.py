@@ -256,7 +256,7 @@ def make_cspec_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_m
   for value_ite in range(len(lc_select_list[0].centroids) - 1):
     if lc_select_list[0].centroids[value_ite + 1] <= lc_select_list[0].centroids[value_ite]:
       if lc_select_list[0].centroids[value_ite - 1] > 0:
-        correct_centroids = True
+        correct_centroids = False
         print(f"The centroids list has been corrected for {name}")
       else:
         raise ValueError("The centroids list has to be corrected for a situation not implemented")
