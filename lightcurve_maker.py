@@ -247,7 +247,6 @@ def make_cspec_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_m
   # Creating background
   #####################################################################################################################
   backfitter_list = [BackgroundFitter.from_phaii(cspec, Polynomial, bkg_range) for cspec in cspecs]
-  print(backfitter_list[0].parameters)
   print("==== 1136 ====")
   try:
     print("==== 114 ====")
@@ -262,7 +261,7 @@ def make_cspec_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_m
     low_mean = np.mean(source_rates[np.where(lc_list[0].centroids < bkg_range[0][1], True, False)])
     high_mean = np.mean(source_rates[np.where(lc_list[0].centroids > bkg_range[1][0], True, False)])
     bkgd_rates = (high_mean - low_mean) / (bkg_range[1][0] - bkg_range[0][1]) * (lc_list[0].centroids - bkg_range[0][1]) + low_mean
-  print(bkgd_rates)
+  print(lc_list[0].centroids)
 
   #####################################################################################################################
   # Correcting and combining the rates and selecting the good bins
