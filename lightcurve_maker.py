@@ -14,7 +14,7 @@ import subprocess
 from catalog import Catalog
 
 # Warnings gestion
-import warnings
+# import warnings
 # warnings.simplefilter("error", category=RuntimeWarning)
 
 
@@ -140,6 +140,7 @@ def make_tte_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_mas
       lc = pha.to_lightcurve(time_range=time_range, energy_range=ener_range)
       lc_select = lc.slice(start_t90, end_t90)
 
+      lc_select.centroids
       ###################################################################################################################
       # Creating background
       ###################################################################################################################
@@ -232,6 +233,8 @@ def make_cspec_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_m
   #####################################################################################################################
   lc_list = [cspec.to_lightcurve(time_range=time_range, energy_range=ener_range) for cspec in cspecs]
   print("==== 1131 ====")
+  for itelc in range(len(lc_list[:-1])):
+    print(lc_list[itelc].centroids==lc_list[itelc+1].centroids)
 
   lc_select_list = [lc.slice(start_t90, end_t90) for lc in lc_list]
   print("==== 1132 ====")
@@ -344,7 +347,8 @@ def create_lc(cat, ite_grb, bin_size="auto", ener_range=(10, 1000), show=False, 
 
 
 gbm_cat = Catalog("./GBM/allGBM.txt", [4, '\n', 5, '|', 4000], "GBM/rest_frame_properties.txt")
-for grb_ite in [17, 890, 1057, 1350]:
+# for grb_ite in [17, 890, 1057, 1350]:
+for grb_ite in [17]:
   create_lc(gbm_cat, grb_ite, bin_size="auto", ener_range=(10, 1000), show=False, directory="./sources/")
 
 # for grb_ite in range(len(gbm_cat)):
