@@ -266,7 +266,8 @@ def make_cspec_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_m
       print(f" ERROR while creating ?????????????????????? : x values are not in increasing order !")
       print(lc_list[0].centroids[value_ite + 1])
 
-  # print(lc_list[0].centroids)
+  print(lc_list[0].centroids)
+  print(lc_list[1].centroids)
 
   #####################################################################################################################
   # Correcting and combining the rates and selecting the good bins
