@@ -261,7 +261,12 @@ def make_cspec_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_m
     low_mean = np.mean(source_rates[np.where(lc_list[0].centroids < bkg_range[0][1], True, False)])
     high_mean = np.mean(source_rates[np.where(lc_list[0].centroids > bkg_range[1][0], True, False)])
     bkgd_rates = (high_mean - low_mean) / (bkg_range[1][0] - bkg_range[0][1]) * (lc_list[0].centroids - bkg_range[0][1]) + low_mean
-  print(lc_list[0].centroids)
+  for value_ite in range(len(lc_list[0].centroids) - 1):
+    if lc_list[0].centroids[value_ite + 1] <= lc_list[0].centroids[value_ite]:
+      print(f" ERROR while creating ?????????????????????? : x values are not in increasing order !")
+      print(lc_list[0].centroids[value_ite + 1])
+
+  # print(lc_list[0].centroids)
 
   #####################################################################################################################
   # Correcting and combining the rates and selecting the good bins
