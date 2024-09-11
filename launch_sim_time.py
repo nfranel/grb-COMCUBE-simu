@@ -247,7 +247,8 @@ def cosirevan(command):
   if command[0]:
     # Running cosima
     if command[3] in ["GRB080804456", "GRB120420858", "GRB130215063", "GRB140603476"]:
-      run(f"cosima -z {source_name}", __verbose__)
+      print(f"RUNNING {command[3]}")
+      run(f"cosima -z {source_name}", 3)
     else:
       run(f"cosima -z {source_name}; rm -f {source_name}", __verbose__)
   if command[1]:
@@ -273,10 +274,7 @@ def run(command, __verbose__):
     3 -> Adds stdout of command
   """
   # vprint("Process id {} from {} runs {} (verbosity {})".format(os.getpid(), os.getppid(), command, __verbose__), __verbose__, 0)
-  if command[3] in ["GRB080804456", "GRB120420858", "GRB130215063", "GRB140603476"]:
-    vprint("Process id {} from {} runs {} (verbosity {})".format(os.getpid(), os.getppid(), command, __verbose__), __verbose__, 0)
-    subprocess.call(command, shell=True)
-  elif __verbose__ < 2:
+  if __verbose__ < 2:
     subprocess.call(command, shell=True, stdout=open(os.devnull, 'wb'), stderr=open(os.devnull, 'wb'))
   elif __verbose__ < 3:
     subprocess.call(command, shell=True, stdout=open(os.devnull, 'wb'))
@@ -305,12 +303,12 @@ if __name__ == "__main__":
   parser.add_argument("-V", "--version", help="Prints out the version of the script", action="store_true")
   args = parser.parse_args()
   if args.version:
-    print("Script version {} written by {}.".format(__version__, __author__))
+    print(f"Script version {__version__} written by {__author__}.")
   if args.parameterfile:
     __verbose__ = args.verbose
-    vprint("Running of {} parameter file with output prefix {}".format(args.parameterfile, args.prefix), __verbose__, 0)
+    vprint(f"Running of {args.parameterfile} parameter file with output prefix {args.prefix}", __verbose__, 0)
     args = gen_commands(args)
-    vprint("{} Commands have been parsed".format(len(args.commands)), __verbose__, 0)
+    vprint(f"{len(args.commands)} Commands have been parsed", __verbose__, 0)
     run_sims(args.commands)
   else:
     vprint("Missing parameter file or geometry - not running.", __verbose__, 0)
