@@ -100,7 +100,6 @@ def make_tte_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_mas
   # initialize the Trigger data finder with a trigger number
   trig_finder = TriggerFtp(name.split("GRB")[1])
   files = trig_finder.ls_tte()
-  print("==== 2 ====")
   if files == []:
     cfiles = trig_finder.ls_cspec()
     if cfiles != []:
@@ -116,17 +115,14 @@ def make_tte_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_mas
         ttes.append(TTE.open(f"{directory}{nai_files[file_ite]}"))
     t_low_rangemax = max([tte.time_range[0] for tte in ttes])
     t_high_rangemin = min([tte.time_range[1] for tte in ttes])
-    print("==== 3 ====")
 
     #####################################################################################################################
     # Checking if the lc needs to used cspec files and running make_cspec_lc if so
     #####################################################################################################################
     if t_low_rangemax > bkg_range[0][0] or t_high_rangemin < bkg_range[1][1]:
-      print("==== 41 ====")
       rm_files(files, directory)
       return make_cspec_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_mask, ener_range=ener_range, show=show, directory=directory)
     else:
-      print("==== 42 ====")
       tte_total = ttes[0].merge(ttes)
 
       ###################################################################################################################
@@ -144,7 +140,6 @@ def make_tte_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_mas
       # Creating background
       ###################################################################################################################
       try:
-        print("==== 43 ====")
         backfitter = BackgroundFitter.from_phaii(pha, Polynomial, bkg_range)
         try:
           backfitter.fit(order=1)
@@ -155,17 +150,14 @@ def make_tte_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_mas
           high_mean = np.mean(lc.rates[np.where(lc.centroids > bkg_range[1][0], True, False)])
           lc_bkgd = (high_mean - low_mean) / (bkg_range[1][0] - bkg_range[0][1]) * (lc.centroids - bkg_range[0][1]) + low_mean
       except np.linalg.LinAlgError:
-        print("==== 44 ====")
         bkg_range = [(bkg_range[0][0] - 5, bkg_range[0][1]), (bkg_range[1][0], bkg_range[1][1] + 5)]
         if t_low_rangemax < bkg_range[0][0] and t_high_rangemin > bkg_range[1][1]:
           backfitter = BackgroundFitter.from_phaii(pha, Polynomial, bkg_range)
           try:
-            print("==== 45 ====")
             backfitter.fit(order=1)
             bkgd_model = backfitter.interpolate_bins(lc.lo_edges, lc.hi_edges)
             lc_bkgd = bkgd_model.integrate_energy(ener_range[0], ener_range[1])
           except (RuntimeError, np.linalg.LinAlgError):
-            print("==== 46 ====")
             # rm_files(files, directory)
             low_mean = np.mean(lc.rates[np.where(lc.centroids < bkg_range[0][1], True, False)])
             high_mean = np.mean(lc.rates[np.where(lc.centroids > bkg_range[1][0], True, False)])
@@ -174,14 +166,12 @@ def make_tte_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_mas
           raise ValueError("Need to find another value for the background")
       except RuntimeWarning:
         raise DivisionByZero("Division error probably coming from BackgroundFitter")
-      print("==== 5 ====")
 
       ###################################################################################################################
       # Correcting the rates and selecting the good bins
       ###################################################################################################################
       rates_bkg_select_total = bin_selector(lc_bkgd, start_t90, end_t90, lc.lo_edges, lc.hi_edges)
       substracted_rates = substract_bkg(lc_select.rates, rates_bkg_select_total)
-      print("==== 6 ====")
 
       ###################################################################################################################
       # Ploting if requested and saving the figure and light curves
@@ -197,7 +187,6 @@ def make_tte_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_mas
         plt.close(fig)
       fig.savefig(f"sources/LC_plots/LightCurve_{name}.png")
       save_LC(substracted_rates, lc_select.centroids, f"sources/Light_Curves/LightCurve_{name}.dat")
-      print("==== 7 ====")
 
       ###################################################################################################################
       # removing the files
@@ -209,7 +198,6 @@ def make_cspec_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_m
   """
 
   """
-  print("==== 111 ====")
   #####################################################################################################################
   # Loading tte files and extracting some information
   #####################################################################################################################
@@ -225,16 +213,13 @@ def make_cspec_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_m
   for file_ite in range(len(nai_files)):
     if lc_detector_mask[file_ite] == "1":
       cspecs.append(Cspec.open(f"{directory}{nai_files[file_ite]}"))
-  print("==== 112 ====")
 
   #####################################################################################################################
   # Creating the light curve objets
   #####################################################################################################################
   lc_list = [cspec.to_lightcurve(time_range=time_range, energy_range=ener_range) for cspec in cspecs]
-  print("==== 1131 ====")
 
   lc_select_list = [lc.slice(start_t90, end_t90) for lc in lc_list]
-  print("==== 1132 ====")
 
   # for lc in lc_select_list:
   #   # print(lc.centroids[0], lc.centroids[-1], start_t90, end_t90)
@@ -245,18 +230,15 @@ def make_cspec_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_m
   # print(type(lc.centroids))
 
   source_rates = np.sum(np.vstack(np.array([lc.rates for lc in lc_list])), axis=0)
-  print("==== 1133 ====")
   source_rates_select_list = np.array([lc.rates for lc in lc_select_list])
-  print("==== 1134 ====")
   source_rates_select = np.sum(np.vstack(source_rates_select_list), axis=0)
-  print("==== 1135 ====")
 
   # Verification of the centroid values
   correct_centroids = False
   for value_ite in range(len(lc_select_list[0].centroids) - 1):
     if lc_select_list[0].centroids[value_ite + 1] <= lc_select_list[0].centroids[value_ite]:
       if lc_select_list[0].centroids[value_ite - 1] > 0:
-        correct_centroids = False
+        correct_centroids = True
         print(f"The centroids list has been corrected for {name}")
       else:
         raise ValueError("The centroids list has to be corrected for a situation not implemented")
@@ -265,7 +247,6 @@ def make_cspec_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_m
   # Creating background
   #####################################################################################################################
   if correct_centroids:
-    print("==== new1 ====")
     temp_selec_cent = lc_select_list[0].centroids
     temp_cent = lc_list[0].centroids
     for value_ite in range(len(lc_select_list[0].centroids) - 1):
@@ -281,12 +262,9 @@ def make_cspec_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_m
     high_mean = np.mean(source_rates[np.where(temp_cent > bkg_range[1][0], True, False)])
     bkgd_rates = (high_mean - low_mean) / (bkg_range[1][0] - bkg_range[0][1]) * (temp_cent - bkg_range[0][1]) + low_mean
     used_centroids = temp_selec_cent
-    print("==== new2 ====")
   else:
     backfitter_list = [BackgroundFitter.from_phaii(cspec, Polynomial, bkg_range) for cspec in cspecs]
-    print("==== 1136 ====")
     try:
-      print("==== 114 ====")
       for backfitter in backfitter_list:
         backfitter.fit(order=1)
       bkgd_model_list = [backfitter.interpolate_bins(lc_list[0].lo_edges, lc_list[0].hi_edges) for backfitter in backfitter_list]
@@ -294,22 +272,16 @@ def make_cspec_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_m
 
       bkgd_rates = np.sum(np.vstack(np.array([lc.rates for lc in bkgd_lc_list])), axis=0)
     except (RuntimeError, np.linalg.LinAlgError):
-      print("==== 115 ====")
       low_mean = np.mean(source_rates[np.where(lc_list[0].centroids < bkg_range[0][1], True, False)])
       high_mean = np.mean(source_rates[np.where(lc_list[0].centroids > bkg_range[1][0], True, False)])
       bkgd_rates = (high_mean - low_mean) / (bkg_range[1][0] - bkg_range[0][1]) * (lc_list[0].centroids - bkg_range[0][1]) + low_mean
     used_centroids = lc_select_list[0].centroids
-
-  # print(lc_list[0].centroids)
-  # print(lc_list[1].centroids)
 
   #####################################################################################################################
   # Correcting and combining the rates and selecting the good bins
   #####################################################################################################################
   bkgd_rates_select = bin_selector(bkgd_rates, start_t90, end_t90, lc_list[0].lo_edges, lc_list[0].hi_edges)
   substracted_rates = substract_bkg(source_rates_select, bkgd_rates_select)
-  print("==== 116 ====")
-  print("==== new3 ====")
 
   #####################################################################################################################
   # Creating background
@@ -325,7 +297,6 @@ def make_cspec_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_m
     plt.close(fig)
   fig.savefig(f"sources/LC_plots/LightCurve_{name}.png")
   save_LC(substracted_rates, used_centroids, f"sources/Light_Curves/LightCurve_{name}.dat")
-  print("==== 117 ====")
 
   #####################################################################################################################
   # removing the files
