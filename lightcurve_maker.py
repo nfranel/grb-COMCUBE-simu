@@ -239,7 +239,7 @@ def make_cspec_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_m
   # Creating background
   #####################################################################################################################
   backfitter_list = [BackgroundFitter.from_phaii(cspec, Polynomial, bkg_range) for cspec in cspecs]
-  print(backfitter_list[0].keys())
+  print(backfitter_list[0].parameters)
   print("==== 1136 ====")
   try:
     print("==== 114 ====")
