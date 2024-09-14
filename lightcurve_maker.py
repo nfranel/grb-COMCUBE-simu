@@ -347,7 +347,7 @@ def create_lc(cat, ite_grb, bin_size="auto", ener_range=(10, 1000), show=False, 
   time_range = (bk_time_low_start, bk_time_high_stop)
 
   print(f"Running {GRBname}, ite : {ite_grb}")
-  print("==== 1 ====")
+  # print("==== 1 ====")
   return make_tte_lc(GRBname, start_t90, end_t90, time_range, bkg_range, lc_detector_mask, bin_size=bin_size, ener_range=ener_range, show=show, directory=directory)
 
 
@@ -357,5 +357,5 @@ gbm_cat = Catalog("./GBM/allGBM.txt", [4, '\n', 5, '|', 4000], "GBM/rest_frame_p
 
 # for grb_ite in [17, 890, 1057, 1350]:
 # for grb_ite in [17]:
-for grb_ite in range(len(gbm_cat)):
+for grb_ite in range(1800, len(gbm_cat)):
   create_lc(gbm_cat, grb_ite, bin_size="auto", ener_range=(10, 1000), show=False, directory="./sources/")
