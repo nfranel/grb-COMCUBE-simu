@@ -147,7 +147,7 @@ class AllSatData(list):
                 if self[index_sat].const_beneficial_single:
                   selected_sats.append(index_sat)
               selected_sats = np.array(selected_sats)
-            elif item in ["hit_b_rate", "hit_time", "calor", "dsssd", "side", "total_hits"]:
+            elif item in ["hit_b_rate", "calor", "dsssd", "side", "total_hits"]:
               selected_sats = []
               for index_sat in considered_sats:
                 if np.sum(self[index_sat].const_beneficial_trigger_3s) >= 1:  # todo test it
@@ -185,7 +185,7 @@ class AllSatData(list):
             # 1D concatenation
             #############################################################################################################
             # Values stored in a 1D array that have to be concatenated (except unpol that needs another verification)
-            elif item in ["compton_ener", "compton_second", "single_ener", "hit_time", "compton_time", "single_time",
+            elif item in ["compton_ener", "compton_second", "single_ener", "compton_time", "single_time",
                           "pol", "polar_from_position", "polar_from_energy", "arm_pol", "compton_first_detector",
                           "compton_sec_detector", "single_detector"]:
               temp_array = np.array([])

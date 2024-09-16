@@ -63,7 +63,7 @@ class GRBFullData:
     self.single_ener = []                       # 1D concatenation        # Single
     self.compton_time = []                      # 1D concatenation        # Compton
     self.single_time = []                       # 1D concatenation        # Single
-    self.hit_time = []                          # 1D concatenation        # Trigger quality selection
+    # self.hit_time = []                          # 1D concatenation        # Trigger quality selection
     self.pol = None                             # 1D concatenation        # Compton
     self.polar_from_position = None             # 1D concatenation        # Compton
     # This polar angle is the one considered as compton scatter angle by mimrec
@@ -176,23 +176,23 @@ class GRBFullData:
     self.single_ener = numerical_array_extract(lines[16], self.array_dtype)
     self.compton_time = numerical_array_extract(lines[17], self.array_dtype)
     self.single_time = numerical_array_extract(lines[18], self.array_dtype)
-    self.hit_time = numerical_array_extract(lines[19], self.array_dtype)
-    self.pol = numerical_array_extract(lines[20], self.array_dtype)
-    self.polar_from_position = numerical_array_extract(lines[21], self.array_dtype)
-    self.polar_from_energy = numerical_array_extract(lines[22], self.array_dtype)
-    self.arm_pol = numerical_array_extract(lines[23], self.array_dtype)
-    self.compton_first_detector = det_pos_array_extract(lines[24])
-    self.compton_sec_detector = det_pos_array_extract(lines[25])
-    self.single_detector = det_pos_array_extract(lines[26])
+    # self.hit_time = numerical_array_extract(lines[19], self.array_dtype)
+    self.pol = numerical_array_extract(lines[19], self.array_dtype)
+    self.polar_from_position = numerical_array_extract(lines[20], self.array_dtype)
+    self.polar_from_energy = numerical_array_extract(lines[21], self.array_dtype)
+    self.arm_pol = numerical_array_extract(lines[22], self.array_dtype)
+    self.compton_first_detector = det_pos_array_extract(lines[23])
+    self.compton_sec_detector = det_pos_array_extract(lines[24])
+    self.single_detector = det_pos_array_extract(lines[25])
     if len(self.single_detector) != len(self.single_time):
       print("============ERROR=============")
     # Detector counts
-    self.calor = int(lines[27])
-    self.dsssd = int(lines[28])
-    self.side = int(lines[29])
-    self.total_hits = int(lines[30])
+    self.calor = int(lines[26])
+    self.dsssd = int(lines[27])
+    self.side = int(lines[28])
+    self.total_hits = int(lines[29])
     # return (sat_dec_wf, sat_ra_wf, sat_alt, num_sat, compton_b_rate, single_b_rate, hit_b_rate, mu100_ref, mu100_err_ref, s_eff_compton_ref, s_eff_single_ref, grb_dec_sat_frame, grb_ra_sat_frame, expected_pa,
-    #         compton_ener, compton_second, single_ener, compton_time, single_time, hit_time, pol, polar_from_position, polar_from_energy, arm_pol, compton_first_detector, compton_sec_detector, single_detector,
+    #         compton_ener, compton_second, single_ener, compton_time, single_time, pol, polar_from_position, polar_from_energy, arm_pol, compton_first_detector, compton_sec_detector, single_detector,
     #         calor, dsssd, side, total_hits)
 
   def cor(self):
@@ -277,7 +277,7 @@ class GRBFullData:
     for int_time in integration_times:
       bins = np.arange(0, source_duration + int_time, int_time)
 
-      hit_hist = np.histogram(self.hit_time, bins=bins)[0]
+      hit_hist = np.histogram(np.concatenate((self.compton_time, self.compton_time, self.single_time)), bins=bins)[0]
       hit_argmax = np.argmax(hit_hist)
       hit_max_hist = hit_hist[hit_argmax]
       self.hits_snrs.append(calc_snr(hit_max_hist, self.hit_b_rate * int_time))

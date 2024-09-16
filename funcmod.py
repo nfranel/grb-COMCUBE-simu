@@ -549,7 +549,7 @@ def save_grb_data(data_file, filename, sat_info_list, bkg_data, mu_data, ergcut,
       save_value(f, single_ener)
       save_value(f, compton_time)
       save_value(f, single_time)
-      save_value(f, hit_time)
+      # save_value(f, hit_time)
       save_value(f, pol)
       save_value(f, polar_from_position)
       save_value(f, polar_from_energy)
