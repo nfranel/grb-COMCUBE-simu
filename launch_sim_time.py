@@ -161,9 +161,9 @@ def gen_commands(args):
               simtime = None
               lc_bool = False
               vprint("simtime in parameter file unknown. Check parameter file.", __verbose__, 0)
-            if cat.df.name[i] in ["GRB080804456", "GRB120420858", "GRB130215063", "GRB140603476"]:
-              print("COMMAND : ", (not(args.nocosima), not(args.norevan), not(args.nomimrec), cat.df.name[i], k, spectrumfile, pht_mflx, simtime, lc_bool, lc_name, polstr, j, f"{dec_grb_world_frame:.4f}_{ra_grb_world_frame:.4f}_{rand_time:.4f}", theta, phi))
-              print("LOG : ", f"{sim_directory}/simulation_logs.txt", cat.df.name[i], i, j, k, "Simulated", s[0], s[1], s[2], s[3], rand_time, dec_sat_world_frame, ra_sat_world_frame, dec_grb_world_frame, ra_grb_world_frame, theta, phi)
+            # if cat.df.name[i] in ["GRB080804456", "GRB120420858", "GRB130215063", "GRB140603476"]:
+            #   print("COMMAND : ", (not(args.nocosima), not(args.norevan), not(args.nomimrec), cat.df.name[i], k, spectrumfile, pht_mflx, simtime, lc_bool, lc_name, polstr, j, f"{dec_grb_world_frame:.4f}_{ra_grb_world_frame:.4f}_{rand_time:.4f}", theta, phi))
+            #   print("LOG : ", f"{sim_directory}/simulation_logs.txt", cat.df.name[i], i, j, k, "Simulated", s[0], s[1], s[2], s[3], rand_time, dec_sat_world_frame, ra_sat_world_frame, dec_grb_world_frame, ra_grb_world_frame, theta, phi)
             args.commands.append((not(args.nocosima), not(args.norevan), not(args.nomimrec), cat.df.name[i], k, spectrumfile, pht_mflx, simtime, lc_bool, lc_name, polstr, j, f"{dec_grb_world_frame:.4f}_{ra_grb_world_frame:.4f}_{rand_time:.4f}", theta, phi))
             save_log(f"{sim_directory}/simulation_logs.txt", cat.df.name[i], i, j, k, "Simulated", s[0], s[1], s[2], s[3], rand_time, dec_sat_world_frame, ra_sat_world_frame, dec_grb_world_frame, ra_grb_world_frame, theta, phi)
   for i in range(len(cat.df)):
@@ -246,11 +246,11 @@ def cosirevan(command):
   source_name = maketmpsf(command, args, pid)
   if command[0]:
     # Running cosima
-    if command[3] in ["GRB080804456", "GRB120420858", "GRB130215063", "GRB140603476"]:
-      print(f"RUNNING {command[3]}")
-      run(f"cosima -z {source_name}", 3)
-    else:
-      run(f"cosima -z {source_name}; rm -f {source_name}", __verbose__)
+    # if command[3] in ["GRB080804456", "GRB120420858", "GRB130215063", "GRB140603476"]:
+    #   print(f"RUNNING {command[3]}")
+    #   run(f"cosima -z {source_name}", 3)
+    # else:
+    run(f"cosima -z {source_name}; rm -f {source_name}", __verbose__)
   if command[1]:
     # Running revan and moving the simulation file to rawsim
     # run(f"revan -g {args.geometry} -c {args.rcf} -f {simfile} -n -a; mv {simfile} {mv_simfile}", __verbose__)
@@ -273,7 +273,7 @@ def run(command, __verbose__):
     2 -> Adds stderr of command
     3 -> Adds stdout of command
   """
-  # vprint("Process id {} from {} runs {} (verbosity {})".format(os.getpid(), os.getppid(), command, __verbose__), __verbose__, 0)
+  vprint("Process id {} from {} runs {} (verbosity {})".format(os.getpid(), os.getppid(), command, __verbose__), __verbose__, 0)
   if __verbose__ < 2:
     subprocess.call(command, shell=True, stdout=open(os.devnull, 'wb'), stderr=open(os.devnull, 'wb'))
   elif __verbose__ < 3:
