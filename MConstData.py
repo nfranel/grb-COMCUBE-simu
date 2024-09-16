@@ -17,7 +17,7 @@ class ConstData:
   """
   Class containing the data for 1 GRB, for 1 sim, and 1 satellite
   """
-  def __init__(self):
+  def __init__(self, num_offsat):
     """
     :param data_list: list of files to read (should be containing only 1)
     :param sat_info: orbital information about the satellite detecting the source
@@ -44,6 +44,7 @@ class ConstData:
     # self.sat_ra_wf = None                       # Not changed             #
     # self.sat_alt = None                         # Not changed             #
     self.num_sat = None                         # Appened                 #
+    self.num_offsat = num_offsat                   # Not changed                 #
     ###################################################################################################################
     # Attributes from the mu100 files
     self.mu100_ref = None                       # Weighted mean           # Compton

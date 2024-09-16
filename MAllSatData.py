@@ -272,7 +272,8 @@ class AllSatData(list):
     else:
       number_const = 1
     for const_ite in range(number_const):
-      self.const_data.append(ConstData())
+      print(off_sats[const_ite])
+      self.const_data.append(ConstData(0))
       in_sight_temp = in_sight_sat
       if off_sats[const_ite] is not None:
         for index in off_sats[const_ite]:
@@ -289,7 +290,7 @@ class AllSatData(list):
           ###############################################################################################################
           # The fieldselected here stay as they are with their basic initialisation (most of the time None)
           # Fields to be used soon : "fits", "pa", "fit_compton_cr", "pa_err", "fit_compton_cr_err", "fit_goodness",
-          if item not in ["mdp", "hits_snrs", "compton_snrs", "single_snrs"]:
+          if item not in ["mdp", "hits_snrs", "compton_snrs", "single_snrs", "num_offsat"]:
             #############################################################################################################
             # Filtering the satellites for some items
             #############################################################################################################
