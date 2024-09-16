@@ -20,7 +20,7 @@ class GRBSample:
   Class to create GRB samples
   """
 
-  def __init__(self, n_core="all", verbose=False):
+  def __init__(self, n_year=10, n_core="all", verbose=False):
     """
     Initialisation of the different attributes
     """
@@ -35,7 +35,7 @@ class GRBSample:
     self.thetaj_max = 15
     self.lmin = 1e49  # erg/s
     self.lmax = 3e54
-    self.n_year = 10
+    self.n_year = n_year
     gbmduty = 0.587
     self.gbm_weight = 1 / gbmduty / 10
     self.sample_weight = 1 / self.n_year
