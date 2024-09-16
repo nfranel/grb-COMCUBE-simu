@@ -325,7 +325,7 @@ class AllSourceData:
             if condensed_const:
               sim.make_condensed_const(self.number_of_down_per_const, off_sats, const=const, dysfunction_enabled=self.dysfunctional_sats)
             else:
-              sim.make_const(source.source_duration, source.source_fluence, self.number_of_down_per_const, off_sats, self.options, const=const, dysfunction_enabled=self.dysfunctional_sats)
+              sim.make_const(self.number_of_down_per_const, off_sats, const=const, dysfunction_enabled=self.dysfunctional_sats)
     if not self.init_correction:
       self.azi_angle_anticorr()
     endtask("Creation of the constellations", timevar=init_time)

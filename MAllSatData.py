@@ -76,7 +76,7 @@ class AllSatData(list):
     else:
       print("Constellation not set : please use make_const method if you want to analyze the constellation's results")
 
-  def make_const(self, source_duration, source_fluence, num_of_down_per_const, off_sats, options, const=None, dysfunction_enabled=True):
+  def make_const(self, num_of_down_per_const, off_sats, const=None, dysfunction_enabled=True):
     """
     Creates a constellation of several satellites by putting together the results
     :param source_duration: duration of the source
@@ -105,6 +105,12 @@ class AllSatData(list):
       number_const = 1
     for const_ite in range(number_const):
       self.const_data.append(GRBFullData(None, None, None, None, None, None))
+      if off_sats[const_ite] is None:
+        self.const_data[const_ite].num_offsat = 0
+      elif type(off_sats[const_ite]) is list:
+        self.const_data[const_ite].num_offsat = len(off_sats[const_ite])
+      else:
+        raise TypeError("Error while making the constellations : the off_sats variable must be None or a list of index")
       in_sight_temp = in_sight_sat
       if off_sats[const_ite] is not None:
         for index in off_sats[const_ite]:
@@ -122,7 +128,7 @@ class AllSatData(list):
           # The fieldselected here stay as they are with their basic initialisation (most of the time None)
           # Fields to be used soon : "fits", "pa", "fit_compton_cr", "pa_err", "fit_compton_cr_err", "fit_goodness",
           if item not in ["sat_dec_wf", "sat_ra_wf", "sat_alt", "grb_dec_sat_frame", "grb_ra_sat_frame", "expected_pa",
-                          "mdp", "hits_snrs", "compton_snrs", "single_snrs"]:
+                          "mdp", "hits_snrs", "compton_snrs", "single_snrs", "num_offsat"]:
             #############################################################################################################
             # Filtering the satellites for some items
             #############################################################################################################
@@ -272,8 +278,12 @@ class AllSatData(list):
     else:
       number_const = 1
     for const_ite in range(number_const):
-      print(off_sats[const_ite])
-      self.const_data.append(ConstData(0))
+      if off_sats[const_ite] is None:
+        self.const_data.append(ConstData(0))
+      elif type(off_sats[const_ite]) is list:
+        self.const_data.append(len(off_sats[const_ite]))
+      else:
+        raise TypeError("Error while making the constellations : the off_sats variable must be None or a list of index")
       in_sight_temp = in_sight_sat
       if off_sats[const_ite] is not None:
         for index in off_sats[const_ite]:

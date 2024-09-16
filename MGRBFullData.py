@@ -45,6 +45,7 @@ class GRBFullData:
     self.sat_ra_wf = None                       # Not changed             #
     self.sat_alt = None                         # Not changed             #
     self.num_sat = None                         # Appened                 #
+    self.num_offsat = None                      # Not changed                 #
     ###################################################################################################################
     # Attributes from the mu100 files
     self.mu100_ref = None                       # Weighted mean           # Compton
