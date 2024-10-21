@@ -9,7 +9,6 @@ import os
 import subprocess
 from apexpy import Apex
 
-from astropy.cosmology import WMAP9, Planck18
 import astropy.units
 # Useful constants
 keV_to_erg = 1 * astropy.units.keV
@@ -805,7 +804,7 @@ def closest_mufile(grb_dec_sf, grb_ra_sf, mu_list):  # TODO : limits on variable
     return mu_list[index].mu100, mu_list[index].mu100_err, mu_list[index].s_eff_compton, mu_list[index].s_eff_single
 
 
-def calc_flux_gbm(catalog, index, ergcut):
+def calc_flux_gbm(catalog, index, ergcut, cat_is_df=False):
   """
   Calculates the fluence per unit time of a given source using an energy cut and its spectrum
   :param catalog: GBM catalog containing sources' information
@@ -813,21 +812,25 @@ def calc_flux_gbm(catalog, index, ergcut):
   :param ergcut: energy window over which the fluence is calculated
   :returns: the number of photons per cm² for a given energy range, averaged over the duration of the sim : ncount/cm²/s
   """
-  model = catalog.df.flnc_best_fitting_model[index]
+  if cat_is_df:
+    used_df = catalog
+  else:
+    used_df = catalog.df
+  model = used_df.flnc_best_fitting_model[index]
   if model == "flnc_band":
     func = band
-    func_args = (catalog.df.flnc_band_ampl[index], catalog.df.flnc_band_alpha[index], catalog.df.flnc_band_beta[index], catalog.df.flnc_band_epeak[index])
+    func_args = (used_df.flnc_band_ampl[index], used_df.flnc_band_alpha[index], used_df.flnc_band_beta[index], used_df.flnc_band_epeak[index])
   elif model == "flnc_comp":
     func = comp
-    func_args = (catalog.df.flnc_comp_ampl[index], catalog.df.flnc_comp_index[index], catalog.df.flnc_comp_epeak[index], catalog.df.flnc_comp_pivot[index])
+    func_args = (used_df.flnc_comp_ampl[index], used_df.flnc_comp_index[index], used_df.flnc_comp_epeak[index], used_df.flnc_comp_pivot[index])
   elif model == "flnc_sbpl":
     func = sbpl
-    func_args = (catalog.df.flnc_sbpl_ampl[index], catalog.df.flnc_sbpl_indx1[index], catalog.df.flnc_sbpl_indx2[index], catalog.df.flnc_sbpl_brken[index], catalog.df.flnc_sbpl_brksc[index], catalog.df.flnc_sbpl_pivot[index])
+    func_args = (used_df.flnc_sbpl_ampl[index], used_df.flnc_sbpl_indx1[index], used_df.flnc_sbpl_indx2[index], used_df.flnc_sbpl_brken[index], used_df.flnc_sbpl_brksc[index], used_df.flnc_sbpl_pivot[index])
   elif model == "flnc_plaw":
     func = plaw
-    func_args = (catalog.df.flnc_plaw_ampl[index], catalog.df.flnc_plaw_index[index], catalog.df.flnc_plaw_pivot[index])
+    func_args = (used_df.flnc_plaw_ampl[index], used_df.flnc_plaw_index[index], used_df.flnc_plaw_pivot[index])
   else:
-    print("Could not find best fit model for {} (indicated {}). Aborting this GRB.".format(catalog.df.name[index], model))
+    print("Could not find best fit model for {} (indicated {}). Aborting this GRB.".format(used_df.name[index], model))
     return
   return use_scipyquad(func, ergcut[0], ergcut[1], func_args=func_args, x_logscale=True)[0]
 

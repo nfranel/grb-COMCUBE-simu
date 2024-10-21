@@ -14,13 +14,14 @@ from funcmod import *
 from MmuSeffContainer import MuSeffContainer
 from MLogData import LogData
 
+# mpl.use('TkAgg')
 
 # TODO mix this file and trajectories.py ? Change the name of this file. Move some functions from trajectories to funcmod
 
 ############################################################
 # Usefull functions :
 ############################################################
-def bkg_data_map(field, bkgdata, altitude, dec_range=np.linspace(0, 180, 181), ra_range=np.linspace(0, 360, 361)):
+def bkg_data_map(field, bkgdata, altitude, dec_range=np.linspace(0, 180, 181), ra_range=np.linspace(0, 360, 361), language="en"):
   """
   TODO testing for the detectors !!!
   :param field: Field ploted on the map :
@@ -38,26 +39,50 @@ def bkg_data_map(field, bkgdata, altitude, dec_range=np.linspace(0, 180, 181), r
   x_long, y_lat = np.meshgrid(ra_range, 90 - dec_range)
   field_list = np.zeros((len(dec_range), len(ra_range)))
   apex15 = Apex(date=2025)
-  if field == "compton_cr":
-    item_legend = "compton events count rate (counts/s)"
-    field_index = 0
-  elif field == "single_cr":
-    item_legend = "single events count rate (counts/s)"
-    field_index = 1
-  elif field == "calor":
-    item_legend = "bottom calorimeter count number (counts)"
-    field_index = 2
-  elif field == "dsssd":
-    item_legend = "DSSSD count number (counts)"
-    field_index = 3
-  elif field == "side":
-    item_legend = "side detector count number (counts)"
-    field_index = 4
-  elif field == "total_hits":
-    item_legend = "total count number (counts)"
-    field_index = 5
+  if language == "en":
+    if field == "compton_cr":
+      item_legend = "Compton events count rate (counts/s)"
+      field_index = 0
+    elif field == "single_cr":
+      item_legend = "single events count rate (counts/s)"
+      field_index = 1
+    elif field == "calor":
+      item_legend = "bottom calorimeter count number (counts)"
+      field_index = 2
+    elif field == "dsssd":
+      item_legend = "DSSSD count number (counts)"
+      field_index = 3
+    elif field == "side":
+      item_legend = "side detector count number (counts)"
+      field_index = 4
+    elif field == "total_hits":
+      item_legend = "total count number (counts)"
+      field_index = 5
+    else:
+      raise ValueError("Wrong name given for the background field")
+  elif language == "fr":
+    if field == "compton_cr":
+      item_legend = "Taux de comptage d'évènements Compton (#/s)"
+      field_index = 0
+    elif field == "single_cr":
+      item_legend = "Taux de comptage d'évènements simples (#/s)"
+      field_index = 1
+    elif field == "calor":
+      item_legend = "Nombre d'évènements dans le calorimètre (#)"
+      field_index = 2
+    elif field == "dsssd":
+      item_legend = "Nombre d'évènements dans les DSSD (#)"
+      field_index = 3
+    elif field == "side":
+      item_legend = "Nombre d'évènements dans le scintillateur de côté (#)"
+      field_index = 4
+    elif field == "total_hits":
+      item_legend = "Nombre total d'évènements dans les détecteurs (#)"
+      field_index = 5
+    else:
+      raise ValueError("Wrong name given for the background field")
   else:
-    raise ValueError("Wrong name given for the background field")
+    raise ValueError("Wrong value given for the language : only en (english) and fr (french) set")
 
   for row, dec in enumerate(dec_range):
     for col, ra in enumerate(ra_range):
@@ -72,9 +97,15 @@ def bkg_data_map(field, bkgdata, altitude, dec_range=np.linspace(0, 180, 181), r
   fig, ax = plt.subplots(subplot_kw={'projection': ccrs.PlateCarree(central_longitude=0)})
   p1 = ax.pcolormesh(x_long, y_lat, field_list, cmap="Blues")
   ax.coastlines()
-  ax.set(xlabel="Longitude (deg)", ylabel="Latitude (deg)", title=f"Background map for {item_legend} at {altitude}km")
   cbar = fig.colorbar(p1)
-  cbar.set_label(f"Background {item_legend}", rotation=270, labelpad=20)
+  if language == "en":
+    ax.set(xlabel="Longitude (deg)", ylabel="Latitude (deg)", title=f"Background map for {item_legend} at {altitude}km")
+    cbar.set_label(f"Background {item_legend}", rotation=270, labelpad=20)
+  elif language == "fr":
+    ax.set(xlabel="Longitude (deg)", ylabel="Latitude (deg)", title=f"{item_legend} dû au bruit de fond à {altitude}km")
+    cbar.set_label(f"{item_legend}", rotation=270, labelpad=20)
+  else:
+    raise ValueError("Wrong value given for the language : only en (english) and fr (french) set")
   plt.show()
 
 
@@ -192,15 +223,38 @@ def calc_duty(inc, ohm, omega, alt, show=False, show_sat=False):
   return counter / len(time_vals)
 
 
-def fov_const(parfile, mu100par, num_val=500, erg_cut=(10, 1000), armcut=180, show=True, save=False, bigfont=True):
+def fov_const(parfile, mu100par, num_val=500, erg_cut=(10, 1000), armcut=180, show=True, save=False, bigfont=True, language="en"):
   """
   Plots a map of the sensibility over the sky for number of sat in sight, single events and compton events
   :param num_val: number of value to
   """
   if bigfont:
-    plt.rcParams.update({'font.size': 15})
+    plt.rcParams.update({'font.size': 13})
   else:
     plt.rcParams.update({'font.size': 10})
+  if language == "en":
+    xlab = "Right ascention (°)"
+    ylab = "Declination (°)"
+    title1 = "Constellation sky coverage map"
+    title2 = "Constellation sky sensitivity map for Compton events"
+    title3 = "Constellation sky sensitivity map for single events"
+    bar1 = "Number of satellites covering the area"
+    bar2 = "Effective area for Compton events (cm²)"
+    bar3 = "Effective area for single events (cm²)"
+  elif language == "fr":
+    xlab = "Ascension droite (°)"
+    ylab = "Déclinaison (°)"
+    title1 = "Carte de couverture du ciel"
+    title2 = "Carte de sensibilité aux évènements Compton"
+    title3 = "Carte de sensibilité aux évènements simple"
+    bar1 = "Nombre de satellite couvrant la zone"
+    bar2 = "Surface efficace pour les évènements Compton (cm²)"
+    bar3 = "Surface efficace pour les évènements simple (cm²)"
+  else:
+    raise ValueError("Wrong value given for the language : only en (english) and fr (french) set")
+  chosen_proj, proj_name = "mollweide", "mollweide"
+  # chosen_proj, proj_name = "carre", "carre"
+
   sat_info = read_grbpar(parfile)[-1]
   n_sat = len(sat_info)
   result_prefix = parfile.split("/polGBM.par")[0].split("/")[-1]
@@ -225,7 +279,7 @@ def fov_const(parfile, mu100par, num_val=500, erg_cut=(10, 1000), armcut=180, sh
   detec_sum_compton = np.sum(detection_compton, axis=0)
   detec_sum_single = np.sum(detection_single, axis=0)
 
-  phi_plot, theta_plot = np.meshgrid(phi_world, theta_world)
+  phi_plot, theta_plot = np.meshgrid(np.deg2rad(phi_world) - np.pi, np.pi/2 - np.deg2rad(theta_world))
   detec_min = int(np.min(detec_sum))
   detec_max = int(np.max(detec_sum))
   detec_min_compton = int(np.min(detec_sum_compton))
@@ -241,31 +295,18 @@ def fov_const(parfile, mu100par, num_val=500, erg_cut=(10, 1000), armcut=180, sh
   ##################################################################################################################
   levels = range(detec_min, detec_max + 1, max(1, int((detec_max + 1 - detec_min) / 15)))
 
-  # fig1, ax1 = plt.subplots(1, 1, figsize=(10, 6))
-  fig1, ax1 = plt.subplots(subplot_kw={'projection': ccrs.PlateCarree()}, figsize=(15, 8))
-  ax1.set_global()
-  ax1.coastlines()
-  h1 = ax1.pcolormesh(phi_plot, 90 - theta_plot, detec_sum, cmap=cmap_det)
-  ax1.axis('scaled')
-  ax1.set(xlabel="Right ascention (rad)", ylabel="Declination (rad)", title="Constellation sky coverage map")
+  fig1, ax1 = plt.subplots(subplot_kw={'projection': chosen_proj}, figsize=(15, 8))
+  # ax1.set_global()
+  # ax1.coastlines()
+  h1 = ax1.pcolormesh(phi_plot, theta_plot, detec_sum, cmap=cmap_det)
+  # ax1.axis('scaled')
+  ax1.set(xlabel=xlab, ylabel=ylab, title=title1)
   cbar = fig1.colorbar(h1, ticks=levels)
-  cbar.set_label("Number of satellites covering the area", rotation=270, labelpad=20)
+  cbar.set_label(bar1, rotation=270, labelpad=20)
   if save:
-    fig1.savefig(f"{result_prefix}_n_sight")
+    fig1.savefig(f"{result_prefix}_n_sight_{proj_name}")
   if show:
     plt.show()
-
-  # plt.subplot(projection="mollweide")
-  # h2 = plt.pcolormesh(phi_plot, np.pi / 2 - theta_plot, detec_sum, cmap=cmap_det)
-  # plt.axis('scaled')
-  # plt.xlabel("Right ascention (rad)")
-  # plt.ylabel("Declination (rad)")
-  # cbar = plt.colorbar(ticks=levels)
-  # cbar.set_label("Number of satellite in sight", rotation=270, labelpad=20)
-  # if save:
-  #   plt.savefig(f"{self.result_prefix}_n_sight_proj")
-  # if show:
-  #   plt.show()
 
   ##################################################################################################################
   # Map of constellation's compton effective area
@@ -273,64 +314,39 @@ def fov_const(parfile, mu100par, num_val=500, erg_cut=(10, 1000), armcut=180, sh
   levels_compton = range(detec_min_compton, detec_max_compton + 1, max(1, int((detec_max_compton + 1 - detec_min_compton) / 15)))
 
   # fig2, ax2 = plt.subplots(1, 1, figsize=(10, 6))
-  fig2, ax2 = plt.subplots(subplot_kw={'projection': ccrs.PlateCarree()}, figsize=(15, 8))
-  ax2.set_global()
-  ax2.coastlines()
-  h3 = ax2.pcolormesh(phi_plot, 90 - theta_plot, detec_sum_compton, cmap=cmap_compton)
-  ax2.axis('scaled')
-  ax2.set(xlabel="Right ascention (rad)", ylabel="Declination (rad)", title="Constellation sky sensitivity map for Compton events")
+  fig2, ax2 = plt.subplots(subplot_kw={'projection': chosen_proj}, figsize=(15, 8))
+  # ax2.set_global()
+  # ax2.coastlines()
+  h3 = ax2.pcolormesh(phi_plot, theta_plot, detec_sum_compton, cmap=cmap_compton)
+  # ax2.axis('scaled')
+  ax2.set(xlabel=xlab, ylabel=ylab, title=title2)
   cbar = fig2.colorbar(h3, ticks=levels_compton)
-  cbar.set_label("Effective area for Compton events (cm²)", rotation=270, labelpad=20)
+  cbar.set_label(bar2, rotation=270, labelpad=20)
   if save:
-    fig2.savefig(f"{result_prefix}_compton_seff")
+    fig2.savefig(f"{result_prefix}_compton_seff_{proj_name}")
   if show:
     plt.show()
-
-  # plt.subplot(projection="mollweide")
-  # h4 = plt.pcolormesh(phi_plot, np.pi / 2 - theta_plot, detec_sum_compton, cmap=cmap_compton)
-  # plt.axis('scaled')
-  # plt.xlabel("Right ascention (rad)")
-  # plt.ylabel("Declination (rad)")
-  # cbar = plt.colorbar(ticks=levels_compton)
-  # cbar.set_label("Effective area for Compton events (cm²)", rotation=270, labelpad=20)
-  # if save:
-  #   plt.savefig(f"{self.result_prefix}_compton_seff_proj")
-  # if show:
-  #   plt.show()
 
   ##################################################################################################################
   # Map of constellation's single effective area
   ##################################################################################################################
   levels_single = range(detec_min_single, detec_max_single + 1, max(1, int((detec_max_single + 1 - detec_min_single) / 15)))
 
-  # fig3, ax3 = plt.subplots(1, 1, figsize=(10, 6))
-  fig3, ax3 = plt.subplots(subplot_kw={'projection': ccrs.PlateCarree()}, figsize=(15, 8))
-  ax3.set_global()
-  ax3.coastlines()
-  h5 = ax3.pcolormesh(phi_plot, 90 - theta_plot, detec_sum_single, cmap=cmap_single)
-  ax3.axis('scaled')
-  ax3.set(xlabel="Right ascention (rad)", ylabel="Declination (rad)", title="Constellation sky sensitivity map for single events")
+  fig3, ax3 = plt.subplots(subplot_kw={'projection': chosen_proj}, figsize=(15, 8))
+  # ax3.set_global()
+  # ax3.coastlines()
+  h5 = ax3.pcolormesh(phi_plot, theta_plot, detec_sum_single, cmap=cmap_single)
+  # ax3.axis('scaled')
+  ax3.set(xlabel=xlab, ylabel=ylab, title=title3)
   cbar = fig3.colorbar(h5, ticks=levels_single)
-  cbar.set_label("Effective area for single events (cm²)", rotation=270, labelpad=20)
+  cbar.set_label(bar3, rotation=270, labelpad=20)
   if save:
-    fig3.savefig(f"{result_prefix}_single_seff")
+    fig3.savefig(f"{result_prefix}_single_seff_{proj_name}")
   if show:
     plt.show()
 
-  # plt.subplot(projection="mollweide")
-  # h6 = plt.pcolormesh(phi_plot, np.pi / 2 - theta_plot, detec_sum_single, cmap=cmap_single)
-  # plt.axis('scaled')
-  # plt.xlabel("Right ascention (rad)")
-  # plt.ylabel("Declination (rad)")
-  # cbar = plt.colorbar(ticks=levels_single)
-  # cbar.set_label("Effective area for single events (cm²)", rotation=270, labelpad=20)
-  # if save:
-  #   plt.savefig(f"{self.result_prefix}_single_seff")
-  # if show:
-  #   plt.show()
-
   print(f"The mean number of satellites in sight is :       {np.mean(detec_sum):.4f} satellites")
-  print(f"The mean effective area for compton events is :  {np.mean(detec_sum_compton):.4f} cm²")
+  print(f"The mean effective area for Compton events is :  {np.mean(detec_sum_compton):.4f} cm²")
   print(f"The mean effective area for single events is :   {np.mean(detec_sum_single):.4f} cm²")
 
 

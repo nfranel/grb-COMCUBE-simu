@@ -12,7 +12,9 @@ from launch_mu100_sim import make_ra_list
 from MFit import Fit
 
 # Ploting adjustments
-mpl.use('Qt5Agg')
+# mpl.use('Qt5Agg')
+# mpl.use('TkAgg')
+
 # plt.rcParams.update({'font.size': 20})
 
 

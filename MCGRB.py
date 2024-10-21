@@ -10,9 +10,11 @@ from funcsample import *
 # from scipy.optimize import curve_fit
 from scipy.stats import gaussian_kde
 # import warnings
+import matplotlib as mpl
 
-# from astropy.cosmology import Planck18
 from astropy.cosmology import FlatLambdaCDM
+
+mpl.use("Qt5Agg")
 
 
 class GRBSample:
@@ -40,7 +42,6 @@ class GRBSample:
     self.gbm_weight = 1 / gbmduty / 10
     self.sample_weight = 1 / self.n_year
     self.cosmo = FlatLambdaCDM(H0=70, Om0=0.3)
-    # self.cosmo = Planck18
     self.filename = f"./Sampled/sampled_grb_cat_{self.n_year}years.txt"
     self.columns = ["Redshift", "EpeakObs", "Epeak", "PeakLuminosity", "MeanFlux", "PeakFlux", "T90", "Fluence", "LightCurveName", "BandLow", "BandHigh", "LuminosityDistance", "EnergyIso", "Type", "Cat"]
     self.sample_df = pd.DataFrame(columns=self.columns)
@@ -55,7 +56,7 @@ class GRBSample:
     self.ind1_z_s = 2.8
     self.ind2_z_s = 2.3
     self.zb_s = 3.5
-    # ==== Redshift
+    # ==== Luminosity
     # Function and associated parameters and cases are taken from Ghirlanda 2016
     self.ind1_s = -0.53
     self.ind2_s = -3.4
@@ -80,11 +81,11 @@ class GRBSample:
     self.ind1_z_l = 3.85  # +0.48 -0.45
     self.ind2_z_l = -1.07  # +0.98 -1.12
     self.zb_l = 2.33  # +0.39 -0.24
-    # ==== Redshift
+    # ==== Luminosity
     # Function and associated parameters and cases are taken from Sarah Antier's thesis, 2016. Initially taken from Lien et al, 2014.
     self.ind1_l = -0.65
     self.ind2_l = -3
-    self.lb_l = 10**52.05 #/ 4.5
+    self.lb_l = 10**52.05  # / 4.5
     # ==== low and high Band indexes : alpha, beta
     # Values obtained by fitting gaussian distribution to GBM data
     self.band_low_l_mu, self.band_low_l_sig = -0.95, 0.31
@@ -170,7 +171,8 @@ class GRBSample:
     self.nlong = int(self.n_year * use_scipyquad(red_rate_long, self.zmin, self.zmax, func_args=(self.long_rate, self.ind1_z_l, self.ind2_z_l, self.zb_l), x_logscale=False)[0])
 
     self.nshort = int(self.n_year * use_scipyquad(red_rate_short, self.zmin, self.zmax, func_args=(self.short_rate, self.ind1_z_s, self.ind2_z_s, self.zb_s), x_logscale=False)[0])
-
+    print(self.nlong, self.nshort)
+    stop
     # # Long GRBs
     # long_smp = []
     print("nlong : ", self.nlong)
@@ -706,22 +708,23 @@ class GRBSample:
 
   def distri_pairplot(self):
     fraction = self.n_year/10/0.6
-    selec_cols = ["Redshift", "Epeak", "PeakLuminosity", "MeanFlux", "T90", "Fluence", "Type"]
+    selec_cols = ["Redshift", "Epeak", "PeakLuminosity", "MeanFlux", "PeakFlux", "T90", "Fluence", "Type"]
     if fraction < 1:
       selec_gbm_df = self.gbm_df[selec_cols].sample(frac=fraction)
       selec_samp_df = self.sample_df[selec_cols]
     else:
       selec_gbm_df = self.gbm_df[selec_cols]
       selec_samp_df = self.sample_df[selec_cols].sample(frac=1/fraction)
+
     plot_df = pd.concat([selec_samp_df, selec_gbm_df], ignore_index=True)
-    plot_df[["Epeak", "PeakLuminosity", "MeanFlux", "T90", "Fluence"]] = plot_df[["Epeak", "PeakLuminosity", "MeanFlux", "T90", "Fluence"]].apply(np.log10, axis=1)
-    plot_df.rename(columns={"Epeak": "LogEpeak", "PeakLuminosity": "LogPeakLuminosity", "MeanFlux": "LogMeanFlux", "T90": "LogT90", "Fluence": "LogFluence"})
+    plot_df[["Epeak", "PeakLuminosity", "MeanFlux", "PeakFlux", "T90", "Fluence"]] = plot_df[["Epeak", "PeakLuminosity", "MeanFlux", "PeakFlux", "T90", "Fluence"]].apply(np.log10, axis=1)
+    plot_df.rename(columns={"Epeak": "LogEpeak", "PeakLuminosity": "LogPeakLuminosity", "MeanFlux": "LogMeanFlux", "PeakFlux": "LogPeakFlux", "T90": "LogT90", "Fluence": "LogFluence"})
 
     colors = ["lightskyblue", "navy", "lightgreen", "limegreen", "forestgreen", "darkgreen", "thistle", "plum", "violet", "purple"]
     order = ['Sample long', 'Sample short', 'GBM long flnc_band', 'GBM long flnc_comp', 'GBM long flnc_sbpl', 'GBM long flnc_plaw', 'GBM short flnc_band', 'GBM short flnc_comp', 'GBM short flnc_sbpl', 'GBM short flnc_plaw']
     p1 = sns.pairplot(plot_df, hue="Type", hue_order=order, corner=True, palette=colors, plot_kws={'s': 10})
 
-    selec_cols = ["MeanFlux", "T90", "Fluence", "Cat"]
+    selec_cols = ["MeanFlux", "PeakFlux", "T90", "Fluence", "Cat"]
     if fraction < 1:
       selec_gbm_df = self.gbm_df[selec_cols].sample(frac=fraction)
       selec_samp_df = self.sample_df[selec_cols]
@@ -729,12 +732,12 @@ class GRBSample:
       selec_gbm_df = self.gbm_df[selec_cols]
       selec_samp_df = self.sample_df[selec_cols].sample(frac=1/fraction)
     plot_df = pd.concat([selec_samp_df, selec_gbm_df], ignore_index=True)
-    plot_df[["MeanFlux", "T90", "Fluence"]] = plot_df[["MeanFlux", "T90", "Fluence"]].apply(np.log10, axis=1)
-    plot_df.rename(columns={"MeanFlux": "LogMeanFlux", "T90": "LogT90", "Fluence": "LogFluence"})
+    plot_df[["MeanFlux", "PeakFlux", "T90", "Fluence"]] = plot_df[["MeanFlux", "PeakFlux", "T90", "Fluence"]].apply(np.log10, axis=1)
+    plot_df.rename(columns={"MeanFlux": "LogMeanFlux", "PeakFlux": "LogPeakFlux", "T90": "LogT90", "Fluence": "LogFluence"})
 
     sns.pairplot(plot_df, hue="Cat", corner=True, palette=["lightskyblue", "lightgreen"], plot_kws={'s': 10})
 
-    selec_cols = ["Epeak", "MeanFlux", "T90", "Fluence", "Type"]
+    selec_cols = ["Epeak", "MeanFlux", "PeakFlux", "T90", "Fluence", "Type"]
     if fraction < 1:
       selec_gbm_df = self.gbm_df[selec_cols].sample(frac=fraction)
       selec_samp_df = self.sample_df[selec_cols]
@@ -742,8 +745,8 @@ class GRBSample:
       selec_gbm_df = self.gbm_df[selec_cols]
       selec_samp_df = self.sample_df[selec_cols].sample(frac=1/fraction)
     plot_df = pd.concat([selec_samp_df, selec_gbm_df], ignore_index=True)
-    plot_df[["Epeak", "MeanFlux", "T90", "Fluence"]] = plot_df[["Epeak", "MeanFlux", "T90", "Fluence"]].apply(np.log10, axis=1)
-    plot_df.rename(columns={"Epeak": "LogEpeak", "MeanFlux": "LogMeanFlux", "T90": "LogT90", "Fluence": "LogFluence"})
+    plot_df[["Epeak", "MeanFlux", "PeakFlux", "T90", "Fluence"]] = plot_df[["Epeak", "MeanFlux", "PeakFlux", "T90", "Fluence"]].apply(np.log10, axis=1)
+    plot_df.rename(columns={"Epeak": "LogEpeak", "MeanFlux": "LogMeanFlux", "PeakFlux": "LogPeakFlux", "T90": "LogT90", "Fluence": "LogFluence"})
 
     sns.pairplot(plot_df, hue="Type", hue_order=order, corner=True, palette=colors, plot_kws={'s': 10})
 

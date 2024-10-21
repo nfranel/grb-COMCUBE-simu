@@ -3,7 +3,7 @@ from scipy.integrate import trapezoid
 from scipy.stats import skewnorm
 from time import time
 
-from astropy.cosmology import WMAP9, Planck18
+from astropy.cosmology import FlatLambdaCDM
 import astropy.units
 # Useful constants
 keV_to_erg = 1 * astropy.units.keV
@@ -272,7 +272,8 @@ def red_rate_long(red):
     Function to obtain the number of long GRB and to pick them according to their distribution
     Parameters from Sarah Antier's thesis
   """
-  vol_com = Planck18.differential_comoving_volume(red).to_value("Gpc3 / sr")  # Change from Mpc3 / sr to Gpc3 / sr
+  cosmo = FlatLambdaCDM(H0=70, Om0=0.3)
+  vol_com = cosmo.differential_comoving_volume(red).to_value("Gpc3 / sr")  # Change from Mpc3 / sr to Gpc3 / sr
   return 4 * np.pi * redshift_distribution_long(red) / (1 + red) * vol_com
 
 
@@ -282,7 +283,8 @@ def red_rate_long_v2(red):
     Function to obtain the number of long GRB and to pick them according to their distribution
     Function and associated parameters and cases are taken from Jesse Palmerio k05-A-nF
   """
-  vol_com = Planck18.differential_comoving_volume(red).to_value("Gpc3 / sr")  # Change from Mpc3 / sr to Gpc3 / sr
+  cosmo = FlatLambdaCDM(H0=70, Om0=0.3)
+  vol_com = cosmo.differential_comoving_volume(red).to_value("Gpc3 / sr")  # Change from Mpc3 / sr to Gpc3 / sr
   return 4 * np.pi * redshift_distribution_long_v2(red) / (1 + red) * vol_com
 
 
@@ -292,7 +294,8 @@ def red_rate_long_v3(red, rate0):
     Function to obtain the number of long GRB and to pick them according to their distribution
     Function and associated parameters and cases are taken from Jesse Palmerio k05-A-nF
   """
-  vol_com = Planck18.differential_comoving_volume(red).to_value("Gpc3 / sr")  # Change from Mpc3 / sr to Gpc3 / sr
+  cosmo = FlatLambdaCDM(H0=70, Om0=0.3)
+  vol_com = cosmo.differential_comoving_volume(red).to_value("Gpc3 / sr")  # Change from Mpc3 / sr to Gpc3 / sr
   return 4 * np.pi * redshift_distribution_long_v3(red, rate0) / (1 + red) * vol_com
 
 
@@ -343,7 +346,8 @@ def red_rate_short(red, rate0):
     Function to obtain the number of short GRB and to pick them according to their distribution
     Parameters from Ghirlanda et al. 2016
   """
-  vol_com = Planck18.differential_comoving_volume(red).to_value("Gpc3 / sr")  # Change from Mpc3 / sr to Gpc3 / sr
+  cosmo = FlatLambdaCDM(H0=70, Om0=0.3)
+  vol_com = cosmo.differential_comoving_volume(red).to_value("Gpc3 / sr")  # Change from Mpc3 / sr to Gpc3 / sr
   return rate0 * 4 * np.pi * redshift_distribution_short(red) / (1 + red) * vol_com
 
 

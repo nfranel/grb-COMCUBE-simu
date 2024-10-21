@@ -10,7 +10,9 @@ import matplotlib as mpl
 from funcmod import *
 
 # Ploting adjustments
-mpl.use('Qt5Agg')
+# mpl.use('Qt5Agg')
+# mpl.use('TkAgg')
+
 # plt.rcParams.update({'font.size': 20})
 
 class ConstData:

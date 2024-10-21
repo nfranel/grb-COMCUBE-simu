@@ -145,7 +145,7 @@ class Catalog:
   def grb_map_plot(self, mode="no_cm"):
     """
     Display the catalog GRBs position in the sky
-    :param mode: no_cm or t90, use t90 to give a color to the pointsbased on the GRB duration
+    :param mode: no_cm or t90, use t90 to give a color to the points based on the GRB duration
     """
     # Extracting dec and ra from catalog and transforms decimal degrees into degrees into the right frame
     thetap = self.df.dec.values

@@ -22,7 +22,9 @@ from MAllSimData import AllSimData
 from MLogData import LogData
 
 # Ploting adjustments
-mpl.use('Qt5Agg')
+# mpl.use('Qt5Agg')
+# mpl.use('TkAgg')
+
 # plt.rcParams.update({'font.size': 20})
 
 

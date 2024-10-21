@@ -3,7 +3,7 @@ from scipy.integrate import trapezoid
 from scipy.stats import skewnorm
 from time import time
 
-from astropy.cosmology import WMAP9, Planck18
+from astropy.cosmology import FlatLambdaCDM
 import astropy.units
 # Useful constants
 keV_to_erg = 1 * astropy.units.keV
@@ -126,6 +126,50 @@ def pick_lognormal_alpha_beta(mu_alpha, sig_alpha, mu_beta, sig_beta):
   return band_low_obs_temp, band_high_obs_temp
 
 
+def chi2(observed_data, simulated_data):
+  """
+
+  """
+  if len(observed_data) != len(simulated_data):
+    raise ValueError("Mean ans sigma variables must be arrays and have the same dimension")
+  return np.sum((observed_data - simulated_data) ** 2 / observed_data)
+
+
+def make_it_list(var):
+  """
+
+  """
+  if type(var) is list or type(var) is np.ndarray:
+    return var
+  if type(var) is float or type(var) is int:
+    return [var]
+  else:
+    raise ValueError("Parameters must be lists, int or float")
+
+
+def build_params(l_rate, l_ind1_z, l_ind2_z, l_zb, l_ind1, l_ind2, l_lb, s_rate, s_ind1_z, s_ind2_z, s_zb, s_ind1, s_ind2, s_lb):
+  """
+
+  """
+  par_list = []
+  for var1 in make_it_list(l_rate):
+    for var2 in make_it_list(l_ind1_z):
+      for var3 in make_it_list(l_ind2_z):
+        for var4 in make_it_list(l_zb):
+          for var5 in make_it_list(l_ind1):
+            for var6 in make_it_list(l_ind2):
+              for var7 in make_it_list(l_lb):
+                for var8 in make_it_list(s_rate):
+                  for var9 in make_it_list(s_ind1_z):
+                    for var10 in make_it_list(s_ind2_z):
+                      for var11 in make_it_list(s_zb):
+                        for var12 in make_it_list(s_ind1):
+                          for var13 in make_it_list(s_ind2):
+                            for var14 in make_it_list(s_lb):
+                              par_list.append([var1, var2, var3, var4, var5, var6, var7, var8, var9, var10, var11, var12, var13, var14])
+  return par_list
+
+
 ############################################################################################################################################################
 # Distributions
 ############################################################################################################################################################
@@ -144,6 +188,26 @@ def acc_reject(func, func_args, xmin, xmax):
       return variable
 
 
+def transfo_broken_plaw(ind1, ind2, val_b, inf_lim, sup_lim):
+  ral = val_b / (ind1 + 1)
+  pal = (inf_lim / val_b)**(ind1 + 1)
+  rbe = val_b / (ind2 + 1)
+  pbe = (sup_lim / val_b)**(ind2 + 1)
+  ampl = 1 / (ral * (1 - pal) + rbe * (pbe - 1))
+
+  rb = ampl * ral * (1 - pal)
+
+  rand_val = np.random.random()
+
+  # print(rb, rand_val)
+
+  # print(rand_val, rb)
+  if rand_val <= rb:
+    return val_b * (rand_val / ampl / ral + pal)**(1/(ind1 + 1))
+  else:
+    return val_b * (rand_val / ampl / rbe + 1 + ral / rbe * (pal - 1))**(1/(ind2 + 1))
+
+
 def broken_plaw(val, ind1, ind2, val_b):
   """
   Proken power law function
@@ -158,6 +222,12 @@ def broken_plaw(val, ind1, ind2, val_b):
   else:
     raise TypeError("Please use a correct type for broken powerlaw, only accepted are float, int or numpy ndarray")
 
+
+def equi_distri(min_val, max_val):
+  """
+  Picks a value between min_val and max_val in an equi-repartition
+  """
+  return min_val + np.random.random() * (max_val - min_val)
 
 ############################################################################################################################################################
 # Long distri
@@ -184,10 +254,11 @@ def red_rate_long(red, rate0, n1, n2, z1):
   """
   Version
     Function to obtain the number of long GRB and to pick them according to their distribution
-    Function and associated parameters and cases are taken from Jesse Palmerio k05-A-nF
+    Function and associated parameters and cases are taken from Lien et al. 2014
   """
-  vol_com = Planck18.differential_comoving_volume(red).to_value("Gpc3 / sr")  # Change from Mpc3 / sr to Gpc3 / sr
-  return 4 * np.pi * redshift_distribution_long(red, rate0, n1, n2, z1) / (1 + red) * vol_com
+  cosmo = FlatLambdaCDM(H0=70, Om0=0.3)
+  vol_com = cosmo.differential_comoving_volume(red).to_value("Gpc3 / sr")  # Change from Mpc3 / sr to Gpc3 / sr
+  return redshift_distribution_long(red, rate0, n1, n2, z1) / (1 + red) * 4 * np.pi * vol_com
 
 
 def epeak_distribution_long(epeak):
@@ -232,7 +303,8 @@ def red_rate_short(red, rate0, p1, zp, p2):
     Function to obtain the number of short GRB and to pick them according to their distribution
     Parameters from Ghirlanda et al. 2016
   """
-  vol_com = Planck18.differential_comoving_volume(red).to_value("Gpc3 / sr")  # Change from Mpc3 / sr to Gpc3 / sr
+  cosmo = FlatLambdaCDM(H0=70, Om0=0.3)
+  vol_com = cosmo.differential_comoving_volume(red).to_value("Gpc3 / sr")  # Change from Mpc3 / sr to Gpc3 / sr
   return rate0 * 4 * np.pi * redshift_distribution_short(red, p1, zp, p2) / (1 + red) * vol_com
 
 

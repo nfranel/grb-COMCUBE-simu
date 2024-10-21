@@ -11,7 +11,6 @@ from funcsample_test import *
 from scipy.stats import gaussian_kde
 # import warnings
 
-from astropy.cosmology import Planck18
 from astropy.cosmology import FlatLambdaCDM
 
 
@@ -48,7 +47,6 @@ class GRBSample:
     else:
       self.version_short = version_short
     self.cosmo = FlatLambdaCDM(H0=70, Om0=0.3)
-    # self.cosmo = Planck18
     self.filename = f"./Sampled/sampled_grb_cat_{self.n_year}years.txt"
     self.columns = ["Redshift", "EpeakObs", "Epeak", "PeakLuminosity", "MeanFlux", "PeakFlux", "T90", "Fluence", "LightCurveName", "BandLow", "BandHigh", "LuminosityDistance", "EnergyIso", "Type", "Cat"]
     self.sample_df = pd.DataFrame(columns=self.columns)
