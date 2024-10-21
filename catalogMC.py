@@ -207,7 +207,7 @@ class MCMCCatalog:
     #    0.25, 2.8, 3.5, 2.3, -0.53, -3.4, 2.8e52],
     # ]
     print("Starting")
-    histograms = self.run_mc(len(param_list), thread_number=13, method=param_list, savefile=savefile)
+    histograms = self.run_mc(len(param_list), thread_number=60, method=param_list, savefile=savefile)
     for ite_mc in range(len(histograms)):
       self.hist_plotter(ite_mc, histograms[ite_mc], param_list[ite_mc], comment=comm, savefile=savefile)
     sns.pairplot(self.result_df, hue="pvalue", corner=True, plot_kws={'s': 10})
