@@ -1018,9 +1018,9 @@ def grb_decrapol_worldf2satf(dec_grb_wf, ra_grb_wf, dec_sat_wf, ra_sat_wf, dec_g
     def fun3(tg, pg, ts, ps):
       return - np.sin(tg) * np.cos(pg) * np.sin(ps) + np.sin(tg) * np.sin(pg) * np.cos(ps)
 
-    np.arctan2(np.dot(source, y_ref_sat), np.dot(source, x_ref_sat))
+    # np.arctan2(np.dot(source, y_ref_sat), np.dot(source, x_ref_sat))
 
-    ra_grb_sf =
+    # ra_grb_sf =
 
   # Polarization
   dec_p, ra_p = np.mod(.5 * np.pi - dec_grb_wf, np.pi), ra_grb_wf + np.pi
