@@ -182,8 +182,9 @@ class MCMCCatalog:
     # main :     [0.42, 2.07, -0.7, 3.6, -0.65, -3, 1.12e+52, 0.25, 2.8, 3.5, 2.3, -0.53, -3.4, 2.8e52]
     savefile = "Sampled/longfit/longfit_lum.csv"
     if not (f"longfit" in os.listdir("Sampled/")):
-      os.mkdir("longfit")
+      os.mkdir("Sampled/longfit")
     comm = "Long-Luminosity"
+
     # param_list = build_params(0.42, 2.07, -0.7, 3.6,  [-0.55, -0.6, -0.65, -0.70, -0.75], [-2.8, -2.9, -3, -3.1, -3.2], [0.7e+52, 0.9e+52, 1.12e+52, 1.4e+52],
     #                           0.25, 2.8, 3.5, 2.3, -0.53, -3.4, 2.8e52)
     param_list = build_params(0.42, 2.07, -0.7, 3.6,  [-0.55, -0.6, -0.65, -0.70, -0.75], [-2.8, -2.9, -3, -3.1, -3.2], 1.12e+52,
@@ -206,7 +207,7 @@ class MCMCCatalog:
     #    0.25, 2.8, 3.5, 2.3, -0.53, -3.4, 2.8e52],
     # ]
     print("Starting")
-    histograms = self.run_mc(len(param_list), thread_number=12, method=param_list, savefile=savefile)
+    histograms = self.run_mc(len(param_list), thread_number=13, method=param_list, savefile=savefile)
     for ite_mc in range(len(histograms)):
       self.hist_plotter(ite_mc, histograms[ite_mc], param_list[ite_mc], comment=comm, savefile=savefile)
     sns.pairplot(self.result_df, hue="pvalue", corner=True, plot_kws={'s': 10})
@@ -414,7 +415,7 @@ class MCMCCatalog:
     # mpl.use("Qt5Agg")
 
     yscale = "log"
-    fig1, ((ax1l, ax2l, ax3l), (ax1s, ax2s, ax3s)) = plt.subplots(nrows=2, ncols=3, figsize=(20, 6))
+    fig1, ((ax1l, ax2l, ax3l), (ax1l2, ax2l2, ax3l2), (ax1s, ax2s, ax3s), (ax1s2, ax2s2, ax3s2)) = plt.subplots(nrows=4, ncols=3, figsize=(20, 12))
     fig1.suptitle(title)
 
     ax1l.hist(self.gbm_l_pflux, bins=self.bin_flux_l, histtype="step", color="red", label="GBM", weights=[self.gbm_weight] * len(self.gbm_l_pflux))
@@ -439,6 +440,24 @@ class MCMCCatalog:
     ax3l.grid(True, which='major', linestyle='--', color='black', alpha=0.3)
     ax3l.legend()
 
+    ax1l2.hist(self.gbm_l_pflux, bins=self.usual_bins, histtype="step", color="red", label="GBM", weights=[self.gbm_weight] * len(self.gbm_l_pflux))
+    ax1l2.hist(histos[1], bins=self.usual_bins, histtype="step", color="blue", label="Sample")
+    ax1l2.set(xlabel="pflux (ph/cm²/s)", ylabel="Number of GRB", xscale="log", yscale=yscale)
+    ax1l2.grid(True, which='major', linestyle='--', color='black', alpha=0.3)
+    ax1l2.legend()
+
+    # ax2l2.hist(self.gbm_l_mflux, bins=self.usual_bins, histtype="step", color="red", label="GBM", weights=[self.gbm_weight] * len(self.gbm_l_mflux))
+    # ax2l2.hist(histos[0], bins=self.usual_bins, histtype="step", color="blue", label="Sample")
+    # ax2l2.set(xlabel="mflux (ph/cm²/s)", ylabel="Number of GRB", xscale="log", yscale=yscale)
+    # ax2l2.grid(True, which='major', linestyle='--', color='black', alpha=0.3)
+    # ax2l2.legend()
+
+    ax3l2.hist(self.gbm_l_flnc, bins=self.usual_bins, histtype="step", color="red", label="GBM", weights=[self.gbm_weight] * len(self.gbm_l_flnc))
+    ax3l2.hist(histos[2], bins=self.usual_bins, histtype="step", color="blue", label="Sample")
+    ax3l2.set(xlabel="flnc (ph/cm²)", ylabel="Number of GRB", xscale="log", yscale=yscale)
+    ax3l2.grid(True, which='major', linestyle='--', color='black', alpha=0.3)
+    ax3l2.legend()
+
     ax1s.hist(self.gbm_s_pflux, bins=self.bin_flux_s, histtype="step", color="red", label="GBM", weights=[self.gbm_weight] * len(self.gbm_s_pflux))
     ax1s.hist(histos[4], bins=self.bin_flux_s, histtype="step", color="blue", label="Sample")
     ax1s.axvline(self.flux_lim[0])
@@ -460,6 +479,24 @@ class MCMCCatalog:
     ax3s.set(xlabel="flnc (ph/cm²)", ylabel="Number of GRB", xscale="log", yscale=yscale)
     ax3s.grid(True, which='major', linestyle='--', color='black', alpha=0.3)
     ax3s.legend()
+
+    ax1s2.hist(self.gbm_s_pflux, bins=self.usual_bins, histtype="step", color="red", label="GBM", weights=[self.gbm_weight] * len(self.gbm_s_pflux))
+    ax1s2.hist(histos[4], bins=self.usual_bins, histtype="step", color="blue", label="Sample")
+    ax1s2.set(xlabel="pflux (ph/cm²/s)", ylabel="Number of GRB", xscale="log", yscale=yscale)
+    ax1s2.grid(True, which='major', linestyle='--', color='black', alpha=0.3)
+    ax1s2.legend()
+
+    # ax2s2.hist(self.gbm_s_mflux, bins=self.usual_bins, histtype="step", color="red", label="GBM", weights=[self.gbm_weight] * len(self.gbm_s_mflux))
+    # ax2s2.hist(histos[3], bins=self.usual_bins, histtype="step", color="blue", label="Sample")
+    # ax2s2.set(xlabel="mflux (ph/cm²/s)", ylabel="Number of GRB", xscale="log", yscale=yscale)
+    # ax2s2.grid(True, which='major', linestyle='--', color='black', alpha=0.3)
+    # ax2s2.legend()
+
+    ax3s2.hist(self.gbm_s_flnc, bins=self.usual_bins, histtype="step", color="red", label="GBM", weights=[self.gbm_weight] * len(self.gbm_s_flnc))
+    ax3s2.hist(histos[5], bins=self.usual_bins, histtype="step", color="blue", label="Sample")
+    ax3s2.set(xlabel="flnc (ph/cm²)", ylabel="Number of GRB", xscale="log", yscale=yscale)
+    ax3s2.grid(True, which='major', linestyle='--', color='black', alpha=0.3)
+    ax3s2.legend()
 
     if savefile is not None:
       plt.savefig(f"{savefile.split('.csv')[0]}_{iteration}")
