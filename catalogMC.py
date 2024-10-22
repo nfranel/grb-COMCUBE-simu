@@ -202,6 +202,7 @@ class MCCatalog:
       #                           0.25, 2.8, 3.5, 2.3, -0.53, -3.4, 2.8e52)
       param_list = build_params(0.42, 2.07, -0.7, 3.6,  [-0.8, -0.7, -0.6, -0.5, -0.4, -0.3, -0.2], [-1.8, -2.1 -2.4, -2.7, -3], [1e51, 5e51, 1e52, 2e52],
                                 0.25, 2.8, 3.5, 2.3, -0.53, -3.4, 2.8e52)
+      print(len(param_list))
       histograms = self.run_mc(len(param_list), thread_number=thread_num, method=param_list, savefile=savefile)
       for ite_mc in range(len(histograms)):
         self.hist_plotter(ite_mc, histograms[ite_mc], param_list[ite_mc], comment=comm, savefile=savefile)
