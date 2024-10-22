@@ -180,22 +180,93 @@ class MCCatalog:
 
     # build_params(l_rate, l_ind1_z, l_ind2_z, l_zb, l_ind1, l_ind2, l_lb, s_rate, s_ind1_z, s_ind2_z, s_zb, s_ind1, s_ind2, s_lb)
     # main :     [0.42, 2.07, -0.7, 3.6, -0.65, -3, 1.12e+52, 0.25, 2.8, 3.5, 2.3, -0.53, -3.4, 2.8e52]
-    savefile = "Sampled/longfit/longfit_lum.csv"
-    comm = "Long-Luminosity"
-    if not (f"longfit" in os.listdir("Sampled/")):
-      os.mkdir("Sampled/longfit")
+
     # param_list = [[0.42, 2.07, -0.7, 3.6, -0.36, -1.28, 1.48e+52, 0.25, 2.8, 3.5, 2.3, -0.53, -3.4, 2.8e52],  # Lan no evo
     #               [0.42, 2.07, -0.7, 3.6, -0.69, -1.76, 2.09e+52, 0.25, 2.8, 3.5, 2.3, -0.53, -3.4, 2.8e52],  # Lan empirical
     #               [0.42, 2.07, -0.7, 3.6, -0.2, -1.4, 3.16e+52, 0.25, 2.8, 3.5, 2.3, -0.53, -3.4, 2.8e52],    # Wanderman Piran
     #               [0.42, 2.07, -0.7, 3.6, -0.65, -3, 1.12e+52, 0.25, 2.8, 3.5, 2.3, -0.53, -3.4, 2.8e52]]     # Lien
-    # param_list = build_params(0.42, 2.07, -0.7, 3.6,  [-0.55, -0.6, -0.65, -0.70, -0.75], [-2.8, -2.9, -3, -3.1, -3.2], [0.7e+52, 0.9e+52, 1.12e+52, 1.4e+52],
-    #                           0.25, 2.8, 3.5, 2.3, -0.53, -3.4, 2.8e52)
-    param_list = build_params(0.42, 2.07, -0.7, 3.6,  [-0.8, -0.6, -0.4, -0.2], [-1.2, -1.8, -2.4, -3], [0.5e52, 1e52, 2e52],
-                              0.25, 2.8, 3.5, 2.3, -0.53, -3.4, 2.8e52)
-    print(len(param_list))
-    print(param_list)
-    # savefile = "Sampled/longfit_red.csv"
-    # comm = "Long-Redshift"
+
+    print("Starting")
+    thread_num = 60
+    mc_mode = "long_lum"
+    # mc_mode = "long_red"
+    # mc_mode = "short_lum"
+    # mc_mode = "short_red"
+    # mc_mode = "mc"
+    if mc_mode == "long_lum":
+      savefile = "Sampled/longlum/longfit_lum.csv"
+      comm = "Long-Luminosity"
+      if not (f"longlum" in os.listdir("Sampled/")):
+        os.mkdir("Sampled/longlum")
+      # param_list = build_params(0.42, 2.07, -0.7, 3.6,  [-0.55, -0.6, -0.65, -0.70, -0.75], [-2.8, -2.9, -3, -3.1, -3.2], [0.7e+52, 0.9e+52, 1.12e+52, 1.4e+52],
+      #                           0.25, 2.8, 3.5, 2.3, -0.53, -3.4, 2.8e52)
+      param_list = build_params(0.42, 2.07, -0.7, 3.6,  [-0.8, -0.6, -0.4, -0.2], [-1.2, -1.8, -2.4, -3], [0.5e52, 1e52, 2e52],
+                                0.25, 2.8, 3.5, 2.3, -0.53, -3.4, 2.8e52)
+      histograms = self.run_mc(len(param_list), thread_number=thread_num, method=param_list, savefile=savefile)
+      for ite_mc in range(len(histograms)):
+        self.hist_plotter(ite_mc, histograms[ite_mc], param_list[ite_mc], comment=comm, savefile=savefile)
+
+      select_cols = ["long_ind1_lum", "long_ind2_lum", "long_lb", "pvalue"]
+      df_selec = self.result_df[select_cols]
+      sns.pairplot(df_selec, hue="pvalue", corner=True, plot_kws={'s': 10})
+
+    elif mc_mode == "long_red":
+      savefile = "Sampled/longred/longfit_red.csv"
+      comm = "Long-Redshift"
+      if not (f"longred" in os.listdir("Sampled/")):
+        os.mkdir("Sampled/longred")
+      param_list = build_params(0.42, 2.07, -0.7, 3.6, -0.65, -3, 1.12e+52, 0.25, 2.8, 3.5, 2.3, -0.53, -3.4, 2.8e52)
+
+      histograms = self.run_mc(len(param_list), thread_number=thread_num, method=param_list, savefile=savefile)
+      for ite_mc in range(len(histograms)):
+        self.hist_plotter(ite_mc, histograms[ite_mc], param_list[ite_mc], comment=comm, savefile=savefile)
+
+      select_cols = ["long_ind1_lum", "long_ind2_lum", "long_lb", "pvalue"]
+      df_selec = self.result_df[select_cols]
+      sns.pairplot(df_selec, hue="pvalue", corner=True, plot_kws={'s': 10})
+
+    elif mc_mode == "short_lum":
+      savefile = "Sampled/shortlum/shortfit_lum.csv"
+      comm = "Long-Luminosity"
+      if not (f"shortlum" in os.listdir("Sampled/")):
+        os.mkdir("Sampled/shortlum")
+      param_list = build_params(0.42, 2.07, -0.7, 3.6, -0.65, -3, 1.12e+52, 0.25, 2.8, 3.5, 2.3, -0.53, -3.4, 2.8e52)
+
+      histograms = self.run_mc(len(param_list), thread_number=thread_num, method=param_list, savefile=savefile)
+      for ite_mc in range(len(histograms)):
+        self.hist_plotter(ite_mc, histograms[ite_mc], param_list[ite_mc], comment=comm, savefile=savefile)
+
+      select_cols = ["long_ind1_lum", "long_ind2_lum", "long_lb", "pvalue"]
+      df_selec = self.result_df[select_cols]
+      sns.pairplot(df_selec, hue="pvalue", corner=True, plot_kws={'s': 10})
+
+    elif mc_mode == "short_red":
+      savefile = "Sampled/shortred/shortfit_lum.csv"
+      comm = "Long-Luminosity"
+      if not (f"shortred" in os.listdir("Sampled/")):
+        os.mkdir("Sampled/shortred")
+      param_list = build_params(0.42, 2.07, -0.7, 3.6, -0.65, -3, 1.12e+52, 0.25, 2.8, 3.5, 2.3, -0.53, -3.4, 2.8e52)
+
+      histograms = self.run_mc(len(param_list), thread_number=thread_num, method=param_list, savefile=savefile)
+      for ite_mc in range(len(histograms)):
+        self.hist_plotter(ite_mc, histograms[ite_mc], param_list[ite_mc], comment=comm, savefile=savefile)
+
+      select_cols = ["long_ind1_lum", "long_ind2_lum", "long_lb", "pvalue"]
+      df_selec = self.result_df[select_cols]
+      sns.pairplot(df_selec, hue="pvalue", corner=True, plot_kws={'s': 10})
+
+    elif mc_mode == "mc":
+      savefile = "Sampled/mcfit/mc_fit.csv"
+      comm = "Long-Luminosity"
+      if not (f"mcfit" in os.listdir("Sampled/")):
+        os.mkdir("Sampled/mcfit")
+
+      histograms = self.run_mc(mcmc_number, thread_number=thread_num, method=None, savefile=savefile)
+      for ite_mc in range(len(histograms)):
+        self.hist_plotter(ite_mc, histograms[ite_mc], None, comment=comm, savefile=savefile)
+
+      sns.pairplot(self.result_df, hue="pvalue", corner=True, plot_kws={'s': 10})
+
     # param_list = build_params([0.35, 0.42, 0.5], [1.9, 2.07, 2.2], [-0.8, -0.7, -0.6], [3.4, 3.6, 3.8], -0.65, -3, 1.12e+52, 0.25, 2.8, 3.5, 2.3, -0.53, -3.4, 2.8e52)
 
     # savefile = "Sampled/shortfit_lum.csv"
@@ -209,11 +280,6 @@ class MCCatalog:
     #   [0.42, 2.07, -0.7, 3.6, -0.65, -3, 10 ** (52.05),
     #    0.25, 2.8, 3.5, 2.3, -0.53, -3.4, 2.8e52],
     # ]
-    print("Starting")
-    histograms = self.run_mc(len(param_list), thread_number=16, method=param_list, savefile=savefile)
-    for ite_mc in range(len(histograms)):
-      self.hist_plotter(ite_mc, histograms[ite_mc], param_list[ite_mc], comment=comm, savefile=savefile)
-    sns.pairplot(self.result_df, hue="pvalue", corner=True, plot_kws={'s': 10})
 
   def run_mc(self, run_number, thread_number=1, method=None, savefile=None):
     if thread_number == 'all':
