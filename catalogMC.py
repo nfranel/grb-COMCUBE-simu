@@ -212,6 +212,7 @@ class MCCatalog:
       plt.subplots(1, 1)
       sns.pairplot(df_selec, hue="log_pvalue", corner=True, plot_kws={'s': 10})
       plt.savefig(f"{savefile.split('.csv')[0]}_df")
+      plt.close()
 
     elif mc_mode == "long_red":
       savefile = "Sampled/longred/longfit_red.csv"
@@ -229,6 +230,7 @@ class MCCatalog:
       plt.subplots(1, 1)
       sns.pairplot(df_selec, hue="log_pvalue", corner=True, plot_kws={'s': 10})
       plt.savefig(f"{savefile.split('.csv')[0]}_df")
+      plt.close()
 
     elif mc_mode == "short_lum":
       savefile = "Sampled/shortlum/shortfit_lum.csv"
@@ -246,6 +248,7 @@ class MCCatalog:
       plt.subplots(1, 1)
       sns.pairplot(df_selec, hue="log_pvalue", corner=True, plot_kws={'s': 10})
       plt.savefig(f"{savefile.split('.csv')[0]}_df")
+      plt.close()
 
     elif mc_mode == "short_red":
       savefile = "Sampled/shortred/shortfit_lum.csv"
@@ -263,6 +266,7 @@ class MCCatalog:
       plt.subplots(1, 1)
       sns.pairplot(df_selec, hue="log_pvalue", corner=True, plot_kws={'s': 10})
       plt.savefig(f"{savefile.split('.csv')[0]}_df")
+      plt.close()
 
     elif mc_mode == "mc":
       savefile = "Sampled/mcfit/mc_fit.csv"
@@ -277,6 +281,7 @@ class MCCatalog:
       plt.subplots(1, 1)
       sns.pairplot(self.result_df, hue="log_pvalue", corner=True, plot_kws={'s': 10})
       plt.savefig(f"{savefile.split('.csv')[0]}_df")
+      plt.close()
 
     # param_list = build_params([0.35, 0.42, 0.5], [1.9, 2.07, 2.2], [-0.8, -0.7, -0.6], [3.4, 3.6, 3.8], -0.65, -3, 1.12e+52, 0.25, 2.8, 3.5, 2.3, -0.53, -3.4, 2.8e52)
 
@@ -580,7 +585,7 @@ class MCCatalog:
 
     if savefile is not None:
       plt.savefig(f"{savefile.split('.csv')[0]}_{iteration}")
-
+    plt.close()
     # plt.show()
 
   def get_short(self, short_rate, ind1_z_s, ind2_z_s, zb_s, ind1_s, ind2_s, lb_s):
