@@ -143,7 +143,7 @@ def gen_commands(args):
         if verif_rad_belts(dec_sat_world_frame, ra_sat_world_frame, s[3]):  # checks if sat is in the switch off zone
           save_log(f"{sim_directory}/simulation_logs.txt", cat.df.name[i], i, j, k, "Ignored(off)", s[0], s[1], s[2], s[3], rand_time, dec_sat_world_frame, ra_sat_world_frame, dec_grb_world_frame, ra_grb_world_frame, None, None)
         else:
-          theta, phi, thetap, phip, polstr = grb_decrapol_worldf2satf(dec_grb_world_frame, ra_grb_world_frame, dec_sat_world_frame, ra_sat_world_frame)[1:]
+          theta, phi, theta_err, phi_err, thetap, phip, polstr = grb_decrapol_worldf2satf(dec_grb_world_frame, ra_grb_world_frame, dec_sat_world_frame, ra_sat_world_frame)[1:]
           if theta >= horizon_angle(s[3]):  # Source below horizon
             save_log(f"{sim_directory}/simulation_logs.txt", cat.df.name[i], i, j, k, "Ignored(horizon)", s[0], s[1], s[2], s[3], rand_time, dec_sat_world_frame, ra_sat_world_frame, dec_grb_world_frame, ra_grb_world_frame, theta, phi)
           else:

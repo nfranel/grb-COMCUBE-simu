@@ -10,7 +10,7 @@ from fontTools.varLib.plot import stops
 from matplotlib.pyplot import suptitle
 
 from catalog import Catalog
-from funcmod import extract_lc, calc_flux_gbm, use_scipyquad
+from funcmod import extract_lc, calc_flux_gbm, use_scipyquad, pflux_to_mflux_calculator
 from funcsample import *
 from scipy.stats import norm, chisquare
 from astropy.cosmology import FlatLambdaCDM
@@ -18,7 +18,7 @@ import matplotlib as mpl
 
 mpl.use("Qt5Agg")
 
-class MCMCCatalog:
+class MCCatalog:
   """
 
   """
@@ -181,13 +181,16 @@ class MCMCCatalog:
     # build_params(l_rate, l_ind1_z, l_ind2_z, l_zb, l_ind1, l_ind2, l_lb, s_rate, s_ind1_z, s_ind2_z, s_zb, s_ind1, s_ind2, s_lb)
     # main :     [0.42, 2.07, -0.7, 3.6, -0.65, -3, 1.12e+52, 0.25, 2.8, 3.5, 2.3, -0.53, -3.4, 2.8e52]
     savefile = "Sampled/longfit/longfit_lum.csv"
+    comm = "Long-Luminosity"
     if not (f"longfit" in os.listdir("Sampled/")):
       os.mkdir("Sampled/longfit")
-    comm = "Long-Luminosity"
-
+    # param_list = [[0.42, 2.07, -0.7, 3.6, -0.36, -1.28, 1.48e+52, 0.25, 2.8, 3.5, 2.3, -0.53, -3.4, 2.8e52],  # Lan no evo
+    #               [0.42, 2.07, -0.7, 3.6, -0.69, -1.76, 2.09e+52, 0.25, 2.8, 3.5, 2.3, -0.53, -3.4, 2.8e52],  # Lan empirical
+    #               [0.42, 2.07, -0.7, 3.6, -0.2, -1.4, 3.16e+52, 0.25, 2.8, 3.5, 2.3, -0.53, -3.4, 2.8e52],    # Wanderman Piran
+    #               [0.42, 2.07, -0.7, 3.6, -0.65, -3, 1.12e+52, 0.25, 2.8, 3.5, 2.3, -0.53, -3.4, 2.8e52]]     # Lien
     # param_list = build_params(0.42, 2.07, -0.7, 3.6,  [-0.55, -0.6, -0.65, -0.70, -0.75], [-2.8, -2.9, -3, -3.1, -3.2], [0.7e+52, 0.9e+52, 1.12e+52, 1.4e+52],
     #                           0.25, 2.8, 3.5, 2.3, -0.53, -3.4, 2.8e52)
-    param_list = build_params(0.42, 2.07, -0.7, 3.6,  [-1.6, -1.4, -1.2, -1.1, -0.8, -0.6], [-3.2, -3, -2.8, -2.6, -2.2, -1.8], [1e51, 3e51, 7e51, 1e52, 2e52, 4e52],
+    param_list = build_params(0.42, 2.07, -0.7, 3.6,  [-0.8, -0.6, -0.4, -0.2], [-1.2, -1.8, -2.4, -3], [0.5e52, 1e52, 2e52],
                               0.25, 2.8, 3.5, 2.3, -0.53, -3.4, 2.8e52)
     print(len(param_list))
     print(param_list)
@@ -207,7 +210,7 @@ class MCMCCatalog:
     #    0.25, 2.8, 3.5, 2.3, -0.53, -3.4, 2.8e52],
     # ]
     print("Starting")
-    histograms = self.run_mc(len(param_list), thread_number=60, method=param_list, savefile=savefile)
+    histograms = self.run_mc(len(param_list), thread_number=16, method=param_list, savefile=savefile)
     for ite_mc in range(len(histograms)):
       self.hist_plotter(ite_mc, histograms[ite_mc], param_list[ite_mc], comment=comm, savefile=savefile)
     sns.pairplot(self.result_df, hue="pvalue", corner=True, plot_kws={'s': 10})
@@ -501,7 +504,7 @@ class MCMCCatalog:
     if savefile is not None:
       plt.savefig(f"{savefile.split('.csv')[0]}_{iteration}")
 
-    plt.show()
+    # plt.show()
 
   def get_short(self, short_rate, ind1_z_s, ind2_z_s, zb_s, ind1_s, ind2_s, lb_s):
     """
@@ -525,8 +528,10 @@ class MCMCCatalog:
       t90_obs_temp = 10 ** norm.rvs(-0.025, 0.631)
 
     lc_temp = self.closest_lc(t90_obs_temp)
-    times, counts = extract_lc(f"./sources/Light_Curves/{lc_temp}")
-    pflux_to_mflux = np.mean(counts) / np.max(counts)
+    # times, counts = extract_lc(f"./sources/Light_Curves/{lc_temp}")
+    # pflux_to_mflux = np.mean(counts) / np.max(counts)
+    pflux_to_mflux = pflux_to_mflux_calculator(lc_temp)
+
 
     dl_obs_temp = self.cosmo.luminosity_distance(z_obs_temp).value / 1000  # Gpc
     # eiso_rest_temp = amati_short(ep_rest_temp)
@@ -566,8 +571,9 @@ class MCMCCatalog:
     timelist.append(time() - init_time)
 
     lc_temp = self.closest_lc(t90_obs_temp)
-    times, counts = extract_lc(f"./sources/Light_Curves/{lc_temp}")
-    pflux_to_mflux = np.mean(counts) / np.max(counts)
+    # times, counts = extract_lc(f"./sources/Light_Curves/{lc_temp}")
+    # pflux_to_mflux = np.mean(counts) / np.max(counts)
+    pflux_to_mflux = pflux_to_mflux_calculator(lc_temp)
 
     dl_obs_temp = self.cosmo.luminosity_distance(z_obs_temp).value / 1000  # Gpc
     ep_rest_temp = yonetoku_reverse_long(lpeak_rest_temp)
@@ -589,7 +595,7 @@ class MCMCCatalog:
 
   def closest_lc(self, searched_time):
     """
-    Find the lightcurve with a duration which is the closest to the sampled t90 time
+    Find the lightcurve file with a duration which is the closest to the sampled t90 time
     """
     abs_diff = np.abs(np.array(self.gbm_cat.df.t90, dtype=float) - searched_time)
     gbm_index = np.argmin(abs_diff)
@@ -670,4 +676,4 @@ class MCMCCatalog:
     plt.show()
 
 
-testcat = MCMCCatalog()
+testcat = MCCatalog()

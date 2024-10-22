@@ -221,6 +221,36 @@ def extract_lc(fullname):
   return np.array(times, dtype=float), np.array(counts, dtype=float)
 
 
+def pflux_to_mflux_calculator(lc_name):
+  """
+  Returns the conversion value from pflux to mflux.
+  It's based on a 1-second pflux as the Lpeak in the Yonetoku correlation is based on a 1-second timescale.
+  """
+  times, counts = extract_lc(f"./sources/Light_Curves/{lc_name}")
+  delta_time = times[1:]-times[:-1]
+  reduced_count = counts[:-1]
+  # Mean number of count/second
+  mean_count = np.sum(reduced_count) / times[-1]
+  if times[-1] <= 1:
+    # Case where the T90 <1s, mflux and pflux over 1s are then the same
+    pflux_to_mflux = 1
+  elif np.min(delta_time) >= 1:
+    # No need to rebin, we just re-normalize the counts with the duration of the bin that is >1s
+    reduced_count = reduced_count / delta_time
+    pflux_to_mflux = mean_count / np.max(reduced_count)
+  else:
+    # Rebining needed, we define the number of rebins necessary and rebin
+    rebining = int(1 / delta_time[0]) + 1
+    newcount = []
+    bin_ite = 0
+    while bin_ite + rebining < len(reduced_count):
+      newcount.append(np.sum(reduced_count[bin_ite:bin_ite+rebining]))
+      bin_ite += rebining
+    newcount.append(np.sum(reduced_count[bin_ite:]))
+    pflux_to_mflux = mean_count / np.max(newcount)
+  return pflux_to_mflux
+
+
 def read_grbpar(parfile):
   """
   reads a source's parameter file to get useful information for the analysis
@@ -438,7 +468,7 @@ def save_grb_data(data_file, filename, sat_info_list, bkg_data, mu_data, ergcut,
       dec_sat_wf, ra_sat_wf = sat_info_2_decra(sat_info, burst_time)
       # Error on estimating the satellite pointing direction (takes into account the pointing itself and the effect of the satellite not being exactly in the right position - very minor effect)
       dec_sat_wf_error, ra_sat_wf_error = 0.5, 0.5
-      expected_pa, grb_dec_sat_frame, grb_ra_sat_frame = grb_decrapol_worldf2satf(dec_world_frame, ra_world_frame, dec_sat_wf, ra_sat_wf)[:3]
+      expected_pa, grb_dec_sat_frame, grb_ra_sat_frame, grb_dec_sf_err, grb_ra_sf_err = grb_decrapol_worldf2satf(dec_world_frame, ra_world_frame, dec_sat_wf, ra_sat_wf)[:5]
       # Extracting the data from first file
       data_pol = readfile(data_file)
       compton_second = []
@@ -469,6 +499,15 @@ def save_grb_data(data_file, filename, sat_info_list, bkg_data, mu_data, ergcut,
       single_pos = np.array(single_pos, dtype=array_dtype)
       compton_time = np.array(compton_time, dtype=array_dtype)
       single_time = np.array(single_time, dtype=array_dtype)
+
+      # ! Recuperer erreur des fichiers avec readevt, erreur seulement sur les ev compton, ev single ne presentent pas d erreur sur l energie et la position donnee
+      # ! erreur avec polar from energy
+      # ! erreur probablement assez complexe avec angle
+      # ! Semble peu utile de faire le tri sur l ARM et l energie en prenant en compte les erreurs, voir l ampleur de l erreur mais probablement trop faible pour vraiment etre interessant
+      # ! surtout que le tri sur l energie se fait lors de la recuperation des valeurs donc encore plus problematique
+      #
+      # ! Ensuite retravailler les mu100
+      # ! La valeur de mu_100_err va changer, mais en plus il faudrait prendre en compte l erreur dans le calcul de la MDP et dans le mu100 de la constellation
 
       #################################################################################################################
       #                     Filling the fields
@@ -990,6 +1029,7 @@ def grb_decrapol_worldf2satf(dec_grb_wf, ra_grb_wf, dec_sat_wf, ra_sat_wf, dec_g
   ra_grb_sf = np.mod(np.arctan2(np.dot(source, y_ref_sat), np.dot(source, x_ref_sat)), 2*np.pi)
 
   # ERROR ESTIMATION
+  # TESTED WITH ANOTHER METHOD, COMPATIBLE RESULTS
   if dec_grb_wf_err is not None and ra_grb_wf_err is not None and dec_sat_wf_err is not None and ra_sat_wf_err is not None:
     dec_grb_wf_err, ra_grb_wf_err, dec_sat_wf_err, ra_sat_wf_err = np.deg2rad(dec_grb_wf_err), np.deg2rad(ra_grb_wf_err), np.deg2rad(dec_sat_wf_err), np.deg2rad(ra_sat_wf_err)
     def fun1(tg, pg, ts, ps):
@@ -1010,17 +1050,45 @@ def grb_decrapol_worldf2satf(dec_grb_wf, ra_grb_wf, dec_sat_wf, ra_sat_wf, dec_g
     def arccos_der(der_func, tg, pg, ts, ps):
       return np.abs(der_func(tg, pg, ts, ps)) / np.sqrt(1 - fun1(dec_grb_wf, ra_grb_wf, dec_sat_wf, ra_sat_wf)**2)
 
-    dec_grb_sf = arccos_der(der1, dec_grb_wf, ra_grb_wf, dec_sat_wf, ra_sat_wf) * dec_grb_wf_err + arccos_der(der2, dec_grb_wf, ra_grb_wf, dec_sat_wf, ra_sat_wf) * ra_grb_wf_err + arccos_der(der3, dec_grb_wf, ra_grb_wf, dec_sat_wf, ra_sat_wf) * dec_sat_wf_err + arccos_der(der4, dec_grb_wf, ra_grb_wf, dec_sat_wf, ra_sat_wf) * ra_sat_wf_err
+    dec_grb_sf_err = arccos_der(der1, dec_grb_wf, ra_grb_wf, dec_sat_wf, ra_sat_wf) * dec_grb_wf_err + arccos_der(der2, dec_grb_wf, ra_grb_wf, dec_sat_wf, ra_sat_wf) * ra_grb_wf_err + arccos_der(der3, dec_grb_wf, ra_grb_wf, dec_sat_wf, ra_sat_wf) * dec_sat_wf_err + arccos_der(der4, dec_grb_wf, ra_grb_wf, dec_sat_wf, ra_sat_wf) * ra_sat_wf_err
 
     def fun2(tg, pg, ts, ps):
       return - np.sin(tg) * np.cos(pg) * np.cos(ts) * np.cos(ps) - np.sin(tg) * np.sin(pg) * np.cos(ts) * np.sin(ps) + np.cos(tg) * np.sin(ts)
 
-    def fun3(tg, pg, ts, ps):
+    def fun3(tg, pg, ps):
       return - np.sin(tg) * np.cos(pg) * np.sin(ps) + np.sin(tg) * np.sin(pg) * np.cos(ps)
 
-    # np.arctan2(np.dot(source, y_ref_sat), np.dot(source, x_ref_sat))
+    def der_num1(tg, pg, ts, ps):
+      return - np.cos(tg) * np.cos(pg) * np.cos(ts) * np.cos(ps) - np.cos(tg) * np.sin(pg) * np.cos(ts) * np.sin(ps) - np.sin(tg) * np.sin(ts)
 
-    # ra_grb_sf =
+    def der_num2(tg, pg, ts, ps):
+      return np.sin(tg) * np.sin(pg) * np.cos(ts) * np.cos(ps) - np.sin(tg) * np.cos(pg) * np.cos(ts) * np.sin(ps)
+
+    def der_num3(tg, pg, ts, ps):
+      return np.sin(tg) * np.cos(pg) * np.sin(ts) * np.cos(ps) + np.sin(tg) * np.sin(pg) * np.sin(ts) * np.sin(ps) + np.cos(tg) * np.cos(ts)
+
+    def der_num4(tg, pg, ts, ps):
+      return np.sin(tg) * np.cos(pg) * np.cos(ts) * np.sin(ps) - np.sin(tg) * np.sin(pg) * np.cos(ts) * np.cos(ps)
+
+    def der_denom1(tg, pg, ps):
+      return - np.cos(tg) * np.cos(pg) * np.sin(ps) + np.cos(tg) * np.sin(pg) * np.cos(ps)
+
+    def der_denom2(tg, pg, ps):
+      return np.sin(tg) * np.sin(pg) * np.sin(ps) + np.sin(tg) * np.cos(pg) * np.cos(ps)
+
+    def der_denom4(tg, pg, ps):
+      return - np.sin(tg) * np.cos(pg) * np.cos(ps) - np.sin(tg) * np.sin(pg) * np.sin(ps)
+
+    def comp_der(tg, pg, ts, ps, dernum, derdenom):
+      return (dernum(tg, pg, ts, ps) * fun3(tg, pg, ps) - fun2(tg, pg, ts, ps) * derdenom(tg, pg, ps)) / fun3(tg, pg, ps) ** 2
+
+    up1 = np.abs(comp_der(dec_grb_wf, ra_grb_wf, dec_sat_wf, ra_sat_wf, der_num1, der_denom1))
+    up2 = np.abs(comp_der(dec_grb_wf, ra_grb_wf, dec_sat_wf, ra_sat_wf, der_num2, der_denom2))
+    up3 = np.abs(der_num3(dec_grb_wf, ra_grb_wf, dec_sat_wf, ra_sat_wf) / fun3(dec_grb_wf, ra_grb_wf, ra_sat_wf))
+    up4 = np.abs(comp_der(dec_grb_wf, ra_grb_wf, dec_sat_wf, ra_sat_wf, der_num4, der_denom4))
+    ra_grb_sf_err = (up1 * dec_grb_wf_err + up2 * ra_grb_wf_err + up3 * dec_sat_wf_err + up4 * ra_sat_wf_err) / (1 + (fun2(dec_grb_wf, ra_grb_wf, dec_sat_wf, ra_sat_wf) / fun3(dec_grb_wf, ra_grb_wf, ra_sat_wf))**2)
+  else:
+    dec_grb_sf_err, ra_grb_sf_err = 0, 0
 
   # Polarization
   dec_p, ra_p = np.mod(.5 * np.pi - dec_grb_wf, np.pi), ra_grb_wf + np.pi
@@ -1032,7 +1100,7 @@ def grb_decrapol_worldf2satf(dec_grb_wf, ra_grb_wf, dec_sat_wf, ra_sat_wf, dec_g
   ra_pol_sf = np.arctan2(np.dot(pol_vec, y_ref_sat), np.dot(pol_vec, x_ref_sat))
   pol_angle = np.arccos(np.dot(pol_vec, np.cross(source, y_ref_sat)))
   polstr = f"{np.sin(dec_pol_sf) * np.cos(ra_pol_sf)} {np.sin(dec_pol_sf) * np.sin(ra_pol_sf)} {np.cos(dec_pol_sf)}"
-  return np.rad2deg(pol_angle), np.rad2deg(dec_grb_sf), np.rad2deg(ra_grb_sf), np.rad2deg(dec_pol_sf), np.rad2deg(ra_pol_sf), polstr
+  return np.rad2deg(pol_angle), np.rad2deg(dec_grb_sf), np.rad2deg(ra_grb_sf), np.rad2deg(dec_grb_sf_err), np.rad2deg(ra_grb_sf_err), np.rad2deg(dec_pol_sf), np.rad2deg(ra_pol_sf), polstr
 
 
 def decrasat2world(dec_grb_sf, ra_grb_sf, dec_sat_wf, ra_sat_wf):  # TODO : limits on variables

@@ -369,6 +369,7 @@ def yonetoku_long(epeak):
 
 def yonetoku_reverse_long(lpeak):
   """
+  WARNING : The correlation is between rest frame properties. The Luminosity is the one for the 1sec peak luminosity !
   Version
     Changed Yonetoku relation
     Coefficients from Sarah Antier's thesis
