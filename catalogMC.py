@@ -175,7 +175,7 @@ class MCCatalog:
 
     # variables containing the MCMC results
     self.columns = ["long_rate", "long_ind1_z", "long_ind2_z", "long_zb", "short_rate", "short_ind1_z", "short_ind2_z", "short_zb", "long_ind1_lum", "long_ind2_lum", "long_lb", "short_ind1_lum", "short_ind2_lum",
-                    "short_lb", "pvalue", "status"]
+                    "short_lb", "log_pvalue", "status"]
     self.result_df = pd.DataFrame(columns=self.columns)
 
     # build_params(l_rate, l_ind1_z, l_ind2_z, l_zb, l_ind1, l_ind2, l_lb, s_rate, s_ind1_z, s_ind2_z, s_zb, s_ind1, s_ind2, s_lb)
@@ -206,9 +206,9 @@ class MCCatalog:
       for ite_mc in range(len(histograms)):
         self.hist_plotter(ite_mc, histograms[ite_mc], param_list[ite_mc], comment=comm, savefile=savefile)
 
-      select_cols = ["long_ind1_lum", "long_ind2_lum", "long_lb", "pvalue"]
+      select_cols = ["long_ind1_lum", "long_ind2_lum", "long_lb", "log_pvalue"]
       df_selec = self.result_df[select_cols]
-      sns.pairplot(df_selec, hue="pvalue", corner=True, plot_kws={'s': 10})
+      sns.pairplot(df_selec, hue="log_pvalue", corner=True, plot_kws={'s': 10})
 
     elif mc_mode == "long_red":
       savefile = "Sampled/longred/longfit_red.csv"
@@ -221,9 +221,9 @@ class MCCatalog:
       for ite_mc in range(len(histograms)):
         self.hist_plotter(ite_mc, histograms[ite_mc], param_list[ite_mc], comment=comm, savefile=savefile)
 
-      select_cols = ["long_ind1_lum", "long_ind2_lum", "long_lb", "pvalue"]
+      select_cols = ["long_ind1_lum", "long_ind2_lum", "long_lb", "log_pvalue"]
       df_selec = self.result_df[select_cols]
-      sns.pairplot(df_selec, hue="pvalue", corner=True, plot_kws={'s': 10})
+      sns.pairplot(df_selec, hue="log_pvalue", corner=True, plot_kws={'s': 10})
 
     elif mc_mode == "short_lum":
       savefile = "Sampled/shortlum/shortfit_lum.csv"
@@ -236,9 +236,9 @@ class MCCatalog:
       for ite_mc in range(len(histograms)):
         self.hist_plotter(ite_mc, histograms[ite_mc], param_list[ite_mc], comment=comm, savefile=savefile)
 
-      select_cols = ["long_ind1_lum", "long_ind2_lum", "long_lb", "pvalue"]
+      select_cols = ["long_ind1_lum", "long_ind2_lum", "long_lb", "log_pvalue"]
       df_selec = self.result_df[select_cols]
-      sns.pairplot(df_selec, hue="pvalue", corner=True, plot_kws={'s': 10})
+      sns.pairplot(df_selec, hue="log_pvalue", corner=True, plot_kws={'s': 10})
 
     elif mc_mode == "short_red":
       savefile = "Sampled/shortred/shortfit_lum.csv"
@@ -251,9 +251,9 @@ class MCCatalog:
       for ite_mc in range(len(histograms)):
         self.hist_plotter(ite_mc, histograms[ite_mc], param_list[ite_mc], comment=comm, savefile=savefile)
 
-      select_cols = ["long_ind1_lum", "long_ind2_lum", "long_lb", "pvalue"]
+      select_cols = ["long_ind1_lum", "long_ind2_lum", "long_lb", "log_pvalue"]
       df_selec = self.result_df[select_cols]
-      sns.pairplot(df_selec, hue="pvalue", corner=True, plot_kws={'s': 10})
+      sns.pairplot(df_selec, hue="log_pvalue", corner=True, plot_kws={'s': 10})
 
     elif mc_mode == "mc":
       savefile = "Sampled/mcfit/mc_fit.csv"
@@ -265,7 +265,7 @@ class MCCatalog:
       for ite_mc in range(len(histograms)):
         self.hist_plotter(ite_mc, histograms[ite_mc], None, comment=comm, savefile=savefile)
 
-      sns.pairplot(self.result_df, hue="pvalue", corner=True, plot_kws={'s': 10})
+      sns.pairplot(self.result_df, hue="log_pvalue", corner=True, plot_kws={'s': 10})
 
     # param_list = build_params([0.35, 0.42, 0.5], [1.9, 2.07, 2.2], [-0.8, -0.7, -0.6], [3.4, 3.6, 3.8], -0.65, -3, 1.12e+52, 0.25, 2.8, 3.5, 2.3, -0.53, -3.4, 2.8e52)
 
@@ -418,15 +418,15 @@ class MCCatalog:
 
     condition = self.mcmc_condition(l_m_flux_temp, l_p_flux_temp, l_flnc_temp, s_m_flux_temp, s_p_flux_temp, s_flnc_temp, params=params)
     if condition[0]:
-      row = [l_rate_temp, l_ind1_z_temp, l_ind2_z_temp, l_zb_temp, s_rate_temp, s_ind1_z_temp, s_ind2_z_temp, s_zb_temp, l_ind1_temp, l_ind2_temp, l_lb_temp, s_ind1_temp, s_ind2_temp, s_lb_temp, condition[1], "Accepted"]
+      row = [l_rate_temp, l_ind1_z_temp, l_ind2_z_temp, l_zb_temp, s_rate_temp, s_ind1_z_temp, s_ind2_z_temp, s_zb_temp, l_ind1_temp, l_ind2_temp, l_lb_temp, s_ind1_temp, s_ind2_temp, s_lb_temp, np.around(np.log10(condition[1]), 3), "Accepted"]
       # data_row = pd.DataFrame(data=[row], columns=self.columns)
       # self.result_df = pd.concat([self.result_df, data_row], ignore_index=True)
     else:
-      row = [l_rate_temp, l_ind1_z_temp, l_ind2_z_temp, l_zb_temp, s_rate_temp, s_ind1_z_temp, s_ind2_z_temp, s_zb_temp, l_ind1_temp, l_ind2_temp, l_lb_temp, s_ind1_temp, s_ind2_temp, s_lb_temp, condition[1], "Rejected"]
+      row = [l_rate_temp, l_ind1_z_temp, l_ind2_z_temp, l_zb_temp, s_rate_temp, s_ind1_z_temp, s_ind2_z_temp, s_zb_temp, l_ind1_temp, l_ind2_temp, l_lb_temp, s_ind1_temp, s_ind2_temp, s_lb_temp, np.around(np.log10(condition[1]), 3), "Rejected"]
       # data_row = pd.DataFrame(data=[row], columns=self.columns)
       # self.result_df = pd.concat([self.result_df, data_row], ignore_index=True)
       # print(data_row)
-      print(f"Rejected : pvalue = {condition[1]*100}%     [ite {run_iteration}]")
+      print(f"Rejected : log_pvalue = {np.around(np.log10(condition[1]), 3)}     [ite {run_iteration}]")
 
     # creating histograms
     # smp_pflux_l_hist = np.histogram(l_p_flux_temp, bins=self.bin_flux_l[self.nfluxbin_l[0]:])[0]
@@ -441,7 +441,7 @@ class MCCatalog:
     # hist_s_p_flux_temp = np.histogram(s_p_flux_temp, bins=self.bin_flux_s)[0]
     # hist_s_flnc_temp = np.histogram(s_flnc_temp, bins=self.bin_flnc_s)[0]
     # return hist_l_m_flux_temp, hist_l_p_flux_temp, hist_l_flnc_temp, hist_s_m_flux_temp, hist_s_p_flux_temp, hist_s_flnc_temp
-    return [l_m_flux_temp, l_p_flux_temp, l_flnc_temp, s_m_flux_temp, s_p_flux_temp, s_flnc_temp, condition[1], row]
+    return [l_m_flux_temp, l_p_flux_temp, l_flnc_temp, s_m_flux_temp, s_p_flux_temp, s_flnc_temp, np.around(np.log10(condition[1]), 3), row]
 
   def mcmc_condition(self, l_m_flux_temp, l_p_flux_temp, l_flnc_temp, s_m_flux_temp, s_p_flux_temp, s_flnc_temp, params=None):
     """
@@ -477,9 +477,9 @@ class MCCatalog:
 
   def hist_plotter(self, iteration, histos, params, comment="", savefile=None):
     if params is not None:
-      title = f"{comment}\n{params[0:7]}\n{params[7:]}\nP-value : {histos[6]*100}%"
+      title = f"{comment}\n{params[0:7]}\n{params[7:]}\nLog p-value : {histos[6]}%"
     else:
-      title = f"{comment}\nP-value : {histos[6]*100}%"
+      title = f"{comment}\nLog p-value : {histos[6]}%"
 
     # mpl.use("Qt5Agg")
 
