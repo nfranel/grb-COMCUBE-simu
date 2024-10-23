@@ -225,7 +225,7 @@ class MCCatalog:
       # print("====1====")
       histograms = self.run_mc(len(param_list), thread_number=thread_num, method=param_list, savefile=savefile)
       # print("====2====")
-      print("len hist : ", len(histograms))
+      # print("len hist : ", len(histograms))
       # print(histograms)
       for ite_mc in range(len(histograms)):
         # print("====3====")
