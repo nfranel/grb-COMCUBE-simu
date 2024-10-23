@@ -186,13 +186,26 @@ class MCCatalog:
     #               [0.42, 2.07, -0.7, 3.6, -0.2, -1.4, 3.16e+52, 0.25, 2.8, 3.5, 2.3, -0.53, -3.4, 2.8e52],    # Wanderman Piran
     #               [0.42, 2.07, -0.7, 3.6, -0.65, -3, 1.12e+52, 0.25, 2.8, 3.5, 2.3, -0.53, -3.4, 2.8e52]]     # Lien
 
-    print("Starting")
+    # ==============================================================================================================================================================
+    # Parameters to change
+    # ==============================================================================================================================================================
     thread_num = 60
+
     # mc_mode = "long_lum"
     mc_mode = "long_red"
     # mc_mode = "short_lum"
     # mc_mode = "short_red"
     # mc_mode = "mc"
+
+    self.cond_option = "long_pflux"
+    # self.cond_option = "long_flnc"
+    # self.cond_option = "long"
+    # self.cond_option = "short_pflux"
+    # self.cond_option = "short_flnc"
+    # self.cond_option = "short"
+    # self.cond_option = None
+
+    print("Starting")
     if mc_mode == "long_lum":
       savefile = "Sampled/longlum/longfit_lum.csv"
       comm = "Long-Luminosity"
@@ -202,7 +215,6 @@ class MCCatalog:
       #                           0.25, 2.8, 3.5, 2.3, -0.53, -3.4, 2.8e52)
       param_list = build_params(0.42, 2.07, -0.7, 3.6,  [-0.8, -0.7, -0.6, -0.5, -0.4, -0.3, -0.2], [-1.8, -2.1, -2.4, -2.7, -3], [1e51, 5e51, 1e52, 2e52],
                                 0.25, 2.8, 3.5, 2.3, -0.53, -3.4, 2.8e52)
-      print(len(param_list))
 
       histograms = self.run_mc(len(param_list), thread_number=thread_num, method=param_list, savefile=savefile)
       for ite_mc in range(len(histograms)):
@@ -211,6 +223,8 @@ class MCCatalog:
       select_cols = ["long_ind1_lum", "long_ind2_lum", "long_lb", "log_pvalue"]
       df_selec = self.result_df[select_cols]
       plt.subplots(1, 1)
+      title = f"Log p-value on {self.cond_option}"
+      plt.suptitle(title)
       sns.pairplot(df_selec, hue="log_pvalue", corner=True, plot_kws={'s': 10})
       plt.savefig(f"{savefile.split('.csv')[0]}_df")
       plt.close()
@@ -220,26 +234,21 @@ class MCCatalog:
       comm = "Long-Redshift"
       if not (f"longred" in os.listdir("Sampled/")):
         os.mkdir("Sampled/longred")
-      param_list = build_params([0.2, 0.3, 0.4, 0.5], [1.6, 1.8, 2, 2.2, 2.4], [-0.9, -0.8, -0.7, -0.6, -0.5], [2.6, 3.1, 3.6, 4.1], -0.65, -3, 1.12e+52, 0.25, 2.8, 3.5, 2.3, -0.53, -3.4, 2.8e52)
-      # param_list = [[0.12, 2.07, -0.7, 3.6, -0.65, -3, 1.12e+52, 0.1, 2.8, 3.5, 2.3, -0.53, -3.4, 2.8e52]]
-      # print("====1====")
+      # param_list = build_params([0.2, 0.3, 0.4, 0.5], [1.6, 1.8, 2, 2.2, 2.4], [-0.9, -0.8, -0.7, -0.6, -0.5], [2.6, 3.1, 3.6, 4.1], -0.65, -3, 1.12e+52, 0.25, 2.8, 3.5, 2.3, -0.53, -3.4, 2.8e52)
+      param_list = [[0.12, 2.07, -0.7, 3.6, -0.65, -3, 1.12e+52, 0.1, 2.8, 3.5, 2.3, -0.53, -3.4, 2.8e52]]
+
       histograms = self.run_mc(len(param_list), thread_number=thread_num, method=param_list, savefile=savefile)
-      # print("====2====")
-      # print("len hist : ", len(histograms))
-      # print(histograms)
       for ite_mc in range(len(histograms)):
-        # print("====3====")
         self.hist_plotter(ite_mc, histograms[ite_mc], param_list[ite_mc], comment=comm, savefile=savefile)
-      # print("====8====")
 
       select_cols = ["long_rate", "long_ind1_z", "long_ind2_z", "long_zb", "log_pvalue"]
       df_selec = self.result_df[select_cols]
       plt.subplots(1, 1)
+      title = f"Log p-value on {self.cond_option}"
+      plt.suptitle(title)
       sns.pairplot(df_selec, hue="log_pvalue", corner=True, plot_kws={'s': 10})
       plt.savefig(f"{savefile.split('.csv')[0]}_df")
       plt.close()
-      # print("====9====")
-
 
     elif mc_mode == "short_lum":
       savefile = "Sampled/shortlum/shortfit_lum.csv"
@@ -255,6 +264,8 @@ class MCCatalog:
       select_cols = ["short_ind1_lum", "short_ind2_lum", "short_lb", "log_pvalue"]
       df_selec = self.result_df[select_cols]
       plt.subplots(1, 1)
+      title = f"Log p-value on {self.cond_option}"
+      plt.suptitle(title)
       sns.pairplot(df_selec, hue="log_pvalue", corner=True, plot_kws={'s': 10})
       plt.savefig(f"{savefile.split('.csv')[0]}_df")
       plt.close()
@@ -273,6 +284,8 @@ class MCCatalog:
       select_cols = ["short_rate", "short_ind1_z", "short_ind2_z", "short_zb", "log_pvalue"]
       df_selec = self.result_df[select_cols]
       plt.subplots(1, 1)
+      title = f"Log p-value on {self.cond_option}"
+      plt.suptitle(title)
       sns.pairplot(df_selec, hue="log_pvalue", corner=True, plot_kws={'s': 10})
       plt.savefig(f"{savefile.split('.csv')[0]}_df")
       plt.close()
@@ -288,31 +301,20 @@ class MCCatalog:
         self.hist_plotter(ite_mc, histograms[ite_mc], None, comment=comm, savefile=savefile)
 
       plt.subplots(1, 1)
+      title = f"Log p-value on {self.cond_option}"
+      plt.suptitle(title)
       sns.pairplot(self.result_df, hue="log_pvalue", corner=True, plot_kws={'s': 10})
       plt.savefig(f"{savefile.split('.csv')[0]}_df")
       plt.close()
 
-    # param_list = build_params([0.35, 0.42, 0.5], [1.9, 2.07, 2.2], [-0.8, -0.7, -0.6], [3.4, 3.6, 3.8], -0.65, -3, 1.12e+52, 0.25, 2.8, 3.5, 2.3, -0.53, -3.4, 2.8e52)
-
-    # savefile = "Sampled/shortfit_lum.csv"
-    # comm = "Short-Luminosity"
-    # param_list = build_params(0.42, 2.07, -0.7, 3.6, -0.65, -3, 1.12e+52, 0.25, 2.8, 3.5, 2.3, -0.53, -3.4, 2.8e52)
-    # savefile = "Sampled/shortfit_red.csv"
-    # comm = "Short-Redshift"
-    # param_list = build_params(0.42, 2.07, -0.7, 3.6, -0.65, -3, 1.12e+52, 0.25, 2.8, 3.5, 2.3, -0.53, -3.4, 2.8e52)
-
-    # param_list = [
-    #   [0.42, 2.07, -0.7, 3.6, -0.65, -3, 10 ** (52.05),
-    #    0.25, 2.8, 3.5, 2.3, -0.53, -3.4, 2.8e52],
-    # ]
-
   def run_mc(self, run_number, thread_number=1, method=None, savefile=None):
+    print(f"Starting the run for {run_number} iterations")
     if thread_number == 'all':
-      print("Parallel extraction of the data with all threads")
+      print("Parallel execution with all threads")
       with mp.Pool() as pool:
         runs_ret = pool.starmap(self.get_sample, zip(range(run_number), repeat(method)))
     elif type(thread_number) is int and thread_number > 1:
-      print(f"Parallel extraction of the data with {thread_number} threads")
+      print(f"Parallel execution with {thread_number} threads")
       with mp.Pool(thread_number) as pool:
         runs_ret = pool.starmap(self.get_sample, zip(range(run_number), repeat(method)))
     else:
@@ -327,7 +329,6 @@ class MCCatalog:
     # Care might have an error if only 1 catalog version is tested
     # print("run ret : ", runs_ret)
     # print("run ret[-1] : ", runs_ret[-1])
-    # print("====2prime====")
     # print("len run ret : ", len(runs_ret))
     # print("len ret_hist : ", len(ret_hist))
     return ret_hist
@@ -488,31 +489,39 @@ class MCCatalog:
     smp_flnc_l_hist_norm = smp_flnc_l_hist * np.sum(self.l_flnc_bins) / np.sum(smp_flnc_l_hist)
     smp_flnc_s_hist_norm = smp_flnc_s_hist * np.sum(self.s_flnc_bins) / np.sum(smp_flnc_s_hist)
 
-    fullcond = False
-    if fullcond:
+    if self.cond_option is None:
       obs_dat = np.concatenate((smp_pflux_l_hist_norm, smp_pflux_s_hist_norm, smp_flnc_l_hist_norm, smp_flnc_s_hist_norm))
       expect_dat = np.concatenate((self.l_pflux_bins, self.s_pflux_bins, self.l_flnc_bins, self.s_flnc_bins))
-      cond_test = chisquare(obs_dat, f_exp=expect_dat, ddof=0)
-      return cond_test[1] > 0.95, cond_test[1]
+    elif self.cond_option == "long_pflux":
+      obs_dat = smp_pflux_l_hist_norm
+      expect_dat = self.l_pflux_bins
+    elif self.cond_option == "long_flnc":
+      obs_dat = smp_flnc_l_hist_norm
+      expect_dat = self.l_flnc_bins
+    elif self.cond_option == "long":
+      obs_dat = np.concatenate((smp_pflux_l_hist_norm, smp_flnc_l_hist_norm))
+      expect_dat = np.concatenate((self.l_pflux_bins, self.l_flnc_bins))
+    elif self.cond_option == "short_pflux":
+      obs_dat = smp_pflux_s_hist_norm
+      expect_dat = self.s_pflux_bins
+    elif self.cond_option == "short_flnc":
+      obs_dat = smp_flnc_s_hist_norm
+      expect_dat = self.s_flnc_bins
+    elif self.cond_option == "short":
+      obs_dat = np.concatenate((smp_pflux_s_hist_norm, smp_flnc_s_hist_norm))
+      expect_dat = np.concatenate((self.s_pflux_bins, self.s_flnc_bins))
     else:
-      # Fit long
-      obs_dat1 = np.concatenate((smp_pflux_l_hist_norm, smp_flnc_l_hist_norm))
-      expect_dat1 = np.concatenate((self.l_pflux_bins, self.l_flnc_bins))
-      cond_test1 = chisquare(obs_dat1, f_exp=expect_dat1, ddof=0)
-      return cond_test1[1] > 0.95, cond_test1[1]
-      # # Fit Short
-      # obs_dat2 = np.concatenate((smp_pflux_s_hist_norm, smp_flnc_s_hist_norm))
-      # expect_dat2 = np.concatenate((self.s_pflux_bins, self.s_flnc_bins))
-      # cond_test2 = chisquare(obs_dat2, f_exp=expect_dat2, ddof=0)
-      # return cond_test2[1] > 0.95, cond_test2[1]
+      raise ValueError("Wrong value for cond_option : must be None, 'long_pflux', 'long_flnc', 'long', 'short_pflux', 'short_flnc' or 'short'")
+
+    cond_test = chisquare(obs_dat, f_exp=expect_dat, ddof=0)
+    return cond_test[1] > 0.95, cond_test[1]
 
   def hist_plotter(self, iteration, histos, params, comment="", savefile=None):
     if params is not None:
-      title = f"{comment}\n{params[0:7]}\n{params[7:]}\nLog p-value : {histos[6]}%"
+      title = f"{comment}\n{params[0:7]}\n{params[7:]}\nLog p-value on {self.cond_option} : {histos[6]}"
     else:
-      title = f"{comment}\nLog p-value : {histos[6]}%"
+      title = f"{comment}\nLog p-value on {self.cond_option} : {histos[6]}"
 
-    # print("====4====")
     yscale = "log"
     fig1, ((ax1l, ax2l, ax3l), (ax1l2, ax2l2, ax3l2), (ax1s, ax2s, ax3s), (ax1s2, ax2s2, ax3s2)) = plt.subplots(nrows=4, ncols=3, figsize=(20, 12))
     fig1.suptitle(title)
@@ -597,12 +606,9 @@ class MCCatalog:
     ax3s2.grid(True, which='major', linestyle='--', color='black', alpha=0.3)
     ax3s2.legend()
 
-    # print("====5====")
     if savefile is not None:
       plt.savefig(f"{savefile.split('.csv')[0]}_{iteration}")
-      # print("====6====")
     plt.close(fig1)
-    # print("====7====")
 
     # plt.show()
 
