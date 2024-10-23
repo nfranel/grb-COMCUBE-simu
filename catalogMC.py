@@ -234,8 +234,8 @@ class MCCatalog:
       comm = "Long-Redshift"
       if not (f"longred" in os.listdir("Sampled/")):
         os.mkdir("Sampled/longred")
-      # param_list = build_params([0.2, 0.3, 0.4, 0.5], [1.6, 1.8, 2, 2.2, 2.4], [-0.9, -0.8, -0.7, -0.6, -0.5], [2.6, 3.1, 3.6, 4.1], -0.65, -3, 1.12e+52, 0.25, 2.8, 3.5, 2.3, -0.53, -3.4, 2.8e52)
-      param_list = [[0.12, 2.07, -0.7, 3.6, -0.65, -3, 1.12e+52, 0.1, 2.8, 3.5, 2.3, -0.53, -3.4, 2.8e52]]
+      param_list = build_params([0.2, 0.3, 0.4, 0.5], [1.2, 1.4, 1.6, 1.8, 2, 2.2, 2.4, 2.6], [-1.1, -0.9, -0.8, -0.7, -0.6, -0.5, -0.4], [2, 2.6, 3.1, 3.6, 4.1, 5], -0.65, -3, 1.12e+52, 0.25, 2.8, 3.5, 2.3, -0.53, -3.4, 2.8e52)
+      # param_list = [[0.12, 2.07, -0.7, 3.6, -0.65, -3, 1.12e+52, 0.1, 2.8, 3.5, 2.3, -0.53, -3.4, 2.8e52]]
 
       histograms = self.run_mc(len(param_list), thread_number=thread_num, method=param_list, savefile=savefile)
       for ite_mc in range(len(histograms)):
