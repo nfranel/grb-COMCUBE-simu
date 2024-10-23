@@ -220,12 +220,17 @@ class MCCatalog:
       comm = "Long-Redshift"
       if not (f"longred" in os.listdir("Sampled/")):
         os.mkdir("Sampled/longred")
-      # param_list = build_params([0.2, 0.3, 0.4, 0.5], [1.6, 1.8, 2, 2.2, 2.4], [-0.9, -0.8, -0.7, -0.6, -0.5], [2.6, 3.1, 3.6, 4.1], -0.65, -3, 1.12e+52, 0.25, 2.8, 3.5, 2.3, -0.53, -3.4, 2.8e52)
-      param_list = [[0.42, 2.07, -0.7, 3.6, -0.65, -3, 1.12e+52, 0.25, 2.8, 3.5, 2.3, -0.53, -3.4, 2.8e52]]
-
+      param_list = build_params([0.2, 0.3, 0.4, 0.5], [1.6, 1.8, 2, 2.2, 2.4], [-0.9, -0.8, -0.7, -0.6, -0.5], [2.6, 3.1, 3.6, 4.1], -0.65, -3, 1.12e+52, 0.25, 2.8, 3.5, 2.3, -0.53, -3.4, 2.8e52)
+      # param_list = [[0.12, 2.07, -0.7, 3.6, -0.65, -3, 1.12e+52, 0.1, 2.8, 3.5, 2.3, -0.53, -3.4, 2.8e52]]
+      # print("====1====")
       histograms = self.run_mc(len(param_list), thread_number=thread_num, method=param_list, savefile=savefile)
+      # print("====2====")
+      print("len hist : ", len(histograms))
+      # print(histograms)
       for ite_mc in range(len(histograms)):
+        # print("====3====")
         self.hist_plotter(ite_mc, histograms[ite_mc], param_list[ite_mc], comment=comm, savefile=savefile)
+      # print("====8====")
 
       select_cols = ["long_rate", "long_ind1_z", "long_ind2_z", "long_zb", "log_pvalue"]
       df_selec = self.result_df[select_cols]
@@ -233,6 +238,8 @@ class MCCatalog:
       sns.pairplot(df_selec, hue="log_pvalue", corner=True, plot_kws={'s': 10})
       plt.savefig(f"{savefile.split('.csv')[0]}_df")
       plt.close()
+      # print("====9====")
+
 
     elif mc_mode == "short_lum":
       savefile = "Sampled/shortlum/shortfit_lum.csv"
@@ -253,7 +260,7 @@ class MCCatalog:
       plt.close()
 
     elif mc_mode == "short_red":
-      savefile = "Sampled/shortred/shortfit_lum.csv"
+      savefile = "Sampled/shortred/shortfit_red.csv"
       comm = "Short-Redshift"
       if not (f"shortred" in os.listdir("Sampled/")):
         os.mkdir("Sampled/shortred")
@@ -313,11 +320,17 @@ class MCCatalog:
       runs_ret = [self.get_sample(ite, method=method) for ite in range(run_number)]
     # print(runs_ret)
     to_df = [run[-1] for run in runs_ret]
+    ret_hist = [run[:-1] for run in runs_ret]
     self.result_df = pd.DataFrame(data=to_df, columns=self.columns)
     if savefile is not None:
       self.result_df.to_csv(savefile, index=False)
     # Care might have an error if only 1 catalog version is tested
-    return runs_ret[:-1]
+    # print("run ret : ", runs_ret)
+    # print("run ret[-1] : ", runs_ret[-1])
+    # print("====2prime====")
+    # print("len run ret : ", len(runs_ret))
+    # print("len ret_hist : ", len(ret_hist))
+    return ret_hist
 
   def get_params(self):
     l_rate_temp = equi_distri(self.l_rate_min, self.l_rate_max)
@@ -499,8 +512,7 @@ class MCCatalog:
     else:
       title = f"{comment}\nLog p-value : {histos[6]}%"
 
-    # mpl.use("Qt5Agg")
-
+    # print("====4====")
     yscale = "log"
     fig1, ((ax1l, ax2l, ax3l), (ax1l2, ax2l2, ax3l2), (ax1s, ax2s, ax3s), (ax1s2, ax2s2, ax3s2)) = plt.subplots(nrows=4, ncols=3, figsize=(20, 12))
     fig1.suptitle(title)
@@ -585,9 +597,13 @@ class MCCatalog:
     ax3s2.grid(True, which='major', linestyle='--', color='black', alpha=0.3)
     ax3s2.legend()
 
+    # print("====5====")
     if savefile is not None:
       plt.savefig(f"{savefile.split('.csv')[0]}_{iteration}")
-    plt.close()
+      # print("====6====")
+    plt.close(fig1)
+    # print("====7====")
+
     # plt.show()
 
   def get_short(self, short_rate, ind1_z_s, ind2_z_s, zb_s, ind1_s, ind2_s, lb_s):

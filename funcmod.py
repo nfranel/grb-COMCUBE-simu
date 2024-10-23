@@ -401,17 +401,23 @@ def readevt(event, ergcut=None):
   if lines[0] == "ET CO":
     second_ener = float(lines[7].split(" ")[1])
     total_ener = second_ener + float(lines[7].split(" ")[5])
+    second_ener_err = float(lines[7].split(" ")[2])
+    total_ener_err = second_ener_err + float(lines[7].split(" ")[6])
     if ergcut is None:
       time_interaction = float(lines[2].split(" ")[1])
       first_pos = np.array([float(lines[8].split(" ")[11]), float(lines[8].split(" ")[12]), float(lines[8].split(" ")[13])])
       second_pos = np.array([float(lines[8].split(" ")[1]), float(lines[8].split(" ")[2]), float(lines[8].split(" ")[3])])
-      return [second_ener, total_ener, time_interaction, first_pos, second_pos]
+      first_pos_err = np.array([float(lines[8].split(" ")[16]), float(lines[8].split(" ")[17]), float(lines[8].split(" ")[18])])
+      second_pos_err = np.array([float(lines[8].split(" ")[6]), float(lines[8].split(" ")[7]), float(lines[8].split(" ")[8])])
+      return [second_ener, total_ener, time_interaction, first_pos, second_pos, second_ener_err, total_ener_err, first_pos_err, second_pos_err]
     else:
       if inwindow(total_ener, ergcut):
         time_interaction = float(lines[2].split(" ")[1])
         first_pos = np.array([float(lines[8].split(" ")[11]), float(lines[8].split(" ")[12]), float(lines[8].split(" ")[13])])
         second_pos = np.array([float(lines[8].split(" ")[1]), float(lines[8].split(" ")[2]), float(lines[8].split(" ")[3])])
-        return [second_ener, total_ener, time_interaction, first_pos, second_pos]
+        first_pos_err = np.array([float(lines[8].split(" ")[16]), float(lines[8].split(" ")[17]), float(lines[8].split(" ")[18])])
+        second_pos_err = np.array([float(lines[8].split(" ")[6]), float(lines[8].split(" ")[7]), float(lines[8].split(" ")[8])])
+        return [second_ener, total_ener, time_interaction, first_pos, second_pos, second_ener_err, total_ener_err, first_pos_err, second_pos_err]
       else:
         return [None]
   # Treating single events
@@ -479,14 +485,22 @@ def save_grb_data(data_file, filename, sat_info_list, bkg_data, mu_data, ergcut,
       single_ener = []
       single_time = []
       single_pos = []
+      compton_second_err = []
+      compton_ener_err = []
+      compton_firstpos_err = []
+      compton_secpos_err = []
       for event in data_pol:
         reading = readevt(event, ergcut)
-        if len(reading) == 5:
+        if len(reading) == 9:
           compton_second.append(reading[0])
           compton_ener.append(reading[1])
           compton_time.append(reading[2])
           compton_firstpos.append(reading[3])
           compton_secpos.append(reading[4])
+          compton_second_err.append(reading[5])
+          compton_ener_err.append(reading[6])
+          compton_firstpos_err.append(reading[7])
+          compton_secpos_err.append(reading[8])
         elif len(reading) == 3:
           single_ener.append(reading[0])
           single_time.append(reading[1])
@@ -499,7 +513,13 @@ def save_grb_data(data_file, filename, sat_info_list, bkg_data, mu_data, ergcut,
       single_pos = np.array(single_pos, dtype=array_dtype)
       compton_time = np.array(compton_time, dtype=array_dtype)
       single_time = np.array(single_time, dtype=array_dtype)
+      compton_ener_err = np.array(compton_ener_err, dtype=array_dtype)
+      compton_second_err = np.array(compton_second_err, dtype=array_dtype)
+      compton_firstpos_err = np.array(compton_firstpos_err, dtype=array_dtype)
+      compton_secpos_err = np.array(compton_secpos_err, dtype=array_dtype)
 
+      # ! Erreurs extraites mais pas à enregistrer ? juste traiter et enregistrer les erreurs une fois l'erreur sur les angles obtenue (pol par exemple)
+      # ! Estimer l'importance de l'erreur de polar from direction, pas convaincu que c'est utile
       # ! Recuperer erreur des fichiers avec readevt, erreur seulement sur les ev compton, ev single ne presentent pas d erreur sur l energie et la position donnee
       # ! erreur avec polar from energy
       # ! erreur probablement assez complexe avec angle
