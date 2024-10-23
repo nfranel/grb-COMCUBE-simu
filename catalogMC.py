@@ -188,8 +188,8 @@ class MCCatalog:
 
     print("Starting")
     thread_num = 60
-    mc_mode = "long_lum"
-    # mc_mode = "long_red"
+    # mc_mode = "long_lum"
+    mc_mode = "long_red"
     # mc_mode = "short_lum"
     # mc_mode = "short_red"
     # mc_mode = "mc"
@@ -220,13 +220,13 @@ class MCCatalog:
       comm = "Long-Redshift"
       if not (f"longred" in os.listdir("Sampled/")):
         os.mkdir("Sampled/longred")
-      param_list = build_params(0.42, 2.07, -0.7, 3.6, -0.65, -3, 1.12e+52, 0.25, 2.8, 3.5, 2.3, -0.53, -3.4, 2.8e52)
+      param_list = build_params([0.2, 0.3, 0.4, 0.5], [1.6, 1.8, 2, 2.2, 2.4], [-0.9, -0.8, -0.7, -0.6, -0.5], [2.6, 3.1, 3.6, 4.1], -0.65, -3, 1.12e+52, 0.25, 2.8, 3.5, 2.3, -0.53, -3.4, 2.8e52)
 
       histograms = self.run_mc(len(param_list), thread_number=thread_num, method=param_list, savefile=savefile)
       for ite_mc in range(len(histograms)):
         self.hist_plotter(ite_mc, histograms[ite_mc], param_list[ite_mc], comment=comm, savefile=savefile)
 
-      select_cols = ["long_ind1_lum", "long_ind2_lum", "long_lb", "log_pvalue"]
+      select_cols = ["long_rate", "long_ind1_z", "long_ind2_z", "long_zb", "log_pvalue"]
       df_selec = self.result_df[select_cols]
       plt.subplots(1, 1)
       sns.pairplot(df_selec, hue="log_pvalue", corner=True, plot_kws={'s': 10})
@@ -235,7 +235,7 @@ class MCCatalog:
 
     elif mc_mode == "short_lum":
       savefile = "Sampled/shortlum/shortfit_lum.csv"
-      comm = "Long-Luminosity"
+      comm = "Short-Luminosity"
       if not (f"shortlum" in os.listdir("Sampled/")):
         os.mkdir("Sampled/shortlum")
       param_list = build_params(0.42, 2.07, -0.7, 3.6, -0.65, -3, 1.12e+52, 0.25, 2.8, 3.5, 2.3, -0.53, -3.4, 2.8e52)
@@ -244,7 +244,7 @@ class MCCatalog:
       for ite_mc in range(len(histograms)):
         self.hist_plotter(ite_mc, histograms[ite_mc], param_list[ite_mc], comment=comm, savefile=savefile)
 
-      select_cols = ["long_ind1_lum", "long_ind2_lum", "long_lb", "log_pvalue"]
+      select_cols = ["short_ind1_lum", "short_ind2_lum", "short_lb", "log_pvalue"]
       df_selec = self.result_df[select_cols]
       plt.subplots(1, 1)
       sns.pairplot(df_selec, hue="log_pvalue", corner=True, plot_kws={'s': 10})
@@ -253,7 +253,7 @@ class MCCatalog:
 
     elif mc_mode == "short_red":
       savefile = "Sampled/shortred/shortfit_lum.csv"
-      comm = "Long-Luminosity"
+      comm = "Short-Redshift"
       if not (f"shortred" in os.listdir("Sampled/")):
         os.mkdir("Sampled/shortred")
       param_list = build_params(0.42, 2.07, -0.7, 3.6, -0.65, -3, 1.12e+52, 0.25, 2.8, 3.5, 2.3, -0.53, -3.4, 2.8e52)
@@ -262,7 +262,7 @@ class MCCatalog:
       for ite_mc in range(len(histograms)):
         self.hist_plotter(ite_mc, histograms[ite_mc], param_list[ite_mc], comment=comm, savefile=savefile)
 
-      select_cols = ["long_ind1_lum", "long_ind2_lum", "long_lb", "log_pvalue"]
+      select_cols = ["short_rate", "short_ind1_z", "short_ind2_z", "short_zb", "log_pvalue"]
       df_selec = self.result_df[select_cols]
       plt.subplots(1, 1)
       sns.pairplot(df_selec, hue="log_pvalue", corner=True, plot_kws={'s': 10})
@@ -271,7 +271,7 @@ class MCCatalog:
 
     elif mc_mode == "mc":
       savefile = "Sampled/mcfit/mc_fit.csv"
-      comm = "Long-Luminosity"
+      comm = "All fit"
       if not (f"mcfit" in os.listdir("Sampled/")):
         os.mkdir("Sampled/mcfit")
 
