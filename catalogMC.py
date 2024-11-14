@@ -236,8 +236,10 @@ class MCCatalog:
         os.mkdir("Sampled/longred")
       # param_list = build_params([0.2, 0.3, 0.4, 0.5], [1.2, 1.4, 1.6, 1.8, 2, 2.2, 2.4, 2.6], [-1.1, -0.9, -0.8, -0.7, -0.6, -0.5, -0.4], [2, 2.6, 3.1, 3.6, 4.1, 5], -0.65, -3, 1.12e+52, 0.25, 2.8, 3.5, 2.3, -0.53, -3.4, 2.8e52)
       # param_list = [[0.12, 2.07, -0.7, 3.6, -0.65, -3, 1.12e+52, 0.1, 2.8, 3.5, 2.3, -0.53, -3.4, 2.8e52]]
-      param_list = build_params([0.2, 0.4, 0.5], [1.3, 1.8, 2.4, 2.6], [-1.1, -0.8, -0.6, -0.4], [2, 2.6, 3.6, 4.1, 5], [-0.8, -0.7, -0.6, -0.3, -0.2], [-1.8, -2.1, -2.5, -3], [1e51, 5e51, 1e52, 2e52], 0.25, 2.8, 3.5, 2.3, -0.53, -3.4, 2.8e52)
+      # l_rate, l_ind1_z, l_ind2_z, l_zb, l_ind1, l_ind2, l_lb, s_rate, s_ind1_z, s_ind2_z, s_zb, s_ind1, s_ind2, s_lb
 
+      # param_list = build_params([0.2, 0.4, 0.5], [2.4, 2.6, 3.], [-1.1, -0.8, -0.6, -0.4], [2, 2.6, 3.6, 4.1, 5], [-0.8, -0.7, -0.6, -0.3, -0.2], [-1.8, -2.1, -2.5, -3], [1e51, 5e51, 1e52, 2e52], 0.25, 2.8, 3.5, 2.3, -0.53, -3.4, 2.8e52)
+      param_list = build_params(0.2, [2.4, 2.6, 3.], -0.8, 3.6, -0.6, -2.1, 1e52, 0.25, 2.8, 3.5, 2.3, -0.53, -3.4, 2.8e52)
       histograms = self.run_mc(len(param_list), thread_number=thread_num, method=param_list, savefile=savefile)
       for ite_mc in range(len(histograms)):
         self.hist_plotter(ite_mc, histograms[ite_mc], param_list[ite_mc], comment=comm, savefile=savefile)
