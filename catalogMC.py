@@ -217,9 +217,9 @@ class MCCatalog:
       param_list = build_params(0.42, 2.07, -0.7, 3.6,  [-0.8, -0.7, -0.6, -0.5, -0.4, -0.3, -0.2], [-1.8, -2.1, -2.4, -2.7, -3], [1e51, 5e51, 1e52, 2e52],
                                 0.25, 2.8, 3.5, 2.3, -0.53, -3.4, 2.8e52)
 
-      histograms = self.run_mc(len(param_list), thread_number=thread_num, method=param_list, savefile=savefile)
-      for ite_mc in range(len(histograms)):
-        self.hist_plotter(ite_mc, histograms[ite_mc], param_list[ite_mc], comment=comm, savefile=savefile)
+      self.run_mc(len(param_list), thread_number=thread_num, method=param_list, savefile=savefile, comment=comm)
+      # for ite_mc in range(len(histograms)):
+        # self.hist_plotter(ite_mc, histograms[ite_mc], param_list[ite_mc], comment=comm, savefile=savefile)
 
       select_cols = ["long_ind1_lum", "long_ind2_lum", "long_lb", "log_pvalue"]
       df_selec = self.result_df[select_cols]
@@ -240,10 +240,10 @@ class MCCatalog:
       # l_rate, l_ind1_z, l_ind2_z, l_zb, l_ind1, l_ind2, l_lb, s_rate, s_ind1_z, s_ind2_z, s_zb, s_ind1, s_ind2, s_lb
 
       param_list = build_params([0.2, 0.4, 0.5], [2.4, 2.6, 3.], [-1.1, -0.8, -0.6, -0.4], [2, 2.6, 3.6, 4.1, 5], [-0.8, -0.7, -0.6, -0.3, -0.2], [-1.8, -2.1, -2.5, -3], [1e51, 5e51, 1e52, 2e52], 0.25, 2.8, 3.5, 2.3, -0.53, -3.4, 2.8e52)
-      # param_list = build_params(0.2, [2.1, 2.2, 2.3], [-1.1, -0.8, -0.6, -0.4], [2, 2.6, 3.6, 4.1, 5], -0.6, -2.1, 1e52, 0.25, 2.8, 3.5, 2.3, -0.53, -3.4, 2.8e52)
-      histograms = self.run_mc(len(param_list), thread_number=thread_num, method=param_list, savefile=savefile)
-      for ite_mc in range(len(histograms)):
-        self.hist_plotter(ite_mc, histograms[ite_mc], param_list[ite_mc], comment=comm, savefile=savefile)
+      # param_list = build_params(0.2, 2.1, [-1.1, -0.6, -0.4], [2, 4.1, 5], -0.6, -2.1, 1e52, 0.25, 2.8, 3.5, 2.3, -0.53, -3.4, 2.8e52)
+      self.run_mc(len(param_list), thread_number=thread_num, method=param_list, savefile=savefile)
+      # for ite_mc in range(len(histograms)):
+      #   self.hist_plotter(ite_mc, histograms[ite_mc], param_list[ite_mc], comment=comm, savefile=savefile)
 
       select_cols = ["long_rate", "long_ind1_z", "long_ind2_z", "long_zb", "log_pvalue"]
       df_selec = self.result_df[select_cols]
@@ -261,9 +261,9 @@ class MCCatalog:
         os.mkdir("Sampled/shortlum")
       param_list = build_params(0.42, 2.07, -0.7, 3.6, -0.65, -3, 1.12e+52, 0.25, 2.8, 3.5, 2.3, -0.53, -3.4, 2.8e52)
 
-      histograms = self.run_mc(len(param_list), thread_number=thread_num, method=param_list, savefile=savefile)
-      for ite_mc in range(len(histograms)):
-        self.hist_plotter(ite_mc, histograms[ite_mc], param_list[ite_mc], comment=comm, savefile=savefile)
+      self.run_mc(len(param_list), thread_number=thread_num, method=param_list, savefile=savefile)
+      # for ite_mc in range(len(histograms)):
+      #   self.hist_plotter(ite_mc, histograms[ite_mc], param_list[ite_mc], comment=comm, savefile=savefile)
 
       select_cols = ["short_ind1_lum", "short_ind2_lum", "short_lb", "log_pvalue"]
       df_selec = self.result_df[select_cols]
@@ -281,9 +281,9 @@ class MCCatalog:
         os.mkdir("Sampled/shortred")
       param_list = build_params(0.42, 2.07, -0.7, 3.6, -0.65, -3, 1.12e+52, 0.25, 2.8, 3.5, 2.3, -0.53, -3.4, 2.8e52)
 
-      histograms = self.run_mc(len(param_list), thread_number=thread_num, method=param_list, savefile=savefile)
-      for ite_mc in range(len(histograms)):
-        self.hist_plotter(ite_mc, histograms[ite_mc], param_list[ite_mc], comment=comm, savefile=savefile)
+      self.run_mc(len(param_list), thread_number=thread_num, method=param_list, savefile=savefile)
+      # for ite_mc in range(len(histograms)):
+      #   self.hist_plotter(ite_mc, histograms[ite_mc], param_list[ite_mc], comment=comm, savefile=savefile)
 
       select_cols = ["short_rate", "short_ind1_z", "short_ind2_z", "short_zb", "log_pvalue"]
       df_selec = self.result_df[select_cols]
@@ -300,9 +300,9 @@ class MCCatalog:
       if not (f"mcfit" in os.listdir("Sampled/")):
         os.mkdir("Sampled/mcfit")
 
-      histograms = self.run_mc(mcmc_number, thread_number=thread_num, method=None, savefile=savefile)
-      for ite_mc in range(len(histograms)):
-        self.hist_plotter(ite_mc, histograms[ite_mc], None, comment=comm, savefile=savefile)
+      self.run_mc(mcmc_number, thread_number=thread_num, method=None, savefile=savefile)
+      # for ite_mc in range(len(histograms)):
+      #   self.hist_plotter(ite_mc, histograms[ite_mc], None, comment=comm, savefile=savefile)
 
       plt.subplots(1, 1)
       title = f"Log p-value on {self.cond_option}"
@@ -311,31 +311,21 @@ class MCCatalog:
       plt.savefig(f"{savefile.split('.csv')[0]}_df")
       plt.close()
 
-  def run_mc(self, run_number, thread_number=1, method=None, savefile=None):
+  def run_mc(self, run_number, thread_number=1, method=None, savefile=None, comment=""):
     print(f"Starting the run for {run_number} iterations")
     if thread_number == 'all':
       print("Parallel execution with all threads")
       with mp.Pool() as pool:
-        runs_ret = pool.starmap(self.get_sample, zip(range(run_number), repeat(method)))
+        rows_ret = pool.starmap(self.get_sample, zip(range(run_number), repeat(method), repeat(comment), repeat(savefile)))
     elif type(thread_number) is int and thread_number > 1:
       print(f"Parallel execution with {thread_number} threads")
       with mp.Pool(thread_number) as pool:
-        runs_ret = pool.starmap(self.get_sample, zip(range(run_number), repeat(method)))
+        rows_ret = pool.starmap(self.get_sample, zip(range(run_number), repeat(method), repeat(comment), repeat(savefile)))
     else:
-      # for ite in range(run_number):
-      runs_ret = [self.get_sample(ite, method=method) for ite in range(run_number)]
-    # print(runs_ret)
-    to_df = [run[-1] for run in runs_ret]
-    ret_hist = [run[:-1] for run in runs_ret]
-    self.result_df = pd.DataFrame(data=to_df, columns=self.columns)
+      rows_ret = [self.get_sample(ite, method=method, comment=comment, savefile=savefile) for ite in range(run_number)]
+    self.result_df = pd.DataFrame(data=rows_ret, columns=self.columns)
     if savefile is not None:
       self.result_df.to_csv(savefile, index=False)
-    # Care might have an error if only 1 catalog version is tested
-    # print("run ret : ", runs_ret)
-    # print("run ret[-1] : ", runs_ret[-1])
-    # print("len run ret : ", len(runs_ret))
-    # print("len ret_hist : ", len(ret_hist))
-    return ret_hist
 
   def get_params(self):
     l_rate_temp = equi_distri(self.l_rate_min, self.l_rate_max)
@@ -408,7 +398,7 @@ class MCCatalog:
     s_params = s_rate_temp, s_ind1_z_temp, s_ind2_z_temp, s_zb_temp, s_ind1_temp, s_ind2_temp, s_lb_temp, nshort_temp
     return l_params, s_params
 
-  def get_sample(self, run_iteration, method=None):
+  def get_sample(self, run_iteration, method=None, comment="", savefile=None):
     # Using a different seed for each thread, somehow the seed what the same without using it
     np.random.seed(os.getpid())
 
@@ -464,6 +454,9 @@ class MCCatalog:
       # print(data_row)
       print(f"Rejected : log_pvalue = {np.around(np.log10(condition[1]), 3)}     [ite {run_iteration}]")
 
+    list_param = l_rate_temp, l_ind1_z_temp, l_ind2_z_temp, l_zb_temp, l_ind1_temp, l_ind2_temp, l_lb_temp, s_rate_temp, s_ind1_z_temp, s_ind2_z_temp, s_zb_temp, s_ind1_temp, s_ind2_temp, s_lb_temp
+    self.hist_plotter(run_iteration, [l_m_flux_temp, l_p_flux_temp, l_flnc_temp, s_m_flux_temp, s_p_flux_temp, s_flnc_temp, np.around(np.log10(condition[1]), 3)], list_param, comment=comment, savefile=savefile)
+
     # creating histograms
     # smp_pflux_l_hist = np.histogram(l_p_flux_temp, bins=self.bin_flux_l[self.nfluxbin_l[0]:])[0]
     # smp_pflux_s_hist = np.histogram(s_p_flux_temp, bins=self.bin_flux_s[self.nfluxbin_s[0]:])[0]
@@ -477,7 +470,8 @@ class MCCatalog:
     # hist_s_p_flux_temp = np.histogram(s_p_flux_temp, bins=self.bin_flux_s)[0]
     # hist_s_flnc_temp = np.histogram(s_flnc_temp, bins=self.bin_flnc_s)[0]
     # return hist_l_m_flux_temp, hist_l_p_flux_temp, hist_l_flnc_temp, hist_s_m_flux_temp, hist_s_p_flux_temp, hist_s_flnc_temp
-    return [l_m_flux_temp, l_p_flux_temp, l_flnc_temp, s_m_flux_temp, s_p_flux_temp, s_flnc_temp, np.around(np.log10(condition[1]), 3), row]
+    # return [l_m_flux_temp, l_p_flux_temp, l_flnc_temp, s_m_flux_temp, s_p_flux_temp, s_flnc_temp, np.around(np.log10(condition[1]), 3), row]
+    return row
 
   def mcmc_condition(self, l_m_flux_temp, l_p_flux_temp, l_flnc_temp, s_m_flux_temp, s_p_flux_temp, s_flnc_temp, params=None):
     """
@@ -611,7 +605,7 @@ class MCCatalog:
     ax3s2.legend()
 
     if savefile is not None:
-      plt.savefig(f"{savefile.split('.csv')[0]}_{iteration}")
+      plt.savefig(f"{int(histos[6])}-{savefile.split('.csv')[0]}_{iteration}")
     plt.close(fig1)
 
     # plt.show()
