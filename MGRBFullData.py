@@ -67,16 +67,18 @@ class GRBFullData:
     self.single_time = []                       # 1D concatenation        # Single
     # self.hit_time = []                          # 1D concatenation        # Trigger quality selection
     self.pol = None                             # 1D concatenation        # Compton
+    # self.pol_err = None   !update makeconst                      # 1D concatenation        # Compton
     self.polar_from_position = None             # 1D concatenation        # Compton
     # This polar angle is the one considered as compton scatter angle by mimrec
     self.polar_from_energy = None               # 1D concatenation        # Compton
+    # self.polar_from_energy_err = None    !update makeconst           # 1D concatenation        # Compton
     self.arm_pol = None                         # 1D concatenation        # Compton
     self.azim_angle_corrected = False           # Set to true             #
     ###################################################################################################################
     # interaction position attributes
-    compton_firstpos = []
-    compton_secpos = []
-    single_pos = []
+    # compton_firstpos = []
+    # compton_secpos = []
+    # single_pos = []
     self.compton_first_detector = []            # 1D concatenation        # Compton
     self.compton_sec_detector = []              # 1D concatenation        # Compton
     self.single_detector = []                   # 1D concatenation        # Single
@@ -85,6 +87,8 @@ class GRBFullData:
     # Set using extracted data
     self.s_eff_compton = 0                      # Summed                  # Compton
     self.s_eff_single = 0                       # Summed                  # Single
+    self.s_eff_compton_err = 0                  # propagated sum
+    self.s_eff_single_err = 0                   # propagated sum
     self.single = 0                             # Summed                  # Single
     self.single_cr = 0                          # Summed                  # Single
     self.compton = 0                            # Summed                  # Compton
@@ -92,17 +96,21 @@ class GRBFullData:
 
     self.bins = None                            # All the same            #
     self.mdp = None                             # Not changed             #
+    self.mdp_err = None                         # Not changed             #
     self.hits_snrs = None                       # Not changed             #
     self.compton_snrs = None                    # Not changed             #
     self.single_snrs = None                     # Not changed             #
+    self.hits_snrs_err = None                   # Not changed             #
+    self.compton_snrs_err = None                # Not changed             #
+    self.single_snrs_err = None                 # Not changed             #
     ###################################################################################################################
     # Attributes that are used while making const
     self.n_sat_detect = 1                       # Summed                  #
-    # Attributes that are used while determining the deterctor where the interaction occured
+    # Attributes that are used while determining the detector where the interaction occured
     self.calor = 0                              # Summed                  # Trigger quality selection ?
     self.dsssd = 0                              # Summed                  # Trigger quality selection ?
     self.side = 0                               # Summed                  # Trigger quality selection ?
-    self.total_hits = 0
+    self.total_hits = 0                         # Summed                  # Trigger quality selection ?
     ###################################################################################################################
     self.const_beneficial_compton = True       # Appened                 #
     self.const_beneficial_single = True        # Appened                 #
@@ -254,6 +262,9 @@ class GRBFullData:
     else:
       self.s_eff_compton = self.compton_cr * source_duration / source_fluence
       self.s_eff_single = self.single_cr * source_duration / source_fluence
+      # Error of source fluence taken as only a poissonian error as we consider the spectrum as a fixed information
+      self.s_eff_compton_err = np.sqrt(self.compton_cr * source_duration / source_fluence**2 + (self.compton_cr * source_duration)**2 / source_fluence**3)
+      self.s_eff_single_err = np.sqrt(self.single_cr * source_duration / source_fluence**2 + (self.single_cr * source_duration)**2 / source_fluence**3)
 
     #################################################################################################################
     # Calculation of effective area
@@ -263,7 +274,7 @@ class GRBFullData:
     #################################################################################################################
     # Calculation of mdp
     #################################################################################################################
-    self.mdp = calc_mdp(self.compton_cr * source_duration, self.compton_b_rate * source_duration, self.mu100_ref)
+    self.mdp, self.mdp_err = calc_mdp(self.compton_cr * source_duration, self.compton_b_rate * source_duration, self.mu100_ref, mu100_err=self.mu100_err_ref)
 
   def calculates_snrs(self, source_duration):
     """
@@ -275,6 +286,9 @@ class GRBFullData:
     self.hits_snrs = []
     self.compton_snrs = []
     self.single_snrs = []
+    self.hits_snrs_err = []
+    self.compton_snrs_err = []
+    self.single_snrs_err = []
 
     for int_time in integration_times:
       bins = np.arange(0, source_duration + int_time, int_time)
@@ -282,17 +296,23 @@ class GRBFullData:
       hit_hist = np.histogram(np.concatenate((self.compton_time, self.compton_time, self.single_time)), bins=bins)[0]
       hit_argmax = np.argmax(hit_hist)
       hit_max_hist = hit_hist[hit_argmax]
-      self.hits_snrs.append(calc_snr(hit_max_hist, self.hit_b_rate * int_time))
+      snr_ret1 = calc_snr(hit_max_hist, self.hit_b_rate * int_time)
+      self.hits_snrs.append(snr_ret1[0])
+      self.hits_snrs_err.append(snr_ret1[1])
 
       compton_hist = np.histogram(self.compton_time, bins=bins)[0]
       com_argmax = np.argmax(compton_hist)
       com_max_hist = compton_hist[com_argmax]
-      self.compton_snrs.append(calc_snr(com_max_hist, self.compton_b_rate * int_time))
+      snr_ret2 = calc_snr(com_max_hist, self.compton_b_rate * int_time)
+      self.compton_snrs.append(snr_ret2[0])
+      self.compton_snrs_err.append(snr_ret2[1])
 
       single_hist = np.histogram(self.single_time, bins=bins)[0]
       sin_argmax = np.argmax(single_hist)
       sin_max_hist = single_hist[sin_argmax]
-      self.single_snrs.append(calc_snr(sin_max_hist, self.single_b_rate * int_time))
+      snr_ret3 = calc_snr(sin_max_hist, self.single_b_rate * int_time)
+      self.single_snrs.append(snr_ret3[0])
+      self.single_snrs_err.append(snr_ret3[1])
 
   def set_beneficial_compton(self, threshold=2.6):
     """

@@ -20,6 +20,7 @@ Gpc_to_cm = Gpc_to_cm.to_value("cm")
 m_elec = 9.1094e-31  # kg
 c_light = 2.99792458e+8  # m/s
 charge_elem = 1.6021e-19  # C
+electron_rest_ener = m_elec * c_light ** 2 / charge_elem / 1000  # electron rest energy in keV
 m_earth = 5.9722e24  # kg
 R_earth = 6371  # km
 G_const = 6.67430e-11  # m3/kg/s2
@@ -129,7 +130,7 @@ def treat_pe(event_ener):
   return float(event_ener)
 
 
-def calculate_polar_angle(ener_sec, ener_tot):
+def calculate_polar_angle(ener_sec, ener_tot, ener_sec_err=None, ener_tot_err=None):
   """
   Function to calculate the polar angle using the energy deposits of a compton event
     (Most of the time first interaction and final absorption)
@@ -137,11 +138,31 @@ def calculate_polar_angle(ener_sec, ener_tot):
   By construction of cos_value, the value cannot exceed 1.
   :param ener_sec: Energy of second deposit
   :param ener_tot: Total energy of deposits
-  # TODO Find the unit for these energies, probably keV
+  # base unit of mc**2 is Joule, dividing it by charge_elem and 1000 makes it in keV to correspond with E2 and Etot that are in keV
   """
-  cos_value = 1 - m_elec * c_light ** 2 / charge_elem / 1000 * (1 / ener_sec - 1 / ener_tot)
+  cos_value = 1 - electron_rest_ener * (1 / ener_sec - 1 / ener_tot)
   cos_value_filtered = np.where(cos_value < -1, -1, np.where(cos_value > 1, 1, cos_value))
-  return np.rad2deg(np.arccos(cos_value_filtered))
+  if ener_sec_err is not None and ener_tot_err is not None:
+    ener_first_err = ener_tot_err - ener_sec_err
+    err = np.where(cos_value**2 == 1, np.nan, electron_rest_ener / np.sqrt(1 - cos_value**2) * np.sqrt(ener_first_err**2 / ener_tot**4 + ((1/ener_sec**2 - 1/ener_tot**2) * ener_sec_err)**2))
+    # e2, etot = ener_sec-ener_sec_err, ener_tot-ener_tot_err
+    # val1 = np.arccos(1 - electron_rest_ener * (1 / e2 - 1 / etot))
+    # e2, etot = ener_sec-ener_sec_err, ener_tot+ener_tot_err
+    # val2 = np.arccos(1 - electron_rest_ener * (1 / e2 - 1 / etot))
+    # e2, etot = ener_sec+ener_sec_err, ener_tot-ener_tot_err
+    # val3 = np.arccos(1 - electron_rest_ener * (1 / e2 - 1 / etot))
+    # e2, etot = ener_sec+ener_sec_err, ener_tot+ener_tot_err
+    # val4 = np.arccos(1 - electron_rest_ener * (1 / e2 - 1 / etot))
+    # # for ite in range(len(val1)):
+    # #   # print(val1, val2, val3, val4)
+    # #   print("err3 : ", np.rad2deg((np.max([val1[ite], val2[ite], val3[ite], val4[ite]]) - np.min([val1[ite], val2[ite], val3[ite], val4[ite]])) / 2))
+    # errdiff = (np.max([val1, val2, val3, val4]) - np.min([val1, val2, val3, val4])) / 2
+    # # print(f"polar angle : {np.rad2deg(np.arccos(cos_value_filtered)):.4f}")
+    # # print(f"err : {np.rad2deg(err):.4f}")
+    # # print(f"errdiff : {np.rad2deg(errdiff):.4f}")
+  else:
+    err = 0
+  return np.rad2deg(np.arccos(cos_value_filtered)), np.rad2deg(err)
 
 
 def inwindow(energy, ergcut):
@@ -465,16 +486,31 @@ def save_grb_data(data_file, filename, sat_info_list, bkg_data, mu_data, ergcut,
       print("Extracted file exists, re-writing is forced", end="\r")
     else:
       print("Extracted files does not exist : Extraction in progress", end="\r")
+
+    #################################################################################################################
+    #        Extracting position information from data_file name and the sat_info, plus the background and mu100 information
+    #################################################################################################################
+    dec_world_frame, ra_world_frame, burst_time, source_name, num_sim, num_sat = fname2decratime(data_file)
+    # Error on estimating the GRB direction (obtained with Alexey's estimations)
+    dec_wf_error, ra_wf_error = 1, 1
+    sat_info = sat_info_list[num_sat]
+    # sat_dec_wf, sat_ra_wf = sat_info_2_decra(sat_info, burst_time)
+    if sat_info is not None:
+      sat_dec_wf, sat_ra_wf, sat_alt, compton_b_rate, single_b_rate = affect_bkg(sat_info, burst_time, bkg_data)
+      hit_b_rate = compton_b_rate * 2 + single_b_rate
+    else:
+      raise ValueError("Satellite information given is None. Please give satellite information for the analyse to work.")
+    # Error on estimating the satellite pointing direction (takes into account the pointing itself and the effect of the satellite not being exactly in the right position - very minor effect)
+    dec_sat_wf_error, ra_sat_wf_error = 0.5, 0.5
+    expected_pa, grb_dec_sat_frame, grb_ra_sat_frame, grb_dec_sf_err, grb_ra_sf_err = grb_decrapol_worldf2satf(dec_world_frame, ra_world_frame, sat_dec_wf, sat_ra_wf, dec_grb_wf_err=dec_wf_error,
+                                                                                                               ra_grb_wf_err=ra_wf_error, dec_sat_wf_err=dec_sat_wf_error, ra_sat_wf_err=ra_sat_wf_error)[:5]
+
+    mu100_ref, mu100_err_ref, s_eff_compton_ref, s_eff_single_ref = closest_mufile(grb_dec_sat_frame, grb_ra_sat_frame, mu_data)
+
+    #################################################################################################################
+    #        Readding file and saving values
+    #################################################################################################################
     with open(filename, "w") as f:
-      # print(data_file)
-      dec_world_frame, ra_world_frame, burst_time, source_name, num_sim, num_sat = fname2decratime(data_file)
-      # Error on estimating the GRB direction (obtained with Alexey's estimations)
-      dec_wf_error, ra_wf_error = 1, 1
-      sat_info = sat_info_list[num_sat]
-      dec_sat_wf, ra_sat_wf = sat_info_2_decra(sat_info, burst_time)
-      # Error on estimating the satellite pointing direction (takes into account the pointing itself and the effect of the satellite not being exactly in the right position - very minor effect)
-      dec_sat_wf_error, ra_sat_wf_error = 0.5, 0.5
-      expected_pa, grb_dec_sat_frame, grb_ra_sat_frame, grb_dec_sf_err, grb_ra_sf_err = grb_decrapol_worldf2satf(dec_world_frame, ra_world_frame, dec_sat_wf, ra_sat_wf)[:5]
       # Extracting the data from first file
       data_pol = readfile(data_file)
       compton_second = []
@@ -517,9 +553,19 @@ def save_grb_data(data_file, filename, sat_info_list, bkg_data, mu_data, ergcut,
       compton_second_err = np.array(compton_second_err, dtype=array_dtype)
       compton_firstpos_err = np.array(compton_firstpos_err, dtype=array_dtype)
       compton_secpos_err = np.array(compton_secpos_err, dtype=array_dtype)
+      scat_vec_err = np.sqrt(compton_secpos_err**2 + compton_firstpos_err**2)
+
+      # ok ! grb_decrapol_worldf2satf tested and linked with all the other parts
+      # ok ! calculate_polar_angle    tested     linked
+      # ok ! angle                    tested     linked
+
+      # ok ! Use dec ra errors
+      # tbd if needed ! Use polar_from_energy error
+      # ! Use pol errors
 
       # ! Erreurs extraites mais pas à enregistrer ? juste traiter et enregistrer les erreurs une fois l'erreur sur les angles obtenue (pol par exemple)
       # ! Estimer l'importance de l'erreur de polar from direction, pas convaincu que c'est utile
+      # ! Erreurs pas prise en compte pour les backgrounds (energie et position) puisque pas d'intéret dans la détermination de la direction de la source et d'une quelconque polarisation (considéré unpolarized)
       # ! Recuperer erreur des fichiers avec readevt, erreur seulement sur les ev compton, ev single ne presentent pas d erreur sur l energie et la position donnee
       # ! erreur avec polar from energy
       # ! erreur probablement assez complexe avec angle
@@ -534,8 +580,8 @@ def save_grb_data(data_file, filename, sat_info_list, bkg_data, mu_data, ergcut,
       #################################################################################################################
       # Calculating the polar angle with energy values and compton azim and polar scattering angles from the kinematics
       # polar and position angle stored in deg
-      polar_from_energy = calculate_polar_angle(compton_second, compton_ener)
-      pol, polar_from_position = angle(compton_secpos - compton_firstpos, grb_dec_sat_frame, grb_ra_sat_frame, source_name, num_sim, num_sat)
+      polar_from_energy, polar_from_energy_err = calculate_polar_angle(compton_second, compton_ener, ener_sec_err=compton_second_err, ener_tot_err=compton_ener_err)
+      pol, polar_from_position, pol_err = angle(compton_secpos - compton_firstpos, grb_dec_sat_frame, grb_ra_sat_frame, source_name, num_sim, num_sat, scatter_vector_err=scat_vec_err, grb_dec_sf_err=grb_dec_sf_err, grb_ra_sf_err=grb_ra_sf_err)
 
       # Calculating the arm and extracting the indexes of correct arm events (arm in deg)
       arm_pol = np.array(polar_from_position - polar_from_energy, dtype=array_dtype)
@@ -550,16 +596,6 @@ def save_grb_data(data_file, filename, sat_info_list, bkg_data, mu_data, ergcut,
       polar_from_position = np.array(polar_from_position[accepted_arm_pol], dtype=array_dtype)
       pol = np.array(pol[accepted_arm_pol], dtype=array_dtype)
       hit_time = np.concatenate((compton_time, compton_time, single_time))
-
-      #################################################################################################################
-      #        Filling the fields with bkg and mu100 files
-      #################################################################################################################
-      if sat_info is not None:
-        sat_dec_wf, sat_ra_wf, sat_alt, compton_b_rate, single_b_rate = affect_bkg(sat_info, burst_time, bkg_data)
-        hit_b_rate = compton_b_rate * 2 + single_b_rate
-      else:
-        raise ValueError("Satellite information given is None. Please give satellite information for the analyse to work.")
-      mu100_ref, mu100_err_ref, s_eff_compton_ref, s_eff_single_ref = closest_mufile(grb_dec_sat_frame, grb_ra_sat_frame, mu_data)
 
       #################################################################################################################
       #     Finding the detector of interaction for each event
@@ -613,8 +649,10 @@ def save_grb_data(data_file, filename, sat_info_list, bkg_data, mu_data, ergcut,
       save_value(f, single_time)
       # save_value(f, hit_time)
       save_value(f, pol)
+      # save_value(f, pol_err)    ! To add later
       save_value(f, polar_from_position)
       save_value(f, polar_from_energy)
+      # save_value(f, polar_from_energy_err)    ! To add later
       save_value(f, arm_pol)
       save_value(f, compton_first_detector)
       save_value(f, compton_sec_detector)
@@ -632,6 +670,7 @@ def numerical_array_extract(value, array_dtype):
   else:
     return np.array(value.split("|"), dtype=array_dtype)
 
+
 def det_pos_array_extract(value):
   if len(value.split("|")) == 1 and value.split("|")[0] == "":
     return np.array([])
@@ -639,7 +678,7 @@ def det_pos_array_extract(value):
     return np.array(value.split("|"))
 
 
-def angle(scatter_vector, grb_dec_sf, grb_ra_sf, source_name, num_sim, num_sat):  # TODO : limits on variables
+def angle(scatter_vector, grb_dec_sf, grb_ra_sf, source_name, num_sim, num_sat, scatter_vector_err=None, grb_dec_sf_err=None, grb_ra_sf_err=None):  # TODO : limits on variables
   """
   Calculate the azimuthal and polar Compton angles : Transforms the compton scattered gamma-ray vector
   (initialy in sat frame) into a new referential corresponding to the direction of the source.
@@ -660,7 +699,7 @@ def angle(scatter_vector, grb_dec_sf, grb_ra_sf, source_name, num_sim, num_sat):
   """
   if len(scatter_vector) == 0:
     print(f"There is no compton event detected for source {source_name}, simulation {num_sim} and satellite {num_sat}")
-    return np.array([]), np.array([])
+    return np.array([]), np.array([]), np.array([])
   grb_dec_sf, grb_ra_sf = np.deg2rad(grb_dec_sf), np.deg2rad(grb_ra_sf)
 
   # Changing the direction of the vector to be in adequation with MEGAlib's functionning
@@ -668,6 +707,7 @@ def angle(scatter_vector, grb_dec_sf, grb_ra_sf, source_name, num_sim, num_sat):
   MEGAlib_direction = True
   if MEGAlib_direction:
     scatter_vector = -scatter_vector
+  init_vector = scatter_vector
 
   # Pluging in some MEGAlib magic :
   # Making the norm of the vector 1 and reshaping it so that numpy operations are done properly
@@ -690,7 +730,42 @@ def angle(scatter_vector, grb_dec_sf, grb_ra_sf, source_name, num_sim, num_sat):
     polar = np.rad2deg(np.arccos(scatter_vector[:, 2]))
   # Figure out a good arctan
   azim = np.rad2deg(np.arctan2(scatter_vector[:, 1], scatter_vector[:, 0]))
-  return azim, polar
+
+  if scatter_vector_err is not None and grb_dec_sf_err is not None and grb_ra_sf_err is not None:
+    grb_dec_sf_err, grb_ra_sf_err = np.deg2rad(grb_dec_sf_err), np.deg2rad(grb_ra_sf_err)
+
+    def angle_u(init_scat_vector, pg):
+      fx, fy = init_scat_vector[:, 0], init_scat_vector[:, 1]
+      return fx * np.sin(-pg) + fy * np.cos(-pg)
+
+    def angle_v(init_scat_vector, tg, pg):
+      fx, fy, fz = init_scat_vector[:, 0], init_scat_vector[:, 1], init_scat_vector[:, 2]
+      return fx * np.cos(-pg) * np.cos(-tg) - fy * np.sin(-pg) * np.cos(-tg) + fz * np.sin(-tg)
+
+    def angleder_u5(init_scat_vector, pg):
+      fx, fy = init_scat_vector[:, 0], init_scat_vector[:, 1]
+      return - fx * np.cos(-pg) + fy * np.sin(-pg)
+
+    def angleder_v4(init_scat_vector, tg, pg):
+      fx, fy, fz = init_scat_vector[:, 0], init_scat_vector[:, 1], init_scat_vector[:, 2]
+      return fx * np.cos(-pg) * np.sin(-tg) - fy * np.sin(-pg) * np.sin(-tg) - fz * np.cos(-tg)
+
+    def angleder_v5(init_scat_vector, tg, pg):
+      fx, fy = init_scat_vector[:, 0], init_scat_vector[:, 1]
+      return fx * np.sin(-pg) * np.cos(-tg) + fy * np.cos(-pg) * np.cos(-tg)
+
+    val_u = angle_u(init_vector, grb_ra_sf)
+    val_v = angle_v(init_vector, grb_dec_sf, grb_ra_sf)
+
+    azim_err = np.where(val_v == 0, np.nan, (np.sqrt(((np.sin(-grb_ra_sf) * val_v - np.cos(-grb_ra_sf) * np.cos(-grb_dec_sf) * val_u) * scatter_vector_err[:, 0])**2 +
+                       ((np.cos(-grb_ra_sf) * val_v + np.sin(-grb_ra_sf) * np.cos(-grb_dec_sf) * val_u) * scatter_vector_err[:, 1])**2 +
+                       (np.sin(-grb_dec_sf) * val_u * scatter_vector_err[:, 2])**2 +
+                       (angleder_v4(init_vector, grb_dec_sf, grb_ra_sf) * val_u * grb_dec_sf_err)**2 +
+                       ((angleder_u5(init_vector, grb_ra_sf) * val_v - angleder_v5(init_vector, grb_dec_sf, grb_ra_sf) * val_u) * grb_ra_sf_err)**2) /
+                (val_v ** 2 * (1 + (val_u / val_v) ** 2))))
+  else:
+    azim_err = 0
+  return azim, polar, azim_err
 
 
 def modulation_func(x, pa, mu, S):
@@ -724,21 +799,52 @@ def set_bins(bin_mode, data=None):
   return bins
 
 
-def err_calculation(pol, unpol, binwidth):
+def err_calculation(polhist, unpolhist, binwidth, polhist_err, unpolhist_err):
   """
   Calculation of the errorbar of the corrected polarigram according to megalib's way
-  :param pol:      list,   bins for the polarized polarigram
-  :param unpol:    list,   bins for the unpolarized polarigram
+  Obtained by propagating the error of pol, unpol and mean with equation pol/unpol*mean
+  :param polhist:      list,   bins for the polarized polarigram
+  :param unpolhist:    list,   bins for the unpolarized polarigram
   :param binwidth: list,   bin widths
   """
-  nbins = len(pol)
-  mean_unpol = np.mean(unpol)
+  nbins = len(polhist)
+  mean_unpol = np.mean(unpolhist)
 
-  uncertainty = (pol/unpol**2*mean_unpol*np.sqrt(unpol))**2 + (mean_unpol/unpol*np.sqrt(pol))**2
-  for ite_j in range(nbins):
-    uncertainty += (pol / unpol / nbins * np.sqrt(unpol[ite_j])) ** 2
+  # uncertainty = (pol/unpol**2*mean_unpol*np.sqrt(unpol))**2 + (mean_unpol/unpol*np.sqrt(pol))**2
+  # for ite_j in range(nbins):
+  #   uncertainty += (pol / unpol / nbins * np.sqrt(unpol[ite_j])) ** 2
+  uncertainty = (mean_unpol / unpolhist) ** 2 * (polhist + polhist_err) + (polhist * mean_unpol / unpolhist**2)**2 * (unpolhist + unpolhist_err) + (polhist / unpolhist) ** 2 * mean_unpol / nbins
   error = np.sqrt(uncertainty)
   return error/binwidth
+
+
+def pol_unpol_hist_err(pol, unpol, pol_err, unpol_err, bins):
+  """
+
+  """
+  polp = np.where(pol + pol_err > 180, pol + pol_err - 360, pol + pol_err)
+  polm = np.where(pol - pol_err < -180, 360 - (pol - pol_err), pol - pol_err)
+  hist_pol = np.histogram(pol, bins)[0]
+
+  hist_polp = np.histogram(polp, bins)[0] - hist_pol
+  hist_polm = np.histogram(polm, bins)[0] - hist_pol
+
+  histpolerr = np.where(hist_polp * hist_polm >= 0, np.abs(hist_polp + hist_polm), np.where(np.abs(hist_polp) > np.abs(hist_polm), np.abs(hist_polp), np.abs(hist_polm)))
+  # print("en plus dans hist_err+ / histpol", hist_polp)
+  # print("en plus dans hist_err- / histpol", hist_polm)
+  # print(" hist polerr", histpolerr)
+  # print("hist_pol", hist_pol)
+
+  unpolp = np.where(unpol + unpol_err > 180, unpol + unpol_err - 360, unpol + unpol_err)
+  unpolm = np.where(unpol - unpol_err < -180, 360 - (unpol - unpol_err), unpol - unpol_err)
+  hist_unpol = np.histogram(unpol, bins)[0]
+
+  hist_unpolp = np.histogram(unpolp, bins)[0] - hist_unpol
+  hist_unpolm = np.histogram(unpolm, bins)[0] - hist_unpol
+
+  histunpolerr = np.where(hist_unpolp * hist_unpolm >= 0, np.abs(hist_unpolp + hist_unpolm), np.where(np.abs(hist_unpolp) > np.abs(hist_unpolm), np.abs(hist_unpolp), np.abs(hist_unpolm)))
+
+  return histpolerr, histunpolerr
 
 
 def rescale_cr_to_GBM_pf(cr, GBM_mean_flux, GBM_peak_flux):
@@ -763,24 +869,33 @@ def calc_snr(S, B, C=0):
   :returns: SNR (as defined in Sarah Antier's PhD thesis)
   """
   snr = S / np.sqrt(B + C)
+  snr_err = np.sqrt(S/(B + C) + S**2 * B/(4*(B+C)**3))
   if snr >= 0:
-    return snr
+    return snr, snr_err
   else:
-    return 0
+    return 0, 0
 
 
-def calc_mdp(S, B, mu100, nsigma=4.29):
+def calc_mdp(S, B, mu100, nsigma=4.29, mu100_err=None):
   """
   Calculates the minimum detectable polarization for a burst
+  Error is calculated with error propagation
   :param S: number of expected counts from the burst
   :param B: number of expected counts from the background
   :param mu100: modulation factor
   :param nsigma: significance of the result in number of sigmas, default=4.29 for 99% CL
   """
   if S == 0:
-    return np.inf
+    mdp = np.inf
+    mdp_err = 0
   else:
-    return nsigma * np.sqrt(S + B) / (mu100 * S)
+    if mu100_err is not None:
+      mdp_err = np.sqrt((nsigma / (mu100 * S**2) * (S/2 + B))**2 * S + (nsigma / (2 * mu100 * S))**2 * B + (nsigma * (S + B) * mu100_err / (S * mu100**2))**2) / np.sqrt(S+B)
+    else:
+      mdp_err = 0
+    mdp = nsigma * np.sqrt(S + B) / (mu100 * S)
+
+  return mdp, mdp_err
 
 
 def closest_bkg_values(sat_dec, sat_ra, sat_alt, bkg_list):  # TODO : limits on variables
@@ -1024,6 +1139,7 @@ def grb_decrapol_worldf2satf(dec_grb_wf, ra_grb_wf, dec_sat_wf, ra_sat_wf, dec_g
   :param dec_sat_wf : satellite dec in world frame [deg]
   :param ra_sat_wf : satellite ra in world frame [deg]
   :returns: pol_angle, dec_grb_sf, ra_grb_sf, dec_pol_sf, ra_pol_sf [deg]
+  CARREFUL : not tested for variables being numpy arrays, validated only with floats
   """
   # Variable domain verification verif on ra_max is done without function to make things easier in the param file
   dec_verif(dec_grb_wf)
@@ -1052,61 +1168,73 @@ def grb_decrapol_worldf2satf(dec_grb_wf, ra_grb_wf, dec_sat_wf, ra_sat_wf, dec_g
   # TESTED WITH ANOTHER METHOD, COMPATIBLE RESULTS
   if dec_grb_wf_err is not None and ra_grb_wf_err is not None and dec_sat_wf_err is not None and ra_sat_wf_err is not None:
     dec_grb_wf_err, ra_grb_wf_err, dec_sat_wf_err, ra_sat_wf_err = np.deg2rad(dec_grb_wf_err), np.deg2rad(ra_grb_wf_err), np.deg2rad(dec_sat_wf_err), np.deg2rad(ra_sat_wf_err)
-    def fun1(tg, pg, ts, ps):
+
+    #########################################################################################################################################################
+    # dec err calculation functions
+    #########################################################################################################################################################
+    def utheta(tg, pg, ts, ps):
       return np.sin(tg) * np.cos(pg) * np.sin(ts) * np.cos(ps) + np.sin(tg) * np.sin(pg) * np.sin(ts) * np.sin(ps) + np.cos(tg) * np.cos(ts)
 
-    def der1(tg, pg, ts, ps):
+    def dertheta1(tg, pg, ts, ps):
       return np.cos(tg) * np.cos(pg) * np.sin(ts) * np.cos(ps) + np.cos(tg) * np.sin(pg) * np.sin(ts) * np.sin(ps) - np.sin(tg) * np.cos(ts)
 
-    def der2(tg, pg, ts, ps):
+    def dertheta2(tg, pg, ts, ps):
       return - np.sin(tg) * np.sin(pg) * np.sin(ts) * np.cos(ps) + np.sin(tg) * np.cos(pg) * np.sin(ts) * np.sin(ps)
 
-    def der3(tg, pg, ts, ps):
+    def dertheta3(tg, pg, ts, ps):
       return np.sin(tg) * np.cos(pg) * np.cos(ts) * np.cos(ps) + np.sin(tg) * np.sin(pg) * np.cos(ts) * np.sin(ps) - np.cos(tg) * np.sin(ts)
 
-    def der4(tg, pg, ts, ps):
+    def dertheta4(tg, pg, ts, ps):
       return - np.sin(tg) * np.cos(pg) * np.sin(ts) * np.sin(ps) + np.sin(tg) * np.sin(pg) * np.sin(ts) * np.cos(ps)
 
-    def arccos_der(der_func, tg, pg, ts, ps):
-      return np.abs(der_func(tg, pg, ts, ps)) / np.sqrt(1 - fun1(dec_grb_wf, ra_grb_wf, dec_sat_wf, ra_sat_wf)**2)
-
-    dec_grb_sf_err = arccos_der(der1, dec_grb_wf, ra_grb_wf, dec_sat_wf, ra_sat_wf) * dec_grb_wf_err + arccos_der(der2, dec_grb_wf, ra_grb_wf, dec_sat_wf, ra_sat_wf) * ra_grb_wf_err + arccos_der(der3, dec_grb_wf, ra_grb_wf, dec_sat_wf, ra_sat_wf) * dec_sat_wf_err + arccos_der(der4, dec_grb_wf, ra_grb_wf, dec_sat_wf, ra_sat_wf) * ra_sat_wf_err
-
-    def fun2(tg, pg, ts, ps):
+    #########################################################################################################################################################
+    # ra err calculation functions
+    #########################################################################################################################################################
+    def uphi(tg, pg, ts, ps):
       return - np.sin(tg) * np.cos(pg) * np.cos(ts) * np.cos(ps) - np.sin(tg) * np.sin(pg) * np.cos(ts) * np.sin(ps) + np.cos(tg) * np.sin(ts)
 
-    def fun3(tg, pg, ps):
+    def vphi(tg, pg, ps):
       return - np.sin(tg) * np.cos(pg) * np.sin(ps) + np.sin(tg) * np.sin(pg) * np.cos(ps)
 
-    def der_num1(tg, pg, ts, ps):
+    def derphi_u1(tg, pg, ts, ps):
       return - np.cos(tg) * np.cos(pg) * np.cos(ts) * np.cos(ps) - np.cos(tg) * np.sin(pg) * np.cos(ts) * np.sin(ps) - np.sin(tg) * np.sin(ts)
 
-    def der_num2(tg, pg, ts, ps):
+    def derphi_u2(tg, pg, ts, ps):
       return np.sin(tg) * np.sin(pg) * np.cos(ts) * np.cos(ps) - np.sin(tg) * np.cos(pg) * np.cos(ts) * np.sin(ps)
 
-    def der_num3(tg, pg, ts, ps):
+    def derphi_u3(tg, pg, ts, ps):
       return np.sin(tg) * np.cos(pg) * np.sin(ts) * np.cos(ps) + np.sin(tg) * np.sin(pg) * np.sin(ts) * np.sin(ps) + np.cos(tg) * np.cos(ts)
 
-    def der_num4(tg, pg, ts, ps):
+    def derphi_u4(tg, pg, ts, ps):
       return np.sin(tg) * np.cos(pg) * np.cos(ts) * np.sin(ps) - np.sin(tg) * np.sin(pg) * np.cos(ts) * np.cos(ps)
 
-    def der_denom1(tg, pg, ps):
+    def derphi_v1(tg, pg, ps):
       return - np.cos(tg) * np.cos(pg) * np.sin(ps) + np.cos(tg) * np.sin(pg) * np.cos(ps)
 
-    def der_denom2(tg, pg, ps):
+    def derphi_v2(tg, pg, ps):
       return np.sin(tg) * np.sin(pg) * np.sin(ps) + np.sin(tg) * np.cos(pg) * np.cos(ps)
 
-    def der_denom4(tg, pg, ps):
+    def derphi_v4(tg, pg, ps):
       return - np.sin(tg) * np.cos(pg) * np.cos(ps) - np.sin(tg) * np.sin(pg) * np.sin(ps)
 
-    def comp_der(tg, pg, ts, ps, dernum, derdenom):
-      return (dernum(tg, pg, ts, ps) * fun3(tg, pg, ps) - fun2(tg, pg, ts, ps) * derdenom(tg, pg, ps)) / fun3(tg, pg, ps) ** 2
+    #########################################################################################################################################################
+    # error calculation
+    #########################################################################################################################################################
+    val_utheta = utheta(dec_grb_wf, ra_grb_wf, dec_sat_wf, ra_sat_wf)
+    val_vphi = vphi(dec_grb_wf, ra_grb_wf, ra_sat_wf)
+    val_uphi = uphi(dec_grb_wf, ra_grb_wf, dec_sat_wf, ra_sat_wf)
+    dec_grb_sf_err = np.where(val_utheta**2 == 1, np.nan, np.sqrt((dertheta1(dec_grb_wf, ra_grb_wf, dec_sat_wf, ra_sat_wf) * dec_grb_wf_err)**2 +
+                             (dertheta2(dec_grb_wf, ra_grb_wf, dec_sat_wf, ra_sat_wf) * ra_grb_wf_err)**2 +
+                             (dertheta3(dec_grb_wf, ra_grb_wf, dec_sat_wf, ra_sat_wf) * dec_sat_wf_err)**2 +
+                             (dertheta4(dec_grb_wf, ra_grb_wf, dec_sat_wf, ra_sat_wf) * ra_sat_wf_err)**2) / np.sqrt(1 - val_utheta**2))
 
-    up1 = np.abs(comp_der(dec_grb_wf, ra_grb_wf, dec_sat_wf, ra_sat_wf, der_num1, der_denom1))
-    up2 = np.abs(comp_der(dec_grb_wf, ra_grb_wf, dec_sat_wf, ra_sat_wf, der_num2, der_denom2))
-    up3 = np.abs(der_num3(dec_grb_wf, ra_grb_wf, dec_sat_wf, ra_sat_wf) / fun3(dec_grb_wf, ra_grb_wf, ra_sat_wf))
-    up4 = np.abs(comp_der(dec_grb_wf, ra_grb_wf, dec_sat_wf, ra_sat_wf, der_num4, der_denom4))
-    ra_grb_sf_err = (up1 * dec_grb_wf_err + up2 * ra_grb_wf_err + up3 * dec_sat_wf_err + up4 * ra_sat_wf_err) / (1 + (fun2(dec_grb_wf, ra_grb_wf, dec_sat_wf, ra_sat_wf) / fun3(dec_grb_wf, ra_grb_wf, ra_sat_wf))**2)
+    ra_grb_sf_err = np.where(val_vphi == 0, np.nan, (np.sqrt(((derphi_u1(dec_grb_wf, ra_grb_wf, dec_sat_wf, ra_sat_wf) * val_vphi - derphi_v1(dec_grb_wf, ra_grb_wf, ra_sat_wf) * val_uphi) * dec_grb_wf_err)**2 +
+                            ((derphi_u2(dec_grb_wf, ra_grb_wf, dec_sat_wf, ra_sat_wf) * val_vphi - derphi_v2(dec_grb_wf, ra_grb_wf, ra_sat_wf) * val_uphi) * ra_grb_wf_err)**2 +
+                            (derphi_u3(dec_grb_wf, ra_grb_wf, dec_sat_wf, ra_sat_wf) * val_vphi * dec_sat_wf_err)**2 +
+                            ((derphi_u4(dec_grb_wf, ra_grb_wf, dec_sat_wf, ra_sat_wf) * val_vphi - derphi_v4(dec_grb_wf, ra_grb_wf, ra_sat_wf) * val_uphi) * ra_sat_wf_err)**2) /
+                     (val_vphi**2 * (1 + (val_uphi/val_vphi)**2))))
+
+    # print(f"grb_dec_err : {np.rad2deg(dec_grb_sf_err):.4f} grb_ra_err : {np.rad2deg(ra_grb_sf_err):.4f}")
   else:
     dec_grb_sf_err, ra_grb_sf_err = 0, 0
 

@@ -108,14 +108,22 @@ class BkgContainer(list):
             single_ener = []
             single_time = []
             single_pos = []
+            # compton_second_err = []
+            # compton_ener_err = []
+            # compton_firstpos_err = []
+            # compton_secpos_err = []
             for event in data:
               reading = readevt(event, None)
-              if len(reading) == 5:
+              if len(reading) == 9:
                 compton_second.append(reading[0])
                 compton_ener.append(reading[1])
                 compton_time.append(reading[2])
                 compton_firstpos.append(reading[3])
                 compton_secpos.append(reading[4])
+                # compton_second_err.append(reading[5])
+                # compton_ener_err.append(reading[6])
+                # compton_firstpos_err.append(reading[7])
+                # compton_secpos_err.append(reading[8])
               elif len(reading) == 3:
                 single_ener.append(reading[0])
                 single_time.append(reading[1])
@@ -129,6 +137,10 @@ class BkgContainer(list):
             single_ener = np.array(single_ener)
             single_time = np.array(single_time)
             single_pos = np.array(single_pos)
+            # compton_ener_err = np.array(compton_ener_err)
+            # compton_second_err = np.array(compton_second_err)
+            # compton_firstpos_err = np.array(compton_firstpos_err)
+            # compton_secpos_err = np.array(compton_secpos_err)
 
             f.write("NewBkg\n")
             f.write(f"{decbkg}\n")

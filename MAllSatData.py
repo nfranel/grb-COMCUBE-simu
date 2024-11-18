@@ -128,20 +128,21 @@ class AllSatData(list):
           # The fieldselected here stay as they are with their basic initialisation (most of the time None)
           # Fields to be used soon : "fits", "pa", "fit_compton_cr", "pa_err", "fit_compton_cr_err", "fit_goodness",
           if item not in ["sat_dec_wf", "sat_ra_wf", "sat_alt", "grb_dec_sat_frame", "grb_ra_sat_frame", "expected_pa",
-                          "mdp", "hits_snrs", "compton_snrs", "single_snrs", "num_offsat"]:
+                          "mdp", "mdp_err", "hits_snrs", "compton_snrs", "single_snrs", "hits_snrs_err", "compton_snrs_err",
+                          "single_snrs_err", "num_offsat"]:
             #############################################################################################################
             # Filtering the satellites for some items
             #############################################################################################################
             if item in ["compton_b_rate", "mu100_ref", "mu100_err_ref", "s_eff_compton_ref", "compton_ener",
                         "compton_second", "compton_time", "pol", "polar_from_position", "polar_from_energy", "arm_pol",
-                        "s_eff_compton", "compton", "compton_cr", "compton_first_detector", "compton_sec_detector"]:
+                        "s_eff_compton", "s_eff_compton_err", "compton", "compton_cr", "compton_first_detector", "compton_sec_detector"]:
               selected_sats = []
               for index_sat in considered_sats:
                 if self[index_sat].const_beneficial_compton:
                   selected_sats.append(index_sat)
               selected_sats = np.array(selected_sats)
-            elif item in ["single_b_rate", "s_eff_single_ref", "single_ener", "single_time", "s_eff_single", "single",
-                          "single_cr", "single_detector"]:
+            elif item in ["single_b_rate", "s_eff_single_ref", "single_ener", "single_time", "s_eff_single", "s_eff_single_err",
+                          "single", "single_cr", "single_detector"]:
               selected_sats = []
               for index_sat in considered_sats:
                 if self[index_sat].const_beneficial_single:
@@ -182,6 +183,15 @@ class AllSatData(list):
                 temp_val += getattr(self[num_sat], item)
               setattr(self.const_data[ite_const], item, temp_val)
             #############################################################################################################
+            # propagated sum
+            #############################################################################################################
+            # Values summed
+            elif item in ["s_eff_compton_err", "s_eff_single_err"]:
+              temp_val = 0
+              for num_sat in selected_sats:
+                temp_val += getattr(self[num_sat], item)**2
+              setattr(self.const_data[ite_const], item, np.sqrt(temp_val))
+            #############################################################################################################
             # 1D concatenation
             #############################################################################################################
             # Values stored in a 1D array that have to be concatenated (except unpol that needs another verification)
@@ -220,8 +230,8 @@ class AllSatData(list):
             #############################################################################################################
             # Weighted mean
             #############################################################################################################
-            # mu100_ref and mu100_err_ref key
-            elif item in ["mu100_ref", "mu100_err_ref"]:
+            # mu100_ref key
+            elif item in ["mu100_ref"]:
               temp_num = 0
               temp_denom = 0
               for num_sat in selected_sats:
@@ -229,6 +239,31 @@ class AllSatData(list):
                 temp_denom += self[num_sat].compton
               if temp_denom != 0:
                 setattr(self.const_data[ite_const], item, temp_num / temp_denom)
+              else:
+                setattr(self.const_data[ite_const], item, 0)
+            #############################################################################################################
+            # mu100 err
+            #############################################################################################################
+            # mu100_err_ref key
+            elif item in ["mu100_err_ref"]:
+              somme_ev = 0
+              somme_ev_mu = 0
+              ev_mu_err = []
+              mu = []
+              ev = []
+              for num_sat in selected_sats:
+                somme_ev += self[num_sat].compton
+                somme_ev_mu += self[num_sat].mu100_ref * self[num_sat].compton
+                ev_mu_err.append(getattr(self[num_sat], item) * self[num_sat].compton)
+                mu.append(self[num_sat].mu100_ref)
+                ev.append(self[num_sat].compton)
+              ev_mu_err = np.array(ev_mu_err)
+              mu = np.array(mu)
+              ev = np.array(ev)
+
+              err_val = np.sqrt(np.sum((ev_mu_err / somme_ev)**2 + ev * ((mu * somme_ev - somme_ev_mu) / somme_ev**2)**2))
+              if somme_ev != 0:
+                setattr(self.const_data[ite_const], item, err_val)
               else:
                 setattr(self.const_data[ite_const], item, 0)
             #############################################################################################################
@@ -300,18 +335,19 @@ class AllSatData(list):
           ###############################################################################################################
           # The fieldselected here stay as they are with their basic initialisation (most of the time None)
           # Fields to be used soon : "fits", "pa", "fit_compton_cr", "pa_err", "fit_compton_cr_err", "fit_goodness",
-          if item not in ["mdp", "hits_snrs", "compton_snrs", "single_snrs", "num_offsat"]:
+          if item not in ["mdp", "mdp_err", "hits_snrs", "compton_snrs", "single_snrs", "hits_snrs_err", "compton_snrs_err",
+                          "single_snrs_err", "num_offsat"]:
             #############################################################################################################
             # Filtering the satellites for some items
             #############################################################################################################
             if item in ["compton_b_rate", "mu100_ref", "mu100_err_ref", "compton_time", "s_eff_compton_ref",
-                        "s_eff_compton", "compton", "compton_cr"]:
+                        "s_eff_compton", "s_eff_compton_err", "compton", "compton_cr"]:
               selected_sats = []
               for index_sat in considered_sats:
                 if self[index_sat].const_beneficial_compton:
                   selected_sats.append(index_sat)
               selected_sats = np.array(selected_sats)
-            elif item in ["single_b_rate", "s_eff_single_ref", "single_time", "s_eff_single", "single", "single_cr"]:
+            elif item in ["single_b_rate", "s_eff_single_ref", "single_time", "s_eff_single", "s_eff_single_err", "single", "single_cr"]:
               selected_sats = []
               for index_sat in considered_sats:
                 if self[index_sat].const_beneficial_single:
@@ -340,6 +376,15 @@ class AllSatData(list):
                 temp_val += getattr(self[num_sat], item)
               setattr(self.const_data[ite_const], item, temp_val)
             #############################################################################################################
+            # propagated sum
+            #############################################################################################################
+            # Values summed
+            elif item in ["s_eff_compton_err", "s_eff_single_err"]:
+              temp_val = 0
+              for num_sat in selected_sats:
+                temp_val += getattr(self[num_sat], item) ** 2
+              setattr(self.const_data[ite_const], item, np.sqrt(temp_val))
+            #############################################################################################################
             # 1D concatenation
             #############################################################################################################
             # Values stored in a 1D array that have to be concatenated (except unpol that needs another verification)
@@ -352,8 +397,8 @@ class AllSatData(list):
             #############################################################################################################
             # Weighted mean
             #############################################################################################################
-            # mu100_ref and mu100_err_ref key
-            elif item in ["mu100_ref", "mu100_err_ref"]:
+            # mu100_ref key
+            elif item in ["mu100_ref"]:
               temp_num = 0
               temp_denom = 0
               for num_sat in selected_sats:
@@ -361,6 +406,31 @@ class AllSatData(list):
                 temp_denom += self[num_sat].compton
               if temp_denom != 0:
                 setattr(self.const_data[ite_const], item, temp_num / temp_denom)
+              else:
+                setattr(self.const_data[ite_const], item, 0)
+            #############################################################################################################
+            # mu100 err
+            #############################################################################################################
+            # mu100_err_ref key
+            elif item in ["mu100_err_ref"]:
+              somme_ev = 0
+              somme_ev_mu = 0
+              ev_mu_err = []
+              mu = []
+              ev = []
+              for num_sat in selected_sats:
+                somme_ev += self[num_sat].compton
+                somme_ev_mu += self[num_sat].mu100_ref * self[num_sat].compton
+                ev_mu_err.append(getattr(self[num_sat], item) * self[num_sat].compton)
+                mu.append(self[num_sat].mu100_ref)
+                ev.append(self[num_sat].compton)
+              ev_mu_err = np.array(ev_mu_err)
+              mu = np.array(mu)
+              ev = np.array(ev)
+
+              err_val = np.sqrt(np.sum((ev_mu_err / somme_ev)**2 + ev * ((mu * somme_ev - somme_ev_mu) / somme_ev**2)**2))
+              if somme_ev != 0:
+                setattr(self.const_data[ite_const], item, err_val)
               else:
                 setattr(self.const_data[ite_const], item, 0)
             #############################################################################################################

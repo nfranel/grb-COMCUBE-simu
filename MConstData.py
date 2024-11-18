@@ -84,6 +84,8 @@ class ConstData:
     # Set using extracted data
     self.s_eff_compton = 0                      # Summed                  # Compton
     self.s_eff_single = 0                       # Summed                  # Single
+    self.s_eff_compton_err = 0                  # propagated sum
+    self.s_eff_single_err = 0                   # propagated sum
     self.single = 0                             # Summed                  # Single
     self.single_cr = 0                          # Summed                  # Single
     self.compton = 0                            # Summed                  # Compton
@@ -91,9 +93,13 @@ class ConstData:
 
     # self.bins = None                            # All the same            #
     self.mdp = None                             # Not changed             #
+    self.mdp_err = None                         # Not changed             #
     self.hits_snrs = None                       # Not changed             #
     self.compton_snrs = None                    # Not changed             #
     self.single_snrs = None                     # Not changed             #
+    self.hits_snrs_err = None                   # Not changed             #
+    self.compton_snrs_err = None                # Not changed             #
+    self.single_snrs_err = None                 # Not changed             #
     ###################################################################################################################
     # Attributes that are used while making const
     self.n_sat_detect = 0                       # Summed                  #
@@ -101,7 +107,7 @@ class ConstData:
     self.calor = 0                              # Summed                  # Trigger quality selection ?
     self.dsssd = 0                              # Summed                  # Trigger quality selection ?
     self.side = 0                               # Summed                  # Trigger quality selection ?
-    self.total_hits = 0
+    self.total_hits = 0                         # Summed                  # Trigger quality selection ?
     ###################################################################################################################
     self.const_beneficial_compton = True       # Appened                 #
     self.const_beneficial_single = True        # Appened                 #
@@ -126,6 +132,9 @@ class ConstData:
     else:
       self.s_eff_compton = self.compton_cr * source_duration / source_fluence
       self.s_eff_single = self.single_cr * source_duration / source_fluence
+      # Error of source fluence taken as only a poissonian error as we consider the spectrum as a fixed information
+      self.s_eff_compton_err = np.sqrt(self.compton_cr * source_duration / source_fluence**2 + (self.compton_cr * source_duration)**2 / source_fluence**3)
+      self.s_eff_single_err = np.sqrt(self.single_cr * source_duration / source_fluence**2 + (self.single_cr * source_duration)**2 / source_fluence**3)
 
     #################################################################################################################
     # Calculation of effective area
@@ -135,7 +144,7 @@ class ConstData:
     #################################################################################################################
     # Calculation of mdp
     #################################################################################################################
-    self.mdp = calc_mdp(self.compton_cr * source_duration, self.compton_b_rate * source_duration, self.mu100_ref)
+    self.mdp, self.mdp_err = calc_mdp(self.compton_cr * source_duration, self.compton_b_rate * source_duration, self.mu100_ref, mu100_err=self.mu100_err_ref)
 
   def calculates_snrs(self, source_duration):
     """
@@ -147,6 +156,9 @@ class ConstData:
     self.hits_snrs = []
     self.compton_snrs = []
     self.single_snrs = []
+    self.hits_snrs_err = []
+    self.compton_snrs_err = []
+    self.single_snrs_err = []
 
     for int_time in integration_times:
       bins = np.arange(0, source_duration + int_time, int_time)
@@ -154,14 +166,20 @@ class ConstData:
       hit_hist = np.histogram(np.concatenate((self.compton_time, self.single_time)), bins=bins)[0]
       hit_argmax = np.argmax(hit_hist)
       hit_max_hist = hit_hist[hit_argmax]
-      self.hits_snrs.append(calc_snr(hit_max_hist, self.hit_b_rate * int_time))
+      snr_ret1 = calc_snr(hit_max_hist, self.hit_b_rate * int_time)
+      self.hits_snrs.append(snr_ret1[0])
+      self.hits_snrs_err.append(snr_ret1[1])
 
       compton_hist = np.histogram(self.compton_time, bins=bins)[0]
       com_argmax = np.argmax(compton_hist)
       com_max_hist = compton_hist[com_argmax]
-      self.compton_snrs.append(calc_snr(com_max_hist, self.compton_b_rate * int_time))
+      snr_ret2 = calc_snr(com_max_hist, self.compton_b_rate * int_time)
+      self.compton_snrs.append(snr_ret2[0])
+      self.compton_snrs_err.append(snr_ret2[1])
 
       single_hist = np.histogram(self.single_time, bins=bins)[0]
       sin_argmax = np.argmax(single_hist)
       sin_max_hist = single_hist[sin_argmax]
-      self.single_snrs.append(calc_snr(sin_max_hist, self.single_b_rate * int_time))
+      snr_ret3 = calc_snr(sin_max_hist, self.single_b_rate * int_time)
+      self.single_snrs.append(snr_ret3[0])
+      self.single_snrs_err.append(snr_ret3[1])

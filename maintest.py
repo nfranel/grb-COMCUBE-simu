@@ -1864,7 +1864,7 @@ for source in test.alldata:
             else:
               sat_peak_snr = calc_snr(
                 rescale_cr_to_GBM_pf(sat.single_cr, source.best_fit_mean_flux, source.best_fit_p_flux),
-                sat.single_b_rate)
+                sat.single_b_rate)[0]
             if sat_peak_snr >= test.snr_min:
               sat_peak_triggers += 1
             if sat_peak_snr >= test.snr_min - 2:
@@ -1879,7 +1879,7 @@ for source in test.alldata:
         else:
           const_peak_snr = calc_snr(
             rescale_cr_to_GBM_pf(sim.const_data.single_cr, source.best_fit_mean_flux, source.best_fit_p_flux),
-            sim.const_data.single_b_rate)
+            sim.const_data.single_b_rate)[0]
         # 1s mean triggers
         if sim.const_data.snr_single >= test.snr_min:
           single_instant_trigger_by_const += 1
@@ -1953,7 +1953,7 @@ for source in test.alldata:
               #     if not compatibility_test(centroid_bins[index1][arg_max1], bin_widths[index1], centroid_bins[index1 + 1 + index2][arg_max2], bin_widths[index1 + 1 + index2]):
                     # print(f"Incompatibility between bins {bin_widths[index1]} and {bin_widths[index2]} for {source.source_name}, sim {ite_sim} and sat {sat_ite}")
                     # print(f"     Centroids of the incompatible bins : {centroid_bins[index1][arg_max1]} and {centroid_bins[index1 + 1 + index2][arg_max2]}")
-              snr_list = [calc_snr(temp_hist[index][arg_max_bin[index]], (sat.single_b_rate + sat.compton_b_rate) * bin_widths[index]) for index in range(len(arg_max_bin))]
+              snr_list = [calc_snr(temp_hist[index][arg_max_bin[index]], (sat.single_b_rate + sat.compton_b_rate) * bin_widths[index])[0] for index in range(len(arg_max_bin))]
               sat_snr_list.append(snr_list)
               if max(snr_list) > 3:
                 sat_trigg += 1
@@ -1968,7 +1968,7 @@ for source in test.alldata:
             #     if not compatibility_test(centroid_bins[index1][arg_max1], bin_widths[index1], centroid_bins[index1 + 1 + index2][arg_max2], bin_widths[index1 + 1 + index2]):
                   # print(f"Incompatibility between bins {bin_widths[index1]} and {bin_widths[index2]} for {source.source_name}, sim {ite_sim} and constellation")
                   # print(f"     Centroids of the incompatible bins : {centroid_bins[index1][arg_max1]} and {centroid_bins[index1 + 1 + index2][arg_max2]}")
-            const_snr = [calc_snr(temp_hist[index][arg_max_bin[index]], (sim.const_data.single_b_rate + sim.const_data.compton_b_rate) * bin_widths[index]) for index in range(len(arg_max_bin))]
+            const_snr = [calc_snr(temp_hist[index][arg_max_bin[index]], (sim.const_data.single_b_rate + sim.const_data.compton_b_rate) * bin_widths[index])[0] for index in range(len(arg_max_bin))]
         else:
           const_snr = [0]
         if sat_trigg >= 4:

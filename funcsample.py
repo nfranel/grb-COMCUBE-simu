@@ -2,6 +2,10 @@ import numpy as np
 from scipy.integrate import trapezoid
 from scipy.stats import skewnorm
 from time import time
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+import matplotlib as mpl
 
 from astropy.cosmology import FlatLambdaCDM
 import astropy.units
@@ -151,6 +155,7 @@ def build_params(l_rate, l_ind1_z, l_ind2_z, l_zb, l_ind1, l_ind2, l_lb, s_rate,
   """
 
   """
+  # mpl.use("Qt5Agg")
   par_list = []
   for var1 in make_it_list(l_rate):
     for var2 in make_it_list(l_ind1_z):
@@ -167,6 +172,14 @@ def build_params(l_rate, l_ind1_z, l_ind2_z, l_zb, l_ind1, l_ind2, l_lb, s_rate,
                           for var13 in make_it_list(s_ind2):
                             for var14 in make_it_list(s_lb):
                               par_list.append([var1, var2, var3, var4, var5, var6, var7, var8, var9, var10, var11, var12, var13, var14])
+  # param_df = pd.DataFrame(data=par_list, columns=["l_rate", "l_ind1_z", "l_ind2_z", "l_zb", "l_ind1", "l_ind2", "l_lb", "s_rate", "s_ind1_z", "s_ind2_z", "s_zb", "s_ind1", "s_ind2", "s_lb"])
+  # select_cols = ["l_rate", "l_ind1_z", "l_ind2_z", "l_zb", "l_ind1", "l_ind2", "l_lb"]
+  # df_selec = param_df[select_cols]
+  # plt.subplots(1, 1)
+  # title = f"Log p-value"
+  # plt.suptitle(title)
+  # sns.pairplot(df_selec, corner=True, plot_kws={'s': 10})
+  # plt.show()
   return par_list
 
 

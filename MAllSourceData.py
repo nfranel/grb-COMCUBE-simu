@@ -83,6 +83,7 @@ class AllSourceData:
 
     # Compiling the position finder
     subprocess.call(f"make -f Makefile PRG=find_detector", shell=True)
+    print("Compiling of the position finder finished")
     endtask("Step 1")
 
     # Setting the background files
