@@ -17,6 +17,7 @@ from astropy.cosmology import FlatLambdaCDM
 import matplotlib as mpl
 
 # mpl.use("Qt5Agg")
+mpl.use('Agg')
 
 class MCCatalog:
   """
