@@ -899,9 +899,8 @@ class AllSourceData:
 
     fig, ax = plt.subplots(1, 1, figsize=(10, 6))
     h1 = ax.hist(mdp_list, bins=n_bins, cumulative=cumul, histtype="step", weights=[self.weights] * len(mdp_list),
-            label=f"Number of GRBs with MDP < {mdp_limit * 100}% : {len(mdp_list)} over {number_detected} detections")
+            label=f"Number of GRBs with MDP < {mdp_limit * 100}% : {len(mdp_list)} over {number_detected} detections", color="blue")
     mdp_errinf, mdp_errsup = make_error_histogram(np.array(mdp_list), np.array(mdp_err_list), h1[1])
-    x_axis = (h1[1][1:]+h1[1][:-1])/2
     if cumul == 1:
       ax.set(xlabel="MPD (%)", ylabel="Number of detection per year", xscale=x_scale, yscale=y_scale,
              title=f"Cumulative distribution of the MDP - {grb_type}")
@@ -910,14 +909,15 @@ class AllSourceData:
       for ite in range(1, len(mdp_errinf)):
         new_errinf[ite:] += mdp_errinf[ite - 1]
         new_errsup[ite:] += mdp_errsup[ite - 1]
-      mdp_inf, mdp_sup = h1[0] + new_errinf, h1[0] + new_errsup
+      mdp_inf, mdp_sup = h1[0] + new_errinf * self.weights, h1[0] + new_errsup * self.weights
     elif cumul == 0:
       ax.set(xlabel="MPD (%)", ylabel="Number of detection per year", xscale=x_scale, yscale=y_scale,
              title=f"Distribution of the MDP - {grb_type}")
-      mdp_inf, mdp_sup = h1[0] + mdp_errinf, h1[0] + mdp_errsup
+      mdp_inf, mdp_sup = h1[0] + mdp_errinf * self.weights, h1[0] + mdp_errsup * self.weights
     else:
       raise ValueError("Use a correct value for cumul, only 1 and 0 work")
-    ax.fill_between(x_axis, mdp_inf, mdp_sup, step="mid", alpha=0.4)
+    mdp_inf, mdp_sup = np.concatenate((mdp_inf, np.array([0]))), np.concatenate((mdp_sup, np.array([0])))
+    ax.fill_between(h1[1], mdp_inf, mdp_sup, step="post", alpha=0.4, color="blue")
     ax.legend(loc='upper left')
     ax.grid(axis='both')
     plt.show()
