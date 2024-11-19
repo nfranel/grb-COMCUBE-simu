@@ -605,7 +605,7 @@ class MCCatalog:
     ax3s2.legend()
 
     if savefile is not None:
-      plt.savefig(f"{int(histos[6])}-{savefile.split('.csv')[0]}_{iteration}")
+      plt.savefig(f"{savefile.split('.csv')[0]}_{iteration}_{int(histos[6])}")
     plt.close(fig1)
 
     # plt.show()
