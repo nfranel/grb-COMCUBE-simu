@@ -870,7 +870,7 @@ class AllSourceData:
     Display and histogram representing the number of grb of a certain mdp per year
     :param selected_sat: int or string, which sat is selected, if "const" the constellation is selected
     :param mdp_limit: limit in mdp (mdp more than 1 is not physical so should be between 0 and 1)
-    :param cumul: int, 1 for a cumulative histogram, 0 for a usual one, -1 for an inverse cumulative one
+    :param cumul: int, 1 for a cumulative histogram, 0 for a usual one
     :param n_bins: number of bins in the histogram
     :param x_scale: scale for x-axis
     :param y_scale: scale for y-axis
@@ -885,6 +885,7 @@ class AllSourceData:
       grb_type = "undefined source"
     number_detected = 0
     mdp_list = []
+    mdp_err_list = []
     for source in self.alldata:
       if source is not None:
         for sim in source:
@@ -894,19 +895,29 @@ class AllSourceData:
               if sim.const_data[const_index].mdp is not None:
                 if sim.const_data[const_index].mdp <= mdp_limit:
                   mdp_list.append(sim.const_data[const_index].mdp * 100)
+                  mdp_err_list.append(sim.const_data[const_index].mdp_err * 100)
 
     fig, ax = plt.subplots(1, 1, figsize=(10, 6))
-    ax.hist(mdp_list, bins=n_bins, cumulative=cumul, histtype="step", weights=[self.weights] * len(mdp_list),
+    h1 = ax.hist(mdp_list, bins=n_bins, cumulative=cumul, histtype="step", weights=[self.weights] * len(mdp_list),
             label=f"Number of GRBs with MDP < {mdp_limit * 100}% : {len(mdp_list)} over {number_detected} detections")
+    mdp_errinf, mdp_errsup = make_error_histogram(np.array(mdp_list), np.array(mdp_err_list), h1[1])
+    x_axis = (h1[1][1:]+h1[1][:-1])/2
     if cumul == 1:
       ax.set(xlabel="MPD (%)", ylabel="Number of detection per year", xscale=x_scale, yscale=y_scale,
              title=f"Cumulative distribution of the MDP - {grb_type}")
+      new_errinf = np.copy(mdp_errinf)
+      new_errsup = np.copy(mdp_errsup)
+      for ite in range(1, len(mdp_errinf)):
+        new_errinf[ite:] += mdp_errinf[ite - 1]
+        new_errsup[ite:] += mdp_errsup[ite - 1]
+      mdp_inf, mdp_sup = h1[0] + new_errinf, h1[0] + new_errsup
     elif cumul == 0:
       ax.set(xlabel="MPD (%)", ylabel="Number of detection per year", xscale=x_scale, yscale=y_scale,
              title=f"Distribution of the MDP - {grb_type}")
-    elif cumul == -1:
-      ax.set(xlabel="MPD (%)", ylabel="Number of detection per year", xscale=x_scale, yscale=y_scale,
-             title=f"Inverse cumulative distribution of the MDP - {grb_type}")
+      mdp_inf, mdp_sup = h1[0] + mdp_errinf, h1[0] + mdp_errsup
+    else:
+      raise ValueError("Use a correct value for cumul, only 1 and 0 work")
+    ax.fill_between(x_axis, mdp_inf, mdp_sup, step="mid", alpha=0.4)
     ax.legend(loc='upper left')
     ax.grid(axis='both')
     plt.show()

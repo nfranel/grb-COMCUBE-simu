@@ -73,9 +73,11 @@ for ite_const, num_down in enumerate(test.number_of_down_per_const):
   print("=                        triggers count                        =")
   test.count_triggers(const_index=ite_const, graphs=False)
   # print("=                        MDP histogram                        =")
-  # test.mdp_histogram()
+  test.mdp_histogram()
   number_detected = 0
   mdp_list = []
+  mdp_list_inf = []
+  mdp_list_sup = []
   pflux_inf_10_l = []
   pflux_inf_30_l = []
   pflux_inf_50_l = []
@@ -121,6 +123,9 @@ for ite_const, num_down in enumerate(test.number_of_down_per_const):
               if sim.const_data[ite_const].mdp is not None:
                 if sim.const_data[ite_const].mdp <= 1:
                   mdp_list.append(sim.const_data[ite_const].mdp * 100)
+                  mdp_list_inf.append((sim.const_data[ite_const].mdp - sim.const_data[ite_const].mdp_err) * 100)
+                  if sim.const_data[ite_const].mdp + sim.const_data[ite_const].mdp_err <= 1:
+                    mdp_list_sup.append((sim.const_data[ite_const].mdp + sim.const_data[ite_const].mdp_err) * 100)
                   if source.source_duration > 2:
                     if sim.const_data[ite_const].mdp <= 0.1:
                       pflux_inf_10_l.append(source.best_fit_p_flux)
@@ -149,13 +154,27 @@ for ite_const, num_down in enumerate(test.number_of_down_per_const):
                       flnc_inf_50_s.append(source.source_fluence)
 
   mdp_list = np.array(mdp_list)
+  mdp_list_inf = np.array(mdp_list_inf)
+  mdp_list_sup = np.array(mdp_list_sup)
   mdp30list.append(np.sum(np.where(mdp_list <= 30, 1, 0)) * test.weights)
+  rate80 = np.sum(np.where(mdp_list <= 80, 1, 0))
+  rate50 = np.sum(np.where(mdp_list <= 50, 1, 0))
+  rate30 = np.sum(np.where(mdp_list <= 30, 1, 0))
+  rate10 = np.sum(np.where(mdp_list <= 10, 1, 0))
+  rate80_inf = np.sum(np.where(mdp_list_inf <= 80, 1, 0)) - rate80
+  rate50_inf = np.sum(np.where(mdp_list_inf <= 50, 1, 0)) - rate50
+  rate30_inf = np.sum(np.where(mdp_list_inf <= 30, 1, 0)) - rate30
+  rate10_inf = np.sum(np.where(mdp_list_inf <= 10, 1, 0)) - rate10
+  rate80_sup = np.sum(np.where(mdp_list_sup <= 80, 1, 0)) - rate80
+  rate50_sup = np.sum(np.where(mdp_list_sup <= 50, 1, 0)) - rate50
+  rate30_sup = np.sum(np.where(mdp_list_sup <= 30, 1, 0)) - rate30
+  rate10_sup = np.sum(np.where(mdp_list_sup <= 10, 1, 0)) - rate10
   print(f" ========               MDP THRESHOLD USED : {2.6}   ========")
   print("=                        MDP detection rates                        =")
-  print(f"   MDP<=80% : {np.sum(np.where(mdp_list <= 80, 1, 0)) * test.weights}")
-  print(f"   MDP<=50% : {np.sum(np.where(mdp_list <= 50, 1, 0)) * test.weights}")
-  print(f"   MDP<=30% : {np.sum(np.where(mdp_list <= 30, 1, 0)) * test.weights}")
-  print(f"   MDP<=10% : {np.sum(np.where(mdp_list <= 10, 1, 0)) * test.weights}")
+  print(f"   MDP<=80% : {rate80 * test.weights} +{rate80_inf * test.weights} {rate80_sup * test.weights}")
+  print(f"   MDP<=50% : {rate50 * test.weights} +{rate50_inf * test.weights} {rate50_sup * test.weights}")
+  print(f"   MDP<=30% : {rate30 * test.weights} +{rate30_inf * test.weights} {rate30_sup * test.weights}")
+  print(f"   MDP<=10% : {rate10 * test.weights} +{rate10_inf * test.weights} {rate10_sup * test.weights}")
 
 # # Searching for a good binning for the MCMC condition for a good sample :
 # binning = np.logspace(-1, 4, 50)

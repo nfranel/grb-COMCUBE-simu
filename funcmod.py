@@ -1,3 +1,6 @@
+from multiprocessing.managers import Value
+from os import error
+
 import numpy as np
 import gzip
 from scipy.integrate import quad, simpson, IntegrationWarning
@@ -818,8 +821,50 @@ def err_calculation(polhist, unpolhist, binwidth, polhist_err, unpolhist_err):
   return error/binwidth
 
 
+def make_error_histogram(array, error_array, bins, hardlim=(True, False)):
+  """
+  Hardlim is used to keep values that would be out of the physical range.
+  For instance, hardlim on 0 for mdp, because mdp > 0.
+  In that situation if an errored value < 0 is found (to be put in bin 0 that was initialy in bin 1) then the value is not taken out of bin 1 into bin 0 as it's not physical to find it there
+  Returns the sup error and inf error on bins
+  """
+  array_sup = array + error_array
+  array_inf = array - error_array
+
+  ind = np.digitize(array, bins)
+  indsup = np.digitize(array_sup, bins)
+  indinf = np.digitize(array_inf, bins)
+
+  hist = np.histogram(array, bins=bins)[0]
+  nbins = len(hist)
+  hist_inf = np.zeros((nbins + 2))
+  hist_sup = np.zeros((nbins + 2))
+  for ite in range(len(array)):
+    if ind[ite] - indsup[ite] != 0:
+      if not (hardlim[1] and indsup[ite] == nbins and ind[ite] == nbins-1):
+        hist_sup[ind[ite] + 1:indsup[ite] + 1] += 1
+        hist_sup[ind[ite]] -= 1
+      # else:
+      #   print("Hardlim on final bin, value not taken away from the bin")
+    if ind[ite] - indinf[ite] != 0:
+      if not (hardlim[0] and indinf[ite] == 0 and ind[ite] == 1):
+        hist_inf[indinf[ite]:ind[ite]] += 1
+        hist_inf[ind[ite]] -= 1
+      # else:
+      #   print("Hardlim on initial bin, value not taken away from the bin")
+  hist_inf = hist_inf[1:-1]
+  hist_sup = hist_sup[1:-1]
+
+  err_sup = np.max(np.vstack([hist_sup + hist_inf, hist_sup, hist_inf, np.zeros(len(hist_inf))]), axis=0)
+  err_inf = np.min(np.vstack([hist_sup + hist_inf, hist_sup, hist_inf, np.zeros(len(hist_inf))]), axis=0)
+
+  return err_inf, err_sup
+
+
 def pol_unpol_hist_err(pol, unpol, pol_err, unpol_err, bins):
   """
+  The method for estimated the error in each bin is not exact but as there is a overestimation of the error value by taking bin - maxerr <= bin <= bin + maxerr with maxerr = max(abs(errinf), abs(errsup))
+  intead of bin - errinf <= bin <= bin + errsup
 
   """
   polp = np.where(pol + pol_err > 180, pol + pol_err - 360, pol + pol_err)
@@ -830,10 +875,6 @@ def pol_unpol_hist_err(pol, unpol, pol_err, unpol_err, bins):
   hist_polm = np.histogram(polm, bins)[0] - hist_pol
 
   histpolerr = np.where(hist_polp * hist_polm >= 0, np.abs(hist_polp + hist_polm), np.where(np.abs(hist_polp) > np.abs(hist_polm), np.abs(hist_polp), np.abs(hist_polm)))
-  # print("en plus dans hist_err+ / histpol", hist_polp)
-  # print("en plus dans hist_err- / histpol", hist_polm)
-  # print(" hist polerr", histpolerr)
-  # print("hist_pol", hist_pol)
 
   unpolp = np.where(unpol + unpol_err > 180, unpol + unpol_err - 360, unpol + unpol_err)
   unpolm = np.where(unpol - unpol_err < -180, 360 - (unpol - unpol_err), unpol - unpol_err)
@@ -843,7 +884,6 @@ def pol_unpol_hist_err(pol, unpol, pol_err, unpol_err, bins):
   hist_unpolm = np.histogram(unpolm, bins)[0] - hist_unpol
 
   histunpolerr = np.where(hist_unpolp * hist_unpolm >= 0, np.abs(hist_unpolp + hist_unpolm), np.where(np.abs(hist_unpolp) > np.abs(hist_unpolm), np.abs(hist_unpolp), np.abs(hist_unpolm)))
-
   return histpolerr, histunpolerr
 
 
