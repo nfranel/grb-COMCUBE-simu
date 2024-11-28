@@ -512,10 +512,11 @@ class MCCatalog:
       # plt.show()
 
       condition = self.mcmc_condition(l_m_flux_temp, l_p_flux_temp, l_flnc_temp, s_m_flux_temp, s_p_flux_temp, s_flnc_temp, params=params)
-      print(condition[2])
-      if condition[2] < 6 or method is None:
-        print("Leaving Looping")
+      pflux_ratio_thresh = 4
+      if condition[2] < pflux_ratio_thresh or method is None:
         end_flux_loop = False
+      else:
+        print(f"====== LOOPING - pflux ratio : {round(condition[2], 2)} > {pflux_ratio_thresh} ======")
 
     if condition[0]:
       row = [l_rate_temp, l_ind1_z_temp, l_ind2_z_temp, l_zb_temp, s_rate_temp, s_ind1_z_temp, s_ind2_z_temp, s_zb_temp, l_ind1_temp, l_ind2_temp, l_lb_temp, s_ind1_temp, s_ind2_temp, s_lb_temp, np.around(np.log10(condition[1]), 3), "Accepted"]
