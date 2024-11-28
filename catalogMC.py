@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import multiprocessing as mp
 import os
 from itertools import repeat
-import time
+from time import time
 
 from fontTools.varLib.plot import stops
 from matplotlib.pyplot import suptitle
@@ -467,7 +467,7 @@ class MCCatalog:
 
   def get_sample(self, run_iteration, method=None, comment="", savefile=None):
     # Using a different seed for each thread, somehow the seed what the same without using it
-    np.random.seed(os.getpid() + int(time.time() * 1000) % 2**32)
+    np.random.seed(os.getpid() + int(time() * 1000) % 2**32)
 
     end_flux_loop = True
 
