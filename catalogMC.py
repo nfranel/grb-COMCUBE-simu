@@ -282,7 +282,7 @@ class MCCatalog:
         else:
           return "0 - -2"
 
-      fold_name = "longredlum480"
+      fold_name = "longredlum480v2"
       savefile = f"Sampled/{fold_name}/longfit_red_lum.csv"
       comm = "Long-Redshift-Luminosity"
       if not (f"{fold_name}" in os.listdir("Sampled/")):
