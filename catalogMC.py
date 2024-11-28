@@ -52,22 +52,26 @@ class MCCatalog:
     self.gbm_l_mflux = []
     self.gbm_l_pflux = []
     self.gbm_l_flnc = []
+    self.gbm_l_mp_ratio = []
     for ite_l in range(len(self.df_long)):
       model = self.df_long.flnc_best_fitting_model[ite_l]
       p_model = self.df_long.pflx_best_fitting_model[ite_l]
       if type(p_model) is str:
         self.gbm_l_pflux.append(self.df_long[f"{p_model}_phtflux"][ite_l])
+        self.gbm_l_mp_ratio.append(self.df_long[f"{p_model}_phtflux"][ite_l] / self.df_long[f"{model}_phtflux"][ite_l])
       self.gbm_l_mflux.append(self.df_long[f"{model}_phtflux"][ite_l])
       self.gbm_l_flnc.append(calc_flux_gbm(self.df_long, ite_l, self.ergcut, cat_is_df=True) * self.df_long.t90[ite_l])
 
     self.gbm_s_mflux = []
     self.gbm_s_pflux = []
     self.gbm_s_flnc = []
+    self.gbm_s_mp_ratio = []
     for ite_s in range(len(self.df_short)):
       model = self.df_short.flnc_best_fitting_model[ite_s]
       p_model = self.df_short.pflx_best_fitting_model[ite_s]
       if type(p_model) is str:
         self.gbm_s_pflux.append(self.df_short[f"{p_model}_phtflux"][ite_s])
+        self.gbm_s_mp_ratio.append(self.df_short[f"{p_model}_phtflux"][ite_s] / self.df_short[f"{model}_phtflux"][ite_s])
       self.gbm_s_mflux.append(self.df_short[f"{model}_phtflux"][ite_s])
       self.gbm_s_flnc.append(calc_flux_gbm(self.df_short, ite_s, self.ergcut, cat_is_df=True) * self.df_short.t90[ite_s])
 
@@ -82,11 +86,11 @@ class MCCatalog:
     self.long_short_rate_min = 4
     self.long_short_rate_max = 6.5
 
-    self.flux_lim = [20, 120]
+    self.flux_lim = [10, 120]
     self.flnc_l_lim = [300, 1800]
     self.flnc_s_lim = [10, 20]
-    self.nfluxbin_l = [30, 4, 1]
-    self.nfluxbin_s = [30, 2, 1]
+    self.nfluxbin_l = [30, 5, 1]
+    self.nfluxbin_s = [30, 3, 1]
     self.nflncbin_l = [30, 4, 1]
     self.nflncbin_s = [30, 1, 1]
     self.usual_bins = np.logspace(-1, 4, 50)
@@ -130,15 +134,48 @@ class MCCatalog:
     self.s_flnc_bins = flnc_s_hist[self.nflncbin_s[0]:]
 
     # min and max values for distributions (estimated with ranges from Pescalli 2016, Ghirlanda 2016)
+    # # Redshift
+    # self.l_rate_min = 0.2
+    # self.l_rate_max = 0.6
+    # self.l_ind1_z_min = 1.5
+    # self.l_ind1_z_max = 2.5
+    # self.l_ind2_z_min = -0.5
+    # self.l_ind2_z_max = -0.9
+    # self.l_zb_min = 3
+    # self.l_zb_max = 4.2
+    #
+    # self.s_rate_min = 0.4
+    # self.s_rate_max = 1.1
+    # self.s_ind1_z_min = 0.5
+    # self.s_ind1_z_max = 4.1
+    # self.s_ind2_z_min = 1.1
+    # self.s_ind2_z_max = 3.7
+    # self.s_zb_min = 2
+    # self.s_zb_max = 3.3
+    # # Luminosity
+    # self.l_ind1_min = -1.6
+    # self.l_ind1_max = -0.7
+    # self.l_ind2_min = -2.6
+    # self.l_ind2_max = -1.6
+    # self.l_lb_min = 2e51
+    # self.l_lb_max = 6e52
+    #
+    # self.s_ind1_min = -1
+    # self.s_ind1_max = -0.39
+    # self.s_ind2_min = -3.7
+    # self.s_ind2_max = -1.7
+    # self.s_lb_min = 0.91e52
+    # self.s_lb_max = 3.4e52
+
     # Redshift
     self.l_rate_min = 0.2
-    self.l_rate_max = 0.6
-    self.l_ind1_z_min = 1.5
-    self.l_ind1_z_max = 2.5
-    self.l_ind2_z_min = -0.5
-    self.l_ind2_z_max = -0.9
-    self.l_zb_min = 3
-    self.l_zb_max = 4.2
+    self.l_rate_max = 0.5
+    self.l_ind1_z_min = 2.4
+    self.l_ind1_z_max = 3
+    self.l_ind2_z_min = -1.1
+    self.l_ind2_z_max = -0.4
+    self.l_zb_min = 2
+    self.l_zb_max = 5
 
     self.s_rate_min = 0.4
     self.s_rate_max = 1.1
@@ -149,12 +186,12 @@ class MCCatalog:
     self.s_zb_min = 2
     self.s_zb_max = 3.3
     # Luminosity
-    self.l_ind1_min = -1.6
-    self.l_ind1_max = -0.7
-    self.l_ind2_min = -2.6
-    self.l_ind2_max = -1.6
-    self.l_lb_min = 2e51
-    self.l_lb_max = 6e52
+    self.l_ind1_min = -0.8
+    self.l_ind1_max = -0.2
+    self.l_ind2_min = -3
+    self.l_ind2_max = -1.8
+    self.l_lb_min = 5e50
+    self.l_lb_max = 2e52
 
     self.s_ind1_min = -1
     self.s_ind1_max = -0.39
@@ -193,7 +230,7 @@ class MCCatalog:
     thread_num = 60
 
     # mc_mode = "long_lum"
-    mc_mode = "long_red"
+    mc_mode = "long_red_lum"
     # mc_mode = "short_lum"
     # mc_mode = "short_red"
     # mc_mode = "mc"
@@ -216,8 +253,9 @@ class MCCatalog:
       #                           0.25, 2.8, 3.5, 2.3, -0.53, -3.4, 2.8e52)
       param_list = build_params(0.42, 2.07, -0.7, 3.6,  [-0.8, -0.7, -0.6, -0.5, -0.4, -0.3, -0.2], [-1.8, -2.1, -2.4, -2.7, -3], [1e51, 5e51, 1e52, 2e52],
                                 0.25, 2.8, 3.5, 2.3, -0.53, -3.4, 2.8e52)
+      par_size = len(param_list)
 
-      self.run_mc(len(param_list), thread_number=thread_num, method=param_list, savefile=savefile, comment=comm)
+      self.run_mc(par_size, thread_number=thread_num, method=param_list, savefile=savefile, comment=comm)
       # for ite_mc in range(len(histograms)):
         # self.hist_plotter(ite_mc, histograms[ite_mc], param_list[ite_mc], comment=comm, savefile=savefile)
 
@@ -230,27 +268,53 @@ class MCCatalog:
       plt.savefig(f"{savefile.split('.csv')[0]}_df")
       plt.close()
 
-    elif mc_mode == "long_red":
-      savefile = "Sampled/longred/longfit_red.csv"
-      comm = "Long-Redshift"
-      if not (f"longred" in os.listdir("Sampled/")):
-        os.mkdir("Sampled/longred")
-      # param_list = build_params([0.2, 0.3, 0.4, 0.5], [1.2, 1.4, 1.6, 1.8, 2, 2.2, 2.4, 2.6], [-1.1, -0.9, -0.8, -0.7, -0.6, -0.5, -0.4], [2, 2.6, 3.1, 3.6, 4.1, 5], -0.65, -3, 1.12e+52, 0.25, 2.8, 3.5, 2.3, -0.53, -3.4, 2.8e52)
-      # param_list = [[0.12, 2.07, -0.7, 3.6, -0.65, -3, 1.12e+52, 0.1, 2.8, 3.5, 2.3, -0.53, -3.4, 2.8e52]]
-      # l_rate, l_ind1_z, l_ind2_z, l_zb, l_ind1, l_ind2, l_lb, s_rate, s_ind1_z, s_ind2_z, s_zb, s_ind1, s_ind2, s_lb
+    elif mc_mode == "long_red_lum":
 
-      param_list = build_params([0.2, 0.4, 0.5], [2.4, 2.6, 3.], [-1.1, -0.8, -0.6, -0.4], [2, 2.6, 3.6, 4.1, 5], [-0.8, -0.7, -0.6, -0.3, -0.2], [-1.8, -2.1, -2.5, -3], [1e51, 5e51, 1e52, 2e52], 0.25, 2.8, 3.5, 2.3, -0.53, -3.4, 2.8e52)
+      def categorize_log_pvalue(value):
+        if value < -20:
+          return "< -20"
+        elif value < -10:
+          return "-10 - -20"
+        elif value < -5:
+          return "-5 - -10"
+        elif value < -2:
+          return "-2 - -5"
+        else:
+          return "0 - -2"
+
+      fold_name = "longredlum480"
+      savefile = f"Sampled/{fold_name}/longfit_red_lum.csv"
+      comm = "Long-Redshift-Luminosity"
+      if not (f"{fold_name}" in os.listdir("Sampled/")):
+        os.mkdir(f"Sampled/{fold_name}")
+      # l_rate, l_ind1_z, l_ind2_z, l_zb, l_ind1, l_ind2, l_lb, s_rate, s_ind1_z, s_ind2_z, s_zb, s_ind1, s_ind2, s_lb
+      # param_list = build_params([0.2, 0.3, 0.4, 0.5], [1.2, 1.4, 1.6, 1.8, 2, 2.2, 2.4, 2.6], [-1.1, -0.9, -0.8, -0.7, -0.6, -0.5, -0.4], [2, 2.6, 3.1, 3.6, 4.1, 5], -0.65, -3, 1.12e+52, 0.25, 2.8, 3.5, 2.3, -0.53, -3.4, 2.8e52)
+      # param_list = [[0.42, 2.07, -0.7, 3.6, -0.65, -3, 1.12e+52, 0.25, 2.8, 3.5, 2.3, -0.53, -3.4, 2.8e52]]
+      # param_list = [[0.2, 2.4, -0.6, 5, -0.8, -2.5, 1e51, 0.25, 2.8, 3.5, 2.3, -0.53, -3.4, 2.8e52],
+      #              [0.2, 2.4, -0.6, 5, -0.8, -3, 1e51, 0.25, 2.8, 3.5, 2.3, -0.53, -3.4, 2.8e52],
+      #              [0.2, 2.4, -0.6, 5, -0.8, -3, 1e51, 0.25, 2.8, 3.5, 2.3, -0.53, -3.4, 2.8e52],
+      #              [0.2, 2.4, -0.4, 3.6, -0.2, -3, 1e51, 0.25, 2.8, 3.5, 2.3, -0.53, -3.4, 2.8e52],
+      #              [0.2, 2.6, -1.1, 4.1, -0.8, -2.1, 1e51, 0.25, 2.8, 3.5, 2.3, -0.53, -3.4, 2.8e52],
+      #              [0.2, 3, -0.6, 5, -0.6, -3, 5e51, 0.25, 2.8, 3.5, 2.3, -0.53, -3.4, 2.8e52],
+      #              [0.5, 2.6, -0.4, 4.1, -0.2, -3, 1e51, 0.25, 2.8, 3.5, 2.3, -0.53, -3.4, 2.8e52]]
+      # par_size = len(param_list)
+
+      param_list = None
+      par_size = 480
+      # param_list = build_params([0.2, 0.4, 0.5], [2.4, 2.6, 3.], [-1.1, -0.8, -0.6, -0.4], [2, 2.6, 3.6, 4.1, 5], [-0.8, -0.7, -0.6, -0.3, -0.2], [-1.8, -2.1, -2.5, -3], [1e51, 5e51, 1e52, 2e52], 0.25, 2.8, 3.5, 2.3, -0.53, -3.4, 2.8e52)
       # param_list = build_params(0.2, 2.1, [-1.1, -0.6, -0.4], [2, 4.1, 5], -0.6, -2.1, 1e52, 0.25, 2.8, 3.5, 2.3, -0.53, -3.4, 2.8e52)
-      self.run_mc(len(param_list), thread_number=thread_num, method=param_list, savefile=savefile)
+      self.run_mc(par_size, thread_number=thread_num, method=param_list, savefile=savefile)
       # for ite_mc in range(len(histograms)):
       #   self.hist_plotter(ite_mc, histograms[ite_mc], param_list[ite_mc], comment=comm, savefile=savefile)
 
-      select_cols = ["long_rate", "long_ind1_z", "long_ind2_z", "long_zb", "log_pvalue"]
+      self.result_df['log_pvalue_category'] = self.result_df['log_pvalue'].apply(categorize_log_pvalue)
+
+      select_cols = ["long_rate", "long_ind1_z", "long_ind2_z", "long_zb", "long_ind1_lum", "long_ind2_lum", "long_lb", "log_pvalue_category"]
       df_selec = self.result_df[select_cols]
       plt.subplots(1, 1)
       title = f"Log p-value on {self.cond_option}"
       plt.suptitle(title)
-      sns.pairplot(df_selec, hue="log_pvalue", corner=True, plot_kws={'s': 15})
+      sns.pairplot(df_selec, hue="log_pvalue_category", corner=True, plot_kws={'s': 50}, palette="viridis_r")
       plt.savefig(f"{savefile.split('.csv')[0]}_df")
       plt.close()
 
@@ -260,8 +324,9 @@ class MCCatalog:
       if not (f"shortlum" in os.listdir("Sampled/")):
         os.mkdir("Sampled/shortlum")
       param_list = build_params(0.42, 2.07, -0.7, 3.6, -0.65, -3, 1.12e+52, 0.25, 2.8, 3.5, 2.3, -0.53, -3.4, 2.8e52)
+      par_size = len(param_list)
 
-      self.run_mc(len(param_list), thread_number=thread_num, method=param_list, savefile=savefile)
+      self.run_mc(par_size, thread_number=thread_num, method=param_list, savefile=savefile)
       # for ite_mc in range(len(histograms)):
       #   self.hist_plotter(ite_mc, histograms[ite_mc], param_list[ite_mc], comment=comm, savefile=savefile)
 
@@ -280,8 +345,9 @@ class MCCatalog:
       if not (f"shortred" in os.listdir("Sampled/")):
         os.mkdir("Sampled/shortred")
       param_list = build_params(0.42, 2.07, -0.7, 3.6, -0.65, -3, 1.12e+52, 0.25, 2.8, 3.5, 2.3, -0.53, -3.4, 2.8e52)
+      par_size = len(param_list)
 
-      self.run_mc(len(param_list), thread_number=thread_num, method=param_list, savefile=savefile)
+      self.run_mc(par_size, thread_number=thread_num, method=param_list, savefile=savefile)
       # for ite_mc in range(len(histograms)):
       #   self.hist_plotter(ite_mc, histograms[ite_mc], param_list[ite_mc], comment=comm, savefile=savefile)
 
@@ -402,47 +468,55 @@ class MCCatalog:
     # Using a different seed for each thread, somehow the seed what the same without using it
     np.random.seed(os.getpid())
 
-    if method is None:
-      params = self.get_params()
-    elif type(method) is list:
-      params = self.get_set_params(method[run_iteration])
-    else:
-      raise ValueError("Wrong method used")
+    end_flux_loop = True
 
-    l_rate_temp, l_ind1_z_temp, l_ind2_z_temp, l_zb_temp, l_ind1_temp, l_ind2_temp, l_lb_temp, nlong_temp = params[0]
-    s_rate_temp, s_ind1_z_temp, s_ind2_z_temp, s_zb_temp, s_ind1_temp, s_ind2_temp, s_lb_temp, nshort_temp = params[1]
+    while end_flux_loop:
+      if method is None:
+        params = self.get_params()
+      elif type(method) is list:
+        params = self.get_set_params(method[run_iteration])
+      else:
+        raise ValueError("Wrong method used")
 
-    print(f"début des {nlong_temp} longs et {nshort_temp} courts     [ite {run_iteration}]")
-    l_m_flux_temp, l_p_flux_temp, l_flnc_temp = [], [], []
-    s_m_flux_temp, s_p_flux_temp, s_flnc_temp = [], [], []
-    run_times_long = []
-    run_times_short = []
-    for ite_long in range(nlong_temp):
-      # if ite_long % 100 == 0:
-      #   print(f"number of iteration for the long bursts : {ite_long}     [ite {run_itation}]", end="\r")
-      init_time = time()
-      l_temp_ret = self.get_long(l_rate_temp, l_ind1_z_temp, l_ind2_z_temp, l_zb_temp, l_ind1_temp, l_ind2_temp, l_lb_temp)
-      run_times_long.append(time() - init_time)
-      l_m_flux_temp.append(l_temp_ret[0])
-      l_p_flux_temp.append(l_temp_ret[2])
-      l_flnc_temp.append(l_temp_ret[2])
-    print(f"Long finished     [ite {run_iteration}]")
-    for ite_short in range(nshort_temp):
-      # if ite_short % 100 == 0:
-      #   print(f"number of iteration for the short bursts : {ite_short}     [ite {run_itation}]", end="\r")
-      init_time = time()
-      s_temp_ret = self.get_short(s_rate_temp, s_ind1_z_temp, s_ind2_z_temp, s_zb_temp, s_ind1_temp, s_ind2_temp, s_lb_temp)
-      run_times_short.append(time() - init_time)
-      s_m_flux_temp.append(s_temp_ret[0])
-      s_p_flux_temp.append(s_temp_ret[2])
-      s_flnc_temp.append(s_temp_ret[2])
-    print(f"Short finished     [ite {run_iteration}]")
-    # fig, ax = plt.subplots(1, 1)
-    # ax.hist(run_times_long, histtype="step", label="long run times")
-    # ax.hist(run_times_short, histtype="step", label="short run times")
-    # plt.show()
+      l_rate_temp, l_ind1_z_temp, l_ind2_z_temp, l_zb_temp, l_ind1_temp, l_ind2_temp, l_lb_temp, nlong_temp = params[0]
+      s_rate_temp, s_ind1_z_temp, s_ind2_z_temp, s_zb_temp, s_ind1_temp, s_ind2_temp, s_lb_temp, nshort_temp = params[1]
 
-    condition = self.mcmc_condition(l_m_flux_temp, l_p_flux_temp, l_flnc_temp, s_m_flux_temp, s_p_flux_temp, s_flnc_temp, params=params)
+      print(f"début des {nlong_temp} longs et {nshort_temp} courts     [ite {run_iteration}]")
+      l_m_flux_temp, l_p_flux_temp, l_flnc_temp = [], [], []
+      s_m_flux_temp, s_p_flux_temp, s_flnc_temp = [], [], []
+      run_times_long = []
+      run_times_short = []
+      for ite_long in range(nlong_temp):
+        # if ite_long % 100 == 0:
+        #   print(f"number of iteration for the long bursts : {ite_long}     [ite {run_itation}]", end="\r")
+        init_time = time()
+        l_temp_ret = self.get_long(l_rate_temp, l_ind1_z_temp, l_ind2_z_temp, l_zb_temp, l_ind1_temp, l_ind2_temp, l_lb_temp)
+        run_times_long.append(time() - init_time)
+        l_m_flux_temp.append(l_temp_ret[0])
+        l_p_flux_temp.append(l_temp_ret[2])
+        l_flnc_temp.append(l_temp_ret[2])
+      print(f"Long finished     [ite {run_iteration}]")
+      for ite_short in range(nshort_temp):
+        # if ite_short % 100 == 0:
+        #   print(f"number of iteration for the short bursts : {ite_short}     [ite {run_itation}]", end="\r")
+        init_time = time()
+        s_temp_ret = self.get_short(s_rate_temp, s_ind1_z_temp, s_ind2_z_temp, s_zb_temp, s_ind1_temp, s_ind2_temp, s_lb_temp)
+        run_times_short.append(time() - init_time)
+        s_m_flux_temp.append(s_temp_ret[0])
+        s_p_flux_temp.append(s_temp_ret[2])
+        s_flnc_temp.append(s_temp_ret[2])
+      print(f"Short finished     [ite {run_iteration}]")
+      # fig, ax = plt.subplots(1, 1)
+      # ax.hist(run_times_long, histtype="step", label="long run times")
+      # ax.hist(run_times_short, histtype="step", label="short run times")
+      # plt.show()
+
+      condition = self.mcmc_condition(l_m_flux_temp, l_p_flux_temp, l_flnc_temp, s_m_flux_temp, s_p_flux_temp, s_flnc_temp, params=params)
+      print(condition[2])
+      if condition[2] < 6 or method is None:
+        print("Leaving Looping")
+        end_flux_loop = False
+
     if condition[0]:
       row = [l_rate_temp, l_ind1_z_temp, l_ind2_z_temp, l_zb_temp, s_rate_temp, s_ind1_z_temp, s_ind2_z_temp, s_zb_temp, l_ind1_temp, l_ind2_temp, l_lb_temp, s_ind1_temp, s_ind2_temp, s_lb_temp, np.around(np.log10(condition[1]), 3), "Accepted"]
       # data_row = pd.DataFrame(data=[row], columns=self.columns)
@@ -490,29 +564,36 @@ class MCCatalog:
     if self.cond_option is None:
       obs_dat = np.concatenate((smp_pflux_l_hist_norm, smp_pflux_s_hist_norm, smp_flnc_l_hist_norm, smp_flnc_s_hist_norm))
       expect_dat = np.concatenate((self.l_pflux_bins, self.s_pflux_bins, self.l_flnc_bins, self.s_flnc_bins))
+      end_pflx_ratio = 1
     elif self.cond_option == "long_pflux":
       obs_dat = smp_pflux_l_hist_norm
       expect_dat = self.l_pflux_bins
+      end_pflx_ratio = smp_pflux_l_hist_norm[-1] / self.l_pflux_bins[-1]
     elif self.cond_option == "long_flnc":
       obs_dat = smp_flnc_l_hist_norm
       expect_dat = self.l_flnc_bins
+      end_pflx_ratio = 1
     elif self.cond_option == "long":
       obs_dat = np.concatenate((smp_pflux_l_hist_norm, smp_flnc_l_hist_norm))
       expect_dat = np.concatenate((self.l_pflux_bins, self.l_flnc_bins))
+      end_pflx_ratio = smp_pflux_l_hist_norm[-1] / self.l_pflux_bins[-1]
     elif self.cond_option == "short_pflux":
       obs_dat = smp_pflux_s_hist_norm
       expect_dat = self.s_pflux_bins
+      end_pflx_ratio = smp_pflux_s_hist_norm[-1] / self.s_pflux_bins[-1]
     elif self.cond_option == "short_flnc":
       obs_dat = smp_flnc_s_hist_norm
       expect_dat = self.s_flnc_bins
+      end_pflx_ratio = 1
     elif self.cond_option == "short":
       obs_dat = np.concatenate((smp_pflux_s_hist_norm, smp_flnc_s_hist_norm))
       expect_dat = np.concatenate((self.s_pflux_bins, self.s_flnc_bins))
+      end_pflx_ratio = smp_pflux_s_hist_norm[-1] / self.s_pflux_bins[-1]
     else:
       raise ValueError("Wrong value for cond_option : must be None, 'long_pflux', 'long_flnc', 'long', 'short_pflux', 'short_flnc' or 'short'")
 
     cond_test = chisquare(obs_dat, f_exp=expect_dat, ddof=0)
-    return cond_test[1] > 0.95, cond_test[1]
+    return cond_test[1] > 0.95, cond_test[1], end_pflx_ratio
 
   def hist_plotter(self, iteration, histos, params, comment="", savefile=None):
     if params is not None:
@@ -552,11 +633,11 @@ class MCCatalog:
     ax1l2.grid(True, which='major', linestyle='--', color='black', alpha=0.3)
     ax1l2.legend()
 
-    # ax2l2.hist(self.gbm_l_mflux, bins=self.usual_bins, histtype="step", color="red", label="GBM", weights=[self.gbm_weight] * len(self.gbm_l_mflux))
-    # ax2l2.hist(histos[0], bins=self.usual_bins, histtype="step", color="blue", label="Sample")
-    # ax2l2.set(xlabel="mflux (ph/cm²/s)", ylabel="Number of GRB", xscale="log", yscale=yscale)
-    # ax2l2.grid(True, which='major', linestyle='--', color='black', alpha=0.3)
-    # ax2l2.legend()
+    ax2l2.hist(self.gbm_l_mp_ratio, bins=30, histtype="step", color="red", label="GBM", weights=[1/len(self.gbm_l_mp_ratio)] * len(self.gbm_l_mp_ratio))
+    ax2l2.hist(np.array(histos[1]) / np.array(histos[0]), bins=np.logspace(0, 3, 30), histtype="step", color="blue", label="Sample",  weights=[1/len(histos[1])] * len(histos[1]))
+    ax2l2.set(xlabel="p/m ratio lGRB", ylabel="proportion over full population", xscale="log", yscale="linear")
+    ax2l2.grid(True, which='major', linestyle='--', color='black', alpha=0.3)
+    ax2l2.legend()
 
     ax3l2.hist(self.gbm_l_flnc, bins=self.usual_bins, histtype="step", color="red", label="GBM", weights=[self.gbm_weight] * len(self.gbm_l_flnc))
     ax3l2.hist(histos[2], bins=self.usual_bins, histtype="step", color="blue", label="Sample")
@@ -592,11 +673,11 @@ class MCCatalog:
     ax1s2.grid(True, which='major', linestyle='--', color='black', alpha=0.3)
     ax1s2.legend()
 
-    # ax2s2.hist(self.gbm_s_mflux, bins=self.usual_bins, histtype="step", color="red", label="GBM", weights=[self.gbm_weight] * len(self.gbm_s_mflux))
-    # ax2s2.hist(histos[3], bins=self.usual_bins, histtype="step", color="blue", label="Sample")
-    # ax2s2.set(xlabel="mflux (ph/cm²/s)", ylabel="Number of GRB", xscale="log", yscale=yscale)
-    # ax2s2.grid(True, which='major', linestyle='--', color='black', alpha=0.3)
-    # ax2s2.legend()
+    ax2s2.hist(self.gbm_s_mp_ratio, bins=30, histtype="step", color="red", label="GBM", weights=[1/len(self.gbm_s_mp_ratio)] * len(self.gbm_s_mp_ratio))
+    ax2s2.hist(np.array(histos[4]) / np.array(histos[3]), bins=np.logspace(0, 3, 30), histtype="step", color="blue", label="Sample",  weights=[1/len(histos[4])] * len(histos[4]))
+    ax2s2.set(xlabel="p/m ratio sGRB", ylabel="proportion over full population", xscale="log", yscale="linear")
+    ax2s2.grid(True, which='major', linestyle='--', color='black', alpha=0.3)
+    ax2s2.legend()
 
     ax3s2.hist(self.gbm_s_flnc, bins=self.usual_bins, histtype="step", color="red", label="GBM", weights=[self.gbm_weight] * len(self.gbm_s_flnc))
     ax3s2.hist(histos[5], bins=self.usual_bins, histtype="step", color="blue", label="Sample")
