@@ -688,7 +688,11 @@ class MCCatalog:
     ax3s2.legend()
 
     if savefile is not None:
-      plt.savefig(f"{savefile.split('.csv')[0]}_{iteration}_{int(histos[6])}")
+      if np.isinf(histos[6]):
+        pval_suf = "-inf"
+      else:
+        pval_suf = int(histos[6])
+      plt.savefig(f"{savefile.split('.csv')[0]}_{iteration}_{pval_suf}")
     plt.close(fig1)
 
     # plt.show()
