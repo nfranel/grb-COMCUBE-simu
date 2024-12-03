@@ -190,9 +190,9 @@ class MCCatalog:
     self.l_ind1_min = -1.1
     self.l_ind1_max = 0
     self.l_ind2_min = -5
-    self.l_ind2_max = -1.4
+    self.l_ind2_max = -2
     self.l_lb_min = 5e50
-    self.l_lb_max = 10**53.5
+    self.l_lb_max = 1e53
 
     self.s_ind1_min = -1
     self.s_ind1_max = -0.39
