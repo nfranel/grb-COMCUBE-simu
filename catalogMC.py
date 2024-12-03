@@ -283,7 +283,7 @@ class MCCatalog:
         else:
           return "0 - -2"
 
-      fold_name = "longredlum2220"
+      fold_name = "longredlum3000"
       savefile = f"Sampled/{fold_name}/longfit_red_lum.csv"
       comm = "Long-Redshift-Luminosity"
       if not (f"{fold_name}" in os.listdir("Sampled/")):
@@ -301,7 +301,7 @@ class MCCatalog:
       # par_size = len(param_list)
 
       param_list = None
-      par_size = 2220
+      par_size = 3000
       # param_list = build_params([0.2, 0.4, 0.5], [2.4, 2.6, 3.], [-1.1, -0.8, -0.6, -0.4], [2, 2.6, 3.6, 4.1, 5], [-0.8, -0.7, -0.6, -0.3, -0.2], [-1.8, -2.1, -2.5, -3], [1e51, 5e51, 1e52, 2e52], 0.25, 2.8, 3.5, 2.3, -0.53, -3.4, 2.8e52)
       # param_list = build_params(0.2, 2.1, [-1.1, -0.6, -0.4], [2, 4.1, 5], -0.6, -2.1, 1e52, 0.25, 2.8, 3.5, 2.3, -0.53, -3.4, 2.8e52)
       self.run_mc(par_size, thread_number=thread_num, method=param_list, savefile=savefile)
