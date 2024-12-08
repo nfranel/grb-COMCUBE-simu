@@ -170,7 +170,7 @@ class MCCatalog:
 
     # Redshift
     self.l_rate_min = 0.2
-    self.l_rate_max = 0.7
+    self.l_rate_max = 0.6
     self.l_ind1_z_min = 2.5
     self.l_ind1_z_max = 4.3
     self.l_ind2_z_min = -2.4
@@ -192,7 +192,7 @@ class MCCatalog:
     self.l_ind2_min = -5
     self.l_ind2_max = -3
     self.l_lb_min = 5e50
-    self.l_lb_max = 2e52
+    self.l_lb_max = 1e52
 
     self.s_ind1_min = -1
     self.s_ind1_max = -0.39
@@ -283,7 +283,7 @@ class MCCatalog:
         else:
           return "0 - -2"
 
-      fold_name = "longredlum3000v5"
+      fold_name = "longredlum3000v6"
       savefile = f"Sampled/{fold_name}/longfit_red_lum.csv"
       comm = "Long-Redshift-Luminosity"
       if not (f"{fold_name}" in os.listdir("Sampled/")):
