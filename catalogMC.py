@@ -192,7 +192,7 @@ class MCCatalog:
     self.l_ind2_min = -5
     self.l_ind2_max = -3
     self.l_lb_min = 5e50
-    self.l_lb_max = 1e52
+    self.l_lb_max = 5e51
 
     self.s_ind1_min = -1
     self.s_ind1_max = -0.39
@@ -214,7 +214,7 @@ class MCCatalog:
 
     # variables containing the MCMC results
     self.columns = ["long_rate", "long_ind1_z", "long_ind2_z", "long_zb", "short_rate", "short_ind1_z", "short_ind2_z", "short_zb", "long_ind1_lum", "long_ind2_lum", "long_lb", "short_ind1_lum", "short_ind2_lum",
-                    "short_lb", "log_pvalue", "status"]
+                    "short_lb", "log_pvalue", "pierson_chi2", "status"]
     self.result_df = pd.DataFrame(columns=self.columns)
 
     # build_params(l_rate, l_ind1_z, l_ind2_z, l_zb, l_ind1, l_ind2, l_lb, s_rate, s_ind1_z, s_ind2_z, s_zb, s_ind1, s_ind2, s_lb)
@@ -283,7 +283,7 @@ class MCCatalog:
         else:
           return "0 - -2"
 
-      fold_name = "longredlum3000v6"
+      fold_name = "longredlum2220v6"
       savefile = f"Sampled/{fold_name}/longfit_red_lum.csv"
       comm = "Long-Redshift-Luminosity"
       if not (f"{fold_name}" in os.listdir("Sampled/")):
@@ -301,7 +301,7 @@ class MCCatalog:
       # par_size = len(param_list)
 
       param_list = None
-      par_size = 3000
+      par_size = 2220
       # param_list = build_params([0.2, 0.4, 0.5], [2.4, 2.6, 3.], [-1.1, -0.8, -0.6, -0.4], [2, 2.6, 3.6, 4.1, 5], [-0.8, -0.7, -0.6, -0.3, -0.2], [-1.8, -2.1, -2.5, -3], [1e51, 5e51, 1e52, 2e52], 0.25, 2.8, 3.5, 2.3, -0.53, -3.4, 2.8e52)
       # param_list = build_params(0.2, 2.1, [-1.1, -0.6, -0.4], [2, 4.1, 5], -0.6, -2.1, 1e52, 0.25, 2.8, 3.5, 2.3, -0.53, -3.4, 2.8e52)
       self.run_mc(par_size, thread_number=thread_num, method=param_list, savefile=savefile)
@@ -514,24 +514,24 @@ class MCCatalog:
 
       condition = self.mcmc_condition(l_m_flux_temp, l_p_flux_temp, l_flnc_temp, s_m_flux_temp, s_p_flux_temp, s_flnc_temp, params=params)
       pflux_ratio_thresh = 4
-      if condition[2] < pflux_ratio_thresh or method is None:
+      if condition[3] < pflux_ratio_thresh or method is None:
         end_flux_loop = False
       else:
-        print(f"====== LOOPING - pflux ratio : {round(condition[2], 2)} > {pflux_ratio_thresh} ======")
+        print(f"====== LOOPING - pflux ratio : {round(condition[3], 2)} > {pflux_ratio_thresh} ======")
 
     if condition[0]:
-      row = [l_rate_temp, l_ind1_z_temp, l_ind2_z_temp, l_zb_temp, s_rate_temp, s_ind1_z_temp, s_ind2_z_temp, s_zb_temp, l_ind1_temp, l_ind2_temp, l_lb_temp, s_ind1_temp, s_ind2_temp, s_lb_temp, np.around(np.log10(condition[1]), 3), "Accepted"]
+      row = [l_rate_temp, l_ind1_z_temp, l_ind2_z_temp, l_zb_temp, s_rate_temp, s_ind1_z_temp, s_ind2_z_temp, s_zb_temp, l_ind1_temp, l_ind2_temp, l_lb_temp, s_ind1_temp, s_ind2_temp, s_lb_temp, np.around(np.log10(condition[1]), 3), np.around(condition[2], 3), "Accepted"]
       # data_row = pd.DataFrame(data=[row], columns=self.columns)
       # self.result_df = pd.concat([self.result_df, data_row], ignore_index=True)
     else:
-      row = [l_rate_temp, l_ind1_z_temp, l_ind2_z_temp, l_zb_temp, s_rate_temp, s_ind1_z_temp, s_ind2_z_temp, s_zb_temp, l_ind1_temp, l_ind2_temp, l_lb_temp, s_ind1_temp, s_ind2_temp, s_lb_temp, np.around(np.log10(condition[1]), 3), "Rejected"]
+      row = [l_rate_temp, l_ind1_z_temp, l_ind2_z_temp, l_zb_temp, s_rate_temp, s_ind1_z_temp, s_ind2_z_temp, s_zb_temp, l_ind1_temp, l_ind2_temp, l_lb_temp, s_ind1_temp, s_ind2_temp, s_lb_temp, np.around(np.log10(condition[1]), 3), np.around(condition[2], 3), "Rejected"]
       # data_row = pd.DataFrame(data=[row], columns=self.columns)
       # self.result_df = pd.concat([self.result_df, data_row], ignore_index=True)
       # print(data_row)
-      print(f"Rejected : log_pvalue = {np.around(np.log10(condition[1]), 3)}     [ite {run_iteration}]")
+      print(f"Rejected : log_pvalue = {np.around(np.log10(condition[1]), 3)}    pearson chi2 = {np.around(condition[2], 3)}     [ite {run_iteration}]")
 
     list_param = l_rate_temp, l_ind1_z_temp, l_ind2_z_temp, l_zb_temp, l_ind1_temp, l_ind2_temp, l_lb_temp, s_rate_temp, s_ind1_z_temp, s_ind2_z_temp, s_zb_temp, s_ind1_temp, s_ind2_temp, s_lb_temp
-    self.hist_plotter(run_iteration, [l_m_flux_temp, l_p_flux_temp, l_flnc_temp, s_m_flux_temp, s_p_flux_temp, s_flnc_temp, np.around(np.log10(condition[1]), 3)], list_param, comment=comment, savefile=savefile)
+    self.hist_plotter(run_iteration, [l_m_flux_temp, l_p_flux_temp, l_flnc_temp, s_m_flux_temp, s_p_flux_temp, s_flnc_temp, np.around(np.log10(condition[1]), 3), np.around(condition[2], 3)], list_param, comment=comment, savefile=savefile)
 
     # creating histograms
     # smp_pflux_l_hist = np.histogram(l_p_flux_temp, bins=self.bin_flux_l[self.nfluxbin_l[0]:])[0]
@@ -595,13 +595,15 @@ class MCCatalog:
       raise ValueError("Wrong value for cond_option : must be None, 'long_pflux', 'long_flnc', 'long', 'short_pflux', 'short_flnc' or 'short'")
 
     cond_test = chisquare(obs_dat, f_exp=expect_dat, ddof=0)
-    return cond_test[1] > 0.95, cond_test[1], end_pflx_ratio
+    # print(cond_test)
+    # print(np.sum((obs_dat-expect_dat)**2/expect_dat))
+    return cond_test[1] > 0.95, cond_test[1], cond_test[0], end_pflx_ratio
 
   def hist_plotter(self, iteration, histos, params, comment="", savefile=None):
     if params is not None:
-      title = f"{comment}\n{params[0:7]}\n{params[7:]}\nLog p-value on {self.cond_option} : {histos[6]}"
+      title = f"{comment}\n{params[0:7]}\n{params[7:]}\nLog p-value of {self.cond_option} : {histos[6]}\nPierson chi2 of {self.cond_option} : {histos[7]}"
     else:
-      title = f"{comment}\nLog p-value on {self.cond_option} : {histos[6]}"
+      title = f"{comment}\nLog p-value of {self.cond_option} : {histos[6]}\nPierson chi2 of {self.cond_option} : {histos[7]}"
 
     yscale = "log"
     fig1, ((ax1l, ax2l, ax3l), (ax1l2, ax2l2, ax3l2), (ax1s, ax2s, ax3s), (ax1s2, ax2s2, ax3s2)) = plt.subplots(nrows=4, ncols=3, figsize=(20, 12))
@@ -692,7 +694,7 @@ class MCCatalog:
         pval_suf = "-inf"
       else:
         pval_suf = int(histos[6])
-      plt.savefig(f"{savefile.split('.csv')[0]}_{iteration}_{pval_suf}")
+      plt.savefig(f"{savefile.split('.csv')[0]}_{iteration}_{pval_suf}_{int(histos[7])}")
     plt.close(fig1)
 
     # plt.show()
