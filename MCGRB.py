@@ -5,10 +5,11 @@ import multiprocessing as mp
 from itertools import repeat
 # from scipy.stats import skewnorm
 from catalog import Catalog
-from funcmod import extract_lc, calc_flux_gbm, use_scipyquad
+from funcmod import extract_lc, calc_flux_gbm, use_scipyquad, pflux_to_mflux_calculator
+
 from funcsample import *
 # from scipy.optimize import curve_fit
-from scipy.stats import gaussian_kde
+from scipy.stats import gaussian_kde, norm
 # import warnings
 import matplotlib as mpl
 
@@ -296,10 +297,15 @@ class GRBSample:
 
     band_low_obs_temp, band_high_obs_temp = pick_lognormal_alpha_beta(self.band_low_l_mu, self.band_low_l_sig, self.band_high_l_mu, self.band_high_l_sig)
 
-    t90_obs_temp = 10 ** self.kde_long_log_t90.resample(1)[0][0]
+    # t90_obs_temp = 10 ** self.kde_long_log_t90.resample(1)[0][0]
+    t90_obs_temp = 0
+    while t90_obs_temp <= 2:
+      t90_obs_temp = 10 ** norm.rvs(1.4875, 0.45669)
+
     lc_temp = self.closest_lc(t90_obs_temp)
     times, counts = extract_lc(f"./sources/Light_Curves/{lc_temp}")
     pflux_to_mflux = np.mean(counts) / np.max(counts)
+    # pflux_to_mflux = pflux_to_mflux_calculator(lc_temp)
 
     dl_obs_temp = self.cosmo.luminosity_distance(z_obs_temp).value / 1000  # Gpc
     ep_rest_temp = yonetoku_reverse_long(lpeak_rest_temp)
@@ -309,7 +315,7 @@ class GRBSample:
     ##################################################################################################################
     # Calculation of spectrum and data saving
     ##################################################################################################################
-    ener_range = np.logspace(1, 3, 100001)
+    ener_range = np.logspace(1, 3, 10001)
     norm_val, spec, temp_peak_flux = norm_band_spec_calc(band_low_obs_temp, band_high_obs_temp, z_obs_temp, dl_obs_temp, ep_rest_temp, lpeak_rest_temp, ener_range, verbose=False)
     temp_mean_flux = temp_peak_flux * pflux_to_mflux
 
@@ -430,7 +436,7 @@ class GRBSample:
     Compare the distribution of the created quatities and the seed distributions
     """
     fluence_min, fluence_max = 1e-8, 1e4
-    flux_min, flux_max = 1e-8, 1e5
+    flux_min, flux_max = 1e-6, 1e5
 
     df_short = self.sample_df.loc[self.sample_df.Type == "Sample short"]
     n_sample = len(df_short)
@@ -514,7 +520,7 @@ class GRBSample:
     Compare the distribution of the created quatities and the seed distributions
     """
     fluence_min, fluence_max = 1e-8, 1e4
-    flux_min, flux_max = 1e-8, 1e5
+    flux_min, flux_max = 1e-6, 1e5
 
     df_long = self.sample_df.loc[self.sample_df.Type == "Sample long"]
     n_sample = len(df_long)
@@ -597,7 +603,7 @@ class GRBSample:
     Compare the distribution of the created quatities and the seed distributions
     """
     fluence_min, fluence_max = 1e-8, 1e4
-    flux_min, flux_max = 1e-8, 1e5
+    flux_min, flux_max = 1e-6, 1e5
 
     df_full = self.sample_df
     n_sample = len(df_full)
