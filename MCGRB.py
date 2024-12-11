@@ -305,8 +305,8 @@ class GRBSample:
 
     lc_temp = self.closest_lc(t90_obs_temp)
     times, counts = extract_lc(f"./sources/Light_Curves/{lc_temp}")
-    pflux_to_mflux = np.mean(counts) / np.max(counts)
-    # pflux_to_mflux = pflux_to_mflux_calculator(lc_temp)
+    # pflux_to_mflux = np.mean(counts) / np.max(counts)
+    pflux_to_mflux = pflux_to_mflux_calculator(lc_temp)
 
     dl_obs_temp = self.cosmo.luminosity_distance(z_obs_temp).value / 1000  # Gpc
     ep_rest_temp = yonetoku_reverse_long(lpeak_rest_temp)
