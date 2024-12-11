@@ -293,7 +293,8 @@ class GRBSample:
     ##################################################################################################################
     z_obs_temp = acc_reject(red_rate_long, [self.long_rate, self.ind1_z_l, self.ind2_z_l, self.zb_l], self.zmin, self.zmax)
 
-    lpeak_rest_temp = acc_reject(broken_plaw, [self.ind1_l, self.ind2_l, self.lb_l], self.lmin, self.lmax)
+    # lpeak_rest_temp = acc_reject(broken_plaw, [self.ind1_l, self.ind2_l, self.lb_l], self.lmin, self.lmax)
+    lpeak_rest_temp = transfo_broken_plaw(self.ind1_l, self.ind2_l, self.lb_l, self.lmin, self.lmax)
 
     band_low_obs_temp, band_high_obs_temp = pick_lognormal_alpha_beta(self.band_low_l_mu, self.band_low_l_sig, self.band_high_l_mu, self.band_high_l_sig)
 
