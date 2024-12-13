@@ -283,7 +283,7 @@ class MCCatalog:
         else:
           return "0 - 2"
 
-      fold_name = "longredlum2220vtest"
+      fold_name = "longredlum1vtest"
       savefile = f"Sampled/{fold_name}/longfit_red_lum.csv"
       comm = "Long-Redshift-Luminosity"
       if not (f"{fold_name}" in os.listdir("Sampled/")):
@@ -300,10 +300,11 @@ class MCCatalog:
       #              [0.5, 2.6, -0.4, 4.1, -0.2, -3, 1e51, 0.25, 2.8, 3.5, 2.3, -0.53, -3.4, 2.8e52]]
       # par_size = len(param_list)
 
-      param_list = None
-      par_size = 15
+      # param_list = None
+      # par_size = 15
       # param_list = build_params([0.2, 0.4, 0.5], [2.4, 2.6, 3.], [-1.1, -0.8, -0.6, -0.4], [2, 2.6, 3.6, 4.1, 5], [-0.8, -0.7, -0.6, -0.3, -0.2], [-1.8, -2.1, -2.5, -3], [1e51, 5e51, 1e52, 2e52], 0.25, 2.8, 3.5, 2.3, -0.53, -3.4, 2.8e52)
-      # param_list = build_params(0.2, 2.1, [-1.1, -0.6, -0.4], [2, 4.1, 5], -0.6, -2.1, 1e52, 0.25, 2.8, 3.5, 2.3, -0.53, -3.4, 2.8e52)
+      param_list = build_params(0.4148, 2.7187, -1.0358, 2.9323, -0.9428, -4.5493, 6.1594e50, 0.7558, 4.0278, 1.7292, 2.4066, -0.8804, -3.2186, 2.9798e52)
+      par_size = len(param_list)
       self.run_mc(par_size, thread_number=thread_num, method=param_list, savefile=savefile)
       # for ite_mc in range(len(histograms)):
       #   self.hist_plotter(ite_mc, histograms[ite_mc], param_list[ite_mc], comment=comm, savefile=savefile)
@@ -736,22 +737,22 @@ class MCCatalog:
     ##################################################################################################################
     # picking according to distributions
     ##################################################################################################################
-    timelist = []
-    init_time = time()
+    # timelist = []
+    # init_time = time()
     z_obs_temp = acc_reject(red_rate_long, [long_rate, ind1_z_l, ind2_z_l, zb_l], self.zmin, self.zmax)
-    timelist.append(time() - init_time)
-    init_time = time()
+    # timelist.append(time() - init_time)
+    # init_time = time()
     # lpeak_rest_temp = acc_reject(broken_plaw, [ind1_l, ind2_l, lb_l], self.lmin, self.lmax)
     lpeak_rest_temp = transfo_broken_plaw(ind1_l, ind2_l, lb_l, self.lmin, self.lmax)
-    timelist.append(time() - init_time)
-    init_time = time()
+    # timelist.append(time() - init_time)
+    # init_time = time()
     band_low_obs_temp, band_high_obs_temp = pick_lognormal_alpha_beta(self.band_low_l_mu, self.band_low_l_sig, self.band_high_l_mu, self.band_high_l_sig)
-    timelist.append(time() - init_time)
-    init_time = time()
+    # timelist.append(time() - init_time)
+    # init_time = time()
     t90_obs_temp = 0
     while t90_obs_temp <= 2:
       t90_obs_temp = 10 ** norm.rvs(1.4875, 0.45669)
-    timelist.append(time() - init_time)
+    # timelist.append(time() - init_time)
 
     lc_temp = self.closest_lc(t90_obs_temp)
     # times, counts = extract_lc(f"./sources/Light_Curves/{lc_temp}")
@@ -760,7 +761,7 @@ class MCCatalog:
 
     dl_obs_temp = self.cosmo.luminosity_distance(z_obs_temp).value / 1000  # Gpc
     ep_rest_temp = yonetoku_reverse_long(lpeak_rest_temp)
-    init_time = time()
+    # init_time = time()
     # ep_obs_temp = ep_rest_temp / (1 + z_obs_temp)
     # eiso_rest_temp = amati_long(ep_rest_temp)
 
@@ -770,7 +771,7 @@ class MCCatalog:
     ener_range = np.logspace(1, 3, 10001)
     norm_val, spec, temp_peak_flux = norm_band_spec_calc(band_low_obs_temp, band_high_obs_temp, z_obs_temp, dl_obs_temp, ep_rest_temp, lpeak_rest_temp, ener_range, verbose=False)
     temp_mean_flux = temp_peak_flux * pflux_to_mflux
-    timelist.append(time() - init_time)
+    # timelist.append(time() - init_time)
     init_time = time()
     # for times in timelist:
     #   print(f"Time taken : {times:8.6f}s making {times/np.sum(timelist)*100:5.2f}% of the run")
