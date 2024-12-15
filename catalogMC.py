@@ -170,13 +170,13 @@ class MCCatalog:
 
     # Redshift
     self.l_rate_min = 0.2
-    self.l_rate_max = 0.6
-    self.l_ind1_z_min = 2.5
+    self.l_rate_max = 2
+    self.l_ind1_z_min = 1.5
     self.l_ind1_z_max = 4.3
     self.l_ind2_z_min = -2.4
     self.l_ind2_z_max = -0.01
     self.l_zb_min = 2
-    self.l_zb_max = 4
+    self.l_zb_max = 5
 
     self.s_rate_min = 0.4
     self.s_rate_max = 1.1
@@ -190,9 +190,9 @@ class MCCatalog:
     self.l_ind1_min = -1.1
     self.l_ind1_max = 0
     self.l_ind2_min = -5
-    self.l_ind2_max = -3
+    self.l_ind2_max = -1.4
     self.l_lb_min = 5e50
-    self.l_lb_max = 5e51
+    self.l_lb_max = 1e53
 
     self.s_ind1_min = -1
     self.s_ind1_max = -0.39
@@ -283,7 +283,7 @@ class MCCatalog:
         else:
           return "0 - 2"
 
-      fold_name = "longredlum1vtest"
+      fold_name = "longredlumv3-2220"
       savefile = f"Sampled/{fold_name}/longfit_red_lum.csv"
       comm = "Long-Redshift-Luminosity"
       if not (f"{fold_name}" in os.listdir("Sampled/")):
@@ -299,12 +299,16 @@ class MCCatalog:
       #              [0.2, 3, -0.6, 5, -0.6, -3, 5e51, 0.25, 2.8, 3.5, 2.3, -0.53, -3.4, 2.8e52],
       #              [0.5, 2.6, -0.4, 4.1, -0.2, -3, 1e51, 0.25, 2.8, 3.5, 2.3, -0.53, -3.4, 2.8e52]]
       # par_size = len(param_list)
+      # np.random.seed(1)
 
-      # param_list = None
-      # par_size = 15
+      param_list = None
+      par_size = 2220
       # param_list = build_params([0.2, 0.4, 0.5], [2.4, 2.6, 3.], [-1.1, -0.8, -0.6, -0.4], [2, 2.6, 3.6, 4.1, 5], [-0.8, -0.7, -0.6, -0.3, -0.2], [-1.8, -2.1, -2.5, -3], [1e51, 5e51, 1e52, 2e52], 0.25, 2.8, 3.5, 2.3, -0.53, -3.4, 2.8e52)
-      param_list = build_params(0.4148, 2.7187, -1.0358, 2.9323, -0.9428, -4.5493, 6.1594e50, 0.7558, 4.0278, 1.7292, 2.4066, -0.8804, -3.2186, 2.9798e52)
-      par_size = len(param_list)
+      # param_list = [[0.4148, 2.7187, -1.0358, 2.9323, -0.9428, -4.5493, 6.1594e50, 0.7558, 4.0278, 1.7292, 2.4066, -0.8804, -3.2186, 2.9798e52], [0.4148, 2.7187, -1.0358, 2.9323, -0.9428, -4.5493, 6.1594e50, 0.7558, 4.0278, 1.7292, 2.4066, -0.8804, -3.2186, 2.9798e52], [0.4148, 2.7187, -1.0358, 2.9323, -0.9428, -4.5493, 6.1594e50, 0.7558, 4.0278, 1.7292, 2.4066, -0.8804, -3.2186, 2.9798e52], [0.4148, 2.7187, -1.0358, 2.9323, -0.9428, -4.5493, 6.1594e50, 0.7558, 4.0278, 1.7292, 2.4066, -0.8804, -3.2186, 2.9798e52], [0.4148, 2.7187, -1.0358, 2.9323, -0.9428, -4.5493, 6.1594e50, 0.7558, 4.0278, 1.7292, 2.4066, -0.8804, -3.2186, 2.9798e52]]
+      # param_list = [[0.4148, 2.7187, -1.0358, 2.9323, -0.9428, -4.5493, 6.1594e50, 0.7558, 4.0278, 1.7292, 2.4066, -0.8804, -3.2186, 2.9798e52]]
+      # param_list = [[0.41479424572966006, 2.718677743146426, -1.0358413825879906, 2.9322993143450997, -0.9427598188310657, -4.549293114220461, 6.159363506765503e+50, 0.7558, 4.0278, 1.7292, 2.4066, -0.8804, -3.2186, 2.9798e52], [0.41479424572966006, 2.718677743146426, -1.0358413825879906, 2.9322993143450997, -0.9427598188310657, -4.549293114220461, 6.159363506765503e+50, 0.7558, 4.0278, 1.7292, 2.4066, -0.8804, -3.2186, 2.9798e52], [0.41479424572966006, 2.718677743146426, -1.0358413825879906, 2.9322993143450997, -0.9427598188310657, -4.549293114220461, 6.159363506765503e+50, 0.7558, 4.0278, 1.7292, 2.4066, -0.8804, -3.2186, 2.9798e52], [0.41479424572966006, 2.718677743146426, -1.0358413825879906, 2.9322993143450997, -0.9427598188310657, -4.549293114220461, 6.159363506765503e+50, 0.7558, 4.0278, 1.7292, 2.4066, -0.8804, -3.2186, 2.9798e52], [0.41479424572966006, 2.718677743146426, -1.0358413825879906, 2.9322993143450997, -0.9427598188310657, -4.549293114220461, 6.159363506765503e+50, 0.7558, 4.0278, 1.7292, 2.4066, -0.8804, -3.2186, 2.9798e52]]
+      # 0.41479424572966006, 2.718677743146426, -1.0358413825879906, 2.9322993143450997, 0.4545165085958286, 2.861449218884993, 3.1611593795969033, 2.7993308298547532, -0.9427598188310657, -4.549293114220461, 6.159363506765503e+50, -0.667008877140725, -2.8335973226643842, 1.0599183330017105e+52
+      # par_size = len(param_list)
       self.run_mc(par_size, thread_number=thread_num, method=param_list, savefile=savefile)
       # for ite_mc in range(len(histograms)):
       #   self.hist_plotter(ite_mc, histograms[ite_mc], param_list[ite_mc], comment=comm, savefile=savefile)
@@ -469,6 +473,7 @@ class MCCatalog:
   def get_sample(self, run_iteration, method=None, comment="", savefile=None):
     # Using a different seed for each thread, somehow the seed what the same without using it
     np.random.seed(os.getpid() + int(time() * 1000) % 2**32)
+    # np.random.seed(1)
 
     end_flux_loop = True
 
@@ -495,7 +500,7 @@ class MCCatalog:
         l_temp_ret = self.get_long(l_rate_temp, l_ind1_z_temp, l_ind2_z_temp, l_zb_temp, l_ind1_temp, l_ind2_temp, l_lb_temp)
         run_times_long.append(time() - init_time)
         l_m_flux_temp.append(l_temp_ret[0])
-        l_p_flux_temp.append(l_temp_ret[2])
+        l_p_flux_temp.append(l_temp_ret[1])
         l_flnc_temp.append(l_temp_ret[2])
       print(f"Long finished     [ite {run_iteration}]")
       for ite_short in range(nshort_temp):
@@ -505,7 +510,7 @@ class MCCatalog:
         s_temp_ret = self.get_short(s_rate_temp, s_ind1_z_temp, s_ind2_z_temp, s_zb_temp, s_ind1_temp, s_ind2_temp, s_lb_temp)
         run_times_short.append(time() - init_time)
         s_m_flux_temp.append(s_temp_ret[0])
-        s_p_flux_temp.append(s_temp_ret[2])
+        s_p_flux_temp.append(s_temp_ret[1])
         s_flnc_temp.append(s_temp_ret[2])
       print(f"Short finished     [ite {run_iteration}]")
       # fig, ax = plt.subplots(1, 1)
@@ -740,6 +745,7 @@ class MCCatalog:
     # timelist = []
     # init_time = time()
     z_obs_temp = acc_reject(red_rate_long, [long_rate, ind1_z_l, ind2_z_l, zb_l], self.zmin, self.zmax)
+
     # timelist.append(time() - init_time)
     # init_time = time()
     # lpeak_rest_temp = acc_reject(broken_plaw, [ind1_l, ind2_l, lb_l], self.lmin, self.lmax)
@@ -771,8 +777,9 @@ class MCCatalog:
     ener_range = np.logspace(1, 3, 10001)
     norm_val, spec, temp_peak_flux = norm_band_spec_calc(band_low_obs_temp, band_high_obs_temp, z_obs_temp, dl_obs_temp, ep_rest_temp, lpeak_rest_temp, ener_range, verbose=False)
     temp_mean_flux = temp_peak_flux * pflux_to_mflux
+
     # timelist.append(time() - init_time)
-    init_time = time()
+    # init_time = time()
     # for times in timelist:
     #   print(f"Time taken : {times:8.6f}s making {times/np.sum(timelist)*100:5.2f}% of the run")
     return [temp_mean_flux, temp_peak_flux, temp_mean_flux * t90_obs_temp]

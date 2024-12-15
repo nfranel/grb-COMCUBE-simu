@@ -5,6 +5,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.pyplot import xscale
 from funcsample import acc_reject
+from time import time
+import os
 
 from catalog import Catalog
 from scipy.optimize import curve_fit
@@ -15,15 +17,20 @@ mpl.use("Qt5Agg")
 
 gbm_cat = Catalog("GBM/allGBM.txt", [4, '\n', 5, '|', 4000], "GBM/rest_frame_properties.txt")
 
+np.random.seed(os.getpid() + int(time() * 1000) % 2**32)
+
+
 def gauss(x, amp, mu, sig):
   # print(type(amp), type(mu), type(sig))
   # print(amp * np.random.normal(loc=mu, scale=sig))
   return amp * norm.pdf(x, loc=mu, scale=sig)
 
+
 def double_gauss(x, amp1, mu1, sig1, amp2, mu2, sig2):
   # print(type(amp), type(mu), type(sig))
   # print(amp * np.random.normal(loc=mu, scale=sig))
   return gauss(x, amp1, mu1, sig1) + gauss(x, amp2, mu2, sig2)
+
 
 indexes = False
 durations = False

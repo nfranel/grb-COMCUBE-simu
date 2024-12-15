@@ -175,6 +175,8 @@ class GRBSample:
     self.nshort = int(self.n_year * use_scipyquad(red_rate_short, self.zmin, self.zmax, func_args=(self.short_rate, self.ind1_z_s, self.ind2_z_s, self.zb_s), x_logscale=False)[0])
     print(self.nlong, self.nshort)
 
+    # np.random.seed(1)
+
     # # Long GRBs
     # long_smp = []
     print("nlong : ", self.nlong)
@@ -265,7 +267,11 @@ class GRBSample:
 
     band_low_obs_temp, band_high_obs_temp = pick_lognormal_alpha_beta(self.band_low_s_mu, self.band_low_s_sig, self.band_high_s_mu, self.band_high_s_sig)
 
-    t90_obs_temp = 10 ** self.kde_short_log_t90.resample(1)[0][0]
+    # t90_obs_temp = 10 ** self.kde_long_log_t90.resample(1)[0][0]
+    t90_obs_temp = 0
+    while t90_obs_temp > 2:
+      t90_obs_temp = 10 ** norm.rvs(1.4875, 0.45669)
+
     lc_temp = self.closest_lc(t90_obs_temp)
     times, counts = extract_lc(f"./sources/Light_Curves/{lc_temp}")
     pflux_to_mflux = np.mean(counts) / np.max(counts)
@@ -292,7 +298,6 @@ class GRBSample:
     Based on Sarah Antier's thesis
     """
     np.random.seed(os.getpid() + int(time() * 1000) % 2**32)
-
     ##################################################################################################################
     # picking according to distributions
     ##################################################################################################################
