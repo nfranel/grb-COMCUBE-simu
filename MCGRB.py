@@ -54,15 +54,15 @@ class GRBSample:
     self.nshort = None  # func to calculate ?
     # ==== Redshift
     # Function and associated parameters and cases are taken from Ghirlanda 2016
-    self.short_rate = 0.7558  # 0.80  # +0.3 -0.15 [Gpc-3.yr-1] # Ghirlanda 2016 initial value : 0.2 +0.04 -0.07  but 0.8 gives better results in terms of distribution and total number of sGRB
-    self.ind1_z_s = 4.0278  # 2.8
-    self.ind2_z_s = 1.7292  # 2.3
-    self.zb_s = 2.4066  # 3.5
+    self.short_rate = 0.577574  # 0.80  # +0.3 -0.15 [Gpc-3.yr-1] # Ghirlanda 2016 initial value : 0.2 +0.04 -0.07  but 0.8 gives better results in terms of distribution and total number of sGRB
+    self.ind1_z_s = 3.107413  # 2.8
+    self.ind2_z_s = 1.179197  # 2.3
+    self.zb_s = 2.318962  # 3.5
     # ==== Luminosity
     # Function and associated parameters and cases are taken from Ghirlanda 2016
-    self.ind1_s = -0.8804  # -0.53
-    self.ind2_s = -3.2186  # -3.4
-    self.lb_s = 2.9798e52  # 2.8e52
+    self.ind1_s = -0.602085  # -0.53
+    self.ind2_s = -2.148571  # -3.4
+    self.lb_s = 1.899889e52  # 2.8e52
     # ==== low and high Band indexes : alpha, beta
     # Values obtained by fitting gaussian distribution to GBM data
     # Low en index taken from sGRB distribution while High en index from all GRBs
@@ -79,15 +79,15 @@ class GRBSample:
     # ==== Redshift
     # Function and associated parameters and cases are taken from Lan G., 2019
     # self.long_rate = 1.49 / 6.7  # +0.63 -0.64
-    self.long_rate = 0.4148  # 0.22  # +0.63 -0.64   # initial value is 1.49 (divided by 6.7) but this division was needed for a realistic ratio of Long/short GRBs
-    self.ind1_z_l = 2.7187  # 3.85  # +0.48 -0.45
-    self.ind2_z_l = -1.0358  # -1.07  # +0.98 -1.12
-    self.zb_l = 2.9323  # 2.33  # +0.39 -0.24
+    self.long_rate = 0.796361  # 0.22  # +0.63 -0.64   # initial value is 1.49 (divided by 6.7) but this division was needed for a realistic ratio of Long/short GRBs
+    self.ind1_z_l = 2.242970  # 3.85  # +0.48 -0.45
+    self.ind2_z_l = -1.507276  # -1.07  # +0.98 -1.12
+    self.zb_l = 2.294414  # 2.33  # +0.39 -0.24
     # ==== Luminosity
     # Function and associated parameters and cases are taken from Sarah Antier's thesis, 2016. Initially taken from Lien et al, 2014.
-    self.ind1_l = -0.9428  # -0.65
-    self.ind2_l = -4.5493  # -3
-    self.lb_l = 6.1594e50  # 10**52.05  # / 4.5
+    self.ind1_l = -0.715277  # -0.65
+    self.ind2_l = -4.629343  # -3
+    self.lb_l = 1.131491e52  # 10**52.05  # / 4.5
     # ==== low and high Band indexes : alpha, beta
     # Values obtained by fitting gaussian distribution to GBM data
     self.band_low_l_mu, self.band_low_l_sig = -0.95, 0.31
