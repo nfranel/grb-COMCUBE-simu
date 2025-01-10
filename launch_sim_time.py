@@ -76,6 +76,7 @@ def gen_commands(args):
       if not (spectrumfile in os.listdir(spectrafolder)):
         print(spectrumfile in os.listdir(spectrafolder))
         print(f"not there : {spectrumfile}")
+        print(f"in : {spectrafolder}")
         # print(f"in : {os.listdir(spectrafolder)}")
         logE = np.logspace(1, 3, 100)  # energy (log scale)
         with open(spectrumfile, "w") as f:
