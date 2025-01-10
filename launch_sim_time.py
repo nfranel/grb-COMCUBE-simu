@@ -74,6 +74,7 @@ def gen_commands(args):
         os.mkdir(spectrafolder)
       # Creation of spectra if they have not been created yet
       if not (spectrumfile in spectrafolder):
+        print(spectrumfile in spectrafolder)
         print(f"not there : {spectrumfile}")
         print(f"in : {spectrafolder}")
         logE = np.logspace(1, 3, 100)  # energy (log scale)
