@@ -73,7 +73,7 @@ def gen_commands(args):
       if not (f"{int(n_year)}sample" in os.listdir(args.spectrafilepath)):
         os.mkdir(spectrafolder)
       # Creation of spectra if they have not been created yet
-      if not (spectrumfile in os.listdir(spectrafolder)):
+      if not (f"{cat.df.name[i]}_spectrum.dat" in os.listdir(spectrafolder)):
         print(spectrumfile in os.listdir(spectrafolder))
         print(f"not there : {spectrumfile}")
         print(f"in : {spectrafolder}")
@@ -102,10 +102,10 @@ def gen_commands(args):
         else:
           raise ValueError("A value for pflx_best_fitting_model is not set properly")
       # Creation of spectra if they have not been created yet
-      if not (spectrumfile in os.listdir(args.spectrafilepath)):
+      if not (f"{cat.df.name[i]}_spectrum.dat" in os.listdir(args.spectrafilepath)):
         logE = np.logspace(1, 3, 100)  # energy (log scale)
         with open(spectrumfile, "w") as f:
-          f.write("#model {}:  ".format(model))
+          f.write(f"#model {model}:  ")
           if model == "flnc_plaw":
             func_args = (cat.df.flnc_plaw_ampl[i], cat.df.flnc_plaw_index[i], cat.df.flnc_plaw_pivot[i])
             # fun = lambda x: plaw(x, cat.flnc_plaw_ampl[i], cat.flnc_plaw_index[i], cat.flnc_plaw_pivot[i])
