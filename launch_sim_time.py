@@ -74,9 +74,9 @@ def gen_commands(args):
         os.mkdir(spectrafolder)
       # Creation of spectra if they have not been created yet
       if not (spectrumfile in os.listdir(spectrafolder)):
-        print(spectrumfile in spectrafolder)
+        print(spectrumfile in os.listdir(spectrafolder))
         print(f"not there : {spectrumfile}")
-        print(f"in : {spectrafolder}")
+        print(f"in : {os.listdir(spectrafolder)}")
         logE = np.logspace(1, 3, 100)  # energy (log scale)
         with open(spectrumfile, "w") as f:
           norm_val, spec, pht_pflux = norm_band_spec_calc(cat.df.alpha[i], cat.df.beta[i], cat.df.z_obs[i], cat.df.dl[i], cat.df.ep_rest[i], cat.df.liso[i], logE)
