@@ -69,14 +69,15 @@ def gen_commands(args):
       pht_mflx = cat.df.mean_flux[i]
       n_year = float(args.grbfile.split("years")[0].split("_")[-1])
       spectrafolder = f"{args.spectrafilepath}{int(n_year)}sample/"
-      spectrumfile = "{}{}_spectrum.dat".format(spectrafolder, cat.df.name[i])
+      spectrumfile = f"{spectrafolder}{cat.df.name[i]}_spectrum.dat"
       if not (f"{int(n_year)}sample" in os.listdir(args.spectrafilepath)):
+        print("creation !")
         os.mkdir(spectrafolder)
       # Creation of spectra if they have not been created yet
       if not (spectrumfile in spectrafolder):
-        print(spectrumfile in spectrafolder)
-        print(f"not there : {spectrumfile}")
-        print(f"in : {spectrafolder}")
+        # print(spectrumfile in spectrafolder)
+        # print(f"not there : {spectrumfile}")
+        # print(f"in : {spectrafolder}")
         logE = np.logspace(1, 3, 100)  # energy (log scale)
         with open(spectrumfile, "w") as f:
           norm_val, spec, pht_pflux = norm_band_spec_calc(cat.df.alpha[i], cat.df.beta[i], cat.df.z_obs[i], cat.df.dl[i], cat.df.ep_rest[i], cat.df.liso[i], logE)
@@ -88,7 +89,7 @@ def gen_commands(args):
             f.write(f"DP {E} {spec[ite_E]}\n")
           f.write("\nEN\n\n")
     else:
-      spectrumfile = "{}{}_spectrum.dat".format(args.spectrafilepath, cat.df.name[i])
+      spectrumfile = f"{args.spectrafilepath}{cat.df.name[i]}_spectrum.dat"
       lc_name = None
       model = cat.df.flnc_best_fitting_model[i]
       pht_mflx = cat.df[f"{model}_phtflux"][i]
