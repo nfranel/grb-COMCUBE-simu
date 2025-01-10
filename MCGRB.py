@@ -221,6 +221,12 @@ class GRBSample:
         raise ValueError(f"Error while making the sample, the Type of the burst should be 'Sample short' or 'Sample long' but value is {line[13]}")
     print(f"Time taken for the saving : {time() - start_time}s")
 
+    print("Deleting the old source file if it exists : ")
+    start_time = time()
+    if f"{int(n_year)}sample" in os.listdir("./sources/SampledSpectra"):
+      os.rmdir(f"./sources/SampledSpectra/{int(n_year)}sample")
+    print(f"Time taken for the deletion : {time() - start_time}s")
+
   def gbm_distri(self):
     """
     Creates the GBM distribution used for estimating the sample parameters. Distributions are obtained with a kde method on the GBM datasets

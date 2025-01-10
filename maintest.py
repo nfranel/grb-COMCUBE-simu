@@ -27,11 +27,11 @@ init_time = time()
 # # grb_sim_param = "/pdisk/ESA/COMCUBEv15--500km--0-45-97.5--27sat--short/polGBM.par"
 # # grb_sim_param = "/pdisk/ESA/COMCUBEv15--500km--5-5-45--27sat--short/polGBM.par"
 
-grb_sim_param = "/pdisk/ESA/COMCUBEv15--500km--0-0-0--27sat--lc-all/polGBM.par"
+# grb_sim_param = "/pdisk/ESA/COMCUBEv15--500km--0-0-0--27sat--lc-all/polGBM.par"
 # grb_sim_param = "/pdisk/ESA/COMCUBEv15--500km--45-45-45--27sat--lc-all/polGBM.par"
 # grb_sim_param = "/pdisk/ESA/COMCUBEv15--500km--97.5-97.5-97.5--27sat--lc-all/polGBM.par"
 
-# grb_sim_param = "/pdisk/ESA/COMCUBEv15--500km--0-0-0--27sat--lc-sampled/polGBM.par"
+grb_sim_param = "/pdisk/ESA/COMCUBEv15--500km--0-0-0--27sat--lc-sampled/polGBM.par"
 
 bkg_param = "./bkg/bkg-v15.par"
 mu_param = "./mu100/mu100-v15.par"
@@ -46,9 +46,6 @@ test.analyze()
 print("=======================================")
 print("processing time : ", time()-init_time, "seconds")
 print("=======================================")
-
-
-from memory_profiler import memory_usage
 
 
 print("==========================================================================")

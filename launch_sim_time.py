@@ -68,9 +68,9 @@ def gen_commands(args):
       lc_name = cat.df.lc[i]
       pht_mflx = cat.df.mean_flux[i]
       n_year = float(args.grbfile.split("years")[0].split("_")[-1])
-      spectrafolder = f"{args.spectrafilepath}{n_year}sample/"
+      spectrafolder = f"{args.spectrafilepath}{int(n_year)}sample/"
       spectrumfile = "{}{}_spectrum.dat".format(spectrafolder, cat.df.name[i])
-      if not (f"{n_year}sample" in os.listdir(args.spectrafilepath)):
+      if not (f"{int(n_year)}sample" in os.listdir(args.spectrafilepath)):
         os.mkdir(spectrafolder)
       # Creation of spectra if they have not been created yet
       if not (spectrumfile in spectrafolder):
@@ -168,6 +168,12 @@ def gen_commands(args):
             save_log(f"{sim_directory}/simulation_logs.txt", cat.df.name[i], i, j, k, "Simulated", s[0], s[1], s[2], s[3], rand_time, dec_sat_world_frame, ra_sat_world_frame, dec_grb_world_frame, ra_grb_world_frame, theta, phi)
   for i in range(len(cat.df)):
     gen_grb(i)
+  with open(f"{sim_directory}/cosima_errlog.txt", "w") as errfile:
+    pass
+  with open(f"{sim_directory}/revan_errlog.txt", "w") as errfile:
+    pass
+  with open(f"{sim_directory}/mimrec_errlog.txt", "w") as errfile:
+    pass
   return args
 
 
@@ -242,7 +248,7 @@ def cosirevan(command):
   simname = make_sim_name(args, command)
   simfile, trafile = f"{simname}.inc1.id1.sim.gz", f"{simname}.inc1.id1.tra.gz"
   mv_simname = f"{simname.split('/sim/')[0]}/rawsim/{simname.split('/sim/')[-1]}"
-  mv_simfile, mv_trafile = f"{mv_simname}.inc1.id1.sim.gz", f"{mv_simname}.inc1.id1.tra.gz"
+  # mv_simfile, mv_trafile = f"{mv_simname}.inc1.id1.sim.gz", f"{mv_simname}.inc1.id1.tra.gz"
   source_name = maketmpsf(command, args, pid)
   if command[0]:
     # Running cosima
@@ -250,32 +256,36 @@ def cosirevan(command):
     #   print(f"RUNNING {command[3]}")
     #   run(f"cosima -z {source_name}", 3)
     # else:
-    run(f"cosima -z {source_name}; rm -f {source_name}", __verbose__)
+    run(f"cosima -z {source_name}; rm -f {source_name}", f"{simname.split('/sim/')[0]}/cosima_errlog.txt", __verbose__)
   if command[1]:
     # Running revan and moving the simulation file to rawsim
     # run(f"revan -g {args.geometry} -c {args.rcf} -f {simfile} -n -a; mv {simfile} {mv_simfile}", __verbose__)
     # Running revan and removing the simulation file
-    run(f"revan -g {args.geometry} -c {args.rcf} -f {simfile} -n -a; rm -f {simfile}", __verbose__)
+    run(f"revan -g {args.geometry} -c {args.rcf} -f {simfile} -n -a; rm -f {simfile}", f"{simname.split('/sim/')[0]}/revan_errlog.txt", __verbose__)
   if command[2]:
     # Running mimrec and moving the revan analyzed file to rawsim
     # run(f"mimrec -g {args.geometry} -c {args.mcf} -f {trafile} -x -n; mv {trafile} {mv_trafile}", __verbose__)
     # Running mimrec and removing the revan analyzed file
-    run(f"mimrec -g {args.geometry} -c {args.mcf} -f {trafile} -x -n; rm -f {trafile}", __verbose__)
+    run(f"mimrec -g {args.geometry} -c {args.mcf} -f {trafile} -x -n; rm -f {trafile}", f"{simname.split('/sim/')[0]}/mimrec_errlog.txt", __verbose__)
 
 
-def run(command, __verbose__):
+def run(command, error_file, __verbose__):
   """
   Runs a command
   :param command: str, shell command to run
+  :param error_file: str, name of the error logfile
   :param __verbose__: verbosity
     0 -> No output
     1 -> One-line output (proscesses id, command and verbosity)
     2 -> Adds stderr of command
     3 -> Adds stdout of command
   """
-  vprint("Process id {} from {} runs {} (verbosity {})".format(os.getpid(), os.getppid(), command, __verbose__), __verbose__, 0)
+  vprint(f"Process id {os.getpid()} from {os.getppid()} runs {command} (verbosity {__verbose__})", __verbose__, 0)
   if __verbose__ < 2:
-    subprocess.call(command, shell=True, stdout=open(os.devnull, 'wb'), stderr=open(os.devnull, 'wb'))
+    proc = subprocess.run(command, shell=True, stdout=open(os.devnull, 'wb'), stderr=subprocess.PIPE, text=True)
+    with open(error_file, "w") as errfile:
+      errormess = proc.stderr + "\n=========================================================================================================\n"
+      errfile.write(errormess)
   elif __verbose__ < 3:
     subprocess.call(command, shell=True, stdout=open(os.devnull, 'wb'))
   else:
