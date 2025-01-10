@@ -169,11 +169,11 @@ def gen_commands(args):
   for i in range(len(cat.df)):
     gen_grb(i)
   with open(f"{sim_directory}/cosima_errlog.txt", "w") as errfile:
-    pass
+    vprint("Cosima error file created", __verbose__, 0)
   with open(f"{sim_directory}/revan_errlog.txt", "w") as errfile:
-    pass
+    vprint("Revan error file created", __verbose__, 0)
   with open(f"{sim_directory}/mimrec_errlog.txt", "w") as errfile:
-    pass
+    vprint("Mimrec error file created", __verbose__, 0)
   return args
 
 
