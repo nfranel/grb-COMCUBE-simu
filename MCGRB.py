@@ -213,6 +213,7 @@ class GRBSample:
     total_smp = long_smp + short_smp
     self.sample_df = pd.DataFrame(data=total_smp, columns=self.columns)
     for sample_number, line in enumerate(total_smp):
+      print(line)
       if line[13] == "Sample short":
         self.save_grb(f"sGRB{self.n_year}S{sample_number}", line[6], line[8], line[7], line[4], line[0], line[9], line[10], line[2], line[11], line[3], line[12], 0)
       elif line[13] == "Sample long":
@@ -274,8 +275,8 @@ class GRBSample:
     band_low_obs_temp, band_high_obs_temp = pick_lognormal_alpha_beta(self.band_low_s_mu, self.band_low_s_sig, self.band_high_s_mu, self.band_high_s_sig)
 
     # t90_obs_temp = 10 ** self.kde_long_log_t90.resample(1)[0][0]
-    t90_obs_temp = 0
-    while t90_obs_temp > 2:
+    t90_obs_temp = 10
+    while t90_obs_temp >= 2:
       t90_obs_temp = 10 ** norm.rvs(1.4875, 0.45669)
 
     lc_temp = self.closest_lc(t90_obs_temp)
@@ -316,7 +317,7 @@ class GRBSample:
 
     # t90_obs_temp = 10 ** self.kde_long_log_t90.resample(1)[0][0]
     t90_obs_temp = 0
-    while t90_obs_temp <= 2:
+    while t90_obs_temp < 2:
       t90_obs_temp = 10 ** norm.rvs(1.4875, 0.45669)
 
     lc_temp = self.closest_lc(t90_obs_temp)
@@ -356,6 +357,7 @@ class GRBSample:
     Saves a GRB in a catalog file
     """
     with open(self.filename, "a") as f:
+      print(f"{name}|{t90}|{lcname}|{fluence}|{mean_flux}|{red}|{band_low}|{band_high}|{ep}|{dl}|{lpeak}|{eiso}|{thetaj}\n")
       f.write(f"{name}|{t90}|{lcname}|{fluence}|{mean_flux}|{red}|{band_low}|{band_high}|{ep}|{dl}|{lpeak}|{eiso}|{thetaj}\n")
 
   def short_comparison(self):
