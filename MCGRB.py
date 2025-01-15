@@ -7,6 +7,7 @@ from itertools import repeat
 from catalog import Catalog
 from funcmod import extract_lc, calc_flux_gbm, use_scipyquad, pflux_to_mflux_calculator
 import os
+import subprocess
 
 from funcsample import *
 # from scipy.optimize import curve_fit
@@ -225,7 +226,8 @@ class GRBSample:
     print("Deleting the old source file if it exists : ")
     start_time = time()
     if f"{int(n_year)}sample" in os.listdir("./sources/SampledSpectra"):
-      os.rmdir(f"./sources/SampledSpectra/{int(n_year)}sample")
+      subprocess.call(f"rm -r ./sources/SampledSpectra/{int(n_year)}sample", shell=True)
+      # os.rmdir(f"./sources/SampledSpectra/{int(n_year)}sample")
     print(f"Time taken for the deletion : {time() - start_time}s")
 
   def gbm_distri(self):
