@@ -283,9 +283,10 @@ def run(command, error_file, __verbose__):
   vprint(f"Process id {os.getpid()} from {os.getppid()} runs {command} (verbosity {__verbose__})", __verbose__, 0)
   if __verbose__ < 2:
     proc = subprocess.run(command, shell=True, stdout=open(os.devnull, 'wb'), stderr=subprocess.PIPE, text=True)
-    with open(error_file, "a") as errfile:
-      errormess = proc.stderr + "\n=========================================================================================================\n"
-      errfile.write(errormess)
+    if proc.stderr != "":
+      with open(error_file, "a") as errfile:
+        errormess = proc.stderr + "\n=========================================================================================================\n"
+        errfile.write(errormess)
   elif __verbose__ < 3:
     subprocess.call(command, shell=True, stdout=open(os.devnull, 'wb'))
   else:
