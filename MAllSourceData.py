@@ -145,7 +145,7 @@ class AllSourceData:
     if "extracted" not in os.listdir(self.sim_prefix.split('/sim/')[0]):
       os.mkdir(f"{self.sim_prefix.split('/sim/')[0]}/extracted")
     tobe_extracted, extracted_name, presence_list = self.filenames_creation(grb_names, grb_det_ites, sim_det_ites, sat_det_ites, suffix_ite)
-    num_files = subprocess.run(f"ls {self.sim_prefix.split('/sim/')[0]}/sim | wc", capture_output=True, text=True)
+    num_files = subprocess.getoutput(f"ls {self.sim_prefix.split('/sim/')[0]}/sim | wc")
     print(num_files)
     stop
     endtask("Step 6", timevar=init_time)
