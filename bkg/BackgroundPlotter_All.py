@@ -35,25 +35,43 @@ Energies = np.logspace(1, 8, num=1000000, endpoint=True, base=10.0)
 
 LeoBack = LEO(args.altitude, args.inclination)
 
-LeoBackfunc = [LeoBack.AtmosphericNeutrons, LeoBack.CosmicPhotons,
-               LeoBack.PrimaryProtons, LeoBack.SecondaryProtonsUpward,
-               LeoBack.PrimaryAlphas, LeoBack.PrimaryElectrons,
-               LeoBack.PrimaryPositrons, LeoBack.SecondaryElectrons,
-               LeoBack.SecondaryPositrons, LeoBack.AlbedoPhotons,
-               LeoBack.GalacticCenter, LeoBack.GalacticDisk]
-
-Title = ["Atmospheric Neutrons", "Cosmic Photons", "Primary Protons",
-         "Secondary Protons", "Primary Alphas", "Primary Electrons",
-         "Primary Positrons", "Secondary Electrons", "Secondary Positrons",
-         "Albedo Photons", "Galactic Center", "Galactic Disk"]
-
-colors = ['darkred', 'darkorange', 'darkgreen', 'steelblue', 'darkblue',
-          'orchid', 'red', 'darkgrey', 'mediumseagreen', 'black',
-          'gold', 'hotpink']
-
-dash = [(5, 0), (5, 2), (5, 2, 1, 2), (2, 1), (5, 5), (5, 3, 3, 3),
-        (5, 10), (5, 3, 3, 3), (5, 5, 5, 5), (3, 5),
-        (9, 2), (7, 3)]
+# LeoBackfunc = [LeoBack.AtmosphericNeutrons, LeoBack.CosmicPhotons,
+#                LeoBack.PrimaryProtons, LeoBack.SecondaryProtonsUpward,
+#                LeoBack.PrimaryAlphas, LeoBack.PrimaryElectrons,
+#                LeoBack.PrimaryPositrons, LeoBack.SecondaryElectrons,
+#                LeoBack.SecondaryPositrons, LeoBack.AlbedoPhotons,
+#                LeoBack.GalacticCenter, LeoBack.GalacticDisk]
+# Title = ["Atmospheric Neutrons", "Cosmic Photons", "Primary Protons",
+#          "Secondary Protons", "Primary Alphas", "Primary Electrons",
+#          "Primary Positrons", "Secondary Electrons", "Secondary Positrons",
+#          "Albedo Photons", "Galactic Center", "Galactic Disk"]
+# colors = ['darkred', 'darkorange', 'darkgreen', 'steelblue', 'darkblue',
+#           'orchid', 'red', 'darkgrey', 'mediumseagreen', 'black',
+#           'gold', 'hotpink']
+# dash = [(5, 0), (5, 2), (5, 2, 1, 2), (2, 1), (5, 5), (5, 3, 3, 3),
+#         (5, 10), (5, 3, 3, 3), (5, 5, 5, 5), (3, 5),
+#         (9, 2), (7, 3)]
+        
+LeoBackfunc = [LeoBack.AtmosphericNeutrons, LeoBack.CosmicPhotons, LeoBack.AlbedoPhotons,
+              LeoBack.PrimaryProtons, LeoBack.SecondaryProtonsUpward,
+              LeoBack.PrimaryElectrons, LeoBack.SecondaryElectrons,
+              LeoBack.PrimaryPositrons, LeoBack.SecondaryPositrons,
+              LeoBack.PrimaryAlphas]
+Title = ["Atmospheric Neutrons", "Cosmic Photons", "Albedo Photons",
+        "Primary Protons", "Secondary Protons",
+        "Primary Electrons", "Secondary Electrons",
+        "Primary Positrons", "Secondary Positrons",
+        "Primary Alphas"]
+colors = ['darkred', 'mediumseagreen', 'seagreen',
+          'orange', 'darkorange',
+          'steelblue', 'darkblue',
+          'mediumorchid', 'darkmagenta',
+          'gold']
+dash = [(5, 2), (2, 1), (5, 2),
+        (2, 1), (5, 2),
+        (2, 1), (5, 2),
+        (2, 1), (5, 2),
+        (2, 1)]
 
 fig1, ax1 = plt.subplots(nrows=1, ncols=1, sharex=True, figsize=(12, 8))
 
@@ -67,6 +85,7 @@ for i in range(0, len(LeoBackfunc)):
     ax1.loglog(Energies[masknan]/1000,
                10000*1000*LeoBackfunc[i](Energies)[masknan],
                color=colors[i], linestyle='--', dashes=dash[i], label=Title[i])
+    print(np.min(Energies[masknan]/1000), np.max(Energies[masknan]/1000))
 
 handles, labels = ax1.get_legend_handles_labels()
 

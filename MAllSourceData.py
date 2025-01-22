@@ -145,6 +145,9 @@ class AllSourceData:
     if "extracted" not in os.listdir(self.sim_prefix.split('/sim/')[0]):
       os.mkdir(f"{self.sim_prefix.split('/sim/')[0]}/extracted")
     tobe_extracted, extracted_name, presence_list = self.filenames_creation(grb_names, grb_det_ites, sim_det_ites, sat_det_ites, suffix_ite)
+    num_files = subprocess.run(f"ls {self.sim_prefix.split('/sim/')[0]}/sim | wc", capture_output=True, text=True)
+    print(num_files)
+    stop
     endtask("Step 6", timevar=init_time)
 
     printcom("Step 7 - Extracting the information from the simulation files")
@@ -193,20 +196,6 @@ class AllSourceData:
       ext_name.append(temp_name)
       pres_list[grb_det_ites[ite]][sim_det_ites[ite]][sat_det_ites[ite]] = temp_name
 
-    # for source_ite in range(self.n_source):
-    #   for num_sim in range(self.n_sim):
-    #     for num_sat in range(self.n_sat):
-    #       simfile = subprocess.getoutput(f"ls {self.sim_prefix}_{cat.df.name[source_ite]}_sat{num_sat}_{num_sim:04d}_*.inc1.id1.extracted.tra").split("\n")
-    #       if len(simfile) == 1:
-    #         if simfile[0].startswith("ls: cannot access"):
-    #           pres_list[source_ite][num_sim][num_sat] = None
-    #         else:
-    #           tobe_ext.append(simfile[0])
-    #           temp_name = f"{self.sim_prefix.split('/sim/')[0]}/extracted/{self.sim_prefix.split('/sim/')[1]}_extracted{cat.df.name[source_ite]}_sat{num_sat}_{num_sim:04d}_erg-{self.erg_cut[0]}-{self.erg_cut[1]}_arm-{self.armcut}.txt"
-    #           ext_name.append(temp_name)
-    #           pres_list[source_ite][num_sim][num_sat] = temp_name
-    #       else:
-    #         raise FileExistsError(f"Too many files found for source {cat.df.name[source_ite]} simulation {num_sim:04d} satellite {num_sat}. Only 1 file should be found.")
     return tobe_ext, ext_name, pres_list
 
 
