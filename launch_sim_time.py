@@ -246,8 +246,8 @@ def cosirevan(command):
   """
   pid = os.getpid()
   simname = make_sim_name(args, command)
-  simfile, trafile = f"{simname}.inc1.id1.sim.gz", f"{simname}.inc1.id1.tra.gz"
-  mv_simname = f"{simname.split('/sim/')[0]}/rawsim/{simname.split('/sim/')[-1]}"
+  simfile, trafile, extrfile = f"{simname}.inc1.id1.sim.gz", f"{simname}.inc1.id1.tra.gz", f"{simname}.inc1.id1.extracted.tra"
+  # mv_simname = f"{simname.split('/sim/')[0]}/rawsim/{simname.split('/sim/')[-1]}"
   # mv_simfile, mv_trafile = f"{mv_simname}.inc1.id1.sim.gz", f"{mv_simname}.inc1.id1.tra.gz"
   source_name = maketmpsf(command, args, pid)
   if command[0]:
@@ -256,20 +256,20 @@ def cosirevan(command):
     #   print(f"RUNNING {command[3]}")
     #   run(f"cosima -z {source_name}", 3)
     # else:
-    run(f"cosima -z {source_name}; rm -f {source_name}", f"{simname.split('/sim/')[0]}/cosima_errlog.txt", __verbose__)
+    run(f"cosima -z {source_name}; rm -f {source_name}", f"{simname.split('/sim/')[0]}/cosima_errlog.txt", simfile, __verbose__)
   if command[1]:
     # Running revan and moving the simulation file to rawsim
     # run(f"revan -g {args.geometry} -c {args.rcf} -f {simfile} -n -a; mv {simfile} {mv_simfile}", __verbose__)
     # Running revan and removing the simulation file
-    run(f"revan -g {args.geometry} -c {args.rcf} -f {simfile} -n -a; rm -f {simfile}", f"{simname.split('/sim/')[0]}/revan_errlog.txt", __verbose__)
+    run(f"revan -g {args.geometry} -c {args.rcf} -f {simfile} -n -a; rm -f {simfile}", f"{simname.split('/sim/')[0]}/revan_errlog.txt", trafile, __verbose__)
   if command[2]:
     # Running mimrec and moving the revan analyzed file to rawsim
     # run(f"mimrec -g {args.geometry} -c {args.mcf} -f {trafile} -x -n; mv {trafile} {mv_trafile}", __verbose__)
     # Running mimrec and removing the revan analyzed file
-    run(f"mimrec -g {args.geometry} -c {args.mcf} -f {trafile} -x -n; rm -f {trafile}", f"{simname.split('/sim/')[0]}/mimrec_errlog.txt", __verbose__)
+    run(f"mimrec -g {args.geometry} -c {args.mcf} -f {trafile} -x -n; rm -f {trafile}", f"{simname.split('/sim/')[0]}/mimrec_errlog.txt", extrfile, __verbose__)
 
 
-def run(command, error_file, __verbose__):
+def run(command, error_file, expected_file, __verbose__):
   """
   Runs a command
   :param command: str, shell command to run
@@ -282,10 +282,16 @@ def run(command, error_file, __verbose__):
   """
   vprint(f"Process id {os.getpid()} from {os.getppid()} runs {command} (verbosity {__verbose__})", __verbose__, 0)
   if __verbose__ < 2:
-    proc = subprocess.run(command, shell=True, stdout=open(os.devnull, 'wb'), stderr=subprocess.PIPE, text=True)
+    proc = subprocess.run(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    folder = f"{expected_file.split('/sim/')[0]}/sim/"
+    simname = expected_file.split("/sim/")[-1]
     if proc.stderr != "":
       with open(error_file, "a") as errfile:
-        errormess = proc.stderr + "\n=========================================================================================================\n"
+        errormess = "\n=========================================================================================================\n" + f"ERROROUTPUT : {simname}\n" + proc.stderr + "\n"
+        errfile.write(errormess)
+    if not (simname in os.listdir(folder)):
+      with open(error_file, "a") as errfile:
+        errormess = "\n=========================================================================================================\n" + f"NOFILE output : {simname}\n" + proc.stdout + "\n"
         errfile.write(errormess)
   elif __verbose__ < 3:
     subprocess.call(command, shell=True, stdout=open(os.devnull, 'wb'))
