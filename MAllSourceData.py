@@ -154,8 +154,7 @@ class AllSourceData:
       for total_path in tobe_extracted:
         if not os.path.exists(total_path):
           print(f"  {total_path.split('/sim/')[-1]}")
-
-    stop
+      raise FileNotFoundError
     endtask("Step 6", timevar=init_time)
 
     printcom("Step 7 - Extracting the information from the simulation files")
