@@ -146,9 +146,15 @@ class AllSourceData:
       os.mkdir(f"{self.sim_prefix.split('/sim/')[0]}/extracted")
     tobe_extracted, extracted_name, presence_list = self.filenames_creation(grb_names, grb_det_ites, sim_det_ites, sat_det_ites, suffix_ite)
     num_files = int(subprocess.getoutput(f"ls {self.sim_prefix.split('/sim/')[0]}/sim | wc").split("  ")[0])
-    print(num_files)
-    if num_files != self.n_sim_simulated:
-      print("ERROR : The number of file in the log is not equal to the number of files")
+    if num_files > self.n_sim_simulated:
+      print("ERROR : The number of file in the log is smaller than the number of files")
+    elif num_files < self.n_sim_simulated:
+      print("ERROR : The number of file in the log is greater than the number of files")
+      print("The missing files are : ")
+      for total_path in tobe_extracted:
+        if not os.path.exists(total_path):
+          print(f"  {total_path.split('/sim/')[-1]}")
+
     stop
     endtask("Step 6", timevar=init_time)
 
