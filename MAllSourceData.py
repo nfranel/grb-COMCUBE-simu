@@ -145,9 +145,7 @@ class AllSourceData:
     if "extracted" not in os.listdir(self.sim_prefix.split('/sim/')[0]):
       os.mkdir(f"{self.sim_prefix.split('/sim/')[0]}/extracted")
     tobe_extracted, extracted_name, presence_list = self.filenames_creation(grb_names, grb_det_ites, sim_det_ites, sat_det_ites, suffix_ite)
-    print(type(subprocess.getoutput(f"ls {self.sim_prefix.split('/sim/')[0]}/sim | wc")))
-    print(list(subprocess.getoutput(f"ls {self.sim_prefix.split('/sim/')[0]}/sim | wc")))
-    print(str(subprocess.getoutput(f"ls {self.sim_prefix.split('/sim/')[0]}/sim | wc")))
+    print(subprocess.getoutput(f"ls {self.sim_prefix.split('/sim/')[0]}/sim | wc").split("  "))
     # num_files = int(subprocess.getoutput(f"ls {self.sim_prefix.split('/sim/')[0]}/sim | wc").split[" "][0])
     # print(num_files)
     stop
