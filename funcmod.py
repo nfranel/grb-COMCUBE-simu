@@ -482,10 +482,11 @@ def save_value(file, value):
 def save_grb_data(data_file, filename, sat_info_list, bkg_data, mu_data, ergcut, armcut, geometry, force=False):
   array_dtype = "float32"
   sim_dir, fname = filename.split("/extracted/")
-  if fname in os.listdir(f"{sim_dir}/extracted") and not force:
+
+  if os.path.exists(fname) and not force:
     print("Checking for already extracted files", end="\r")
   else:
-    if fname in os.listdir(f"{sim_dir}/extracted"):
+    if os.path.exists(fname):
       print("Extracted file exists, re-writing is forced", end="\r")
     else:
       print("Extracted files does not exist : Extraction in progress", end="\r")
