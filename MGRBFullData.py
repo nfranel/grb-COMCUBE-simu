@@ -9,7 +9,6 @@ import matplotlib as mpl
 # Developped modules imports
 from funcmod import *
 
-
 # Ploting adjustments
 # mpl.use('Qt5Agg')
 # mpl.use('TkAgg')
