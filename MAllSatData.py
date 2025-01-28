@@ -39,7 +39,7 @@ class AllSatData(list):
     # Creating the list containing the GRB data if the simulation happened
     for grb_ext_file in all_sat_data:
       if grb_ext_file is not None:
-        temp_list.append(GRBFullData(grb_ext_file, sim_duration, *info_source, *options[-2:]))
+        temp_list.append(GRBFullData(grb_ext_file, sim_duration,,)
         self.n_sat_receiving += 1
       else:
         temp_list.append(None)

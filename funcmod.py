@@ -1,6 +1,3 @@
-from multiprocessing.managers import Value
-from os import error
-
 import numpy as np
 import gzip
 from scipy.integrate import quad, simpson, IntegrationWarning
@@ -11,6 +8,7 @@ from time import time
 import os
 import subprocess
 from apexpy import Apex
+import traceback
 
 import astropy.units
 # Useful constants
@@ -515,118 +513,118 @@ def save_grb_data(data_file, filename, sat_info_list, bkg_data, mu_data, ergcut,
     #################################################################################################################
     #        Readding file and saving values
     #################################################################################################################
+    # Extracting the data from first file
+    data_pol = readfile(data_file)
+    compton_second = []
+    compton_ener = []
+    compton_time = []
+    compton_firstpos = []
+    compton_secpos = []
+    single_ener = []
+    single_time = []
+    single_pos = []
+    compton_second_err = []
+    compton_ener_err = []
+    compton_firstpos_err = []
+    compton_secpos_err = []
+    for event in data_pol:
+      reading = readevt(event, ergcut)
+      if len(reading) == 9:
+        compton_second.append(reading[0])
+        compton_ener.append(reading[1])
+        compton_time.append(reading[2])
+        compton_firstpos.append(reading[3])
+        compton_secpos.append(reading[4])
+        compton_second_err.append(reading[5])
+        compton_ener_err.append(reading[6])
+        compton_firstpos_err.append(reading[7])
+        compton_secpos_err.append(reading[8])
+      elif len(reading) == 3:
+        single_ener.append(reading[0])
+        single_time.append(reading[1])
+        single_pos.append(reading[2])
+    compton_ener = np.array(compton_ener, dtype=array_dtype)
+    compton_second = np.array(compton_second, dtype=array_dtype)
+    single_ener = np.array(single_ener, dtype=array_dtype)
+    compton_firstpos = np.array(compton_firstpos, dtype=array_dtype)
+    compton_secpos = np.array(compton_secpos, dtype=array_dtype)
+    single_pos = np.array(single_pos, dtype=array_dtype)
+    compton_time = np.array(compton_time, dtype=array_dtype)
+    single_time = np.array(single_time, dtype=array_dtype)
+    compton_ener_err = np.array(compton_ener_err, dtype=array_dtype)
+    compton_second_err = np.array(compton_second_err, dtype=array_dtype)
+    compton_firstpos_err = np.array(compton_firstpos_err, dtype=array_dtype)
+    compton_secpos_err = np.array(compton_secpos_err, dtype=array_dtype)
+    scat_vec_err = np.sqrt(compton_secpos_err**2 + compton_firstpos_err**2)
+
+    # ok ! grb_decrapol_worldf2satf tested and linked with all the other parts
+    # ok ! calculate_polar_angle    tested     linked
+    # ok ! angle                    tested     linked
+
+    # ok ! Use dec ra errors
+    # tbd if needed ! Use polar_from_energy error
+    # ! Use pol errors
+
+    # ! Erreurs extraites mais pas à enregistrer ? juste traiter et enregistrer les erreurs une fois l'erreur sur les angles obtenue (pol par exemple)
+    # ! Estimer l'importance de l'erreur de polar from direction, pas convaincu que c'est utile
+    # ! Erreurs pas prise en compte pour les backgrounds (energie et position) puisque pas d'intéret dans la détermination de la direction de la source et d'une quelconque polarisation (considéré unpolarized)
+    # ! Recuperer erreur des fichiers avec readevt, erreur seulement sur les ev compton, ev single ne presentent pas d erreur sur l energie et la position donnee
+    # ! erreur avec polar from energy
+    # ! erreur probablement assez complexe avec angle
+    # ! Semble peu utile de faire le tri sur l ARM et l energie en prenant en compte les erreurs, voir l ampleur de l erreur mais probablement trop faible pour vraiment etre interessant
+    # ! surtout que le tri sur l energie se fait lors de la recuperation des valeurs donc encore plus problematique
+    #
+    # ! Ensuite retravailler les mu100
+    # ! La valeur de mu_100_err va changer, mais en plus il faudrait prendre en compte l erreur dans le calcul de la MDP et dans le mu100 de la constellation
+
+    #################################################################################################################
+    #                     Filling the fields
+    #################################################################################################################
+    # Calculating the polar angle with energy values and compton azim and polar scattering angles from the kinematics
+    # polar and position angle stored in deg
+    polar_from_energy, polar_from_energy_err = calculate_polar_angle(compton_second, compton_ener, ener_sec_err=compton_second_err, ener_tot_err=compton_ener_err)
+    pol, polar_from_position, pol_err = angle(compton_secpos - compton_firstpos, grb_dec_sat_frame, grb_ra_sat_frame, source_name, num_sim, num_sat, scatter_vector_err=scat_vec_err, grb_dec_sf_err=grb_dec_sf_err, grb_ra_sf_err=grb_ra_sf_err)
+
+    # Calculating the arm and extracting the indexes of correct arm events (arm in deg)
+    arm_pol = np.array(polar_from_position - polar_from_energy, dtype=array_dtype)
+    accepted_arm_pol = np.where(np.abs(arm_pol) <= armcut, True, False)
+    # Restriction of the values according to arm cut
+    compton_ener = compton_ener[accepted_arm_pol]
+    compton_second = compton_second[accepted_arm_pol]
+    compton_firstpos = compton_firstpos[accepted_arm_pol]
+    compton_secpos = compton_secpos[accepted_arm_pol]
+    compton_time = compton_time[accepted_arm_pol]
+    polar_from_energy = polar_from_energy[accepted_arm_pol]
+    polar_from_position = np.array(polar_from_position[accepted_arm_pol], dtype=array_dtype)
+    pol = np.array(pol[accepted_arm_pol], dtype=array_dtype)
+    hit_time = np.concatenate((compton_time, compton_time, single_time))
+
+    #################################################################################################################
+    #     Finding the detector of interaction for each event
+    #################################################################################################################
+    compton_first_detector, compton_sec_detector, single_detector = find_detector(compton_firstpos, compton_secpos, single_pos, num_sat, geometry)
+    hits = np.array([])
+    if len(compton_first_detector) > 0:
+      hits = np.concatenate((hits, compton_first_detector))
+    if len(compton_sec_detector) > 0:
+      hits = np.concatenate((hits, compton_sec_detector))
+    if len(single_detector) > 0:
+      hits = np.concatenate((hits, single_detector))
+    calor = 0
+    dsssd = 0
+    side = 0
+    for hit in hits:
+      if hit.startswith("Calor"):
+        calor += 1
+      elif hit.startswith("SideDet"):
+        side += 1
+      elif hit.startswith("Layer"):
+        dsssd += 1
+      else:
+        print("Error, unknown interaction volume")
+    total_hits = calor + dsssd + side
+    # Saving information
     with open(filename, "w") as f:
-      # Extracting the data from first file
-      data_pol = readfile(data_file)
-      compton_second = []
-      compton_ener = []
-      compton_time = []
-      compton_firstpos = []
-      compton_secpos = []
-      single_ener = []
-      single_time = []
-      single_pos = []
-      compton_second_err = []
-      compton_ener_err = []
-      compton_firstpos_err = []
-      compton_secpos_err = []
-      for event in data_pol:
-        reading = readevt(event, ergcut)
-        if len(reading) == 9:
-          compton_second.append(reading[0])
-          compton_ener.append(reading[1])
-          compton_time.append(reading[2])
-          compton_firstpos.append(reading[3])
-          compton_secpos.append(reading[4])
-          compton_second_err.append(reading[5])
-          compton_ener_err.append(reading[6])
-          compton_firstpos_err.append(reading[7])
-          compton_secpos_err.append(reading[8])
-        elif len(reading) == 3:
-          single_ener.append(reading[0])
-          single_time.append(reading[1])
-          single_pos.append(reading[2])
-      compton_ener = np.array(compton_ener, dtype=array_dtype)
-      compton_second = np.array(compton_second, dtype=array_dtype)
-      single_ener = np.array(single_ener, dtype=array_dtype)
-      compton_firstpos = np.array(compton_firstpos, dtype=array_dtype)
-      compton_secpos = np.array(compton_secpos, dtype=array_dtype)
-      single_pos = np.array(single_pos, dtype=array_dtype)
-      compton_time = np.array(compton_time, dtype=array_dtype)
-      single_time = np.array(single_time, dtype=array_dtype)
-      compton_ener_err = np.array(compton_ener_err, dtype=array_dtype)
-      compton_second_err = np.array(compton_second_err, dtype=array_dtype)
-      compton_firstpos_err = np.array(compton_firstpos_err, dtype=array_dtype)
-      compton_secpos_err = np.array(compton_secpos_err, dtype=array_dtype)
-      scat_vec_err = np.sqrt(compton_secpos_err**2 + compton_firstpos_err**2)
-
-      # ok ! grb_decrapol_worldf2satf tested and linked with all the other parts
-      # ok ! calculate_polar_angle    tested     linked
-      # ok ! angle                    tested     linked
-
-      # ok ! Use dec ra errors
-      # tbd if needed ! Use polar_from_energy error
-      # ! Use pol errors
-
-      # ! Erreurs extraites mais pas à enregistrer ? juste traiter et enregistrer les erreurs une fois l'erreur sur les angles obtenue (pol par exemple)
-      # ! Estimer l'importance de l'erreur de polar from direction, pas convaincu que c'est utile
-      # ! Erreurs pas prise en compte pour les backgrounds (energie et position) puisque pas d'intéret dans la détermination de la direction de la source et d'une quelconque polarisation (considéré unpolarized)
-      # ! Recuperer erreur des fichiers avec readevt, erreur seulement sur les ev compton, ev single ne presentent pas d erreur sur l energie et la position donnee
-      # ! erreur avec polar from energy
-      # ! erreur probablement assez complexe avec angle
-      # ! Semble peu utile de faire le tri sur l ARM et l energie en prenant en compte les erreurs, voir l ampleur de l erreur mais probablement trop faible pour vraiment etre interessant
-      # ! surtout que le tri sur l energie se fait lors de la recuperation des valeurs donc encore plus problematique
-      #
-      # ! Ensuite retravailler les mu100
-      # ! La valeur de mu_100_err va changer, mais en plus il faudrait prendre en compte l erreur dans le calcul de la MDP et dans le mu100 de la constellation
-
-      #################################################################################################################
-      #                     Filling the fields
-      #################################################################################################################
-      # Calculating the polar angle with energy values and compton azim and polar scattering angles from the kinematics
-      # polar and position angle stored in deg
-      polar_from_energy, polar_from_energy_err = calculate_polar_angle(compton_second, compton_ener, ener_sec_err=compton_second_err, ener_tot_err=compton_ener_err)
-      pol, polar_from_position, pol_err = angle(compton_secpos - compton_firstpos, grb_dec_sat_frame, grb_ra_sat_frame, source_name, num_sim, num_sat, scatter_vector_err=scat_vec_err, grb_dec_sf_err=grb_dec_sf_err, grb_ra_sf_err=grb_ra_sf_err)
-
-      # Calculating the arm and extracting the indexes of correct arm events (arm in deg)
-      arm_pol = np.array(polar_from_position - polar_from_energy, dtype=array_dtype)
-      accepted_arm_pol = np.where(np.abs(arm_pol) <= armcut, True, False)
-      # Restriction of the values according to arm cut
-      compton_ener = compton_ener[accepted_arm_pol]
-      compton_second = compton_second[accepted_arm_pol]
-      compton_firstpos = compton_firstpos[accepted_arm_pol]
-      compton_secpos = compton_secpos[accepted_arm_pol]
-      compton_time = compton_time[accepted_arm_pol]
-      polar_from_energy = polar_from_energy[accepted_arm_pol]
-      polar_from_position = np.array(polar_from_position[accepted_arm_pol], dtype=array_dtype)
-      pol = np.array(pol[accepted_arm_pol], dtype=array_dtype)
-      hit_time = np.concatenate((compton_time, compton_time, single_time))
-
-      #################################################################################################################
-      #     Finding the detector of interaction for each event
-      #################################################################################################################
-      compton_first_detector, compton_sec_detector, single_detector = find_detector(compton_firstpos, compton_secpos, single_pos, num_sat, geometry)
-      hits = np.array([])
-      if len(compton_first_detector) > 0:
-        hits = np.concatenate((hits, compton_first_detector))
-      if len(compton_sec_detector) > 0:
-        hits = np.concatenate((hits, compton_sec_detector))
-      if len(single_detector) > 0:
-        hits = np.concatenate((hits, single_detector))
-      calor = 0
-      dsssd = 0
-      side = 0
-      for hit in hits:
-        if hit.startswith("Calor"):
-          calor += 1
-        elif hit.startswith("SideDet"):
-          side += 1
-        elif hit.startswith("Layer"):
-          dsssd += 1
-        else:
-          print("Error, unknown interaction volume")
-      total_hits = calor + dsssd + side
-      # Saving information
       f.write(f"Extracted file of simfile : {data_file} with ergcut : {ergcut[0]}-{ergcut[1]} and armcut : {armcut}\n")
       f.write(f"{dec_world_frame}|{ra_world_frame}|{burst_time}|{source_name}|{num_sim}\n")
       # Specific to satellite
@@ -667,7 +665,6 @@ def save_grb_data(data_file, filename, sat_info_list, bkg_data, mu_data, ergcut,
       save_value(f, dsssd)
       save_value(f, side)
       save_value(f, total_hits)
-    return
 
 
 def numerical_array_extract(value, array_dtype):

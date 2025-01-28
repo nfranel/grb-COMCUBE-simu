@@ -9,6 +9,7 @@ import matplotlib as mpl
 # Developped modules imports
 from funcmod import *
 
+
 # Ploting adjustments
 # mpl.use('Qt5Agg')
 # mpl.use('TkAgg')
@@ -20,9 +21,10 @@ class GRBFullData:
   """
   Class containing the data for 1 GRB, for 1 sim, and 1 satellite
   """
-  def __init__(self, data_list, sim_duration, source_duration, source_fluence, corr, polarigram_bins):
+
+  def __init__(self, datafile, sim_duration, source_duration, source_fluence, corr, polarigram_bins):
     """
-    :param data_list: list of files to read (should be containing only 1)
+    :param datafile: list of files to read (should be containing only 1)
     :param sat_info: orbital information about the satellite detecting the source
     :param burst_time: time at which the detection was made
     :param sim_duration: duration of the simulation
@@ -40,80 +42,80 @@ class GRBFullData:
     self.array_dtype = "float32"
     ###################################################################################################################
     # Attributes for the sat
-    self.compton_b_rate = 0                     # Summed                  # Compton
-    self.single_b_rate = 0                      # Summed                  # Single
-    self.hit_b_rate = 0                         # Summed                  # Trigger quality selection
-    self.sat_dec_wf = None                      # Not changed             #
-    self.sat_ra_wf = None                       # Not changed             #
-    self.sat_alt = None                         # Not changed             #
-    self.num_sat = None                         # Appened                 #
-    self.num_offsat = None                      # Not changed                 #
+    self.compton_b_rate = 0  # Summed                  # Compton
+    self.single_b_rate = 0  # Summed                  # Single
+    self.hit_b_rate = 0  # Summed                  # Trigger quality selection
+    self.sat_dec_wf = None  # Not changed             #
+    self.sat_ra_wf = None  # Not changed             #
+    self.sat_alt = None  # Not changed             #
+    self.num_sat = None  # Appened                 #
+    self.num_offsat = None  # Not changed                 #
     ###################################################################################################################
     # Attributes from the mu100 files
-    self.mu100_ref = None                       # Weighted mean           # Compton
-    self.mu100_err_ref = None                   # Weighted mean           # Compton
-    self.s_eff_compton_ref = 0                  # Summed                  # Compton
-    self.s_eff_single_ref = 0                   # Summed                  # Single
+    self.mu100_ref = None  # Weighted mean           # Compton
+    self.mu100_err_ref = None  # Weighted mean           # Compton
+    self.s_eff_compton_ref = 0  # Summed                  # Compton
+    self.s_eff_single_ref = 0  # Summed                  # Single
 
     ###################################################################################################################
     # Attributes filled with file reading (or to be used from this moment)
-    self.grb_dec_sat_frame = None               # Not changed             #
-    self.grb_ra_sat_frame = None                # Not changed             #
-    self.expected_pa = None                     # Not changed             #
-    self.compton_ener = []                      # 1D concatenation        # Compton
-    self.compton_second = []                    # 1D concatenation        # Compton
-    self.single_ener = []                       # 1D concatenation        # Single
-    self.compton_time = []                      # 1D concatenation        # Compton
-    self.single_time = []                       # 1D concatenation        # Single
+    self.grb_dec_sat_frame = None  # Not changed             #
+    self.grb_ra_sat_frame = None  # Not changed             #
+    self.expected_pa = None  # Not changed             #
+    self.compton_ener = []  # 1D concatenation        # Compton
+    self.compton_second = []  # 1D concatenation        # Compton
+    self.single_ener = []  # 1D concatenation        # Single
+    self.compton_time = []  # 1D concatenation        # Compton
+    self.single_time = []  # 1D concatenation        # Single
     # self.hit_time = []                          # 1D concatenation        # Trigger quality selection
-    self.pol = None                             # 1D concatenation        # Compton
+    self.pol = None  # 1D concatenation        # Compton
     # self.pol_err = None   !update makeconst                      # 1D concatenation        # Compton
-    self.polar_from_position = None             # 1D concatenation        # Compton
+    self.polar_from_position = None  # 1D concatenation        # Compton
     # This polar angle is the one considered as compton scatter angle by mimrec
-    self.polar_from_energy = None               # 1D concatenation        # Compton
+    self.polar_from_energy = None  # 1D concatenation        # Compton
     # self.polar_from_energy_err = None    !update makeconst           # 1D concatenation        # Compton
-    self.arm_pol = None                         # 1D concatenation        # Compton
-    self.azim_angle_corrected = False           # Set to true             #
+    self.arm_pol = None  # 1D concatenation        # Compton
+    self.azim_angle_corrected = False  # Set to true             #
     ###################################################################################################################
     # interaction position attributes
     # compton_firstpos = []
     # compton_secpos = []
     # single_pos = []
-    self.compton_first_detector = []            # 1D concatenation        # Compton
-    self.compton_sec_detector = []              # 1D concatenation        # Compton
-    self.single_detector = []                   # 1D concatenation        # Single
+    self.compton_first_detector = []  # 1D concatenation        # Compton
+    self.compton_sec_detector = []  # 1D concatenation        # Compton
+    self.single_detector = []  # 1D concatenation        # Single
     ###################################################################################################################
     # Attributes filled after the reading
     # Set using extracted data
-    self.s_eff_compton = 0                      # Summed                  # Compton
-    self.s_eff_single = 0                       # Summed                  # Single
-    self.s_eff_compton_err = 0                  # propagated sum
-    self.s_eff_single_err = 0                   # propagated sum
-    self.single = 0                             # Summed                  # Single
-    self.single_cr = 0                          # Summed                  # Single
-    self.compton = 0                            # Summed                  # Compton
-    self.compton_cr = 0                         # Summed                  # Compton
+    self.s_eff_compton = 0  # Summed                  # Compton
+    self.s_eff_single = 0  # Summed                  # Single
+    self.s_eff_compton_err = 0  # propagated sum
+    self.s_eff_single_err = 0  # propagated sum
+    self.single = 0  # Summed                  # Single
+    self.single_cr = 0  # Summed                  # Single
+    self.compton = 0  # Summed                  # Compton
+    self.compton_cr = 0  # Summed                  # Compton
 
-    self.bins = None                            # All the same            #
-    self.mdp = None                             # Not changed             #
-    self.mdp_err = None                         # Not changed             #
-    self.hits_snrs = None                       # Not changed             #
-    self.compton_snrs = None                    # Not changed             #
-    self.single_snrs = None                     # Not changed             #
-    self.hits_snrs_err = None                   # Not changed             #
-    self.compton_snrs_err = None                # Not changed             #
-    self.single_snrs_err = None                 # Not changed             #
+    self.bins = None  # All the same            #
+    self.mdp = None  # Not changed             #
+    self.mdp_err = None  # Not changed             #
+    self.hits_snrs = None  # Not changed             #
+    self.compton_snrs = None  # Not changed             #
+    self.single_snrs = None  # Not changed             #
+    self.hits_snrs_err = None  # Not changed             #
+    self.compton_snrs_err = None  # Not changed             #
+    self.single_snrs_err = None  # Not changed             #
     ###################################################################################################################
     # Attributes that are used while making const
-    self.n_sat_detect = 1                       # Summed                  #
+    self.n_sat_detect = 1  # Summed                  #
     # Attributes that are used while determining the detector where the interaction occured
-    self.calor = 0                              # Summed                  # Trigger quality selection ?
-    self.dsssd = 0                              # Summed                  # Trigger quality selection ?
-    self.side = 0                               # Summed                  # Trigger quality selection ?
-    self.total_hits = 0                         # Summed                  # Trigger quality selection ?
+    self.calor = 0  # Summed                  # Trigger quality selection ?
+    self.dsssd = 0  # Summed                  # Trigger quality selection ?
+    self.side = 0  # Summed                  # Trigger quality selection ?
+    self.total_hits = 0  # Summed                  # Trigger quality selection ?
     ###################################################################################################################
-    self.const_beneficial_compton = True       # Appened                 #
-    self.const_beneficial_single = True        # Appened                 #
+    self.const_beneficial_compton = True  # Appened                 #
+    self.const_beneficial_single = True  # Appened                 #
     self.const_beneficial_trigger_4s = np.zeros(9, dtype=np.int16)  # List sum                  #
     self.const_beneficial_trigger_3s = np.zeros(9, dtype=np.int16)  # List sum                  #
     self.const_beneficial_trigger_2s = np.zeros(9, dtype=np.int16)  # List sum                  #
@@ -122,14 +124,17 @@ class GRBFullData:
     ###################################################################################################################
     #                   Reading data from file
     ###################################################################################################################
-    if data_list is None:  # Empty list object for the constellation making
+    if datafile is None:  # Empty list object for the constellation making
       self.n_sat_detect = 0
-    elif type(data_list) is str:
+    elif type(datafile) is str:
       #################################################################################################################
       #                     Filling the fields by reading the extracted sim files
       #################################################################################################################
-      self.read_saved_grb(data_list)
-
+      try:
+        self.read_saved_grb(datafile)
+      except:
+        print(traceback.format_exc())
+        print(f"Error happened with file : {datafile}")
       #################################################################################################################
       #        Counting events
       #################################################################################################################
@@ -263,8 +268,8 @@ class GRBFullData:
       self.s_eff_compton = self.compton_cr * source_duration / source_fluence
       self.s_eff_single = self.single_cr * source_duration / source_fluence
       # Error of source fluence taken as only a poissonian error as we consider the spectrum as a fixed information
-      self.s_eff_compton_err = np.sqrt(self.compton_cr * source_duration / source_fluence**2 + (self.compton_cr * source_duration)**2 / source_fluence**3)
-      self.s_eff_single_err = np.sqrt(self.single_cr * source_duration / source_fluence**2 + (self.single_cr * source_duration)**2 / source_fluence**3)
+      self.s_eff_compton_err = np.sqrt(self.compton_cr * source_duration / source_fluence ** 2 + (self.compton_cr * source_duration) ** 2 / source_fluence ** 3)
+      self.s_eff_single_err = np.sqrt(self.single_cr * source_duration / source_fluence ** 2 + (self.single_cr * source_duration) ** 2 / source_fluence ** 3)
 
     #################################################################################################################
     # Calculation of effective area
