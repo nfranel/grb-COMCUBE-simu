@@ -166,42 +166,46 @@ class GRBFullData:
 
   def read_saved_grb(self, filename):
     with open(filename, "r") as f:
-      lines = f.read().split("\n")[2:]
-    # Specific to satellite
-    self.sat_dec_wf = float(lines[0])
-    self.sat_ra_wf = float(lines[1])
-    self.sat_alt = float(lines[2])
-    self.num_sat = int(lines[3])
-    self.compton_b_rate = float(lines[4])
-    self.single_b_rate = float(lines[5])
-    self.hit_b_rate = float(lines[6])
-    # Information from mu files
-    self.mu100_ref = float(lines[7])
-    self.mu100_err_ref = float(lines[8])
-    self.s_eff_compton_ref = float(lines[9])
-    self.s_eff_single_ref = float(lines[10])
-    # GRB position and polarisation
-    self.grb_dec_sat_frame = float(lines[11])
-    self.grb_ra_sat_frame = float(lines[12])
-    self.expected_pa = float(lines[13])
-    # Value arrays
-    self.compton_ener = np.fromstring(lines[14], sep='|', dtype=self.array_dtype)
-    self.compton_second = np.fromstring(lines[15], sep='|', dtype=self.array_dtype)
-    self.single_ener = np.fromstring(lines[16], sep='|', dtype=self.array_dtype)
-    self.compton_time = np.fromstring(lines[17], sep='|', dtype=self.array_dtype)
-    self.single_time = np.fromstring(lines[18], sep='|', dtype=self.array_dtype)
-    self.pol = np.fromstring(lines[19], sep='|', dtype=self.array_dtype)
-    self.polar_from_position = np.fromstring(lines[20], sep='|', dtype=self.array_dtype)
-    self.polar_from_energy = np.fromstring(lines[21], sep='|', dtype=self.array_dtype)
-    self.arm_pol = np.fromstring(lines[22], sep='|', dtype=self.array_dtype)
-    self.compton_first_detector = np.array(lines[23].split("|"))
-    self.compton_sec_detector = np.array(lines[24].split("|"))
-    self.single_detector = np.array(lines[25].split("|"))
-    # Detector counts
-    self.calor = int(lines[26])
-    self.dsssd = int(lines[27])
-    self.side = int(lines[28])
-    self.total_hits = int(lines[29])
+      # lines = f.read().split("\n")[2:]
+      # Nothing do with the first 2 lines
+      next(f)
+      next(f)
+
+      # Specific to satellite
+      self.sat_dec_wf = float(next(f))
+      self.sat_ra_wf = float(next(f))
+      self.sat_alt = float(next(f))
+      self.num_sat = int(next(f))
+      self.compton_b_rate = float(next(f))
+      self.single_b_rate = float(next(f))
+      self.hit_b_rate = float(next(f))
+      # Information from mu files
+      self.mu100_ref = float(next(f))
+      self.mu100_err_ref = float(next(f))
+      self.s_eff_compton_ref = float(next(f))
+      self.s_eff_single_ref = float(next(f))
+      # GRB position and polarisation
+      self.grb_dec_sat_frame = float(next(f))
+      self.grb_ra_sat_frame = float(next(f))
+      self.expected_pa = float(next(f))
+      # Value arrays
+      self.compton_ener = np.fromstring(next(f), sep='|', dtype=self.array_dtype)
+      self.compton_second = np.fromstring(next(f), sep='|', dtype=self.array_dtype)
+      self.single_ener = np.fromstring(next(f), sep='|', dtype=self.array_dtype)
+      self.compton_time = np.fromstring(next(f), sep='|', dtype=self.array_dtype)
+      self.single_time = np.fromstring(next(f), sep='|', dtype=self.array_dtype)
+      self.pol = np.fromstring(next(f), sep='|', dtype=self.array_dtype)
+      self.polar_from_position = np.fromstring(next(f), sep='|', dtype=self.array_dtype)
+      self.polar_from_energy = np.fromstring(next(f), sep='|', dtype=self.array_dtype)
+      self.arm_pol = np.fromstring(next(f), sep='|', dtype=self.array_dtype)
+      self.compton_first_detector = np.array(next(f).split("|"))
+      self.compton_sec_detector = np.array(next(f).split("|"))
+      self.single_detector = np.array(next(f).split("|"))
+      # Detector counts
+      self.calor = int(next(f))
+      self.dsssd = int(next(f))
+      self.side = int(next(f))
+      self.total_hits = int(next(f))
 
     if len(self.compton_first_detector) == 1 and self.compton_first_detector[0] == "":
       self.compton_first_detector = np.array([])
