@@ -667,18 +667,18 @@ def save_grb_data(data_file, filename, sat_info_list, bkg_data, mu_data, ergcut,
       save_value(f, total_hits)
 
 
-def numerical_array_extract(value, array_dtype):
-  if len(value.split("|")) == 1 and value.split("|")[0] == "":
-    return np.array([])
-  else:
-    return np.array(value.split("|"), dtype=array_dtype)
-
-
-def det_pos_array_extract(value):
-  if len(value.split("|")) == 1 and value.split("|")[0] == "":
-    return np.array([])
-  else:
-    return np.array(value.split("|"))
+# def numerical_array_extract(value, array_dtype):
+#   if len(value.split("|")) == 1 and value.split("|")[0] == "":
+#     return np.array([])
+#   else:
+#     return np.array(value.split("|"), dtype=array_dtype)
+#
+#
+# def det_pos_array_extract(value):
+#   if len(value.split("|")) == 1 and value.split("|")[0] == "":
+#     return np.array([])
+#   else:
+#     return np.array(value.split("|"))
 
 
 def angle(scatter_vector, grb_dec_sf, grb_ra_sf, source_name, num_sim, num_sat, scatter_vector_err=None, grb_dec_sf_err=None, grb_ra_sf_err=None):  # TODO : limits on variables
