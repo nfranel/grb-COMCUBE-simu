@@ -269,8 +269,6 @@ class AllSourceData:
       print(f"  self.alldata memory used : {asizeof.asizeof(self.alldata)} bytes")
       print("==================================== Memory check ====================================")
 
-
-
   def filenames_creation(self, grb_names, grb_det_ites, sim_det_ites, sat_det_ites, suffix_ite):
     tobe_ext = []
     ext_name = []
