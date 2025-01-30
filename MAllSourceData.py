@@ -12,6 +12,7 @@ import matplotlib as mpl
 import cartopy.crs as ccrs
 import numpy as np
 import glob
+from pympler import asizeof
 
 # Developped modules imports
 from funcmod import *
@@ -32,7 +33,7 @@ class AllSourceData:
   """
   Class containing all the data for a full set of trafiles
   """
-  def __init__(self, grb_param, bkg_param, mu_s_eff_param, erg_cut=(100, 460), armcut=180, polarigram_bins="fixed", parallel=False):
+  def __init__(self, grb_param, bkg_param, mu_s_eff_param, erg_cut=(100, 460), armcut=180, polarigram_bins="fixed", parallel=False, memory_check=False):
     """
     :param grb_param: str, the path to the parameter file (.par) used for the simulation
     :param bkg_param: str, the path to the parameter file (.par) used for the background simulations
@@ -81,6 +82,38 @@ class AllSourceData:
     self.dysfunctional_sats = True
     self.number_of_down_per_const = [0]
 
+    # Memory check for the class
+    if memory_check:
+      print("==================================== Memory check ====================================")
+      print(f"  self.grb_param memory used : {asizeof.asizeof(self.grb_param)} bytes")
+      print(f"  self.bkg_param memory used : {asizeof.asizeof(self.bkg_param)} bytes")
+      print(f"  self.muSeff_param memory used : {asizeof.asizeof(self.muSeff_param)} bytes")
+      print(f"  self.erg_cut memory used : {asizeof.asizeof(self.erg_cut)} bytes")
+      print(f"  self.armcut memory used : {asizeof.asizeof(self.armcut)} bytes")
+      print(f"  self.geometry memory used : {asizeof.asizeof(self.geometry)} bytes")
+      print(f"  self.revan_file memory used : {asizeof.asizeof(self.revan_file)} bytes")
+      print(f"  self.mimrec_file memory used : {asizeof.asizeof(self.mimrec_file)} bytes")
+      print(f"  self.simmode memory used : {asizeof.asizeof(self.simmode)} bytes")
+      print(f"  self.spectra_path memory used : {asizeof.asizeof(self.spectra_path)} bytes")
+      print(f"  self.cat_file memory used : {asizeof.asizeof(self.cat_file)} bytes")
+      print(f"  self.source_file memory used : {asizeof.asizeof(self.source_file)} bytes")
+      print(f"  self.sim_prefix memory used : {asizeof.asizeof(self.sim_prefix)} bytes")
+      print(f"  self.sttype memory used : {asizeof.asizeof(self.sttype)} bytes")
+      print(f"  self.n_sim memory used : {asizeof.asizeof(self.n_sim)} bytes")
+      print(f"  self.sim_duration memory used : {asizeof.asizeof(self.sim_duration)} bytes")
+      print(f"  self.position_allowed_sim memory used : {asizeof.asizeof(self.position_allowed_sim)} bytes")
+      print(f"  self.sat_info memory used : {asizeof.asizeof(self.sat_info)} bytes")
+      print(f"  self.n_sat memory used : {asizeof.asizeof(self.n_sat)} bytes")
+      print(f"  self.result_prefix memory used : {asizeof.asizeof(self.result_prefix)} bytes")
+      print(f"  self.polarigram_bins memory used : {asizeof.asizeof(self.polarigram_bins)} bytes")
+      print(f"  self.rest_cat_file memory used : {asizeof.asizeof(self.rest_cat_file)} bytes")
+      print(f"  self.save_time memory used : {asizeof.asizeof(self.save_time)} bytes")
+      print(f"  self.init_correction memory used : {asizeof.asizeof(self.init_correction)} bytes")
+      print(f"  self.options memory used : {asizeof.asizeof(self.options)} bytes")
+      print(f"  self.dysfunctional_sats memory used : {asizeof.asizeof(self.dysfunctional_sats)} bytes")
+      print(f"  self.number_of_down_per_const memory used : {asizeof.asizeof(self.number_of_down_per_const)} bytes")
+      print("==================================== Memory check ====================================")
+
     # Compiling the position finder
     subprocess.call(f"make -f Makefile PRG=find_detector", shell=True)
     print("Compiling of the position finder finished")
@@ -97,6 +130,13 @@ class AllSourceData:
     init_time = time()
     self.muSeffdata = MuSeffContainer(self.muSeff_param, self.erg_cut, self.armcut)
     endtask("Step 3", timevar=init_time)
+
+    # Memory check for the class
+    if memory_check:
+      print("==================================== Memory check ====================================")
+      print(f"  self.bkgdata memory used : {asizeof.asizeof(self.bkgdata)} bytes")
+      print(f"  self.muSeffdata memory used : {asizeof.asizeof(self.muSeffdata)} bytes")
+      print("==================================== Memory check ====================================")
 
     # Setting the catalog and the attributes associated
     printcom("Step 4 - Loading catalog data and duty cycle information")
@@ -132,12 +172,38 @@ class AllSourceData:
       self.weights = 1 / self.n_sim / self.cat_duration * self.com_duty / self.gbm_duty * self.com_fov / self.gbm_fov
     endtask("Step 4", timevar=init_time)
 
+    # Memory check for the class
+    if memory_check:
+      print("==================================== Memory check ====================================")
+      print(f"  cat_data memory used : {asizeof.asizeof(cat_data)} bytes")
+      print(f"  self.namelist memory used : {asizeof.asizeof(self.namelist)} bytes")
+      print(f"  self.n_source memory used : {asizeof.asizeof(self.n_source)} bytes")
+      print(f"  self.com_duty memory used : {asizeof.asizeof(self.com_duty)} bytes")
+      print(f"  self.com_fov memory used : {asizeof.asizeof(self.com_fov)} bytes")
+      print(f"  self.cat_duration memory used : {asizeof.asizeof(self.cat_duration)} bytes")
+      print(f"  self.gbm_duty memory used : {asizeof.asizeof(self.gbm_duty)} bytes")
+      print(f"  self.gbm_fov memory used : {asizeof.asizeof(self.gbm_fov)} bytes")
+      print(f"  self.weights memory used : {asizeof.asizeof(self.weights)} bytes")
+      print("==================================== Memory check ====================================")
+
     # Log information
-    # log = LogData("/pdisk/ESA/test--400km--0-0-0--27sat")
     printcom("Step 5 - Loading log data and simulation statistics")
     init_time = time()
     self.n_sim_simulated, self.n_sim_below_horizon, self.n_sim_in_radbelt, grb_names, grb_det_ites, sim_det_ites, sat_det_ites, suffix_ite = LogData(self.sim_prefix).detection_statistics(cat_data, False)
     endtask("Step 5", timevar=init_time)
+
+    # Memory check for the class
+    if memory_check:
+      print("==================================== Memory check ====================================")
+      print(f"  self.n_sim_simulated memory used : {asizeof.asizeof(self.n_sim_simulated)} bytes")
+      print(f"  self.n_sim_below_horizon memory used : {asizeof.asizeof(self.n_sim_below_horizon)} bytes")
+      print(f"  self.n_sim_in_radbelt memory used : {asizeof.asizeof(self.n_sim_in_radbelt)} bytes")
+      print(f"  grb_names memory used : {asizeof.asizeof(grb_names)} bytes")
+      print(f"  grb_det_ites memory used : {asizeof.asizeof(grb_det_ites)} bytes")
+      print(f"  sim_det_ites memory used : {asizeof.asizeof(sim_det_ites)} bytes")
+      print(f"  sat_det_ites memory used : {asizeof.asizeof(sat_det_ites)} bytes")
+      print(f"  suffix_ite memory used : {asizeof.asizeof(suffix_ite)} bytes")
+      print("==================================== Memory check ====================================")
 
     # Extracting the information from the simulation files
     printcom("Step 6 - preparing filenames for simulation files and extracted simulation files")
@@ -157,6 +223,14 @@ class AllSourceData:
           print(f"  {total_path.split('/sim/')[-1]}")
       raise FileNotFoundError
     endtask("Step 6", timevar=init_time)
+
+    if memory_check:
+      print("==================================== Memory check ====================================")
+      print(f"  tobe_extracted memory used : {asizeof.asizeof(tobe_extracted)} bytes")
+      print(f"  extracted_name memory used : {asizeof.asizeof(extracted_name)} bytes")
+      print(f"  presence_list memory used : {asizeof.asizeof(presence_list)} bytes")
+      print(f"  num_files memory used : {asizeof.asizeof(num_files)} bytes")
+      print("==================================== Memory check ====================================")
 
     printcom("Step 7 - Extracting the information from the simulation files")
     init_time = time()
@@ -187,6 +261,13 @@ class AllSourceData:
     else:
       self.alldata = [AllSimData(presence_list[source_ite], source_ite, cat_data, self.sat_info, self.sim_duration, self.options) for source_ite in range(self.n_source)]
     endtask("Step 8", timevar=init_time)
+
+    if memory_check:
+      print("==================================== Memory check ====================================")
+      print(f"  self.alldata memory used : {asizeof.asizeof(self.alldata)} bytes")
+      print("==================================== Memory check ====================================")
+
+
 
   def filenames_creation(self, grb_names, grb_det_ites, sim_det_ites, sat_det_ites, suffix_ite):
     tobe_ext = []

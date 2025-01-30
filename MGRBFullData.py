@@ -23,7 +23,7 @@ class GRBFullData:
 
   def __init__(self, datafile, sim_duration, source_duration, source_fluence, corr, polarigram_bins):
     """
-    :param datafile: list of files to read (should be containing only 1)
+    :param datafile: file to read
     :param sat_info: orbital information about the satellite detecting the source
     :param burst_time: time at which the detection was made
     :param sim_duration: duration of the simulation
@@ -38,7 +38,7 @@ class GRBFullData:
     ###################################################################################################################
     #  Attributes declaration    +    way they are treated with constellation
     ###################################################################################################################
-    self.array_dtype = "float16"
+    self.array_dtype = "float32"
     ###################################################################################################################
     # Attributes for the sat
     self.compton_b_rate = 0                # Summed                  # Compton
@@ -47,15 +47,16 @@ class GRBFullData:
     self.sat_dec_wf = None                 # Not changed             #
     self.sat_ra_wf = None                  # Not changed             #
     self.sat_alt = None                    # Not changed             #
+    self.num_offsat = None                 # Not changed             #
     self.num_sat = None                    # Appened                 #
-    self.num_offsat = None                 # Not changed                 #
     ###################################################################################################################
     # Attributes from the mu100 files
     self.mu100_ref = None                  # Weighted mean           # Compton
     self.mu100_err_ref = None              # Weighted mean           # Compton
     self.s_eff_compton_ref = 0             # Summed                  # Compton
     self.s_eff_single_ref = 0              # Summed                  # Single
-
+# Combiner certains attributs ! Et faire des essais a chaque etape
+# Voir pendant louverture direct si la consommation a ce moment peut pas etre reduite
     ###################################################################################################################
     # Attributes filled with file reading (or to be used from this moment)
     self.grb_dec_sat_frame = None          # Not changed             #

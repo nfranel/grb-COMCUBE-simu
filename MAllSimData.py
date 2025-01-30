@@ -71,25 +71,10 @@ class AllSimData(list):
       output_message += f"\n  Total of {not_none} files loaded for simulation {sim_ite}"
       if not_none != 0:
         self.n_sim_det += 1
-      info_source = [self.source_duration, self.source_fluence]
-      temp_list.append(AllSatData(all_sat_data, sat_info, sim_duration, info_source, options))
+      temp_list.append(AllSatData(all_sat_data, sat_info, sim_duration, [self.source_duration, self.source_fluence], options))
     print(output_message)
 
     list.__init__(self, temp_list)
-
-    # # These probabilities use a lot of memory, Make it differently ?
-    # self.proba_single_detec_fov = None
-    # self.proba_compton_image_fov = None
-    # self.const_single_proba_detec_fov = None
-    # self.const_proba_compton_image_fov = None
-    # self.proba_single_detec_sky = None
-    # self.proba_compton_image_sky = None
-    # self.const_single_proba_detec_sky = None
-    # self.const_proba_compton_image_sky = None
-    # self.proba_compton_detec_fov = None
-    # self.const_compton_proba_detec_fov = None
-    # self.proba_compton_detec_sky = None
-    # self.const_compton_proba_detec_sky = None
 
   # todo change it
   # def set_probabilities(self, n_sat, snr_min=5, n_image_min=50):
