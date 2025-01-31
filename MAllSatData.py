@@ -37,13 +37,16 @@ class AllSatData(list):
     self.read_grb_siminfo(all_sat_data)
 
     # Creating the list containing the GRB data if the simulation happened
-    for grb_ext_file in all_sat_data:
-      if grb_ext_file is not None:
-        temp_list.append(GRBFullData(grb_ext_file, sim_duration, *info_source, *options[-2:]))
-        self.n_sat_receiving += 1
-      else:
-        temp_list.append(None)
-    list.__init__(self, temp_list)
+    # for grb_ext_file in all_sat_data:
+    #   if grb_ext_file is not None:
+    #     temp_list.append(GRBFullData(grb_ext_file, sim_duration, *info_source, *options[-2:]))
+    #     self.n_sat_receiving += 1
+    #   else:
+    #     temp_list.append(None)
+    # list.__init__(self, temp_list)
+
+    list.__init__(self, [GRBFullData(grb_ext_file, sim_duration, *info_source, *options[-2:]) if grb_ext_file is not None else None for grb_ext_file in all_sat_data])
+    self.n_sat_receiving = len(self) - self.count(None)
 
     # Initializing the const_data key, that will be containing the constellation data container
     self.const_data = None

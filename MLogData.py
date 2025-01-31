@@ -127,7 +127,7 @@ class LogData:
         ret_sim_ite.append(self.sim_num[ite])
         ret_sat_ite.append(self.sat_num[ite])
         ret_suffix_ite.append(f"{self.grb_decwf[ite]:.4f}_{self.grb_rawf[ite]:.4f}_{self.rand_time[ite]:.4f}")
-    return ret_name, ret_grb_ite, ret_sim_ite, ret_sat_ite, ret_suffix_ite
+    return ret_name, np.array(ret_grb_ite), np.array(ret_sim_ite), np.array(ret_sat_ite), ret_suffix_ite
 
   def check_existing_files(self, cat):
     error_list = ""

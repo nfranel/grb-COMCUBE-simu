@@ -54,6 +54,7 @@ def band_norm(ener, norm, ind1, ind2):
 def norm_band_spec_calc(band_low, band_high, red, dl, ep, liso, ener_range, verbose=False):
   """
   Calculates the spectrum of a band function based on indexes and energy/luminosity values
+  returns norm, spectrum, peak_flux
   """
   # Normalisation value
   ampl_norm = normalisation_calc(band_low, band_high)
@@ -67,7 +68,6 @@ def norm_band_spec_calc(band_low, band_high, red, dl, ep, liso, ener_range, verb
   norm = (1 + red) ** 2 / (4 * np.pi * (dl * Gpc_to_cm) ** 2) * liso / (ep**2 * keV_to_erg)
   pflux_norm = (1 + red) / (4 * np.pi * (dl * Gpc_to_cm) ** 2) * liso / (ep * keV_to_erg)
 
-  spectrum = norm * spec_norm
   int_norm_spec = trapezoid(spec_norm, x)
   peak_flux = pflux_norm * int_norm_spec
 
@@ -90,7 +90,7 @@ def norm_band_spec_calc(band_low, band_high, red, dl, ep, liso, ener_range, verb
     print("Integrated normalized spectrum value : ", int_norm_spec)
     print(f"Part of total luminosity on energy range {np.min(ener_range)}-{np.max(ener_range)} keV : ", ratio_norm)
 
-  return norm, spectrum, peak_flux
+  return norm, norm * spec_norm, peak_flux
 
 
 def calc_flux_sample(catalog, index, ergcut):
@@ -101,8 +101,9 @@ def calc_flux_sample(catalog, index, ergcut):
   :param ergcut: energy window over which the fluence is calculated
   :returns: the number of photons per cm² for a given energy range, averaged over the duration of the sim : ncount/cm²/s
   """
-  ener_range = np.logspace(np.log10(ergcut[0]), np.log10(ergcut[1]), 100001)
-  norm_val, spec, pflux = norm_band_spec_calc(catalog.df.alpha[index], catalog.df.beta[index], catalog.df.z_obs[index], catalog.df.dl[index], catalog.df.ep_rest[index], catalog.df.liso[index], ener_range)
+  num_val = 100001
+  pflux = norm_band_spec_calc(catalog.df.alpha[index], catalog.df.beta[index], catalog.df.z_obs[index], catalog.df.dl[index], catalog.df.ep_rest[index], catalog.df.liso[index],
+                                              np.logspace(np.log10(ergcut[0]), np.log10(ergcut[1]), num_val))[2]
   return pflux
 
 

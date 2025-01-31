@@ -212,7 +212,7 @@ class AllSourceData:
     if not os.path.exists(f"{self.sim_prefix.split('/sim/')[0]}/extracted"):
       os.mkdir(f"{self.sim_prefix.split('/sim/')[0]}/extracted")
     tobe_extracted, extracted_name, presence_list = self.filenames_creation(grb_names, grb_det_ites, sim_det_ites, sat_det_ites, suffix_ite)
-    num_files = int(subprocess.getoutput(f"ls {self.sim_prefix.split('/sim/')[0]}/sim | wc").split("  ")[0])
+    num_files = int(subprocess.getoutput(f"ls {self.sim_prefix.split('/sim/')[0]}/sim | wc").strip().split("  ")[0])
     if num_files > self.n_sim_simulated:
       print("ERROR : The number of file in the log is smaller than the number of files")
     elif num_files < self.n_sim_simulated:
@@ -273,22 +273,15 @@ class AllSourceData:
     tobe_ext = []
     ext_name = []
     pres_list = np.empty((self.n_source, self.n_sim, self.n_sat), dtype=object)
-    # for source_ite in range(self.n_source):
-      # simfiles = glob.glob(f"{self.sim_prefix}_{cat.df.name[source_ite]}_*.inc1.id1.extracted.tra")
     for ite, grbname in enumerate(grb_names):
-      # num_sat, num_sim = simfile.split("/")[-1].split("_")[2:4]
-      # num_sat = int(num_sat.split("sat")[-1])
-      # num_sim = int(num_sim)
       temp_simfile = f"{self.sim_prefix}_{grbname}_sat{sat_det_ites[ite]}_{sim_det_ites[ite]:04d}_{suffix_ite[ite]}.inc1.id1.extracted.tra"
       tobe_ext.append(temp_simfile)
       temp_name = f"{self.sim_prefix.split('/sim/')[0]}/extracted/{self.sim_prefix.split('/sim/')[1]}_extracted{grbname}_sat{sat_det_ites[ite]}_{sim_det_ites[ite]:04d}_erg-{self.erg_cut[0]}-{self.erg_cut[1]}_arm-{self.armcut}.txt"
       ext_name.append(temp_name)
       pres_list[grb_det_ites[ite]][sim_det_ites[ite]][sat_det_ites[ite]] = temp_name
-
-    return tobe_ext, ext_name, pres_list
-
-
-# TODO finish the comments and rework the methods !
+    return tobe_ext, ext_name, pres_list.tolist()
+  #
+  # TODO finish the comments and rework the methods !
   def extract_sources(self, prefix, duration=None):
     """
     Function used when the simulations are not comming from GBM GRB data (ex Crab nebula, etc)

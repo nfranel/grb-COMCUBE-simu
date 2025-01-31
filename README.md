@@ -8,8 +8,8 @@ Python requirements :
     - astropy, cartopy
   - optional requirements : seaborn
   - To install modules that are not default : 
-      - conda install numpy matplotlib scipy pandas astropy cartopy pyqt pyside2
-      - pip install numpy matplotlib scipy pandas astropy cartopy pyqt pyside2
+      - conda install numpy matplotlib scipy pandas astropy cartopy pyqt pyside2 apexpy
+      - pip install numpy matplotlib scipy pandas astropy cartopy pyqt pyside2 apexpy
     
 Other requirements :
   - make

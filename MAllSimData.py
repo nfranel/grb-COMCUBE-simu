@@ -67,7 +67,7 @@ class AllSimData(list):
 
     output_message = f"{np.count_nonzero(np.array(all_sim_data).flatten() != None)} files to be loaded for source {self.source_name} : "
     for sim_ite, all_sat_data in enumerate(all_sim_data):
-      not_none = np.count_nonzero(np.where(all_sat_data != None, 1, 0))
+      not_none = len(all_sat_data) - all_sat_data.count(None)
       output_message += f"\n  Total of {not_none} files loaded for simulation {sim_ite}"
       if not_none != 0:
         self.n_sim_det += 1
