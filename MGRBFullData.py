@@ -199,9 +199,9 @@ class GRBFullData:
       self.polar_from_position = np.fromstring(next(f), sep='|', dtype=self.array_dtype)
       self.polar_from_energy = np.fromstring(next(f), sep='|', dtype=self.array_dtype)
       self.arm_pol = np.fromstring(next(f), sep='|', dtype=self.array_dtype)
-      self.compton_first_detector = np.array(next(f).split("|"))
-      self.compton_sec_detector = np.array(next(f).split("|"))
-      self.single_detector = np.array(next(f).split("|"))
+      self.compton_first_detector = np.fromstring(next(f), sep='|', dtype=np.int8)
+      self.compton_sec_detector = np.fromstring(next(f), sep='|', dtype=np.int8)
+      self.single_detector = np.fromstring(next(f), sep='|', dtype=np.int8)
       # Detector counts
       self.calor = int(next(f))
       self.dsssd = int(next(f))

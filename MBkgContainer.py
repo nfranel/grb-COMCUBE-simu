@@ -186,7 +186,7 @@ class BkgContainer(list):
             compton_firstpos = compton_firstpos[compton_index]
             compton_secpos = compton_secpos[compton_index]
             single_pos = single_pos[single_index]
-            compton_first_detector, compton_sec_detector, single_detector = find_detector(compton_firstpos, compton_secpos, single_pos, "bkg", self.geometry)
+            compton_first_detector, compton_sec_detector, single_detector = find_detector(compton_firstpos, compton_secpos, single_pos, self.geometry)
             hits = np.array([])
             if len(compton_first_detector) > 0:
               hits = np.concatenate((hits, compton_first_detector))
@@ -273,7 +273,7 @@ class BkgContainer(list):
         compton_firstpos = compton_firstpos[compton_index]
         compton_secpos = compton_secpos[compton_index]
         single_pos = single_pos[single_index]
-        compton_first_detector, compton_sec_detector, single_detector = find_detector(compton_firstpos, compton_secpos, single_pos, "bkg", self.geometry)
+        compton_first_detector, compton_sec_detector, single_detector = find_detector(compton_firstpos, compton_secpos, single_pos, self.geometry)
         hits = np.array([])
         if len(compton_first_detector) > 0:
           hits = np.concatenate((hits, compton_first_detector))
@@ -358,7 +358,7 @@ class BkgData:
       self.compton = len(self.compton_ener)
       self.compton_cr = self.compton / sim_duration
 
-      self.compton_first_detector, self.compton_sec_detector, self.single_detector = find_detector(compton_firstpos, compton_secpos, single_pos, "bkg", geometry)
+      self.compton_first_detector, self.compton_sec_detector, self.single_detector = find_detector(compton_firstpos, compton_secpos, single_pos, geometry)
       hits = np.array([])
       if len(self.compton_first_detector) > 0:
         hits = np.concatenate((hits, self.compton_first_detector))

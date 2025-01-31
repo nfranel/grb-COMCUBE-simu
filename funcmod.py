@@ -602,7 +602,7 @@ def save_grb_data(data_file, filename, sat_info_list, bkg_data, mu_data, ergcut,
     #################################################################################################################
     #     Finding the detector of interaction for each event
     #################################################################################################################
-    compton_first_detector, compton_sec_detector, single_detector = find_detector(compton_firstpos, compton_secpos, single_pos, num_sat, geometry)
+    compton_first_detector, compton_sec_detector, single_detector = find_detector(compton_firstpos, compton_secpos, single_pos, geometry)
     hits = np.array([])
     if len(compton_first_detector) > 0:
       hits = np.concatenate((hits, compton_first_detector))
@@ -610,18 +610,10 @@ def save_grb_data(data_file, filename, sat_info_list, bkg_data, mu_data, ergcut,
       hits = np.concatenate((hits, compton_sec_detector))
     if len(single_detector) > 0:
       hits = np.concatenate((hits, single_detector))
-    calor = 0
-    dsssd = 0
-    side = 0
-    for hit in hits:
-      if hit.startswith("Calor"):
-        calor += 1
-      elif hit.startswith("SideDet"):
-        side += 1
-      elif hit.startswith("Layer"):
-        dsssd += 1
-      else:
-        print("Error, unknown interaction volume")
+
+    calor = np.count_nonzero(np.isin(hits, [5, 10, 15, 20]))
+    dsssd = np.count_nonzero(np.isin(hits, [3, 4, 8, 9, 13, 14, 18, 19]))
+    side = np.count_nonzero(np.isin(hits, [1, 2, 6, 7, 11, 12, 16, 17]))
     total_hits = calor + dsssd + side
     # Saving information
     with open(filename, "w") as f:
@@ -1524,7 +1516,39 @@ def random_grb_dec_ra(lat_min, lat_max, lon_min, lon_max):
   return dec, ra
 
 
-def execute_finder(file, events, sat_num, geometry, cpp_routine="find_detector"):
+def format_detector(det_str):
+  """
+
+  """
+  unit, det = det_str.split(" ")
+  if unit == "InstrumentU_1_1":
+    det_id = 0
+  elif unit == "InstrumentU_1_2":
+    det_id = 5
+  elif unit == "InstrumentU_2_1":
+    det_id = 10
+  elif unit == "InstrumentU_2_2":
+    det_id = 15
+  else:
+    raise ValueError("The unit name doesn't match")
+
+  if det == "SideDetX":
+    det_id += 1
+  elif det == "SideDetY":
+    det_id += 2
+  elif det == "Layer_1":
+    det_id += 3
+  elif det == "Layer_2":
+    det_id += 4
+  elif det == "Calor":
+    det_id += 5
+  else:
+    raise ValueError("The detector name doesn't match")
+
+  return det_id
+
+
+def execute_finder(file, events, geometry, cpp_routine="find_detector"):
   """
   Executes the "find_detector" c++ routine that find the detector of interaction of different position of interaction
   stored in a file
@@ -1538,16 +1562,13 @@ def execute_finder(file, events, sat_num, geometry, cpp_routine="find_detector")
     for event in events:
       data_file.write(f"{event[0]} {event[1]} {event[2]}\n")
   subprocess.call(f"{cpp_routine} -g {geometry} -f {file}", shell=True, stdout=open(os.devnull, 'wb'), stderr=open(os.devnull, 'wb'))
-  positions = []
   with open(f"{file}save.txt", "r") as save_file:
     lines = save_file.read().split("\n")[:-1]
-    for line in lines:
-      dets = line.split(" ")
-      positions.append(f"{dets[1]}-{dets[0].split('Instrument')[-1]}-sat_{sat_num}")
-  return np.array(positions, dtype=str)
+    positions = list(map(format_detector, lines))
+  return np.array(positions, dtype=np.int8)
 
 
-def find_detector(pos_first_compton, pos_sec_compton, pos_single, sat_num, geometry):
+def find_detector(pos_first_compton, pos_sec_compton, pos_single, geometry):
   """
   Execute the position finder for different arrays pos_first_compton, pos_sec_compton, pos_single
   :param pos_first_compton: array containing the position of the first compton interaction
@@ -1562,17 +1583,17 @@ def find_detector(pos_first_compton, pos_sec_compton, pos_single, sat_num, geome
   file_sc = f"temp_pos_sc_{pid}"
   file_s = f"temp_pos_s_{pid}"
   if len(pos_first_compton) >= 1:
-    det_first_compton = execute_finder(file_fc, pos_first_compton, sat_num, geometry)
+    det_first_compton = execute_finder(file_fc, pos_first_compton, geometry)
     subprocess.call(f"rm {file_fc}*", shell=True)
   else:
     det_first_compton = np.array([])
   if len(pos_sec_compton) >= 1:
-    det_sec_compton = execute_finder(file_sc, pos_sec_compton, sat_num, geometry)
+    det_sec_compton = execute_finder(file_sc, pos_sec_compton, geometry)
     subprocess.call(f"rm {file_sc}*", shell=True)
   else:
     det_sec_compton = np.array([])
   if len(pos_single) >= 1:
-    det_single = execute_finder(file_s, pos_single, sat_num, geometry)
+    det_single = execute_finder(file_s, pos_single, geometry)
     subprocess.call(f"rm {file_s}*", shell=True)
   else:
     det_single = np.array([])

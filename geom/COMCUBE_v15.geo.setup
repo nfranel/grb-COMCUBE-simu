@@ -208,9 +208,9 @@ Constant FEEPosition               {(0.5-RotateDSSDFEE)*(LayerSize - FEEThicknes
 Constant NLayers                   2                                                                                              // 2
 Constant ZDistance                 1.                                                                                             // 1.
 Constant TrackerHeight             {(NLayers-1.)*ZDistance + LayerThickness}                                                      // 1.31
-Constant TrackerPosZ               {.5*InstrumentHeight-GapTrackerEntranceWindow-.5*TrackerHeight}                                 //
-Constant ZMax                      {TrackerPosZ + 0.5*(NLayers-1.)*ZDistance}                                                     //
-Constant LayerPos                  {0.5*(InstrumentSize-LayerSize)}                                                               //
+Constant TrackerPosZ               {.5*InstrumentHeight-GapTrackerEntranceWindow-.5*TrackerHeight}                                // 3.085
+Constant ZMax                      {TrackerPosZ + 0.5*(NLayers-1.)*ZDistance}                                                     // 3.585
+Constant LayerPos                  {0.5*(InstrumentSize-LayerSize)}                                                               // 0.8
 
 // -- Relative to the UCD detector
 Constant Use2In                    0                                                                                              // 0
