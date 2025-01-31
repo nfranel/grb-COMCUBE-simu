@@ -247,8 +247,6 @@ class AllSourceData:
       [save_grb_data(tobe_extracted[ext_ite], extracted_name[ext_ite], self.sat_info, self.bkgdata, self.muSeffdata, *self.options[:3]) for ext_ite in range(len(tobe_extracted))]
     endtask("Step 7", timevar=init_time)
 
-    stop
-
     printcom("Step 8 - Loading log data and simulation statistics")
     init_time = time()
     # Reading the information from the extracted simulation files
