@@ -2,6 +2,7 @@ import numpy as np
 import gzip
 from scipy.integrate import quad, simpson, IntegrationWarning
 import warnings
+warnings.simplefilter("error", RuntimeWarning)
 
 from scipy.stats import skewnorm
 from time import time
@@ -471,14 +472,14 @@ def save_value(file, value):
         for ite in range(len(value) - 1):
           file.write(f"{value[ite]}|")
         file.write(f"{value[-1]}\n")
-    elif type(value) is int or type(value) is float or type(value) is np.float64:
+    elif type(value) is int or type(value) is float or type(value) is np.float64 or type(value) is np.float32:
       file.write(f"{value}\n")
     else:
       raise TypeError(f"Uncorrect type for value saved : {value}, type {type(value)}")
 
 
 def save_grb_data(data_file, filename, sat_info_list, bkg_data, mu_data, ergcut, armcut, geometry, force=False):
-  array_dtype = "float32"
+  array_dtype = np.float32
   sim_dir, fname = filename.split("/extracted/")
 
   file_exist = os.path.exists(filename)
@@ -597,24 +598,24 @@ def save_grb_data(data_file, filename, sat_info_list, bkg_data, mu_data, ergcut,
     polar_from_energy = polar_from_energy[accepted_arm_pol]
     polar_from_position = np.array(polar_from_position[accepted_arm_pol], dtype=array_dtype)
     pol = np.array(pol[accepted_arm_pol], dtype=array_dtype)
-    hit_time = np.concatenate((compton_time, compton_time, single_time))
+    # hit_time = np.concatenate((compton_time, compton_time, single_time))
 
     #################################################################################################################
     #     Finding the detector of interaction for each event
     #################################################################################################################
     compton_first_detector, compton_sec_detector, single_detector = find_detector(compton_firstpos, compton_secpos, single_pos, geometry)
-    hits = np.array([])
-    if len(compton_first_detector) > 0:
-      hits = np.concatenate((hits, compton_first_detector))
-    if len(compton_sec_detector) > 0:
-      hits = np.concatenate((hits, compton_sec_detector))
-    if len(single_detector) > 0:
-      hits = np.concatenate((hits, single_detector))
-
-    calor = np.count_nonzero(np.isin(hits, [5, 10, 15, 20]))
-    dsssd = np.count_nonzero(np.isin(hits, [3, 4, 8, 9, 13, 14, 18, 19]))
-    side = np.count_nonzero(np.isin(hits, [1, 2, 6, 7, 11, 12, 16, 17]))
-    total_hits = calor + dsssd + side
+    # hits = np.array([])
+    # if len(compton_first_detector) > 0:
+    #   hits = np.concatenate((hits, compton_first_detector))
+    # if len(compton_sec_detector) > 0:
+    #   hits = np.concatenate((hits, compton_sec_detector))
+    # if len(single_detector) > 0:
+    #   hits = np.concatenate((hits, single_detector))
+    #
+    # calor = np.count_nonzero(np.isin(hits, [5, 10, 15, 20]))
+    # dsssd = np.count_nonzero(np.isin(hits, [3, 4, 8, 9, 13, 14, 18, 19]))
+    # side = np.count_nonzero(np.isin(hits, [1, 2, 6, 7, 11, 12, 16, 17]))
+    # total_hits = calor + dsssd + side
     # Saving information
     with open(filename, "w") as f:
       f.write(f"Extracted file of simfile : {data_file} with ergcut : {ergcut[0]}-{ergcut[1]} and armcut : {armcut}\n")
@@ -653,10 +654,10 @@ def save_grb_data(data_file, filename, sat_info_list, bkg_data, mu_data, ergcut,
       save_value(f, compton_sec_detector)
       save_value(f, single_detector)
       # Detector counts
-      save_value(f, calor)
-      save_value(f, dsssd)
-      save_value(f, side)
-      save_value(f, total_hits)
+      # save_value(f, calor)
+      # save_value(f, dsssd)
+      # save_value(f, side)
+      # save_value(f, total_hits)
 
 
 # def numerical_array_extract(value, array_dtype):
@@ -786,7 +787,7 @@ def set_bins(bin_mode, data=None):
   """
   bins = ""
   if bin_mode == "fixed":
-    bins = np.linspace(-180, 180, 21)
+    bins = np.linspace(-180, 180, 21, dtype=np.float32)
   elif bin_mode == "limited":
     bins = []
   elif bin_mode == "optimized":
@@ -900,12 +901,17 @@ def calc_snr(S, B, C=0):
   :param C: minimum number of counts in the source to consider the detection
   :returns: SNR (as defined in Sarah Antier's PhD thesis)
   """
-  snr = S / np.sqrt(B + C)
-  snr_err = np.sqrt(S/(B + C) + S**2 * B/(4*(B+C)**3))
-  if snr >= 0:
-    return snr, snr_err
-  else:
-    return 0, 0
+  try:
+    S, B = np.where(S <= 0, 0, S), np.where(S <= 0, 1, B)
+    snr = S / np.sqrt(B + C)
+    snr_err = np.sqrt(S/(B + C) + S**2 * B/(4*(B+C)**3))
+  except RuntimeWarning:
+    print("S", S)
+    print("B", B)
+    print("C", C)
+    print("snr", S / np.sqrt(B + C))
+    print("snr_err", np.sqrt(S/(B + C) + S**2 * B/(4*(B+C)**3)))
+  return snr, snr_err
 
 
 def calc_mdp(S, B, mu100, nsigma=4.29, mu100_err=None):
@@ -957,7 +963,7 @@ def closest_bkg_values(sat_dec, sat_ra, sat_alt, bkg_list):  # TODO : limits on 
     ra_error = np.array([0 for bkg in bkg_selec])
     total_error = np.sqrt(dec_error + ra_error)
     index = np.argmin(total_error)
-    return [bkg_selec[index].compton_cr, bkg_selec[index].single_cr, bkg_selec[index].calor, bkg_selec[index].dsssd, bkg_selec[index].side, bkg_selec[index].total_hits]
+    return [bkg_selec[index].compton_cr, bkg_selec[index].single_cr]
 
 
 def geo_to_mag(dec_wf, ra_wf, altitude):  # TODO : limits on variables

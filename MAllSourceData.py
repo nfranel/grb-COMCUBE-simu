@@ -13,6 +13,7 @@ import cartopy.crs as ccrs
 import numpy as np
 import glob
 from pympler import asizeof
+import tracemalloc
 
 # Developped modules imports
 from funcmod import *
@@ -234,6 +235,7 @@ class AllSourceData:
 
     printcom("Step 7 - Extracting the information from the simulation files")
     init_time = time()
+
     # Extracting the information from the simulation files
     if parallel == 'all':
       print("Parallel extraction of the data with all threads")
@@ -561,7 +563,7 @@ class AllSourceData:
     else:
       print("Type error for savefile, must be str or None")
 
-  def count_triggers(self, const_index=0, weighted=True, graphs=False):
+  def count_triggers(self, const_index=0, graphs=False, lc_aligned=False):
     """
     Function to count and print the number of triggers using different criterions
     """
@@ -582,22 +584,58 @@ class AllSourceData:
         for ite_sim, sim in enumerate(source):
           if sim is not None:
             total_in_view += 1
-            if sim.const_data[const_index] is not None:
-              if True in (sim.const_data[const_index].const_beneficial_trigger_4s >= 4):
-                const_trigger_counter_4s += 1
-              if True in (sim.const_data[const_index].const_beneficial_trigger_3s >= 3):
-                const_trigger_counter_3s += 1
-              else:
-                no_trig_name.append(source.source_name)
-                no_trig_duration.append(source.source_duration)
-                no_trig_dec.append(sim.dec_world_frame)
-                no_trig_e_fluence.append(source.source_energy_fluence)
-                # if len(no_trig_name) <= 30 and graphs:
-                #   print("Not triggered : ", source.source_name, source.source_duration, sim.dec_world_frame, source.source_energy_fluence)
-              if True in (sim.const_data[const_index].const_beneficial_trigger_2s >= 2):
+            if lc_aligned:
+              list_snrs_lc_2s = []
+              list_snrs_lc_3s = []
+              list_snrs_lc_4s = []
+              for sat in sim:
+                if sat is not None:
+                  # 2 sat trigger
+                  if len(list_snrs_lc_2s) == 0:
+                    list_snrs_lc_2s = sat.hits_snrs_over_lc(source.source_duration, nsat=2)
+                  else:
+                    temp_snrs_lc_2s = sat.hits_snrs_over_lc(source.source_duration, nsat=2)
+                    for int_time_ite in range(len(list_snrs_lc_2s)):
+                      list_snrs_lc_2s[int_time_ite] += temp_snrs_lc_2s[int_time_ite]
+                  # 3 sat trigger
+                  if len(list_snrs_lc_3s) == 0:
+                    list_snrs_lc_3s = sat.hits_snrs_over_lc(source.source_duration, nsat=3)
+                  else:
+                    temp_snrs_lc_3s = sat.hits_snrs_over_lc(source.source_duration, nsat=3)
+                    for int_time_ite in range(len(list_snrs_lc_3s)):
+                      list_snrs_lc_3s[int_time_ite] += temp_snrs_lc_3s[int_time_ite]
+                  # 4 sat trigger
+                  if len(list_snrs_lc_4s) == 0:
+                    list_snrs_lc_4s = sat.hits_snrs_over_lc(source.source_duration, nsat=4)
+                  else:
+                    temp_snrs_lc_4s = sat.hits_snrs_over_lc(source.source_duration, nsat=4)
+                    for int_time_ite in range(len(list_snrs_lc_4s)):
+                      list_snrs_lc_4s[int_time_ite] += temp_snrs_lc_4s[int_time_ite]
+              if True in (np.concatenate(list_snrs_lc_2s) >= 3):
                 const_trigger_counter_2s += 1
+              if True in (np.concatenate(list_snrs_lc_3s) >= 3):
+                const_trigger_counter_3s += 1
+              if True in (np.concatenate(list_snrs_lc_4s) >= 3):
+                const_trigger_counter_4s += 1
               if True in (sim.const_data[const_index].const_beneficial_trigger_1s >= 1):
                 const_trigger_counter_1s += 1
+            else:
+              if sim.const_data[const_index] is not None:
+                if True in (sim.const_data[const_index].const_beneficial_trigger_4s >= 4):
+                  const_trigger_counter_4s += 1
+                if True in (sim.const_data[const_index].const_beneficial_trigger_3s >= 3):
+                  const_trigger_counter_3s += 1
+                else:
+                  no_trig_name.append(source.source_name)
+                  no_trig_duration.append(source.source_duration)
+                  no_trig_dec.append(sim.dec_world_frame)
+                  no_trig_e_fluence.append(source.source_energy_fluence)
+                  # if len(no_trig_name) <= 30 and graphs:
+                  #   print("Not triggered : ", source.source_name, source.source_duration, sim.dec_world_frame, source.source_energy_fluence)
+                if True in (sim.const_data[const_index].const_beneficial_trigger_2s >= 2):
+                  const_trigger_counter_2s += 1
+                if True in (sim.const_data[const_index].const_beneficial_trigger_1s >= 1):
+                  const_trigger_counter_1s += 1
 
     print(f"   Trigger for at least 4 satellites :        {const_trigger_counter_4s:.2f} triggers")
     print(f"   Trigger for at least 3 satellites :        {const_trigger_counter_3s:.2f} triggers")

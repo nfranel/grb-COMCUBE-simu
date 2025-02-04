@@ -5,7 +5,7 @@ from time import time
 from funcmod import *
 from visualisation import *
 from MCGRB import GRBSample
-from catalog import SampleCatalog
+from catalog import SampleCatalog, Catalog
 import matplotlib.pyplot as plt
 import numpy as np
 import cartopy.crs as ccrs
@@ -63,6 +63,7 @@ for info in test.sat_info:
     inclinations.append(info[0])
 for inc in inclinations:
   print(f"     inclination {inc} : {calc_duty(inc, 0, 0, 500)}")
+
 mdp30list = []
 for ite_const, num_down in enumerate(test.number_of_down_per_const):
   print(f"================== Number of satellite down : {ite_const} ==================")
@@ -549,221 +550,275 @@ plt.show()
 
 
 #######################################################################################################################
-# Sample comparison
+# Sample detection result comparison
 #######################################################################################################################
-cat_gbm = Catalog("./GBM/allGBM.txt", test.sttype, "GBM/rest_frame_properties.txt")
-cat_smp = SampleCatalog("./Sampled/sampled_grb_cat_5years.txt", test.sttype)
+def sample_comparison(sim_data):
+  cat_gbm = Catalog("./GBM/allGBM.txt", sim_data.sttype, "GBM/rest_frame_properties.txt")
+  cat_smp = SampleCatalog("./Sampled/sampled_grb_cat_10years.txt", sim_data.sttype)
 
-gbm_ep = []
-gbm_t90 = []
-gbm_ph_flux = []
-gbm_ph_fluence = []
+  gbm_t90 = []
+  calc_mflux = []
+  gbm_ph_mflux = []
+  gbm_ph_pflux = []
+  gbm_ph_fluence = []
 
-gbm_ep_l = []
-gbm_t90_l = []
-gbm_ph_flux_l = []
-gbm_ph_fluence_l = []
+  gbm_t90_l = []
+  calc_mflux_l = []
+  gbm_ph_mflux_l = []
+  gbm_ph_pflux_l = []
+  gbm_ph_fluence_l = []
 
-gbm_ep_s = []
-gbm_t90_s = []
-gbm_ph_flux_s = []
-gbm_ph_fluence_s = []
-for ite_gbm, ep_gbm in enumerate(cat_gbm.df.flnc_band_epeak):
-  if ep_gbm != "":
-    ep_temp = ep_gbm
-    t90_temp = cat_gbm.df.t90[ite_gbm]
-    flux_temp = calc_flux_gbm(cat_gbm, ite_gbm, (10, 1000))
-    fluence_temp = flux_temp * t90_temp
-    gbm_ep.append(ep_temp)
-    gbm_t90.append(t90_temp)
-    gbm_ph_flux.append(flux_temp)
-    gbm_ph_fluence.append(fluence_temp)
-    if t90_temp <= 2:
-      gbm_ep_s.append(ep_temp)
-      gbm_t90_s.append(t90_temp)
-      gbm_ph_flux_s.append(flux_temp)
-      gbm_ph_fluence_s.append(fluence_temp)
+  gbm_t90_s = []
+  calc_mflux_s = []
+  gbm_ph_mflux_s = []
+  gbm_ph_pflux_s = []
+  gbm_ph_fluence_s = []
+
+  for ite_gbm in range(len(cat_gbm.df)):
+    model = cat_gbm.df.flnc_best_fitting_model[ite_gbm]
+    p_model = cat_gbm.df.pflx_best_fitting_model[ite_gbm]
+    if type(p_model) is str:
+      t90_temp = cat_gbm.df.t90[ite_gbm]
+      calc_flux_temp = calc_flux_gbm(cat_gbm, ite_gbm, (10, 1000))
+      mflux_temp = cat_gbm.df[f"{model}_phtflux"][ite_gbm]
+      pflux_temp = cat_gbm.df[f"{p_model}_phtflux"][ite_gbm]
+
+      gbm_t90.append(t90_temp)
+      calc_mflux.append(calc_flux_temp)
+      gbm_ph_mflux.append(mflux_temp)
+      gbm_ph_pflux.append(pflux_temp)
+      gbm_ph_fluence.append(calc_flux_temp * t90_temp)
+
+      if t90_temp <= 2:
+        gbm_t90_s.append(t90_temp)
+        calc_mflux_s.append(calc_flux_temp)
+        gbm_ph_mflux_s.append(mflux_temp)
+        gbm_ph_pflux_s.append(pflux_temp)
+        gbm_ph_fluence_s.append(calc_flux_temp * t90_temp)
+      else:
+        gbm_t90_l.append(t90_temp)
+        calc_mflux_l.append(calc_flux_temp)
+        gbm_ph_mflux_l.append(mflux_temp)
+        gbm_ph_pflux_l.append(pflux_temp)
+        gbm_ph_fluence_l.append(calc_flux_temp * t90_temp)
+
+  smp_t90 = []
+  smp_ph_mflux = []
+  smp_ph_pflux = []
+  smp_ph_fluence = []
+
+  smp_t90_l = []
+  smp_ph_mflux_l = []
+  smp_ph_pflux_l = []
+  smp_ph_fluence_l = []
+
+  smp_t90_s = []
+  smp_ph_mflux_s = []
+  smp_ph_pflux_s = []
+  smp_ph_fluence_s = []
+
+  for ite_smp, name_smp in enumerate(cat_smp.df.name):
+    temp_t90 = cat_smp.df.t90[ite_smp]
+    temp_mflux = cat_smp.df.mean_flux[ite_smp]
+    temp_ph_flnc = cat_smp.df.fluence[ite_smp]
+    pflux_to_mflux = pflux_to_mflux_calculator(cat_smp.df.lc[ite_smp])
+    temp_pflux = temp_mflux / pflux_to_mflux
+
+    smp_t90.append(temp_t90)
+    smp_ph_mflux.append(temp_mflux)
+    smp_ph_pflux.append(temp_pflux)
+    smp_ph_fluence.append(temp_ph_flnc)
+
+    if name_smp.startswith("sGRB"):
+      smp_t90_s.append(temp_t90)
+      smp_ph_mflux_s.append(temp_mflux)
+      smp_ph_pflux_s.append(temp_pflux)
+      smp_ph_fluence_s.append(temp_ph_flnc)
     else:
-      gbm_ep_l.append(ep_temp)
-      gbm_t90_l.append(t90_temp)
-      gbm_ph_flux_l.append(flux_temp)
-      gbm_ph_fluence_l.append(fluence_temp)
-  else:
-    print("Information : Find null Epeak in catalog")
+      smp_t90_l.append(temp_t90)
+      smp_ph_mflux_l.append(temp_mflux)
+      smp_ph_pflux_l.append(temp_pflux)
+      smp_ph_fluence_l.append(temp_ph_flnc)
 
-smp_ep = []
-smp_t90 = []
-smp_ph_flux = []
-smp_ph_fluence = []
+  number_off_sat = 0
+  print("================================================================================================")
+  print(f"== Triggers according to GBM method with   {number_off_sat}   down satellite")
+  print("================================================================================================")
+  total_in_view = 0
+  const_trigger_counter_4s = 0
+  const_trigger_counter_3s = 0
+  const_trigger_counter_2s = 0
+  const_trigger_counter_1s = 0
 
-smp_ep_l = []
-smp_t90_l = []
-smp_ph_flux_l = []
-smp_ph_fluence_l = []
+  trig_t90 = []
+  trig_ph_mflux = []
+  trig_ph_pflux = []
+  trig_ph_fluence = []
 
-smp_ep_s = []
-smp_t90_s = []
-smp_ph_flux_s = []
-smp_ph_fluence_s = []
-for ite_smp, name_smp in enumerate(cat_smp.df.name):
-  smp_ep.append(cat_smp.df.ep_rest[ite_smp])
-  smp_t90.append(cat_smp.df.t90[ite_smp])
-  smp_ph_flux.append(cat_smp.df.mean_flux[ite_smp])
-  smp_ph_fluence.append(cat_smp.df.fluence[ite_smp])
-  if name_smp.startswith("sGRB"):
-    smp_ep_s.append(cat_smp.df.ep_rest[ite_smp])
-    smp_t90_s.append(cat_smp.df.t90[ite_smp])
-    smp_ph_flux_s.append(cat_smp.df.mean_flux[ite_smp])
-    smp_ph_fluence_s.append(cat_smp.df.fluence[ite_smp])
-  else:
-    smp_ep_l.append(cat_smp.df.ep_rest[ite_smp])
-    smp_t90_l.append(cat_smp.df.t90[ite_smp])
-    smp_ph_flux_l.append(cat_smp.df.mean_flux[ite_smp])
-    smp_ph_fluence_l.append(cat_smp.df.fluence[ite_smp])
+  trig_t90_l = []
+  trig_ph_mflux_l = []
+  trig_ph_pflux_l = []
+  trig_ph_fluence_l = []
 
-number_off_sat = 0
-print("================================================================================================")
-print(f"== Triggers according to GBM method with   {number_off_sat}   down satellite")
-print("================================================================================================")
-total_in_view = 0
-const_trigger_counter_4s = 0
-const_trigger_counter_3s = 0
-const_trigger_counter_2s = 0
-const_trigger_counter_1s = 0
-trig_name = []
-trig_ep = []
-trig_t90 = []
-trig_ph_flux = []
-trig_ph_fluence = []
+  trig_t90_s = []
+  trig_ph_mflux_s = []
+  trig_ph_pflux_s = []
+  trig_ph_fluence_s = []
+  for source in sim_data.alldata:
+    if source is not None:
+      for ite_sim, sim in enumerate(source):
+        if sim is not None:
+          total_in_view += 1
+          if sim.const_data[number_off_sat] is not None:
+            if True in (sim.const_data[number_off_sat].const_beneficial_trigger_4s >= 4):
+              const_trigger_counter_4s += 1
+            if True in (sim.const_data[number_off_sat].const_beneficial_trigger_3s >= 3):
+              const_trigger_counter_3s += 1
+              for smp_ite, smp_name in enumerate(cat_smp.df.name):
+                if smp_name == source.source_name:
+                  temp_t90 = cat_smp.df.t90[smp_ite]
+                  temp_mflux = cat_smp.df.mean_flux[smp_ite]
+                  temp_ph_flnc = cat_smp.df.fluence[smp_ite]
+                  pflux_to_mflux = pflux_to_mflux_calculator(cat_smp.df.lc[smp_ite])
+                  temp_pflux = temp_mflux / pflux_to_mflux
 
-trig_ep_l = []
-trig_t90_l = []
-trig_ph_flux_l = []
-trig_ph_fluence_l = []
+                  trig_t90.append(temp_t90)
+                  trig_ph_mflux.append(temp_mflux)
+                  trig_ph_pflux.append(temp_pflux)
+                  trig_ph_fluence.append(temp_ph_flnc)
+                  if source.source_name.startswith("sGRB"):
+                    trig_t90_s.append(temp_t90)
+                    trig_ph_mflux_s.append(temp_mflux)
+                    trig_ph_pflux_s.append(temp_pflux)
+                    trig_ph_fluence_s.append(temp_ph_flnc)
+                  else:
+                    trig_t90_l.append(temp_t90)
+                    trig_ph_mflux_l.append(temp_mflux)
+                    trig_ph_pflux_l.append(temp_pflux)
+                    trig_ph_fluence_l.append(temp_ph_flnc)
+            if True in (sim.const_data[number_off_sat].const_beneficial_trigger_2s >= 2):
+              const_trigger_counter_2s += 1
+            if True in (sim.const_data[number_off_sat].const_beneficial_trigger_1s >= 1):
+              const_trigger_counter_1s += 1
 
-trig_ep_s = []
-trig_t90_s = []
-trig_ph_flux_s = []
-trig_ph_fluence_s = []
-for source in test.alldata:
-  if source is not None:
-    for ite_sim, sim in enumerate(source):
-      if sim is not None:
-        total_in_view += 1
-        if sim.const_data[number_off_sat] is not None:
-          if True in (sim.const_data[number_off_sat].const_beneficial_trigger_4s >= 4):
-            const_trigger_counter_4s += 1
-          if True in (sim.const_data[number_off_sat].const_beneficial_trigger_3s >= 3):
-            const_trigger_counter_3s += 1
-            for smp_ite, smp_name in enumerate(cat_smp.df.name):
-              if smp_name == source.source_name:
-                temp_ep = cat_smp.df.ep_rest[smp_ite]
-                temp_t90 = cat_smp.df.t90[smp_ite]
-                temp_flux = cat_smp.df.mean_flux[smp_ite]
-                temp_fluence = cat_smp.df.fluence[smp_ite]
-                trig_ep.append(temp_ep)
-                trig_t90.append(temp_t90)
-                trig_ph_flux.append(temp_flux)
-                trig_ph_fluence.append(temp_fluence)
-            if source.source_name.startswith("sGRB"):
-              trig_ep_s.append(temp_ep)
-              trig_t90_s.append(temp_t90)
-              trig_ph_flux_s.append(temp_flux)
-              trig_ph_fluence_s.append(temp_fluence)
-            else:
-              trig_ep_l.append(temp_ep)
-              trig_t90_l.append(temp_t90)
-              trig_ph_flux_l.append(temp_flux)
-              trig_ph_fluence_l.append(temp_fluence)
-          if True in (sim.const_data[number_off_sat].const_beneficial_trigger_2s >= 2):
-            const_trigger_counter_2s += 1
-          if True in (sim.const_data[number_off_sat].const_beneficial_trigger_1s >= 1):
-            const_trigger_counter_1s += 1
+  print(f"   Trigger for at least 4 satellites :        {const_trigger_counter_4s:.2f} triggers")
+  print(f"   Trigger for at least 3 satellites :        {const_trigger_counter_3s:.2f} triggers")
+  print(f"   Trigger for at least 2 satellites :        {const_trigger_counter_2s:.2f} triggers")
+  print(f"   Trigger for 1 satellite :        {const_trigger_counter_1s:.2f} triggers")
+  print("=============================================")
+  print(f" Over the {total_in_view} GRBs simulated in the constellation field of view")
 
+  gbmcorrec = 1 / 0.587 / 10
+  min_ph_flux, max_ph_flux  = -6, 3
 
-print(f"   Trigger for at least 4 satellites :        {const_trigger_counter_4s:.2f} triggers")
-print(f"   Trigger for at least 3 satellites :        {const_trigger_counter_3s:.2f} triggers")
-print(f"   Trigger for at least 2 satellites :        {const_trigger_counter_2s:.2f} triggers")
-print(f"   Trigger for 1 satellite :        {const_trigger_counter_1s:.2f} triggers")
-print("=============================================")
-print(f" Over the {total_in_view} GRBs simulated in the constellation field of view")
+  plt.rcParams.update({'font.size': 13})
 
-gbmcorrec = 1 / 0.587 / 10
-min_ph_flux, max_ph_flux  = -6, 2
+  bins_ph_flux = np.logspace(min_ph_flux, max_ph_flux, 50)
 
-plt.rcParams.update({'font.size': 13})
-bins_ph_flux = np.logspace(min_ph_flux, max_ph_flux, 50)
-# bins = np.logspace(-8, 3, 40)
-fig1, (ax1, ax2, ax3) = plt.subplots(nrows=1, ncols=3, figsize=(27, 6))
-ax1.hist(smp_ph_flux, bins=bins_ph_flux, histtype="step", weights=[test.weights] * len(smp_ph_flux), color="darkblue", label="Sample")
-ax1.hist(trig_ph_flux, bins=bins_ph_flux, histtype="step", weights=[test.weights] * len(trig_ph_flux), linestyle='--', color="lime", label="Detected")
-ax1.hist(gbm_ph_flux, bins=bins_ph_flux, histtype="step", weights=[gbmcorrec] * len(gbm_ph_flux), color="red", label="GBM")
-ax1.set(title="Flux histograms", xlabel="Photon flux (ph/cm²/s)", ylabel="Number of GRB/year", xscale="log", yscale="log")
-ax1.grid(True, which='major', linestyle='--', color='black', alpha=0.3)
-ax1.legend(loc='upper left')
+  # ================= Peak flux histograms =================
+  fig1, (ax1, ax2, ax3) = plt.subplots(nrows=1, ncols=3, figsize=(27, 6))
+  fig1.suptitle("Peak flux histograms")
+  ax1.hist(smp_ph_pflux, bins=bins_ph_flux, histtype="step", weights=[sim_data.weights] * len(smp_ph_pflux), color="darkblue", label="Sample")
+  ax1.hist(trig_ph_pflux, bins=bins_ph_flux, histtype="step", weights=[sim_data.weights] * len(trig_ph_pflux), linestyle='--', color="lime", label="Detected")
+  ax1.hist(gbm_ph_pflux, bins=bins_ph_flux, histtype="step", weights=[gbmcorrec] * len(gbm_ph_pflux), color="red", label="GBM")
+  ax1.set(title="Peak flux histograms", xlabel="Photon flux (ph/cm²/s)", ylabel="Number of GRB/year", xscale="log", yscale="log")
+  ax1.grid(True, which='major', linestyle='--', color='black', alpha=0.3)
+  ax1.legend(loc='upper left')
 
-ax2.hist(smp_ph_flux_s, bins=bins_ph_flux, histtype="step", weights=[test.weights] * len(smp_ph_flux_s), color="darkblue", label="Sample")
-trig = ax2.hist(trig_ph_flux_s, bins=bins_ph_flux, histtype="step", weights=[test.weights] * len(trig_ph_flux_s), linestyle='--', color="lime", label="Detected")
-gbm = ax2.hist(gbm_ph_flux_s, bins=bins_ph_flux, histtype="step", weights=[gbmcorrec] * len(gbm_ph_flux_s), color="red", label="GBM")
-ax2.set(title="sGRB flux histograms", xlabel="Photon flux (ph/cm²/s)", ylabel="Number of GRB/year", xscale="log", yscale="log")
-ax2.grid(True, which='major', linestyle='--', color='black', alpha=0.3)
-ax2.legend(loc='upper left')
+  ax2.hist(smp_ph_pflux_l, bins=bins_ph_flux, histtype="step", weights=[sim_data.weights] * len(smp_ph_pflux_l), color="darkblue", label="Sample")
+  ax2.hist(trig_ph_pflux_l, bins=bins_ph_flux, histtype="step", weights=[sim_data.weights] * len(trig_ph_pflux_l), linestyle='--', color="lime", label="Detected")
+  ax2.hist(gbm_ph_pflux_l, bins=bins_ph_flux, histtype="step", weights=[gbmcorrec] * len(gbm_ph_pflux_l), color="red", label="GBM")
+  ax2.set(title="lGRBs peak flux histograms", xlabel="Photon flux (ph/cm²/s)", ylabel="Number of GRB/year", xscale="log", yscale="log")
+  ax2.grid(True, which='major', linestyle='--', color='black', alpha=0.3)
+  ax2.legend(loc='upper left')
 
-ax3.hist(smp_ph_flux_l, bins=bins_ph_flux, histtype="step", weights=[test.weights] * len(smp_ph_flux_l), color="darkblue", label="Sample")
-ax3.hist(trig_ph_flux_l, bins=bins_ph_flux, histtype="step", weights=[test.weights] * len(trig_ph_flux_l), linestyle='--', color="lime", label="Detected")
-ax3.hist(gbm_ph_flux_l, bins=bins_ph_flux, histtype="step", weights=[gbmcorrec] * len(gbm_ph_flux_l), color="red", label="GBM")
-ax3.set(title="lGRB flux histograms", xlabel="Photon flux (ph/cm²/s)", ylabel="Number of GRB/year", xscale="log", yscale="log")
-ax3.grid(True, which='major', linestyle='--', color='black', alpha=0.3)
-ax3.legend(loc='upper left')
-plt.show()
+  ax3.hist(smp_ph_pflux_s, bins=bins_ph_flux, histtype="step", weights=[sim_data.weights] * len(smp_ph_pflux_s), color="darkblue", label="Sample")
+  ax3.hist(trig_ph_pflux_s, bins=bins_ph_flux, histtype="step", weights=[sim_data.weights] * len(trig_ph_pflux_s), linestyle='--', color="lime", label="Detected")
+  ax3.hist(gbm_ph_pflux_s, bins=bins_ph_flux, histtype="step", weights=[gbmcorrec] * len(gbm_ph_pflux_s), color="red", label="GBM")
+  ax3.set(title="sGRBs peak flux histograms", xlabel="Photon flux (ph/cm²/s)", ylabel="Number of GRB/year", xscale="log", yscale="log")
+  ax3.grid(True, which='major', linestyle='--', color='black', alpha=0.3)
+  ax3.legend(loc='upper left')
+  plt.show()
 
-bins_flnc = np.logspace(-6, 4, 40)
-fig2, (ax1, ax2, ax3) = plt.subplots(nrows=1, ncols=3, figsize=(27, 6))
-ax1.hist(smp_ph_fluence, bins=bins_flnc, histtype="step", weights=[test.weights] * len(smp_ph_fluence), color="blue", label="Sample")
-ax1.hist(trig_ph_fluence, bins=bins_flnc, histtype="step", weights=[test.weights] * len(trig_ph_fluence), color="green", label="Detected")
-ax1.hist(gbm_ph_fluence, bins=bins_flnc, histtype="step", weights=[gbmcorrec] * len(gbm_ph_fluence), color="red", label="GBM")
-ax1.set(title="Fluence histograms", xlabel="Photon fluence (ph/cm²)", ylabel="Number of GRB/year", xscale="log", yscale="log")
-ax1.grid(True, which='major', linestyle='--', color='black', alpha=0.3)
-ax1.legend()
+  # ================= Mean flux histograms =================
+  fig2, (ax12, ax22, ax32) = plt.subplots(nrows=1, ncols=3, figsize=(27, 6))
+  fig2.suptitle("Mean flux histograms")
+  ax12.hist(smp_ph_mflux, bins=bins_ph_flux, histtype="step", weights=[sim_data.weights] * len(smp_ph_mflux), color="darkblue", label="Sample")
+  ax12.hist(trig_ph_mflux, bins=bins_ph_flux, histtype="step", weights=[sim_data.weights] * len(trig_ph_mflux), linestyle='--', color="lime", label="Detected")
+  ax12.hist(gbm_ph_mflux, bins=bins_ph_flux, histtype="step", weights=[gbmcorrec] * len(gbm_ph_mflux), color="red", label="GBM")
+  # ax12.hist(calc_mflux, bins=bins_ph_flux, histtype="step", weights=[gbmcorrec] * len(calc_mflux), color="orange", label="GBM calculated")
+  ax12.set(title="Mean flux histograms", xlabel="Photon flux (ph/cm²/s)", ylabel="Number of GRB/year", xscale="log", yscale="log")
+  ax12.grid(True, which='major', linestyle='--', color='black', alpha=0.3)
+  ax12.legend(loc='upper left')
 
-ax2.hist(smp_ph_fluence_s, bins=bins_flnc, histtype="step", weights=[test.weights] * len(smp_ph_fluence_s), color="blue", label="Sample")
-ax2.hist(trig_ph_fluence_s, bins=bins_flnc, histtype="step", weights=[test.weights] * len(trig_ph_fluence_s), color="green", label="Detected")
-ax2.hist(gbm_ph_fluence_s, bins=bins_flnc, histtype="step", weights=[gbmcorrec] * len(gbm_ph_fluence_s), color="red", label="GBM")
-ax2.set(title="sGRB fluence histograms", xlabel="Photon fluence (ph/cm²)", ylabel="Number of GRB/year", xscale="log", yscale="log")
-ax2.grid(True, which='major', linestyle='--', color='black', alpha=0.3)
-ax2.legend()
+  ax22.hist(smp_ph_mflux_l, bins=bins_ph_flux, histtype="step", weights=[sim_data.weights] * len(smp_ph_mflux_l), color="darkblue", label="Sample")
+  ax22.hist(trig_ph_mflux_l, bins=bins_ph_flux, histtype="step", weights=[sim_data.weights] * len(trig_ph_mflux_l), linestyle='--', color="lime", label="Detected")
+  ax22.hist(gbm_ph_mflux_l, bins=bins_ph_flux, histtype="step", weights=[gbmcorrec] * len(gbm_ph_mflux_l), color="red", label="GBM")
+  # ax22.hist(calc_mflux_l, bins=bins_ph_flux, histtype="step", weights=[gbmcorrec] * len(calc_mflux_l), color="orange", label="GBM calculated")
+  ax22.set(title="lGRBs mean flux histograms", xlabel="Photon flux (ph/cm²/s)", ylabel="Number of GRB/year", xscale="log", yscale="log")
+  ax22.grid(True, which='major', linestyle='--', color='black', alpha=0.3)
+  ax22.legend(loc='upper left')
 
-ax3.hist(smp_ph_fluence_l, bins=bins_flnc, histtype="step", weights=[test.weights] * len(smp_ph_fluence_l), color="blue", label="Sample")
-ax3.hist(trig_ph_fluence_l, bins=bins_flnc, histtype="step", weights=[test.weights] * len(trig_ph_fluence_l), color="green", label="Detected")
-ax3.hist(gbm_ph_fluence_l, bins=bins_flnc, histtype="step", weights=[gbmcorrec] * len(gbm_ph_fluence_l), color="red", label="GBM")
-ax3.set(title="lGRB fluence histograms", xlabel="Photon fluence (ph/cm²)", ylabel="Number of GRB/year", xscale="log", yscale="log")
-ax3.grid(True, which='major', linestyle='--', color='black', alpha=0.3)
-ax3.legend()
-plt.show()
+  ax32.hist(smp_ph_mflux_s, bins=bins_ph_flux, histtype="step", weights=[sim_data.weights] * len(smp_ph_mflux_s), color="darkblue", label="Sample")
+  ax32.hist(trig_ph_mflux_s, bins=bins_ph_flux, histtype="step", weights=[sim_data.weights] * len(trig_ph_mflux_s), linestyle='--', color="lime", label="Detected")
+  ax32.hist(gbm_ph_mflux_s, bins=bins_ph_flux, histtype="step", weights=[gbmcorrec] * len(gbm_ph_mflux_s), color="red", label="GBM")
+  # ax32.hist(calc_mflux_s, bins=bins_ph_flux, histtype="step", weights=[gbmcorrec] * len(calc_mflux_s), color="orange", label="GBM calculated")
+  ax32.set(title="sGRBs mean flux histograms", xlabel="Photon flux (ph/cm²/s)", ylabel="Number of GRB/year", xscale="log", yscale="log")
+  ax32.grid(True, which='major', linestyle='--', color='black', alpha=0.3)
+  ax32.legend(loc='upper left')
+  plt.show()
 
-bins_t90 = np.logspace(-3, 3, 40)
-fig3, (ax1, ax2, ax3) = plt.subplots(nrows=1, ncols=3, figsize=(27, 6))
-ax1.hist(smp_t90, bins=bins_t90, histtype="step", weights=[test.weights] * len(smp_t90), color="blue", label="Sample")
-ax1.hist(trig_t90, bins=bins_t90, histtype="step", weights=[test.weights] * len(trig_t90), color="green", label="Detected")
-ax1.hist(gbm_t90, bins=bins_t90, histtype="step", weights=[gbmcorrec] * len(gbm_t90), color="red", label="GBM")
-ax1.set(title="T90 histograms", xlabel="T90 (s)", ylabel="Number of GRB/year", xscale="log", yscale="log")
-ax1.grid(True, which='major', linestyle='--', color='black', alpha=0.3)
-ax1.legend()
+  # ================= Fluence histograms =================
+  bins_flnc = np.logspace(-6, 4, 40)
+  fig3, (ax13, ax23, ax33) = plt.subplots(nrows=1, ncols=3, figsize=(27, 6))
+  fig3.suptitle("Fluence histograms")
+  ax13.hist(smp_ph_fluence, bins=bins_flnc, histtype="step", weights=[sim_data.weights] * len(smp_ph_fluence), color="blue", label="Sample")
+  ax13.hist(trig_ph_fluence, bins=bins_flnc, histtype="step", weights=[sim_data.weights] * len(trig_ph_fluence), color="green", label="Detected")
+  ax13.hist(gbm_ph_fluence, bins=bins_flnc, histtype="step", weights=[gbmcorrec] * len(gbm_ph_fluence), color="red", label="GBM")
+  ax13.set(title="Fluence histograms", xlabel="Photon fluence (ph/cm²)", ylabel="Number of GRB/year", xscale="log", yscale="log")
+  ax13.grid(True, which='major', linestyle='--', color='black', alpha=0.3)
+  ax13.legend()
 
-ax2.hist(smp_t90_s, bins=bins_t90, histtype="step", weights=[test.weights] * len(smp_t90_s), color="blue", label="Sample")
-ax2.hist(trig_t90_s, bins=bins_t90, histtype="step", weights=[test.weights] * len(trig_t90_s), color="green", label="Detected")
-ax2.hist(gbm_t90_s, bins=bins_t90, histtype="step", weights=[gbmcorrec] * len(gbm_t90_s), color="red", label="GBM")
-ax2.set(title="sGRB T90 histograms", xlabel="T90 (s)", ylabel="Number of GRB/year", xscale="log", yscale="log")
-ax2.grid(True, which='major', linestyle='--', color='black', alpha=0.3)
-ax2.legend()
+  ax23.hist(smp_ph_fluence_s, bins=bins_flnc, histtype="step", weights=[sim_data.weights] * len(smp_ph_fluence_s), color="blue", label="Sample")
+  ax23.hist(trig_ph_fluence_s, bins=bins_flnc, histtype="step", weights=[sim_data.weights] * len(trig_ph_fluence_s), color="green", label="Detected")
+  ax23.hist(gbm_ph_fluence_s, bins=bins_flnc, histtype="step", weights=[gbmcorrec] * len(gbm_ph_fluence_s), color="red", label="GBM")
+  ax23.set(title="sGRB fluence histograms", xlabel="Photon fluence (ph/cm²)", ylabel="Number of GRB/year", xscale="log", yscale="log")
+  ax23.grid(True, which='major', linestyle='--', color='black', alpha=0.3)
+  ax23.legend()
 
-ax3.hist(smp_t90_l, bins=bins_t90, histtype="step", weights=[test.weights] * len(smp_t90_l), color="blue", label="Sample")
-ax3.hist(trig_t90_l, bins=bins_t90, histtype="step", weights=[test.weights] * len(trig_t90_l), color="green", label="Detected")
-ax3.hist(gbm_t90_l, bins=bins_t90, histtype="step", weights=[gbmcorrec] * len(gbm_t90_l), color="red", label="GBM")
-ax3.set(title="lGRB T90 histograms", xlabel="T90 (s)", ylabel="Number of GRB/year", xscale="log", yscale="log")
-ax3.grid(True, which='major', linestyle='--', color='black', alpha=0.3)
-ax3.legend()
-plt.show()
+  ax33.hist(smp_ph_fluence_l, bins=bins_flnc, histtype="step", weights=[sim_data.weights] * len(smp_ph_fluence_l), color="blue", label="Sample")
+  ax33.hist(trig_ph_fluence_l, bins=bins_flnc, histtype="step", weights=[sim_data.weights] * len(trig_ph_fluence_l), color="green", label="Detected")
+  ax33.hist(gbm_ph_fluence_l, bins=bins_flnc, histtype="step", weights=[gbmcorrec] * len(gbm_ph_fluence_l), color="red", label="GBM")
+  ax33.set(title="lGRB fluence histograms", xlabel="Photon fluence (ph/cm²)", ylabel="Number of GRB/year", xscale="log", yscale="log")
+  ax33.grid(True, which='major', linestyle='--', color='black', alpha=0.3)
+  ax33.legend()
+  plt.show()
+
+  # ================= T90 histograms =================
+  bins_t90 = np.logspace(-3, 3, 40)
+  fig4, (ax14, ax24, ax34) = plt.subplots(nrows=1, ncols=3, figsize=(27, 6))
+  fig4.suptitle("T90 histograms")
+  ax14.hist(smp_t90, bins=bins_t90, histtype="step", weights=[sim_data.weights] * len(smp_t90), color="blue", label="Sample")
+  ax14.hist(trig_t90, bins=bins_t90, histtype="step", weights=[sim_data.weights] * len(trig_t90), color="green", label="Detected")
+  ax14.hist(gbm_t90, bins=bins_t90, histtype="step", weights=[gbmcorrec] * len(gbm_t90), color="red", label="GBM")
+  ax14.set(title="T90 histograms", xlabel="T90 (s)", ylabel="Number of GRB/year", xscale="log", yscale="log")
+  ax14.grid(True, which='major', linestyle='--', color='black', alpha=0.3)
+  ax14.legend()
+
+  ax24.hist(smp_t90_s, bins=bins_t90, histtype="step", weights=[sim_data.weights] * len(smp_t90_s), color="blue", label="Sample")
+  ax24.hist(trig_t90_s, bins=bins_t90, histtype="step", weights=[sim_data.weights] * len(trig_t90_s), color="green", label="Detected")
+  ax24.hist(gbm_t90_s, bins=bins_t90, histtype="step", weights=[gbmcorrec] * len(gbm_t90_s), color="red", label="GBM")
+  ax24.set(title="sGRB T90 histograms", xlabel="T90 (s)", ylabel="Number of GRB/year", xscale="log", yscale="log")
+  ax24.grid(True, which='major', linestyle='--', color='black', alpha=0.3)
+  ax24.legend()
+
+  ax34.hist(smp_t90_l, bins=bins_t90, histtype="step", weights=[sim_data.weights] * len(smp_t90_l), color="blue", label="Sample")
+  ax34.hist(trig_t90_l, bins=bins_t90, histtype="step", weights=[sim_data.weights] * len(trig_t90_l), color="green", label="Detected")
+  ax34.hist(gbm_t90_l, bins=bins_t90, histtype="step", weights=[gbmcorrec] * len(gbm_t90_l), color="red", label="GBM")
+  ax34.set(title="lGRB T90 histograms", xlabel="T90 (s)", ylabel="Number of GRB/year", xscale="log", yscale="log")
+  ax34.grid(True, which='major', linestyle='--', color='black', alpha=0.3)
+  ax34.legend()
+  plt.show()
 
 
 Fast test

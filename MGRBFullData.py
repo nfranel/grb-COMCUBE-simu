@@ -38,12 +38,12 @@ class GRBFullData:
     ###################################################################################################################
     #  Attributes declaration    +    way they are treated with constellation
     ###################################################################################################################
-    self.array_dtype = "float32"
+    self.array_dtype = np.float32
     ###################################################################################################################
     # Attributes for the sat
     self.compton_b_rate = 0                # Summed                  # Compton
     self.single_b_rate = 0                 # Summed                  # Single
-    self.hit_b_rate = 0                    # Summed                  # Trigger quality selection
+    # self.hit_b_rate = 0                    # Summed                  # Trigger quality selection
     self.sat_dec_wf = None                 # Not changed             #
     self.sat_ra_wf = None                  # Not changed             #
     self.sat_alt = None                    # Not changed             #
@@ -109,10 +109,10 @@ class GRBFullData:
     # Attributes that are used while making const
     self.n_sat_detect = 1                  # Summed                  #
     # Attributes that are used while determining the detector where the interaction occured
-    self.calor = 0                         # Summed                  # Trigger quality selection ?
-    self.dsssd = 0                         # Summed                  # Trigger quality selection ?
-    self.side = 0                          # Summed                  # Trigger quality selection ?
-    self.total_hits = 0                    # Summed                  # Trigger quality selection ?
+    # self.calor = 0                         # Summed                  # Trigger quality selection ?
+    # self.dsssd = 0                         # Summed                  # Trigger quality selection ?
+    # self.side = 0                          # Summed                  # Trigger quality selection ?
+    # self.total_hits = 0                    # Summed                  # Trigger quality selection ?
     ###################################################################################################################
     self.const_beneficial_compton = True   # Appened                 #
     self.const_beneficial_single = True    # Appened                 #
@@ -179,7 +179,7 @@ class GRBFullData:
       self.num_sat = int(next(f))
       self.compton_b_rate = float(next(f))
       self.single_b_rate = float(next(f))
-      self.hit_b_rate = float(next(f))
+      # self.hit_b_rate = float(next(f))
       # Information from mu files
       self.mu100_ref = float(next(f))
       self.mu100_err_ref = float(next(f))
@@ -203,10 +203,10 @@ class GRBFullData:
       self.compton_sec_detector = np.fromstring(next(f), sep='|', dtype=np.int8)
       self.single_detector = np.fromstring(next(f), sep='|', dtype=np.int8)
       # Detector counts
-      self.calor = int(next(f))
-      self.dsssd = int(next(f))
-      self.side = int(next(f))
-      self.total_hits = int(next(f))
+      # self.calor = int(next(f))
+      # self.dsssd = int(next(f))
+      # self.side = int(next(f))
+      # self.total_hits = int(next(f))
 
     if len(self.compton_first_detector) == 1 and self.compton_first_detector[0] == "":
       self.compton_first_detector = np.array([])
@@ -216,7 +216,6 @@ class GRBFullData:
       self.single_detector = np.array([])
     if len(self.single_detector) != len(self.single_time):
       print("============ERROR=============")
-
 
   def cor(self):
     """
@@ -309,7 +308,7 @@ class GRBFullData:
       hit_hist = np.histogram(np.concatenate((self.compton_time, self.compton_time, self.single_time)), bins=bins)[0]
       hit_argmax = np.argmax(hit_hist)
       hit_max_hist = hit_hist[hit_argmax]
-      snr_ret1 = calc_snr(hit_max_hist, self.hit_b_rate * int_time)
+      snr_ret1 = calc_snr(hit_max_hist, (2 * self.compton_b_rate + self.single_b_rate) * int_time)
       self.hits_snrs.append(snr_ret1[0])
       self.hits_snrs_err.append(snr_ret1[1])
 
@@ -326,6 +325,24 @@ class GRBFullData:
       snr_ret3 = calc_snr(sin_max_hist, self.single_b_rate * int_time)
       self.single_snrs.append(snr_ret3[0])
       self.single_snrs_err.append(snr_ret3[1])
+
+  def hits_snrs_over_lc(self, source_duration, nsat=3):
+    if nsat == 2:
+      thresh_list_nsat = [5.7, 5.3, 5, 4.8, 4.6, 4.4, 4.3, 4.2, 4.1]
+    elif nsat == 3:
+      thresh_list_nsat = [4.7, 4.3, 4.2, 4, 3.8, 3.7, 3.6, 3.5, 3.4]
+    elif nsat == 4:
+      thresh_list_nsat = [4.1, 3.9, 3.7, 3.6, 3.5, 3.3, 3.3, 3.2, 3.1]
+    else:
+      raise ValueError("Uncorrect number of sat : only 2, 3, and 4 sat constellation are considered")
+    integration_times = [0.016, 0.032, 0.064, 0.128, 0.256, 0.512, 1.024, 2.048, 4.096]
+    hits_snrs_lc = []
+    for ite_int, int_time in enumerate(integration_times):
+      bins = np.arange(0, source_duration + int_time, int_time)
+      hit_hist = np.histogram(np.concatenate((self.compton_time, self.compton_time, self.single_time)), bins=bins)[0]
+      hits_snrs_lc.append(np.where(calc_snr(hit_hist, (2 * self.compton_b_rate + self.single_b_rate) * int_time)[0] >= thresh_list_nsat[ite_int], 1, 0))
+    return hits_snrs_lc
+
 
   def set_beneficial_compton(self, threshold=2.6):
     """

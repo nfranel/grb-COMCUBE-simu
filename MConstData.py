@@ -36,7 +36,7 @@ class ConstData:
     ###################################################################################################################
     #  Attributes declaration    +    way they are treated with constellation
     ###################################################################################################################
-    # self.array_dtype = "float32"
+    # self.array_dtype = np.float32
     ###################################################################################################################
     # Attributes for the sat
     self.compton_b_rate = 0                     # Summed                  # Compton
@@ -104,10 +104,10 @@ class ConstData:
     # Attributes that are used while making const
     self.n_sat_detect = 0                       # Summed                  #
     # Attributes that are used while determining the deterctor where the interaction occured
-    self.calor = 0                              # Summed                  # Trigger quality selection ?
-    self.dsssd = 0                              # Summed                  # Trigger quality selection ?
-    self.side = 0                               # Summed                  # Trigger quality selection ?
-    self.total_hits = 0                         # Summed                  # Trigger quality selection ?
+    # self.calor = 0                              # Summed                  # Trigger quality selection ?
+    # self.dsssd = 0                              # Summed                  # Trigger quality selection ?
+    # self.side = 0                               # Summed                  # Trigger quality selection ?
+    # self.total_hits = 0                         # Summed                  # Trigger quality selection ?
     ###################################################################################################################
     self.const_beneficial_compton = True       # Appened                 #
     self.const_beneficial_single = True        # Appened                 #

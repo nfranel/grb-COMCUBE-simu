@@ -151,12 +151,6 @@ class AllSatData(list):
                 if self[index_sat].const_beneficial_single:
                   selected_sats.append(index_sat)
               selected_sats = np.array(selected_sats)
-            elif item in ["hit_b_rate", "calor", "dsssd", "side", "total_hits"]:
-              selected_sats = []
-              for index_sat in considered_sats:
-                if np.sum(self[index_sat].const_beneficial_trigger_3s) >= 1:  # todo test it
-                  selected_sats.append(index_sat)
-              selected_sats = np.array(selected_sats)
             else:
               selected_sats = considered_sats
             #############################################################################################################
@@ -178,9 +172,8 @@ class AllSatData(list):
             # Summed
             #############################################################################################################
             # Values summed
-            elif item in ["compton_b_rate", "single_b_rate", "hit_b_rate", "s_eff_compton_ref", "s_eff_single_ref",
-                          "s_eff_compton", "s_eff_single", "single", "single_cr", "compton", "compton_cr", "n_sat_detect",
-                          "calor", "dsssd", "side", "total_hits"]:
+            elif item in ["compton_b_rate", "single_b_rate", "s_eff_compton_ref", "s_eff_single_ref", "s_eff_compton",
+                          "s_eff_single", "single", "single_cr", "compton", "compton_cr", "n_sat_detect"]:
               temp_val = 0
               for num_sat in selected_sats:
                 temp_val += getattr(self[num_sat], item)
@@ -205,31 +198,6 @@ class AllSatData(list):
               for num_sat in selected_sats:
                 temp_array = np.concatenate((temp_array, getattr(self[num_sat], item)))
               setattr(self.const_data[ite_const], item, temp_array)
-            #############################################################################################################
-            # 2D concatenation     - Not used anymore, but still there just in case
-            #############################################################################################################
-            # Values stored in a 2D array that have to be initiated and treated so that no error occur
-            # elif item in ["compton_firstpos", "compton_secpos", "single_pos"]:
-            #   if len(selected_sats) == 1:
-            #     if len(getattr(self[selected_sats[0]], item)) == 0:
-            #       setattr(constellations[ite_const], item, np.array([]))
-            #     else:
-            #       setattr(constellations[ite_const], item, getattr(self[selected_sats[0]], item))
-            #   else:
-            #     temp_array = np.array([[0, 0, 0]])
-            #     for ite_num_sat in range(len(selected_sats)):
-            #       if len(getattr(self[selected_sats[ite_num_sat]], item)) != 0:
-            #         temp_array = np.concatenate((temp_array, getattr(self[selected_sats[ite_num_sat]], item)))
-            #     setattr(constellations[ite_const], item, temp_array[1:])
-            #############################################################################################################
-            # Unpol          - Not used anymore, but still there just in case
-            #############################################################################################################
-            # elif item == "unpol":
-            #   if getattr(self[selected_sats[0]], item) is not None:
-            #     temp_array = np.array([])
-            #     for num_sat in selected_sats:
-            #       temp_array = np.concatenate((temp_array, getattr(self[num_sat], item)))
-            #     setattr(constellations[ite_const], item, temp_array)
             #############################################################################################################
             # Weighted mean
             #############################################################################################################
@@ -356,12 +324,6 @@ class AllSatData(list):
                 if self[index_sat].const_beneficial_single:
                   selected_sats.append(index_sat)
               selected_sats = np.array(selected_sats)
-            elif item in ["hit_b_rate", "calor", "dsssd", "side", "total_hits"]:
-              selected_sats = []
-              for index_sat in considered_sats:
-                if np.sum(self[index_sat].const_beneficial_trigger_3s) >= 1:  # todo test it
-                  selected_sats.append(index_sat)
-              selected_sats = np.array(selected_sats)
             else:
               selected_sats = considered_sats
             #############################################################################################################
@@ -371,9 +333,8 @@ class AllSatData(list):
             # Summed
             #############################################################################################################
             # Values summed
-            if item in ["compton_b_rate", "single_b_rate", "hit_b_rate", "s_eff_compton_ref", "s_eff_single_ref",
-                          "s_eff_compton", "s_eff_single", "single", "single_cr", "compton", "compton_cr", "n_sat_detect",
-                          "calor", "dsssd", "side", "total_hits"]:
+            if item in ["compton_b_rate", "single_b_rate", "s_eff_compton_ref", "s_eff_single_ref", "s_eff_compton",
+                        "s_eff_single", "single", "single_cr", "compton", "compton_cr", "n_sat_detect"]:
               temp_val = 0
               for num_sat in selected_sats:
                 temp_val += getattr(self[num_sat], item)

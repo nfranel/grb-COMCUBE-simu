@@ -84,7 +84,7 @@ class BkgContainer(list):
         f.write(f"# Simulation time : {self.sim_time}\n")
         f.write(f"# Latitude min-max-number of value : {np.min(self.lat_range)}-{np.max(self.lat_range)}-{len(self.lat_range)}\n")
         f.write(f"# Altitude list : {self.alt_range}\n")
-        f.write("# Keys : dec | alt | compton_ener | compton_second | single_ener | compton_firstpos | compton_secpos | single_pos | compton_time | single_time | single | single_cr | compton | compton_cr | calor | dsssd | side\n")
+        f.write("# Keys : dec | alt | compton_second | compton_ener | compton_time | compton_firstpos | compton_secpos | single_ener | single_time | single_pos\n")
 
         fcond.write("# File containing condensed background data for : \n")
         fcond.write(f"# Geometry : {self.geometry}\n")
@@ -93,7 +93,7 @@ class BkgContainer(list):
         fcond.write(f"# Simulation time : {self.sim_time}\n")
         fcond.write(f"# Latitude min-max-number of value : {np.min(self.lat_range)}-{np.max(self.lat_range)}-{len(self.lat_range)}\n")
         fcond.write(f"# Altitude list : {self.alt_range}\n")
-        fcond.write("# Keys : dec | alt | compton_cr | single_cr\n")
+        fcond.write("# Keys : dec | alt | compton_cr | single_cr | compton_first_detector | compton_sec_detector | single_detector\n")
         for alt in self.alt_range:
           for lat in self.lat_range:
             # self.fold_name = self.geometry.split(".geo.setup")[0].split("/")[-1]
@@ -108,10 +108,6 @@ class BkgContainer(list):
             single_ener = []
             single_time = []
             single_pos = []
-            # compton_second_err = []
-            # compton_ener_err = []
-            # compton_firstpos_err = []
-            # compton_secpos_err = []
             for event in data:
               reading = readevt(event, None)
               if len(reading) == 9:
@@ -120,10 +116,6 @@ class BkgContainer(list):
                 compton_time.append(reading[2])
                 compton_firstpos.append(reading[3])
                 compton_secpos.append(reading[4])
-                # compton_second_err.append(reading[5])
-                # compton_ener_err.append(reading[6])
-                # compton_firstpos_err.append(reading[7])
-                # compton_secpos_err.append(reading[8])
               elif len(reading) == 3:
                 single_ener.append(reading[0])
                 single_time.append(reading[1])
@@ -137,24 +129,34 @@ class BkgContainer(list):
             single_ener = np.array(single_ener)
             single_time = np.array(single_time)
             single_pos = np.array(single_pos)
-            # compton_ener_err = np.array(compton_ener_err)
-            # compton_second_err = np.array(compton_second_err)
-            # compton_firstpos_err = np.array(compton_firstpos_err)
-            # compton_secpos_err = np.array(compton_secpos_err)
+
+            # f.write(f"{decbkg}\n")
+            # f.write(f"{altbkg}\n")
+            # if len(compton_ener) > 0:
+            #   for ite in range(len(compton_second) - 1):
+            #     f.write(f"{compton_second[ite]}|")
+            #   f.write(f"{compton_second[-1]}\n")
+            #   for ite in range(len(compton_ener) - 1):
+            #     f.write(f"{compton_ener[ite]}|")
+            #   f.write(f"{compton_ener[-1]}\n")
+            #   for ite in range(len(compton_time) - 1):
+            #     f.write(f"{compton_time[ite]}|")
+            #   f.write(f"{compton_time[-1]}\n")
+            # if len(single_ener) > 0:
+            #   for ite in range(len(single_ener) - 1):
+            #     f.write(f"{single_ener[ite]}|")
+            #   f.write(f"{single_ener[-1]}\n")
+            #   for ite in range(len(single_time) - 1):
+            #     f.write(f"{single_time[ite]}|")
+            #   f.write(f"{single_time[-1]}\n")
 
             f.write("NewBkg\n")
-            f.write(f"{decbkg}\n")
-            f.write(f"{altbkg}\n")
+            save_value(f, decbkg)
+            save_value(f, altbkg)
+            save_value(f, compton_second)
+            save_value(f, compton_ener)
+            save_value(f, compton_time)
             if len(compton_ener) > 0:
-              for ite in range(len(compton_second) - 1):
-                f.write(f"{compton_second[ite]}|")
-              f.write(f"{compton_second[-1]}\n")
-              for ite in range(len(compton_ener) - 1):
-                f.write(f"{compton_ener[ite]}|")
-              f.write(f"{compton_ener[-1]}\n")
-              for ite in range(len(compton_time) - 1):
-                f.write(f"{compton_time[ite]}|")
-              f.write(f"{compton_time[-1]}\n")
               for ite in range(len(compton_firstpos) - 1):
                 string = f"{compton_firstpos[ite][0]}_{compton_firstpos[ite][1]}_{compton_firstpos[ite][2]}"
                 f.write(f"{string}|")
@@ -165,18 +167,19 @@ class BkgContainer(list):
                 f.write(f"{string}|")
               string = f"{compton_secpos[-1][0]}_{compton_secpos[-1][1]}_{compton_secpos[-1][2]}"
               f.write(f"{string}\n")
+            else:
+              f.write(f"\n")
+            save_value(f, single_ener)
+            save_value(f, single_time)
             if len(single_ener) > 0:
-              for ite in range(len(single_ener) - 1):
-                f.write(f"{single_ener[ite]}|")
-              f.write(f"{single_ener[-1]}\n")
-              for ite in range(len(single_time) - 1):
-                f.write(f"{single_time[ite]}|")
-              f.write(f"{single_time[-1]}\n")
               for ite in range(len(single_pos) - 1):
                 string = f"{single_pos[ite][0]}_{single_pos[ite][1]}_{single_pos[ite][2]}"
                 f.write(f"{string}|")
               string = f"{single_pos[-1][0]}_{single_pos[-1][1]}_{single_pos[-1][2]}"
               f.write(f"{string}\n")
+            else:
+              f.write(f"\n")
+
             compton_index = np.where(compton_ener >= ergcut[0], np.where(compton_ener <= ergcut[1], True, False), False)
             single_index = np.where(single_ener >= ergcut[0], np.where(single_ener <= ergcut[1], True, False), False)
             compton_ener = compton_ener[compton_index]
@@ -187,26 +190,6 @@ class BkgContainer(list):
             compton_secpos = compton_secpos[compton_index]
             single_pos = single_pos[single_index]
             compton_first_detector, compton_sec_detector, single_detector = find_detector(compton_firstpos, compton_secpos, single_pos, self.geometry)
-            hits = np.array([])
-            if len(compton_first_detector) > 0:
-              hits = np.concatenate((hits, compton_first_detector))
-            if len(compton_sec_detector) > 0:
-              hits = np.concatenate((hits, compton_sec_detector))
-            if len(single_detector) > 0:
-              hits = np.concatenate((hits, single_detector))
-            calor = 0
-            dsssd = 0
-            side = 0
-            for hit in hits:
-              if hit.startswith("Calor"):
-                calor += 1
-              elif hit.startswith("SideDet"):
-                side += 1
-              elif hit.startswith("Layer"):
-                dsssd += 1
-              else:
-                print("Error, unknown interaction volume")
-            total_hits = calor + dsssd + side
 
             # Writing the condensed file
             fcond.write("NewBkg\n")
@@ -214,10 +197,9 @@ class BkgContainer(list):
             fcond.write(f"{altbkg}\n")
             fcond.write(f"{len(compton_ener) / self.sim_time}\n")
             fcond.write(f"{len(single_ener) / self.sim_time}\n")
-            fcond.write(f"{calor}\n")
-            fcond.write(f"{dsssd}\n")
-            fcond.write(f"{side}\n")
-            fcond.write(f"{total_hits}\n")
+            save_value(fcond, compton_first_detector)
+            save_value(fcond, compton_sec_detector)
+            save_value(fcond, single_detector)
 
   def read_data(self, file, save_time, ergcut, data_type="cond"):
     """
@@ -250,18 +232,22 @@ class BkgContainer(list):
       fcond.write(f"# Simulation time : {self.sim_time}\n")
       fcond.write(f"# Latitude min-max-number of value : {np.min(self.lat_range)}-{np.max(self.lat_range)}-{len(self.lat_range)}\n")
       fcond.write(f"# Altitude list : {self.alt_range}\n")
-      fcond.write("# Keys : dec | alt | compton_cr | single_cr\n")
+      fcond.write("# Keys : dec | alt | compton_cr | single_cr | compton_first_detector | compton_sec_detector | single_detector\n")
 
       for file in files_saved[1:]:
         lines = file.split("\n")
         decbkg = float(lines[0])
         altbkg = float(lines[1])
         # Attributes filled with file reading (or to be used from this moment)
-        compton_ener = np.array(lines[3].split("|"), dtype=float)
-        single_ener = np.array(lines[7].split("|"), dtype=float)
-        compton_firstpos = np.array([val.split("_") for val in lines[5].split("|")], dtype=float)
-        compton_secpos = np.array([val.split("_") for val in lines[6].split("|")], dtype=float)
-        single_pos = np.array([val.split("_") for val in lines[9].split("|")], dtype=float)
+        # compton_second = np.fromstring(lines[2], sep='|', dtype=np.float32)
+        compton_ener = np.fromstring(lines[3], sep='|', dtype=np.float32)
+        # compton_time = np.fromstring(lines[4], sep='|', dtype=np.float32)
+        compton_firstpos = np.array([val.split("_") for val in lines[5].split("|")], dtype=np.float32)
+        compton_secpos = np.array([val.split("_") for val in lines[6].split("|")], dtype=np.float32)
+
+        single_ener = np.fromstring(lines[7], sep='|', dtype=np.float32)
+        # single_time = np.fromstring(lines[8], sep='|', dtype=np.float32)
+        single_pos = np.array([val.split("_") for val in lines[9].split("|")], dtype=np.float32)
 
         # Applying the ergcut
         compton_index = np.where(compton_ener >= ergcut[0], np.where(compton_ener <= ergcut[1], True, False), False)
@@ -274,36 +260,15 @@ class BkgContainer(list):
         compton_secpos = compton_secpos[compton_index]
         single_pos = single_pos[single_index]
         compton_first_detector, compton_sec_detector, single_detector = find_detector(compton_firstpos, compton_secpos, single_pos, self.geometry)
-        hits = np.array([])
-        if len(compton_first_detector) > 0:
-          hits = np.concatenate((hits, compton_first_detector))
-        if len(compton_sec_detector) > 0:
-          hits = np.concatenate((hits, compton_sec_detector))
-        if len(single_detector) > 0:
-          hits = np.concatenate((hits, single_detector))
-        calor = 0
-        dsssd = 0
-        side = 0
-        for hit in hits:
-          if hit.startswith("Calor"):
-            calor += 1
-          elif hit.startswith("SideDet"):
-            side += 1
-          elif hit.startswith("Layer"):
-            dsssd += 1
-          else:
-            print("Error, unknown interaction volume")
-        total_hits = calor + dsssd + side
 
         fcond.write("NewBkg\n")
         fcond.write(f"{decbkg}\n")
         fcond.write(f"{altbkg}\n")
         fcond.write(f"{len(compton_ener) / self.sim_time}\n")
         fcond.write(f"{len(single_ener) / self.sim_time}\n")
-        fcond.write(f"{calor}\n")
-        fcond.write(f"{dsssd}\n")
-        fcond.write(f"{side}\n")
-        fcond.write(f"{total_hits}\n")
+        save_value(fcond, compton_first_detector)
+        save_value(fcond, compton_sec_detector)
+        save_value(fcond, single_detector)
 
 
 class BkgData:
@@ -328,18 +293,18 @@ class BkgData:
       # self.ra TODO
       self.alt = float(lines[1])
       # Attributes filled with file reading (or to be used from this moment)
-      self.compton_second = np.array(lines[2].split("|"), dtype=float)
-      self.compton_ener = np.array(lines[3].split("|"), dtype=float)
-      self.single_ener = np.array(lines[7].split("|"), dtype=float)
+      self.compton_second = np.fromstring(lines[2], sep='|', dtype=np.float32)
+      self.compton_ener = np.fromstring(lines[3], sep='|', dtype=np.float32)
+      self.single_ener = np.fromstring(lines[7], sep='|', dtype=np.float32)
       if save_time:
-        self.compton_time = np.array(lines[4].split("|"), dtype=float)
-        self.single_time = np.array(lines[8].split("|"), dtype=float)
+        self.compton_time = np.fromstring(lines[4], sep='|', dtype=np.float32)
+        self.single_time = np.fromstring(lines[8], sep='|', dtype=np.float32)
       else:
         self.compton_time = None
         self.single_time = None
-      compton_firstpos = np.array([val.split("_") for val in lines[5].split("|")], dtype=float)
-      compton_secpos = np.array([val.split("_") for val in lines[6].split("|")], dtype=float)
-      single_pos = np.array([val.split("_") for val in lines[9].split("|")], dtype=float)
+      compton_firstpos = np.array([val.split("_") for val in lines[5].split("|")], dtype=np.float32)
+      compton_secpos = np.array([val.split("_") for val in lines[6].split("|")], dtype=np.float32)
+      single_pos = np.array([val.split("_") for val in lines[9].split("|")], dtype=np.float32)
       if ergcut is not None:
         compton_index = np.where(self.compton_ener >= ergcut[0], np.where(self.compton_ener <= ergcut[1], True, False), False)
         single_index = np.where(self.single_ener >= ergcut[0], np.where(self.single_ener <= ergcut[1], True, False), False)
@@ -359,26 +324,6 @@ class BkgData:
       self.compton_cr = self.compton / sim_duration
 
       self.compton_first_detector, self.compton_sec_detector, self.single_detector = find_detector(compton_firstpos, compton_secpos, single_pos, geometry)
-      hits = np.array([])
-      if len(self.compton_first_detector) > 0:
-        hits = np.concatenate((hits, self.compton_first_detector))
-      if len(self.compton_sec_detector) > 0:
-        hits = np.concatenate((hits, self.compton_sec_detector))
-      if len(self.single_detector) > 0:
-        hits = np.concatenate((hits, self.single_detector))
-      self.calor = 0
-      self.dsssd = 0
-      self.side = 0
-      for hit in hits:
-        if hit.startswith("Calor"):
-          self.calor += 1
-        elif hit.startswith("SideDet"):
-          self.side += 1
-        elif hit.startswith("Layer"):
-          self.dsssd += 1
-        else:
-          print("Error, unknown interaction volume")
-      self.total_hits = self.calor + self.dsssd + self.side
 
     elif data_type == "cond":
       # Extraction of the background values
@@ -387,10 +332,9 @@ class BkgData:
       self.alt = float(lines[1])
       self.compton_cr = float(lines[2])
       self.single_cr = float(lines[3])
-      self.calor = int(lines[4])
-      self.dsssd = int(lines[5])
-      self.side = int(lines[6])
-      self.total_hits = int(lines[7])
+      self.compton_first_detector = np.fromstring(lines[4], sep='|', dtype=np.int8)
+      self.compton_sec_detector = np.fromstring(lines[5], sep='|', dtype=np.int8)
+      self.single_detector = np.fromstring(lines[6], sep='|', dtype=np.int8)
 
       # Attributes not filled because only the condensed data are extracted
       self.single = None
@@ -400,9 +344,6 @@ class BkgData:
       self.single_ener = None
       self.compton_time = None
       self.single_time = None
-      self.compton_first_detector = None
-      self.compton_sec_detector = None
-      self.single_detector = None
 
     else:
       print("Extraction impossible, wrong data_type given, only 'cond' and 'full' are possible")
