@@ -334,7 +334,7 @@ class AllSourceData:
               if sat is not None:
                 sat.anticorr()
 
-  def analyze(self, sats_analysis=True):
+  def analyze(self, sats_analysis=False):
     """
     Proceed to the analysis of polarigrams for all satellites and constellation (unless specified) for all data
     and calculates some probabilities
@@ -1089,6 +1089,23 @@ class AllSourceData:
              title=f"Inverse cumulative distribution of the SNR - {grb_type}")
     ax.grid(axis='both')
     plt.show()
+
+  def brightest_det_stats(self, n_grb):
+    lst_pflux = []
+    for source in self.alldata:
+      if source is not None:
+        if source.best_fit_p_flux is not None:
+          lst_pflux.append(source.best_fit_p_flux)
+        else:
+          lst_pflux.append(0)
+    lst_pflux = np.array(lst_pflux, dtype=np.float32)
+    idxs = np.argsort(lst_pflux)[:n_grb]
+
+    for idx in idxs:
+      if self.alldata[idx] is not None:
+        for sim in self.alldata[idx]:
+          if sim is not None:
+
 
   # todo change it
   # def hits_energy_histogram(self, num_grb, num_sim, energy_type="both", selected_sat="const", n_bins=30,

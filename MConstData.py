@@ -39,9 +39,10 @@ class ConstData:
     # self.array_dtype = np.float32
     ###################################################################################################################
     # Attributes for the sat
+    self.bkg_index = None                       # Appened
     self.compton_b_rate = 0                     # Summed                  # Compton
     self.single_b_rate = 0                      # Summed                  # Single
-    self.hit_b_rate = 0                         # Summed                  # Trigger quality selection
+    # self.hit_b_rate = 0                         # Summed                  # Trigger quality selection
     # self.sat_dec_wf = None                      # Not changed             #
     # self.sat_ra_wf = None                       # Not changed             #
     # self.sat_alt = None                         # Not changed             #
@@ -118,7 +119,7 @@ class ConstData:
 
   def analyze(self, source_duration, source_fluence):
     """
-    Proceeds to the data analysis to get s_eff, mdp, snr
+    Proceeds to the data analysis to get s_eff, modp, snr
       mdp has physical significance between 0 and 1
     :param source_duration: duration of the source
     :param source_fluence: fluence of the source [photons/cm2]

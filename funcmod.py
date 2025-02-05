@@ -936,7 +936,7 @@ def calc_mdp(S, B, mu100, nsigma=4.29, mu100_err=None):
   return mdp, mdp_err
 
 
-def closest_bkg_values(sat_dec, sat_ra, sat_alt, bkg_list):  # TODO : limits on variables
+def closest_bkg_info(sat_dec, sat_ra, sat_alt, bkg_list):  # TODO : limits on variables
   """
   Find the closest bkg file for a satellite (in terms of latitude, may be updated for longitude too)
   Returns the count rate of this bkg file
@@ -963,7 +963,7 @@ def closest_bkg_values(sat_dec, sat_ra, sat_alt, bkg_list):  # TODO : limits on 
     ra_error = np.array([0 for bkg in bkg_selec])
     total_error = np.sqrt(dec_error + ra_error)
     index = np.argmin(total_error)
-    return [bkg_selec[index].compton_cr, bkg_selec[index].single_cr]
+    return [bkg_selec[index].compton_cr, bkg_selec[index].single_cr, index]
 
 
 def geo_to_mag(dec_wf, ra_wf, altitude):  # TODO : limits on variables
@@ -996,8 +996,8 @@ def affect_bkg(info_sat, burst_time, bkg_list):
   dec_sat_world_frame, ra_sat_world_frame = orbitalparam2decra(info_sat[0], info_sat[1], info_sat[2], nu=true_anomaly)
   ra_sat_world_frame = np.mod(ra_sat_world_frame - earth_ra_offset, 360)
   mag_dec_sat_world_frame, mag_ra_sat_world_frame = geo_to_mag(dec_sat_world_frame, ra_sat_world_frame, info_sat[3])
-  count_rates = closest_bkg_values(mag_dec_sat_world_frame, mag_ra_sat_world_frame, info_sat[3], bkg_list)[:2]
-  return dec_sat_world_frame, ra_sat_world_frame, info_sat[3], count_rates[0], count_rates[1]
+  bkg_info = closest_bkg_info(mag_dec_sat_world_frame, mag_ra_sat_world_frame, info_sat[3], bkg_list)[:2]
+  return dec_sat_world_frame, ra_sat_world_frame, info_sat[3], bkg_info[0], bkg_info[1], bkg_info[2]
 
 
 def closest_mufile(grb_dec_sf, grb_ra_sf, mu_list):  # TODO : limits on variables
@@ -1018,6 +1018,13 @@ def closest_mufile(grb_dec_sf, grb_ra_sf, mu_list):  # TODO : limits on variable
     total_error = np.sqrt(dec_error + ra_error)
     index = np.argmin(total_error)
     return mu_list[index].mu100, mu_list[index].mu100_err, mu_list[index].s_eff_compton, mu_list[index].s_eff_single
+
+
+def det_counter(det_idx_array):
+  return np.array([[np.count_nonzero(det_idx_array == 3), np.count_nonzero(det_idx_array == 4), np.count_nonzero(det_idx_array == 1), np.count_nonzero(det_idx_array == 2), np.count_nonzero(det_idx_array == 5)],
+                   [np.count_nonzero(det_idx_array == 8), np.count_nonzero(det_idx_array == 9), np.count_nonzero(det_idx_array == 6), np.count_nonzero(det_idx_array == 7), np.count_nonzero(det_idx_array == 10)],
+                   [np.count_nonzero(det_idx_array == 13), np.count_nonzero(det_idx_array == 14), np.count_nonzero(det_idx_array == 11), np.count_nonzero(det_idx_array == 12), np.count_nonzero(det_idx_array == 15)],
+                   [np.count_nonzero(det_idx_array == 18), np.count_nonzero(det_idx_array == 19), np.count_nonzero(det_idx_array == 16), np.count_nonzero(det_idx_array == 17), np.count_nonzero(det_idx_array == 20)]])
 
 
 def calc_flux_gbm(catalog, index, ergcut, cat_is_df=False):

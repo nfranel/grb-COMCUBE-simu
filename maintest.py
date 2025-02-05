@@ -1253,8 +1253,8 @@ for row, dec in enumerate(dec_range):
     mag_lat, mag_lon = apex15.convert(lat, ra, 'geo', 'apex', height=500)
     # print(f"init : {lat:.12f}, {ra:.12f}              final : {mag_lat:.12f}, {mag_lon:.12f}")
     mag_dec, mag_ra = 90 - mag_lat, mag_lon
-    bkg_values = closest_bkg_values(mag_dec, mag_ra, 500, test.bkgdata)
-    field_list[row][col] = bkg_values[field_index]
+    bkg_values = closest_bkg_info(mag_dec, mag_ra, 500, test.bkgdata)
+    field_list[row][col] = bkg_values[field_index][:2]
 
 fig, ax = plt.subplots(subplot_kw={'projection': ccrs.PlateCarree(central_longitude=0)}, figsize=(10, 6))
 p1 = ax.pcolormesh(x_long, y_lat, field_list, cmap="Blues")
@@ -1281,8 +1281,8 @@ for row, dec in enumerate(dec_range):
     mag_lat, mag_lon = apex15.convert(lat, ra, 'geo', 'apex', height=500)
     # print(f"init : {lat:.12f}, {ra:.12f}              final : {mag_lat:.12f}, {mag_lon:.12f}")
     mag_dec, mag_ra = 90 - mag_lat, mag_lon
-    bkg_values = closest_bkg_values(mag_dec, mag_ra, 500, test.bkgdata)
-    field_list[row][col] = bkg_values[field_index]
+    bkg_values = closest_bkg_info(mag_dec, mag_ra, 500, test.bkgdata)
+    field_list[row][col] = bkg_values[field_index][:2]
 
 fig, ax = plt.subplots(subplot_kw={'projection': ccrs.PlateCarree(central_longitude=0)}, figsize=(10, 6))
 p1 = ax.pcolormesh(x_long, y_lat, field_list, cmap="Blues")
@@ -1347,7 +1347,7 @@ import numpy as np
 import cartopy.crs as ccrs
 
 bkg_param = "./bkg/bkg-v15.par"
-mu_param = "./mu100/mu100-v15.par"
+# mu_param = "./mu100/mu100-v15.par"
 # ergmin = [10, 30, 40, 50, 60, 70, 80, 90, 100]
 # ergmax = [300, 460, 600, 800, 1000]
 ergmin = [10, 30, 60, 100]
@@ -1357,9 +1357,9 @@ for emin in ergmin:
     ergcut = (emin, emax)
     armcut = 180
     bkgdata = BkgContainer(bkg_param, True, ergcut)
-    muSeffdata = MuSeffContainer(mu_param, ergcut, armcut)
+    # muSeffdata = MuSeffContainer(mu_param, ergcut, armcut)
     del bkgdata
-    del muSeffdata
+    # del muSeffdata
 
 
 def results_func(emin, emax):

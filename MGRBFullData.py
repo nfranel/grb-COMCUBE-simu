@@ -6,6 +6,8 @@
 # Package imports
 import matplotlib.pyplot as plt
 import matplotlib as mpl
+import numpy as np
+
 # Developped modules imports
 from funcmod import *
 
@@ -41,6 +43,7 @@ class GRBFullData:
     self.array_dtype = np.float32
     ###################################################################################################################
     # Attributes for the sat
+    self.bkg_index = None                  # Appened
     self.compton_b_rate = 0                # Summed                  # Compton
     self.single_b_rate = 0                 # Summed                  # Single
     # self.hit_b_rate = 0                    # Summed                  # Trigger quality selection
@@ -343,7 +346,6 @@ class GRBFullData:
       hits_snrs_lc.append(np.where(calc_snr(hit_hist, (2 * self.compton_b_rate + self.single_b_rate) * int_time)[0] >= thresh_list_nsat[ite_int], 1, 0))
     return hits_snrs_lc
 
-
   def set_beneficial_compton(self, threshold=2.6):
     """
     Sets const_beneficial_compton to True is the value for a satellite is worth considering
@@ -396,3 +398,63 @@ class GRBFullData:
         self.const_beneficial_trigger_1s[ite_ts] = 1
       else:
         self.const_beneficial_trigger_1s[ite_ts] = 0
+
+  def detector_statistics(self, bkg_values, bkg_duration, source_duration, show=False):
+    bkg_stats = det_counter(bkg_values.compton_first_detector + bkg_values.compton_sec_detector + bkg_values.single_detector) / bkg_duration
+
+    hit_times = np.concatenate((self.compton_time, self.compton_time, self.single_time))
+    det_list = np.concatenate((self.compton_first_detector, self.compton_sec_detector, self.single_detector))
+    bin_edges = np.arange(0, source_duration + 1, 1)
+    bin_index = np.digitize(hit_times, bin_edges) - 1
+    hit_hist = np.histogram(hit_times, bins=bin_edges)[0]
+
+    print("=================== Digitize verif ===================")
+    for iteval in len(bin_index):
+      print(f"{hit_times[iteval]} - {bin_index[iteval]} - {det_list[iteval]}")
+
+    if show:
+      binned_dets = [[]] * (len(bin_edges) - 1)
+      for ite_ev, idx in enumerate(bin_index):
+        if bin_edges[idx] <= hit_times[ite_ev] < bin_edges[idx + 1]:
+          binned_dets[idx].append(det_list[ite_ev])
+
+      print("=================== Binning verif ===================")
+      for itebin, bin in enumerate(binned_dets):
+        print(f"Bin {itebin}")
+        print(f"hit_hist and binned_dets same size : {hit_hist[itebin] == len(binned_dets[itebin])}")
+
+      dets_lc = np.array([det_counter(np.array(binned_det)) for binned_det in binned_dets])
+      print("=================== Transposition verif ===================")
+      test_cont = np.zeros((4, 5, len(dets_lc)))
+      for ite_lc in range(len(dets_lc)):
+        # Bin de la lc
+        for ite_quad in range(len(dets_lc[ite_lc])):
+          # Dans le quad
+          for ite_det in range(len(dets_lc[ite_lc][ite_quad])):
+            test_cont[ite_quad][ite_det][ite_lc] = dets_lc[ite_lc][ite_quad][ite_det]
+
+      print(np.transpose(dets_lc, (1, 2, 0)))
+      print(test_cont)
+      print(f"transposition size and looped size : {np.transpose(dets_lc, (1, 2, 0)).shape} - {test_cont.shape}")
+
+      fig, axes = plt.subplots(4, 5)
+      axes[0, 0].set(ylabel="Quad1\nDetector count rate")
+      axes[1, 0].set(ylabel="Quad2\nDetector count rate")
+      axes[2, 0].set(ylabel="Quad3\nDetector count rate")
+      axes[3, 0].set(xlabel="Time(s)\nLayer1", ylabel="Quad4\nDetector count rate")
+      axes[3, 1].set(xlabel="Time(s)\nLayer2")
+      axes[3, 2].set(xlabel="Time(s)\nSideDetX")
+      axes[3, 3].set(xlabel="Time(s)\nSideDetY")
+      axes[3, 4].set(xlabel="Time(s)\nCalorimeter")
+      for itequad in range(axes):
+        for itedet, ax in enumerate(axes[itequad]):
+          ax.stairs(test_cont[itequad][itedet], bin_edges, fill=True, edgecolor="black")
+
+    max_idx = np.argmax(hit_hist)
+    max_bin = det_list[bin_index == max_idx]
+    max_dets_stats = det_counter(max_bin)
+    print("=================== Selection verif ===================")
+    print(f"hist idx : {max_idx}")
+    print(f"hist vals : {hit_hist}")
+    print(f"len max_bin : {len(max_bin)}")
+    return bkg_stats, max_dets_stats
