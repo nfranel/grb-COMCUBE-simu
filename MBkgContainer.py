@@ -314,8 +314,8 @@ class BkgData:
       self.alt = float(lines[1])
       self.compton_cr = float(lines[2])
       self.single_cr = float(lines[3])
-      self.det_stat_compton = np.fromstring(lines[4], sep='|', dtype=np.int8)
-      self.det_stat_single = np.fromstring(lines[5], sep='|', dtype=np.int8)
+      self.det_stat_compton = np.fromstring(lines[4], sep='|', dtype=np.int64)
+      self.det_stat_single = np.fromstring(lines[5], sep='|', dtype=np.int64)
 
       # Attributes not filled because only the condensed data are extracted
       self.single = None
