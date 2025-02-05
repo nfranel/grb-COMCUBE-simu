@@ -113,6 +113,12 @@ class AllSourceData:
       print(f"  self.options memory used : {asizeof.asizeof(self.options)} bytes")
       print(f"  self.dysfunctional_sats memory used : {asizeof.asizeof(self.dysfunctional_sats)} bytes")
       print(f"  self.number_of_down_per_const memory used : {asizeof.asizeof(self.number_of_down_per_const)} bytes")
+      tracemalloc.start()  # Start memory monitoring
+      # get memory statistics
+      current, peak = tracemalloc.get_traced_memory()
+      print("\nStarting memory use statistics")
+      print(f"Current memory use : {current / 1024:.2f} Ko")
+      print(f"Peak use : {peak / 1024:.2f} Ko")
       print("==================================== Memory check ====================================")
 
     # Compiling the position finder
@@ -137,6 +143,11 @@ class AllSourceData:
       print("==================================== Memory check ====================================")
       print(f"  self.bkgdata memory used : {asizeof.asizeof(self.bkgdata)} bytes")
       print(f"  self.muSeffdata memory used : {asizeof.asizeof(self.muSeffdata)} bytes")
+      # get memory statistics
+      current, peak = tracemalloc.get_traced_memory()
+      print("\nAfter bkg and mu100 data extraction")
+      print(f"Current memory use : {current / 1024:.2f} Ko")
+      print(f"Peak use : {peak / 1024:.2f} Ko")
       print("==================================== Memory check ====================================")
 
     # Setting the catalog and the attributes associated
@@ -185,6 +196,11 @@ class AllSourceData:
       print(f"  self.gbm_duty memory used : {asizeof.asizeof(self.gbm_duty)} bytes")
       print(f"  self.gbm_fov memory used : {asizeof.asizeof(self.gbm_fov)} bytes")
       print(f"  self.weights memory used : {asizeof.asizeof(self.weights)} bytes")
+      # get memory statistics
+      current, peak = tracemalloc.get_traced_memory()
+      print("\nAfter loading cat")
+      print(f"Current memory use : {current / 1024:.2f} Ko")
+      print(f"Peak use : {peak / 1024:.2f} Ko")
       print("==================================== Memory check ====================================")
 
     # Log information
@@ -204,6 +220,11 @@ class AllSourceData:
       print(f"  sim_det_ites memory used : {asizeof.asizeof(sim_det_ites)} bytes")
       print(f"  sat_det_ites memory used : {asizeof.asizeof(sat_det_ites)} bytes")
       print(f"  suffix_ite memory used : {asizeof.asizeof(suffix_ite)} bytes")
+      # get memory statistics
+      current, peak = tracemalloc.get_traced_memory()
+      print("\nAfter loading logfile")
+      print(f"Current memory use : {current / 1024:.2f} Ko")
+      print(f"Peak use : {peak / 1024:.2f} Ko")
       print("==================================== Memory check ====================================")
 
     # Extracting the information from the simulation files
@@ -231,6 +252,11 @@ class AllSourceData:
       print(f"  extracted_name memory used : {asizeof.asizeof(extracted_name)} bytes")
       print(f"  presence_list memory used : {asizeof.asizeof(presence_list)} bytes")
       print(f"  num_files memory used : {asizeof.asizeof(num_files)} bytes")
+      # get memory statistics
+      current, peak = tracemalloc.get_traced_memory()
+      print("\nAfter preparing filenames")
+      print(f"Current memory use : {current / 1024:.2f} Ko")
+      print(f"Peak use : {peak / 1024:.2f} Ko")
       print("==================================== Memory check ====================================")
 
     printcom("Step 7 - Extracting the information from the simulation files")
@@ -267,6 +293,12 @@ class AllSourceData:
     if memory_check:
       print("==================================== Memory check ====================================")
       print(f"  self.alldata memory used : {asizeof.asizeof(self.alldata)} bytes")
+      # get memory statistics
+      current, peak = tracemalloc.get_traced_memory()
+      print("\nAfter extracting data")
+      print(f"Current memory use : {current / 1024:.2f} Ko")
+      print(f"Peak use : {peak / 1024:.2f} Ko")
+      tracemalloc.stop()
       print("==================================== Memory check ====================================")
 
   def filenames_creation(self, grb_names, grb_det_ites, sim_det_ites, sat_det_ites, suffix_ite):

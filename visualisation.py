@@ -92,7 +92,7 @@ def bkg_data_map(field, bkgdata, altitude, dec_range=np.linspace(0, 180, 181), r
       # print(f"init : {lat:.12f}, {ra:.12f}              final : {mag_lat:.12f}, {mag_lon:.12f}")
       mag_dec, mag_ra = 90 - mag_lat, mag_lon
       bkg_values = closest_bkg_info(mag_dec, mag_ra, altitude, bkgdata)
-      field_list[row][col] = bkg_values[field_index]
+      field_list[row][col] = bkg_values[field_index][:2]
 
   fig, ax = plt.subplots(subplot_kw={'projection': ccrs.PlateCarree(central_longitude=0)})
   p1 = ax.pcolormesh(x_long, y_lat, field_list, cmap="Blues")

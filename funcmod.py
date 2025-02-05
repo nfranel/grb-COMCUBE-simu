@@ -10,6 +10,7 @@ import os
 import subprocess
 from apexpy import Apex
 import traceback
+import tracemalloc
 
 import astropy.units
 # Useful constants
@@ -472,15 +473,24 @@ def save_value(file, value):
         for ite in range(len(value) - 1):
           file.write(f"{value[ite]}|")
         file.write(f"{value[-1]}\n")
-    elif type(value) is int or type(value) is float or type(value) is np.float64 or type(value) is np.float32:
+    elif type(value) in [int, float, np.int64, np.int32, np.float32, np.float64]:
+    # elif type(value) is int or type(value) is float or type(value) is np.float64 or type(value) is np.float32:
       file.write(f"{value}\n")
     else:
       raise TypeError(f"Uncorrect type for value saved : {value}, type {type(value)}")
 
 
 def save_grb_data(data_file, filename, sat_info_list, bkg_data, mu_data, ergcut, armcut, geometry, force=False):
+  # tracemalloc.start()  # Start memory monitoring
+  #
+  # # get memory statistics
+  # current, peak = tracemalloc.get_traced_memory()
+  # print("\nInit")
+  # print(f"Current memory use : {current / 1024:.2f} Ko")
+  # print(f"Peak use : {peak / 1024:.2f} Ko")
+
   array_dtype = np.float32
-  sim_dir, fname = filename.split("/extracted/")
+  sim_dir, fname = filename.split(f"/extracted-{ergcut[0]}-{ergcut[1]}/")
 
   file_exist = os.path.exists(filename)
   if file_exist and not force:
@@ -500,8 +510,18 @@ def save_grb_data(data_file, filename, sat_info_list, bkg_data, mu_data, ergcut,
     sat_info = sat_info_list[num_sat]
     # sat_dec_wf, sat_ra_wf = sat_info_2_decra(sat_info, burst_time)
     if sat_info is not None:
-      sat_dec_wf, sat_ra_wf, sat_alt, compton_b_rate, single_b_rate = affect_bkg(sat_info, burst_time, bkg_data)
-      hit_b_rate = compton_b_rate * 2 + single_b_rate
+      # # get memory statistics
+      # current, peak = tracemalloc.get_traced_memory()
+      # print("\nBefore affecting")
+      # print(f"Current memory use : {current / 1024:.2f} Ko")
+      # print(f"Peak use : {peak / 1024:.2f} Ko")
+      sat_dec_wf, sat_ra_wf, sat_alt, compton_b_rate, single_b_rate, b_idx = affect_bkg(sat_info, burst_time, bkg_data)
+      # # get memory statistics
+      # current, peak = tracemalloc.get_traced_memory()
+      # print("\nAfter affecting")
+      # print(f"Current memory use : {current / 1024:.2f} Ko")
+      # print(f"Peak use : {peak / 1024:.2f} Ko")
+
     else:
       raise ValueError("Satellite information given is None. Please give satellite information for the analyse to work.")
     # Error on estimating the satellite pointing direction (takes into account the pointing itself and the effect of the satellite not being exactly in the right position - very minor effect)
@@ -510,6 +530,12 @@ def save_grb_data(data_file, filename, sat_info_list, bkg_data, mu_data, ergcut,
                                                                                                                ra_grb_wf_err=ra_wf_error, dec_sat_wf_err=dec_sat_wf_error, ra_sat_wf_err=ra_sat_wf_error)[:5]
 
     mu100_ref, mu100_err_ref, s_eff_compton_ref, s_eff_single_ref = closest_mufile(grb_dec_sat_frame, grb_ra_sat_frame, mu_data)
+
+    # # get memory statistics
+    # current, peak = tracemalloc.get_traced_memory()
+    # print("\nBefore file reading")
+    # print(f"Current memory use : {current / 1024:.2f} Ko")
+    # print(f"Peak use : {peak / 1024:.2f} Ko")
 
     #################################################################################################################
     #        Readding file and saving values
@@ -544,6 +570,8 @@ def save_grb_data(data_file, filename, sat_info_list, bkg_data, mu_data, ergcut,
         single_ener.append(reading[0])
         single_time.append(reading[1])
         single_pos.append(reading[2])
+    # Free the variable
+    del(data_pol)
     compton_ener = np.array(compton_ener, dtype=array_dtype)
     compton_second = np.array(compton_second, dtype=array_dtype)
     single_ener = np.array(single_ener, dtype=array_dtype)
@@ -598,36 +626,36 @@ def save_grb_data(data_file, filename, sat_info_list, bkg_data, mu_data, ergcut,
     polar_from_energy = polar_from_energy[accepted_arm_pol]
     polar_from_position = np.array(polar_from_position[accepted_arm_pol], dtype=array_dtype)
     pol = np.array(pol[accepted_arm_pol], dtype=array_dtype)
-    # hit_time = np.concatenate((compton_time, compton_time, single_time))
+
+    # # get memory statistics
+    # current, peak = tracemalloc.get_traced_memory()
+    # print("\nAfter file reading / before detector search")
+    # print(f"Current memory use : {current / 1024:.2f} Ko")
+    # print(f"Peak use : {peak / 1024:.2f} Ko")
 
     #################################################################################################################
     #     Finding the detector of interaction for each event
     #################################################################################################################
     compton_first_detector, compton_sec_detector, single_detector = find_detector(compton_firstpos, compton_secpos, single_pos, geometry)
-    # hits = np.array([])
-    # if len(compton_first_detector) > 0:
-    #   hits = np.concatenate((hits, compton_first_detector))
-    # if len(compton_sec_detector) > 0:
-    #   hits = np.concatenate((hits, compton_sec_detector))
-    # if len(single_detector) > 0:
-    #   hits = np.concatenate((hits, single_detector))
-    #
-    # calor = np.count_nonzero(np.isin(hits, [5, 10, 15, 20]))
-    # dsssd = np.count_nonzero(np.isin(hits, [3, 4, 8, 9, 13, 14, 18, 19]))
-    # side = np.count_nonzero(np.isin(hits, [1, 2, 6, 7, 11, 12, 16, 17]))
-    # total_hits = calor + dsssd + side
+
+    # # get memory statistics
+    # current, peak = tracemalloc.get_traced_memory()
+    # print("\nAfter detector search")
+    # print(f"Current memory use : {current / 1024:.2f} Ko")
+    # print(f"Peak use : {peak / 1024:.2f} Ko")
+
     # Saving information
     with open(filename, "w") as f:
       f.write(f"Extracted file of simfile : {data_file} with ergcut : {ergcut[0]}-{ergcut[1]} and armcut : {armcut}\n")
       f.write(f"{dec_world_frame}|{ra_world_frame}|{burst_time}|{source_name}|{num_sim}\n")
       # Specific to satellite
+      save_value(f, b_idx)
       save_value(f, sat_dec_wf)
       save_value(f, sat_ra_wf)
       save_value(f, sat_alt)
       save_value(f, num_sat)
       save_value(f, compton_b_rate)
       save_value(f, single_b_rate)
-      save_value(f, hit_b_rate)
       # Information from mu files
       save_value(f, mu100_ref)
       save_value(f, mu100_err_ref)
@@ -643,35 +671,21 @@ def save_grb_data(data_file, filename, sat_info_list, bkg_data, mu_data, ergcut,
       save_value(f, single_ener)
       save_value(f, compton_time)
       save_value(f, single_time)
-      # save_value(f, hit_time)
       save_value(f, pol)
-      # save_value(f, pol_err)    ! To add later
       save_value(f, polar_from_position)
       save_value(f, polar_from_energy)
-      # save_value(f, polar_from_energy_err)    ! To add later
       save_value(f, arm_pol)
       save_value(f, compton_first_detector)
       save_value(f, compton_sec_detector)
       save_value(f, single_detector)
-      # Detector counts
-      # save_value(f, calor)
-      # save_value(f, dsssd)
-      # save_value(f, side)
-      # save_value(f, total_hits)
 
-
-# def numerical_array_extract(value, array_dtype):
-#   if len(value.split("|")) == 1 and value.split("|")[0] == "":
-#     return np.array([])
-#   else:
-#     return np.array(value.split("|"), dtype=array_dtype)
-#
-#
-# def det_pos_array_extract(value):
-#   if len(value.split("|")) == 1 and value.split("|")[0] == "":
-#     return np.array([])
-#   else:
-#     return np.array(value.split("|"))
+  #   # get memory statistics
+  #   current, peak = tracemalloc.get_traced_memory()
+  #   print("\nAfter saving")
+  #   print(f"Current memory use : {current / 1024:.2f} Ko")
+  #   print(f"Peak use : {peak / 1024:.2f} Ko")
+  #   tracemalloc.stop()
+  # stop
 
 
 def angle(scatter_vector, grb_dec_sf, grb_ra_sf, source_name, num_sim, num_sat, scatter_vector_err=None, grb_dec_sf_err=None, grb_ra_sf_err=None):  # TODO : limits on variables
@@ -996,7 +1010,7 @@ def affect_bkg(info_sat, burst_time, bkg_list):
   dec_sat_world_frame, ra_sat_world_frame = orbitalparam2decra(info_sat[0], info_sat[1], info_sat[2], nu=true_anomaly)
   ra_sat_world_frame = np.mod(ra_sat_world_frame - earth_ra_offset, 360)
   mag_dec_sat_world_frame, mag_ra_sat_world_frame = geo_to_mag(dec_sat_world_frame, ra_sat_world_frame, info_sat[3])
-  bkg_info = closest_bkg_info(mag_dec_sat_world_frame, mag_ra_sat_world_frame, info_sat[3], bkg_list)[:2]
+  bkg_info = closest_bkg_info(mag_dec_sat_world_frame, mag_ra_sat_world_frame, info_sat[3], bkg_list)
   return dec_sat_world_frame, ra_sat_world_frame, info_sat[3], bkg_info[0], bkg_info[1], bkg_info[2]
 
 
@@ -1021,10 +1035,10 @@ def closest_mufile(grb_dec_sf, grb_ra_sf, mu_list):  # TODO : limits on variable
 
 
 def det_counter(det_idx_array):
-  return np.array([[np.count_nonzero(det_idx_array == 3), np.count_nonzero(det_idx_array == 4), np.count_nonzero(det_idx_array == 1), np.count_nonzero(det_idx_array == 2), np.count_nonzero(det_idx_array == 5)],
-                   [np.count_nonzero(det_idx_array == 8), np.count_nonzero(det_idx_array == 9), np.count_nonzero(det_idx_array == 6), np.count_nonzero(det_idx_array == 7), np.count_nonzero(det_idx_array == 10)],
-                   [np.count_nonzero(det_idx_array == 13), np.count_nonzero(det_idx_array == 14), np.count_nonzero(det_idx_array == 11), np.count_nonzero(det_idx_array == 12), np.count_nonzero(det_idx_array == 15)],
-                   [np.count_nonzero(det_idx_array == 18), np.count_nonzero(det_idx_array == 19), np.count_nonzero(det_idx_array == 16), np.count_nonzero(det_idx_array == 17), np.count_nonzero(det_idx_array == 20)]])
+  return np.array([[np.count_nonzero(det_idx_array == 1), np.count_nonzero(det_idx_array == 2), np.count_nonzero(det_idx_array == 3), np.count_nonzero(det_idx_array == 4), np.count_nonzero(det_idx_array == 5)],
+                   [np.count_nonzero(det_idx_array == 6), np.count_nonzero(det_idx_array == 7), np.count_nonzero(det_idx_array == 8), np.count_nonzero(det_idx_array == 9), np.count_nonzero(det_idx_array == 10)],
+                   [np.count_nonzero(det_idx_array == 11), np.count_nonzero(det_idx_array == 12), np.count_nonzero(det_idx_array == 13), np.count_nonzero(det_idx_array == 14), np.count_nonzero(det_idx_array == 15)],
+                   [np.count_nonzero(det_idx_array == 16), np.count_nonzero(det_idx_array == 17), np.count_nonzero(det_idx_array == 18), np.count_nonzero(det_idx_array == 19), np.count_nonzero(det_idx_array == 20)]])
 
 
 def calc_flux_gbm(catalog, index, ergcut, cat_is_df=False):

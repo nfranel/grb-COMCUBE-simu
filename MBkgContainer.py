@@ -93,7 +93,7 @@ class BkgContainer(list):
         fcond.write(f"# Simulation time : {self.sim_time}\n")
         fcond.write(f"# Latitude min-max-number of value : {np.min(self.lat_range)}-{np.max(self.lat_range)}-{len(self.lat_range)}\n")
         fcond.write(f"# Altitude list : {self.alt_range}\n")
-        fcond.write("# Keys : dec | alt | compton_cr | single_cr | compton_first_detector | compton_sec_detector | single_detector\n")
+        fcond.write("# Keys : dec | alt | compton_cr | single_cr | det_stat_compton | det_stat_single\n")
         for alt in self.alt_range:
           for lat in self.lat_range:
             # self.fold_name = self.geometry.split(".geo.setup")[0].split("/")[-1]
@@ -129,26 +129,6 @@ class BkgContainer(list):
             single_ener = np.array(single_ener)
             single_time = np.array(single_time)
             single_pos = np.array(single_pos)
-
-            # f.write(f"{decbkg}\n")
-            # f.write(f"{altbkg}\n")
-            # if len(compton_ener) > 0:
-            #   for ite in range(len(compton_second) - 1):
-            #     f.write(f"{compton_second[ite]}|")
-            #   f.write(f"{compton_second[-1]}\n")
-            #   for ite in range(len(compton_ener) - 1):
-            #     f.write(f"{compton_ener[ite]}|")
-            #   f.write(f"{compton_ener[-1]}\n")
-            #   for ite in range(len(compton_time) - 1):
-            #     f.write(f"{compton_time[ite]}|")
-            #   f.write(f"{compton_time[-1]}\n")
-            # if len(single_ener) > 0:
-            #   for ite in range(len(single_ener) - 1):
-            #     f.write(f"{single_ener[ite]}|")
-            #   f.write(f"{single_ener[-1]}\n")
-            #   for ite in range(len(single_time) - 1):
-            #     f.write(f"{single_time[ite]}|")
-            #   f.write(f"{single_time[-1]}\n")
 
             f.write("NewBkg\n")
             save_value(f, decbkg)
@@ -191,15 +171,16 @@ class BkgContainer(list):
             single_pos = single_pos[single_index]
             compton_first_detector, compton_sec_detector, single_detector = find_detector(compton_firstpos, compton_secpos, single_pos, self.geometry)
 
+            det_stat_compton = det_counter(np.concatenate((compton_first_detector, compton_sec_detector))).flatten()
+            det_stat_single = det_counter(np.concatenate((compton_first_detector, compton_sec_detector))).flatten()
             # Writing the condensed file
             fcond.write("NewBkg\n")
             fcond.write(f"{decbkg}\n")
             fcond.write(f"{altbkg}\n")
             fcond.write(f"{len(compton_ener) / self.sim_time}\n")
             fcond.write(f"{len(single_ener) / self.sim_time}\n")
-            save_value(fcond, compton_first_detector)
-            save_value(fcond, compton_sec_detector)
-            save_value(fcond, single_detector)
+            save_value(fcond, det_stat_compton)
+            save_value(fcond, det_stat_single)
 
   def read_data(self, file, save_time, ergcut, data_type="cond"):
     """
@@ -232,8 +213,7 @@ class BkgContainer(list):
       fcond.write(f"# Simulation time : {self.sim_time}\n")
       fcond.write(f"# Latitude min-max-number of value : {np.min(self.lat_range)}-{np.max(self.lat_range)}-{len(self.lat_range)}\n")
       fcond.write(f"# Altitude list : {self.alt_range}\n")
-      fcond.write("# Keys : dec | alt | compton_cr | single_cr | compton_first_detector | compton_sec_detector | single_detector\n")
-
+      fcond.write("# Keys : dec | alt | compton_cr | single_cr | det_stat_compton | det_stat_single\n")
       for file in files_saved[1:]:
         lines = file.split("\n")
         decbkg = float(lines[0])
@@ -261,14 +241,16 @@ class BkgContainer(list):
         single_pos = single_pos[single_index]
         compton_first_detector, compton_sec_detector, single_detector = find_detector(compton_firstpos, compton_secpos, single_pos, self.geometry)
 
+        det_stat_compton = det_counter(np.concatenate((compton_first_detector, compton_sec_detector))).flatten()
+        det_stat_single = det_counter(np.concatenate((compton_first_detector, compton_sec_detector))).flatten()
+        # Writing the condensed file
         fcond.write("NewBkg\n")
         fcond.write(f"{decbkg}\n")
         fcond.write(f"{altbkg}\n")
         fcond.write(f"{len(compton_ener) / self.sim_time}\n")
         fcond.write(f"{len(single_ener) / self.sim_time}\n")
-        save_value(fcond, compton_first_detector)
-        save_value(fcond, compton_sec_detector)
-        save_value(fcond, single_detector)
+        save_value(fcond, det_stat_compton)
+        save_value(fcond, det_stat_single)
 
 
 class BkgData:
@@ -332,9 +314,8 @@ class BkgData:
       self.alt = float(lines[1])
       self.compton_cr = float(lines[2])
       self.single_cr = float(lines[3])
-      self.compton_first_detector = np.fromstring(lines[4], sep='|', dtype=np.int8)
-      self.compton_sec_detector = np.fromstring(lines[5], sep='|', dtype=np.int8)
-      self.single_detector = np.fromstring(lines[6], sep='|', dtype=np.int8)
+      self.det_stat_compton = np.fromstring(lines[4], sep='|', dtype=np.int8)
+      self.det_stat_single = np.fromstring(lines[5], sep='|', dtype=np.int8)
 
       # Attributes not filled because only the condensed data are extracted
       self.single = None

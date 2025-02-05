@@ -46,7 +46,6 @@ class GRBFullData:
     self.bkg_index = None                  # Appened
     self.compton_b_rate = 0                # Summed                  # Compton
     self.single_b_rate = 0                 # Summed                  # Single
-    # self.hit_b_rate = 0                    # Summed                  # Trigger quality selection
     self.sat_dec_wf = None                 # Not changed             #
     self.sat_ra_wf = None                  # Not changed             #
     self.sat_alt = None                    # Not changed             #
@@ -58,8 +57,6 @@ class GRBFullData:
     self.mu100_err_ref = None              # Weighted mean           # Compton
     self.s_eff_compton_ref = 0             # Summed                  # Compton
     self.s_eff_single_ref = 0              # Summed                  # Single
-# Combiner certains attributs ! Et faire des essais a chaque etape
-# Voir pendant louverture direct si la consommation a ce moment peut pas etre reduite
     ###################################################################################################################
     # Attributes filled with file reading (or to be used from this moment)
     self.grb_dec_sat_frame = None          # Not changed             #
@@ -70,7 +67,6 @@ class GRBFullData:
     self.single_ener = []                  # 1D concatenation        # Single
     self.compton_time = []                 # 1D concatenation        # Compton
     self.single_time = []                  # 1D concatenation        # Single
-    # self.hit_time = []                          # 1D concatenation        # Trigger quality selection
     self.pol = None                        # 1D concatenation        # Compton
     # self.pol_err = None   !update makeconst                      # 1D concatenation        # Compton
     self.polar_from_position = None        # 1D concatenation        # Compton
@@ -81,9 +77,6 @@ class GRBFullData:
     self.azim_angle_corrected = False      # Set to true             #
     ###################################################################################################################
     # interaction position attributes
-    # compton_firstpos = []
-    # compton_secpos = []
-    # single_pos = []
     self.compton_first_detector = []       # 1D concatenation        # Compton
     self.compton_sec_detector = []         # 1D concatenation        # Compton
     self.single_detector = []              # 1D concatenation        # Single
@@ -111,11 +104,6 @@ class GRBFullData:
     ###################################################################################################################
     # Attributes that are used while making const
     self.n_sat_detect = 1                  # Summed                  #
-    # Attributes that are used while determining the detector where the interaction occured
-    # self.calor = 0                         # Summed                  # Trigger quality selection ?
-    # self.dsssd = 0                         # Summed                  # Trigger quality selection ?
-    # self.side = 0                          # Summed                  # Trigger quality selection ?
-    # self.total_hits = 0                    # Summed                  # Trigger quality selection ?
     ###################################################################################################################
     self.const_beneficial_compton = True   # Appened                 #
     self.const_beneficial_single = True    # Appened                 #
@@ -176,6 +164,7 @@ class GRBFullData:
       next(f)
 
       # Specific to satellite
+      self.bkg_index = int(next(f))
       self.sat_dec_wf = float(next(f))
       self.sat_ra_wf = float(next(f))
       self.sat_alt = float(next(f))
@@ -205,11 +194,6 @@ class GRBFullData:
       self.compton_first_detector = np.fromstring(next(f), sep='|', dtype=np.int8)
       self.compton_sec_detector = np.fromstring(next(f), sep='|', dtype=np.int8)
       self.single_detector = np.fromstring(next(f), sep='|', dtype=np.int8)
-      # Detector counts
-      # self.calor = int(next(f))
-      # self.dsssd = int(next(f))
-      # self.side = int(next(f))
-      # self.total_hits = int(next(f))
 
     if len(self.compton_first_detector) == 1 and self.compton_first_detector[0] == "":
       self.compton_first_detector = np.array([])
