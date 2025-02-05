@@ -821,7 +821,7 @@ def sample_comparison(sim_data):
   plt.show()
 
 
-Fast test
+# Fast test
 cat_gbm = Catalog("./GBM/allGBM.txt", [4, '\n', 5, '|', 10000])
 gbm_ep = []
 gbm_t90 = []

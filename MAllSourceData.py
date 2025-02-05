@@ -210,8 +210,8 @@ class AllSourceData:
     printcom("Step 6 - preparing filenames for simulation files and extracted simulation files")
     init_time = time()
 
-    if not os.path.exists(f"{self.sim_prefix.split('/sim/')[0]}/extracted"):
-      os.mkdir(f"{self.sim_prefix.split('/sim/')[0]}/extracted")
+    if not os.path.exists(f"{self.sim_prefix.split('/sim/')[0]}/extracted-{self.erg_cut[0]}-{self.erg_cut[1]}"):
+      os.mkdir(f"{self.sim_prefix.split('/sim/')[0]}/extracted-{self.erg_cut[0]}-{self.erg_cut[1]}")
     tobe_extracted, extracted_name, presence_list = self.filenames_creation(grb_names, grb_det_ites, sim_det_ites, sat_det_ites, suffix_ite)
     num_files = int(subprocess.getoutput(f"ls {self.sim_prefix.split('/sim/')[0]}/sim | wc").strip().split("  ")[0])
     if num_files > self.n_sim_simulated:
@@ -276,7 +276,7 @@ class AllSourceData:
     for ite, grbname in enumerate(grb_names):
       temp_simfile = f"{self.sim_prefix}_{grbname}_sat{sat_det_ites[ite]}_{sim_det_ites[ite]:04d}_{suffix_ite[ite]}.inc1.id1.extracted.tra"
       tobe_ext.append(temp_simfile)
-      temp_name = f"{self.sim_prefix.split('/sim/')[0]}/extracted/{self.sim_prefix.split('/sim/')[1]}_extracted{grbname}_sat{sat_det_ites[ite]}_{sim_det_ites[ite]:04d}_erg-{self.erg_cut[0]}-{self.erg_cut[1]}_arm-{self.armcut}.txt"
+      temp_name = f"{self.sim_prefix.split('/sim/')[0]}/extracted-{self.erg_cut[0]}-{self.erg_cut[1]}/{self.sim_prefix.split('/sim/')[1]}_extracted{grbname}_sat{sat_det_ites[ite]}_{sim_det_ites[ite]:04d}_erg-{self.erg_cut[0]}-{self.erg_cut[1]}_arm-{self.armcut}.txt"
       ext_name.append(temp_name)
       pres_list[grb_det_ites[ite]][sim_det_ites[ite]][sat_det_ites[ite]] = temp_name
     return tobe_ext, ext_name, pres_list.tolist()
@@ -1105,7 +1105,7 @@ class AllSourceData:
       if self.alldata[idx] is not None:
         for sim in self.alldata[idx]:
           if sim is not None:
-
+            pass
 
   # todo change it
   # def hits_energy_histogram(self, num_grb, num_sim, energy_type="both", selected_sat="const", n_bins=30,
