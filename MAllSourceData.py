@@ -1137,7 +1137,34 @@ class AllSourceData:
       if self.alldata[idx] is not None:
         for sim in self.alldata[idx]:
           if sim is not None:
-            pass
+            max_sat_idx = np.argmax(np.array([sat.compton * 2 + sat.single if sat is not None else 0 for sat in sim]))
+            sats_det_stats = []
+            for ite_sat, sat in enumerate(sim):
+              if sat is not None:
+                if ite_sat == max_sat_idx:
+                  sats_det_stats.append(sat.detector_statistics(self.bkgdata[sat.bkg_index], self.bkgdata.sim_time, self.alldata[idx].source_duration, self.alldata[idx].source_name, show=True))
+                else:
+                  sats_det_stats.append(sat.detector_statistics(self.bkgdata[sat.bkg_index], self.bkgdata.sim_time, self.alldata[idx].source_duration, self.alldata[idx].source_name, show=False))
+            sats_det_stats_shaped = np.transpose(np.array(sats_det_stats), (1, 2, 0))
+            print(sats_det_stats)
+            print(sats_det_stats_shaped)
+
+            # ! test the shape change, the detector stat gathering and the graphs
+            # ! ajouter bkg
+            fig, axes = plt.subplots(4, 5)
+            fig.suptitle(f"Detectors max count rate - {n_grb} brightest GRBs at peak")
+            axes[0, 0].set(ylabel="Quad1\nNumber of detection")
+            axes[1, 0].set(ylabel="Quad2\nNumber of detection")
+            axes[2, 0].set(ylabel="Quad3\nNumber of detection")
+            axes[3, 0].set(xlabel="Detector max count rate (hit/s)\nSideDetX", ylabel="Quad4\nNumber of detection")
+            axes[3, 1].set(xlabel="Detector max count rate (hit/s)\nSideDetY")
+            axes[3, 2].set(xlabel="Detector max count rate (hit/s)\nLayer1")
+            axes[3, 3].set(xlabel="Detector max count rate (hit/s)\nLayer2")
+            axes[3, 4].set(xlabel="Detector max count rate (hit/s)\nCalorimeter")
+            for itequad in range(len(axes)):
+              for itedet, ax in enumerate(axes[itequad]):
+                ax.hist(sats_det_stats_shaped[itequad][itedet], color="blue")
+            plt.show()
 
   # todo change it
   # def hits_energy_histogram(self, num_grb, num_sim, energy_type="both", selected_sat="const", n_bins=30,

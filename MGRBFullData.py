@@ -383,8 +383,8 @@ class GRBFullData:
       else:
         self.const_beneficial_trigger_1s[ite_ts] = 0
 
-  def detector_statistics(self, bkg_values, bkg_duration, source_duration, show=False):
-    bkg_stats = det_counter(bkg_values.compton_first_detector + bkg_values.compton_sec_detector + bkg_values.single_detector) / bkg_duration
+  def detector_statistics(self, bkg_values, bkg_duration, source_duration, source_name, show=False):
+    bkg_stats = (bkg_values.det_stat_compton + bkg_values.det_stat_single).reshape(4, 5) / bkg_duration
 
     hit_times = np.concatenate((self.compton_time, self.compton_time, self.single_time))
     det_list = np.concatenate((self.compton_first_detector, self.compton_sec_detector, self.single_detector))
@@ -392,53 +392,57 @@ class GRBFullData:
     bin_index = np.digitize(hit_times, bin_edges) - 1
     hit_hist = np.histogram(hit_times, bins=bin_edges)[0]
 
-    print("=================== Digitize verif ===================")
-    for iteval in len(bin_index):
-      print(f"{hit_times[iteval]} - {bin_index[iteval]} - {det_list[iteval]}")
+    # print("=================== Digitize verif ===================")
+    # for iteval in range(len(bin_index)):
+    #   print(f"{hit_times[iteval]} - {bin_index[iteval]} - {det_list[iteval]}")
+    # print("=================== Digitize verif ===================")
+
+    binned_dets = [[] for ite in range(len(bin_edges) - 1)]
+    for ite_ev, idx in enumerate(bin_index):
+      if bin_edges[idx] <= hit_times[ite_ev] < bin_edges[idx + 1]:
+        binned_dets[idx].append(det_list[ite_ev])
+
+    # print("=================== Binning verif ===================")
+    # for itebin, bin in enumerate(binned_dets):
+    #   print(f"Bin {itebin}")
+    #   print(f"hit_hist and binned_dets same size : {hit_hist[itebin] == len(binned_dets[itebin])}")
+    # print("=================== Binning verif ===================")
+
+    dets_lc = np.array([det_counter(np.array(binned_det)) for binned_det in binned_dets])
+    shaped_det_lc = np.transpose(dets_lc, (1, 2, 0))
+    print("=================== Transposition verif ===================")
+    # test_cont = np.zeros((4, 5, len(dets_lc)))
+    # for ite_lc in range(len(dets_lc)):
+    #   # Bin de la lc
+      # for ite_quad in range(len(dets_lc[ite_lc])):
+      #   # Dans le quad
+        # for ite_det in range(len(dets_lc[ite_lc][ite_quad])):
+        #   test_cont[ite_quad][ite_det][ite_lc] = dets_lc[ite_lc][ite_quad][ite_det]
+
+    print(shaped_det_lc)
+    # print(test_cont)
+    # print(f"transposition size and looped size : {shaped_det_lc.shape} - {test_cont.shape}")
+    # if shaped_det_lc.shape == test_cont.shape:
+    #   print(f"shaped_det_lc == test_cont : {np.all(shaped_det_lc == test_cont)}")
+    print("=================== Transposition verif ===================")
 
     if show:
-      binned_dets = [[]] * (len(bin_edges) - 1)
-      for ite_ev, idx in enumerate(bin_index):
-        if bin_edges[idx] <= hit_times[ite_ev] < bin_edges[idx + 1]:
-          binned_dets[idx].append(det_list[ite_ev])
-
-      print("=================== Binning verif ===================")
-      for itebin, bin in enumerate(binned_dets):
-        print(f"Bin {itebin}")
-        print(f"hit_hist and binned_dets same size : {hit_hist[itebin] == len(binned_dets[itebin])}")
-
-      dets_lc = np.array([det_counter(np.array(binned_det)) for binned_det in binned_dets])
-      print("=================== Transposition verif ===================")
-      test_cont = np.zeros((4, 5, len(dets_lc)))
-      for ite_lc in range(len(dets_lc)):
-        # Bin de la lc
-        for ite_quad in range(len(dets_lc[ite_lc])):
-          # Dans le quad
-          for ite_det in range(len(dets_lc[ite_lc][ite_quad])):
-            test_cont[ite_quad][ite_det][ite_lc] = dets_lc[ite_lc][ite_quad][ite_det]
-
-      print(np.transpose(dets_lc, (1, 2, 0)))
-      print(test_cont)
-      print(f"transposition size and looped size : {np.transpose(dets_lc, (1, 2, 0)).shape} - {test_cont.shape}")
-
       fig, axes = plt.subplots(4, 5)
-      axes[0, 0].set(ylabel="Quad1\nDetector count rate")
-      axes[1, 0].set(ylabel="Quad2\nDetector count rate")
-      axes[2, 0].set(ylabel="Quad3\nDetector count rate")
-      axes[3, 0].set(xlabel="Time(s)\nLayer1", ylabel="Quad4\nDetector count rate")
-      axes[3, 1].set(xlabel="Time(s)\nLayer2")
-      axes[3, 2].set(xlabel="Time(s)\nSideDetX")
-      axes[3, 3].set(xlabel="Time(s)\nSideDetY")
+      fig.suptitle(f"{source_name}")
+      axes[0, 0].set(ylabel="Quad1\nDetector count rate (hit/s)")
+      axes[1, 0].set(ylabel="Quad2\nDetector count rate (hit/s)")
+      axes[2, 0].set(ylabel="Quad3\nDetector count rate (hit/s)")
+      axes[3, 0].set(xlabel="Time(s)\nSideDetX", ylabel="Quad4\nDetector count rate (hit/s)")
+      axes[3, 1].set(xlabel="Time(s)\nSideDetY")
+      axes[3, 2].set(xlabel="Time(s)\nLayer1")
+      axes[3, 3].set(xlabel="Time(s)\nLayer2")
       axes[3, 4].set(xlabel="Time(s)\nCalorimeter")
-      for itequad in range(axes):
+      for itequad in range(len(axes)):
         for itedet, ax in enumerate(axes[itequad]):
-          ax.stairs(test_cont[itequad][itedet], bin_edges, fill=True, edgecolor="black")
+          ax.stairs((bkg_stats + shaped_det_lc)[itequad][itedet], bin_edges, fill=True, edgecolor="blue")
+          ax.stairs(bkg_stats[itequad][itedet], bin_edges, fill=True, edgecolor="green")
+      plt.show()
 
-    max_idx = np.argmax(hit_hist)
-    max_bin = det_list[bin_index == max_idx]
-    max_dets_stats = det_counter(max_bin)
-    print("=================== Selection verif ===================")
-    print(f"hist idx : {max_idx}")
-    print(f"hist vals : {hit_hist}")
-    print(f"len max_bin : {len(max_bin)}")
-    return bkg_stats, max_dets_stats
+    max_dets_stats = np.max(shaped_det_lc, axis=2)
+
+    return bkg_stats + max_dets_stats

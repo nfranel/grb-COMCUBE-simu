@@ -147,22 +147,8 @@ def calculate_polar_angle(ener_sec, ener_tot, ener_sec_err=None, ener_tot_err=No
   cos_value_filtered = np.where(cos_value < -1, -1, np.where(cos_value > 1, 1, cos_value))
   if ener_sec_err is not None and ener_tot_err is not None:
     ener_first_err = ener_tot_err - ener_sec_err
-    err = np.where(cos_value**2 == 1, np.nan, electron_rest_ener / np.sqrt(1 - cos_value**2) * np.sqrt(ener_first_err**2 / ener_tot**4 + ((1/ener_sec**2 - 1/ener_tot**2) * ener_sec_err)**2))
-    # e2, etot = ener_sec-ener_sec_err, ener_tot-ener_tot_err
-    # val1 = np.arccos(1 - electron_rest_ener * (1 / e2 - 1 / etot))
-    # e2, etot = ener_sec-ener_sec_err, ener_tot+ener_tot_err
-    # val2 = np.arccos(1 - electron_rest_ener * (1 / e2 - 1 / etot))
-    # e2, etot = ener_sec+ener_sec_err, ener_tot-ener_tot_err
-    # val3 = np.arccos(1 - electron_rest_ener * (1 / e2 - 1 / etot))
-    # e2, etot = ener_sec+ener_sec_err, ener_tot+ener_tot_err
-    # val4 = np.arccos(1 - electron_rest_ener * (1 / e2 - 1 / etot))
-    # # for ite in range(len(val1)):
-    # #   # print(val1, val2, val3, val4)
-    # #   print("err3 : ", np.rad2deg((np.max([val1[ite], val2[ite], val3[ite], val4[ite]]) - np.min([val1[ite], val2[ite], val3[ite], val4[ite]])) / 2))
-    # errdiff = (np.max([val1, val2, val3, val4]) - np.min([val1, val2, val3, val4])) / 2
-    # # print(f"polar angle : {np.rad2deg(np.arccos(cos_value_filtered)):.4f}")
-    # # print(f"err : {np.rad2deg(err):.4f}")
-    # # print(f"errdiff : {np.rad2deg(errdiff):.4f}")
+    cos_value_sqared_filtered = np.where(cos_value_filtered**2 == 1, np.nan, cos_value_filtered**2)
+    err = electron_rest_ener / np.sqrt(1 - cos_value_sqared_filtered) * np.sqrt(ener_first_err**2 / ener_tot**4 + ((1/ener_sec**2 - 1/ener_tot**2) * ener_sec_err)**2)
   else:
     err = 0
   return np.rad2deg(np.arccos(cos_value_filtered)), np.rad2deg(err)
@@ -571,7 +557,8 @@ def save_grb_data(data_file, filename, sat_info_list, bkg_data, mu_data, ergcut,
         single_time.append(reading[1])
         single_pos.append(reading[2])
     # Free the variable
-    del(data_pol)
+    del data_pol
+
     compton_ener = np.array(compton_ener, dtype=array_dtype)
     compton_second = np.array(compton_second, dtype=array_dtype)
     single_ener = np.array(single_ener, dtype=array_dtype)
