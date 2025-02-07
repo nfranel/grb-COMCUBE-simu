@@ -172,7 +172,7 @@ class BkgContainer(list):
             compton_first_detector, compton_sec_detector, single_detector = find_detector(compton_firstpos, compton_secpos, single_pos, self.geometry)
 
             det_stat_compton = det_counter(np.concatenate((compton_first_detector, compton_sec_detector))).flatten()
-            det_stat_single = det_counter(np.concatenate((compton_first_detector, compton_sec_detector))).flatten()
+            det_stat_single = det_counter(single_detector).flatten()
             # Writing the condensed file
             fcond.write("NewBkg\n")
             fcond.write(f"{decbkg}\n")
@@ -242,7 +242,7 @@ class BkgContainer(list):
         compton_first_detector, compton_sec_detector, single_detector = find_detector(compton_firstpos, compton_secpos, single_pos, self.geometry)
 
         det_stat_compton = det_counter(np.concatenate((compton_first_detector, compton_sec_detector))).flatten()
-        det_stat_single = det_counter(np.concatenate((compton_first_detector, compton_sec_detector))).flatten()
+        det_stat_single = det_counter(single_detector).flatten()
         # Writing the condensed file
         fcond.write("NewBkg\n")
         fcond.write(f"{decbkg}\n")

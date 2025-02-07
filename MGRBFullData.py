@@ -407,23 +407,24 @@ class GRBFullData:
     #   print(f"hit_hist and binned_dets same size : {hit_hist[itebin] == len(binned_dets[itebin])}")
     # print("=================== Binning verif ===================")
 
-    dets_lc = np.array([det_counter(np.array(binned_det)) for binned_det in binned_dets])
-    shaped_det_lc = np.transpose(dets_lc, (1, 2, 0))
-    print("=================== Transposition verif ===================")
+    shaped_det_lc = np.transpose(np.array([det_counter(np.array(binned_det)) for binned_det in binned_dets]), (1, 2, 0))
+    # dets_lc = np.array([det_counter(np.array(binned_det)) for binned_det in binned_dets])
+    # shaped_det_lc = np.transpose(dets_lc, (1, 2, 0))
+    # print("=================== Transposition verif ===================")
     # test_cont = np.zeros((4, 5, len(dets_lc)))
     # for ite_lc in range(len(dets_lc)):
     #   # Bin de la lc
-      # for ite_quad in range(len(dets_lc[ite_lc])):
-      #   # Dans le quad
-        # for ite_det in range(len(dets_lc[ite_lc][ite_quad])):
-        #   test_cont[ite_quad][ite_det][ite_lc] = dets_lc[ite_lc][ite_quad][ite_det]
+    #   for ite_quad in range(len(dets_lc[ite_lc])):
+    #     # Dans le quad
+    #     for ite_det in range(len(dets_lc[ite_lc][ite_quad])):
+    #       test_cont[ite_quad][ite_det][ite_lc] = dets_lc[ite_lc][ite_quad][ite_det]
 
-    print(shaped_det_lc)
+    # print(shaped_det_lc)
     # print(test_cont)
     # print(f"transposition size and looped size : {shaped_det_lc.shape} - {test_cont.shape}")
     # if shaped_det_lc.shape == test_cont.shape:
     #   print(f"shaped_det_lc == test_cont : {np.all(shaped_det_lc == test_cont)}")
-    print("=================== Transposition verif ===================")
+    # print("=================== Transposition verif ===================")
 
     if show:
       fig, axes = plt.subplots(4, 5)
@@ -438,9 +439,8 @@ class GRBFullData:
       axes[3, 4].set(xlabel="Time(s)\nCalorimeter")
       for itequad in range(len(axes)):
         for itedet, ax in enumerate(axes[itequad]):
-          ax.stairs((bkg_stats + shaped_det_lc)[itequad][itedet], bin_edges, fill=True, edgecolor="blue")
-          ax.stairs(bkg_stats[itequad][itedet], bin_edges, fill=True, edgecolor="green")
-      plt.show()
+          ax.stairs(bkg_stats[itequad][itedet] + shaped_det_lc[itequad][itedet], bin_edges, fill=True, edgecolor="blue")
+          ax.axhline(bkg_stats[itequad][itedet], color="green")
 
     max_dets_stats = np.max(shaped_det_lc, axis=2)
 

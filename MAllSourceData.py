@@ -1123,50 +1123,76 @@ class AllSourceData:
     ax.grid(axis='both')
     plt.show()
 
-  def brightest_det_stats(self, n_grb):
+  def brightest_det_stats(self, n_grb, lc_plot=True, det_max_repartition_plot=False):
     lst_pflux = []
-    for source in self.alldata:
+    combined_sats_det_stats_shaped = None
+    # if self.simmode == "GBM":
+    #   cat_data = Catalog(self.cat_file, self.sttype, self.rest_cat_file)
+    # elif self.simmode == "sampled":
+    #   cat_data = SampleCatalog(self.cat_file, self.sttype)
+    for source_ite, source in enumerate(self.alldata):
       if source is not None:
         if source.best_fit_p_flux is not None:
           lst_pflux.append(source.best_fit_p_flux)
         else:
           lst_pflux.append(0)
     lst_pflux = np.array(lst_pflux, dtype=np.float32)
-    idxs = np.argsort(lst_pflux)[:n_grb]
-
+    idxs = np.argsort(lst_pflux)[::-1][:n_grb]
     for idx in idxs:
       if self.alldata[idx] is not None:
         for sim in self.alldata[idx]:
           if sim is not None:
             max_sat_idx = np.argmax(np.array([sat.compton * 2 + sat.single if sat is not None else 0 for sat in sim]))
             sats_det_stats = []
+            sat_id_list = []
             for ite_sat, sat in enumerate(sim):
               if sat is not None:
+                sat_id_list.append(ite_sat)
                 if ite_sat == max_sat_idx:
-                  sats_det_stats.append(sat.detector_statistics(self.bkgdata[sat.bkg_index], self.bkgdata.sim_time, self.alldata[idx].source_duration, self.alldata[idx].source_name, show=True))
+                  sats_det_stats.append(sat.detector_statistics(self.bkgdata[sat.bkg_index], self.bkgdata.sim_time, self.alldata[idx].source_duration, self.alldata[idx].source_name, show=lc_plot))
                 else:
                   sats_det_stats.append(sat.detector_statistics(self.bkgdata[sat.bkg_index], self.bkgdata.sim_time, self.alldata[idx].source_duration, self.alldata[idx].source_name, show=False))
             sats_det_stats_shaped = np.transpose(np.array(sats_det_stats), (1, 2, 0))
-            print(sats_det_stats)
-            print(sats_det_stats_shaped)
-
+            if combined_sats_det_stats_shaped is None:
+              combined_sats_det_stats_shaped = sats_det_stats_shaped
+            else:
+              combined_sats_det_stats_shaped = np.concatenate((combined_sats_det_stats_shaped, sats_det_stats_shaped), axis=2)
             # ! test the shape change, the detector stat gathering and the graphs
-            # ! ajouter bkg
-            fig, axes = plt.subplots(4, 5)
-            fig.suptitle(f"Detectors max count rate - {n_grb} brightest GRBs at peak")
-            axes[0, 0].set(ylabel="Quad1\nNumber of detection")
-            axes[1, 0].set(ylabel="Quad2\nNumber of detection")
-            axes[2, 0].set(ylabel="Quad3\nNumber of detection")
-            axes[3, 0].set(xlabel="Detector max count rate (hit/s)\nSideDetX", ylabel="Quad4\nNumber of detection")
-            axes[3, 1].set(xlabel="Detector max count rate (hit/s)\nSideDetY")
-            axes[3, 2].set(xlabel="Detector max count rate (hit/s)\nLayer1")
-            axes[3, 3].set(xlabel="Detector max count rate (hit/s)\nLayer2")
-            axes[3, 4].set(xlabel="Detector max count rate (hit/s)\nCalorimeter")
-            for itequad in range(len(axes)):
-              for itedet, ax in enumerate(axes[itequad]):
-                ax.hist(sats_det_stats_shaped[itequad][itedet], color="blue")
-            plt.show()
+            if det_max_repartition_plot:
+              fig2, axes2 = plt.subplots(4, 5)
+              fig2.suptitle(f"Detectors max count rate - {self.alldata[idx].source_name} at peak for different satellites")
+              axes2[0, 0].set(ylabel="Quad1\nNumber of the satellite")
+              axes2[1, 0].set(ylabel="Quad2\nNumber of the satellite")
+              axes2[2, 0].set(ylabel="Quad3\nNumber of the satellite")
+              axes2[3, 0].set(xlabel="Detector max count rate (hit/s)\nSideDetX", ylabel="Quad4\nNumber of the satellite")
+              axes2[3, 1].set(xlabel="Detector max count rate (hit/s)\nSideDetY")
+              axes2[3, 2].set(xlabel="Detector max count rate (hit/s)\nLayer1")
+              axes2[3, 3].set(xlabel="Detector max count rate (hit/s)\nLayer2")
+              axes2[3, 4].set(xlabel="Detector max count rate (hit/s)\nCalorimeter")
+              for itequad in range(len(axes2)):
+                for itedet, ax in enumerate(axes2[itequad]):
+                  for ite_sat_id in range(len(sat_id_list)):
+                    sat_id = sat_id_list[ite_sat_id]
+                    if ite_sat_id == max_sat_idx:
+                      ax.scatter(sats_det_stats_shaped[itequad][itedet][ite_sat_id], sat_id, color="red")
+                    else:
+                      ax.scatter(sats_det_stats_shaped[itequad][itedet][ite_sat_id], sat_id, color="blue")
+    fig, axes = plt.subplots(4, 5)
+    fig.suptitle(f"Detectors max count rate histograms - {n_grb} brightest GRBs at peak")
+    # ! ajouter bkg
+    axes[0, 0].set(ylabel="Quad1\nNumber of detection")
+    axes[1, 0].set(ylabel="Quad2\nNumber of detection")
+    axes[2, 0].set(ylabel="Quad3\nNumber of detection")
+    axes[3, 0].set(xlabel="Detector max count rate (hit/s)\nSideDetX", ylabel="Quad4\nNumber of detection")
+    axes[3, 1].set(xlabel="Detector max count rate (hit/s)\nSideDetY")
+    axes[3, 2].set(xlabel="Detector max count rate (hit/s)\nLayer1")
+    axes[3, 3].set(xlabel="Detector max count rate (hit/s)\nLayer2")
+    axes[3, 4].set(xlabel="Detector max count rate (hit/s)\nCalorimeter")
+    for itequad in range(len(axes)):
+      for itedet, ax in enumerate(axes[itequad]):
+        ax.hist(combined_sats_det_stats_shaped[itequad][itedet], bins=30, color="blue")
 
+    plt.show()
   # todo change it
   # def hits_energy_histogram(self, num_grb, num_sim, energy_type="both", selected_sat="const", n_bins=30,
   #                           x_scale='log', y_scale='linear'):

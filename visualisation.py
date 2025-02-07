@@ -115,7 +115,7 @@ def bkg_data_map(field, bkgdata, altitude, dec_range=np.linspace(0, 180, 181), r
   plt.show()
 
 
-def magnetic_latitude_convert(altitude, lat_range=np.linspace(90, -90, 721), lon_range=np.linspace(0, 360, 361)):
+def magnetic_latitude_convert(altitude, lat_range=np.linspace(90, -90, 361), lon_range=np.linspace(0, 360, 361)):
   """
   TODO testing !!!
   :param altitude: altitude for the background
@@ -124,31 +124,38 @@ def magnetic_latitude_convert(altitude, lat_range=np.linspace(90, -90, 721), lon
   """
   apex15 = Apex(date=2025)
   # WITH SCATTER
-  # geo_lat, geo_lon = np.zeros((len(lat_range), len(lon_range))), np.zeros((len(lat_range), len(lon_range)))
-  # for ite_lat, mag_lat in enumerate(lat_range):
-  #   for ite_lon, mag_lon in enumerate(lon_range):
-  #     geo_lat[ite_lat, ite_lon], geo_lon[ite_lat, ite_lon] = apex15.convert(mag_lat, mag_lon, 'apex', 'geo', height=altitude)
-  #
-  # fig, ax = plt.subplots(subplot_kw={'projection': ccrs.PlateCarree(central_longitude=0)})
-  # for ite_lat in range(len(lat_range)):
-  #   ax.scatter(geo_lon[ite_lat], geo_lat[ite_lat], color='navy', s=1)
-  # ax.coastlines()
-  # ax.set(xlabel="Longitude (deg)", ylabel="Latitude (deg)", title=f"Lines of constant geomagnetic latitudes")
-  # plt.show()
+  mag_lat_list = []
+  lat_scat = []
+  lon_scat = []
+  fig1, ax1 = plt.subplots(subplot_kw={'projection': ccrs.PlateCarree(central_longitude=0)})
+  for lon in lon_range:
+    for lat in lat_range:
+      mag_lat_list.append(apex15.convert(lat, lon, 'geo', 'apex', height=altitude)[0])
+      lat_scat.append(lat)
+      lon_scat.append(lon)
+  sc = ax1.scatter(lon_scat, lat_scat, c=mag_lat_list, cmap="viridis", s=5)
+  cbar1 = fig1.colorbar(sc, ax=ax1, orientation='vertical', shrink=0.7, pad=0.05)
+  cbar1.set_label("Valeur de z")
+  cbar1.set_label(f"Geomagnetic latitudes (deg)", rotation=270, labelpad=20)
+  ax1.coastlines()
+  ax1.set_global()
+  ax1.set(xlabel="Longitude (deg)", ylabel="Latitude (deg)", title=f"Lines of constant geomagnetic latitudes")
+  plt.show()
+
   # WITH CONTOUR
   x_lat, y_lat = np.meshgrid(lon_range, lat_range)
   mag_lat = np.zeros((len(lat_range), len(lon_range)))
   for ite_lat, lat in enumerate(lat_range):
     for ite_lon, lon in enumerate(lon_range):
       mag_lat[ite_lat, ite_lon] = apex15.convert(lat, lon, 'geo', 'apex', height=altitude)[0]
-  fig, ax = plt.subplots(subplot_kw={'projection': ccrs.PlateCarree(central_longitude=0)})
+  fig2, ax2 = plt.subplots(subplot_kw={'projection': ccrs.PlateCarree(central_longitude=0)})
   levels = np.linspace(-90, 90, 19)
-  p1 = ax.contour(x_lat, y_lat, mag_lat, levels=levels)
-  cbar = fig.colorbar(p1)
-  cbar.set_label(f"Geomagnetic latitudes (deg)", rotation=270, labelpad=20)
-  cbar.set_ticks(levels)
-  ax.coastlines()
-  ax.set(xlabel="Longitude (deg)", ylabel="Latitude (deg)", title=f"Lines of constant geomagnetic latitudes")
+  p1 = ax2.contour(x_lat, y_lat, mag_lat, levels=levels)
+  cbar2 = fig2.colorbar(p1)
+  cbar2.set_label(f"Geomagnetic latitudes (deg)", rotation=270, labelpad=20)
+  cbar2.set_ticks(levels)
+  ax2.coastlines()
+  ax2.set(xlabel="Longitude (deg)", ylabel="Latitude (deg)", title=f"Lines of constant geomagnetic latitudes")
   plt.show()
 
 
