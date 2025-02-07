@@ -91,8 +91,14 @@ def bkg_data_map(field, bkgdata, altitude, dec_range=np.linspace(0, 180, 181), r
       mag_lat, mag_lon = apex15.convert(lat, ra, 'geo', 'apex', height=altitude)
       # print(f"init : {lat:.12f}, {ra:.12f}              final : {mag_lat:.12f}, {mag_lon:.12f}")
       mag_dec, mag_ra = 90 - mag_lat, mag_lon
-      bkg_values = closest_bkg_info(mag_dec, mag_ra, altitude, bkgdata)
-      field_list[row][col] = bkg_values[field_index][:2]
+      compton_cr, single_cr, bkg_id = closest_bkg_info(mag_dec, mag_ra, altitude, bkgdata)
+      det_count = bkgdata[bkg_id].det_stat_compton + bkgdata[bkg_id].det_stat_single
+      side_count = det_count[0] + det_count[1] + det_count[5] + det_count[6] + det_count[10] + det_count[11] + det_count[15] + det_count[16]
+      dsssd_count = det_count[2] + det_count[3] + det_count[7] + det_count[8] + det_count[12] + det_count[13] + det_count[17] + det_count[18]
+      calor_count = det_count[4] + det_count[9] + det_count[14] + det_count[19]
+      total_hits = np.sum(det_count)
+      bkg_values = [compton_cr, single_cr, calor_count, dsssd_count, side_count, total_hits]
+      field_list[row][col] = bkg_values[field_index]
 
   fig, ax = plt.subplots(subplot_kw={'projection': ccrs.PlateCarree(central_longitude=0)})
   p1 = ax.pcolormesh(x_long, y_lat, field_list, cmap="Blues")

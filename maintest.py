@@ -1253,8 +1253,8 @@ for row, dec in enumerate(dec_range):
     mag_lat, mag_lon = apex15.convert(lat, ra, 'geo', 'apex', height=500)
     # print(f"init : {lat:.12f}, {ra:.12f}              final : {mag_lat:.12f}, {mag_lon:.12f}")
     mag_dec, mag_ra = 90 - mag_lat, mag_lon
-    bkg_values = closest_bkg_info(mag_dec, mag_ra, 500, test.bkgdata)
-    field_list[row][col] = bkg_values[field_index][:2]
+    compton_cr, single_cr, bkg_id = closest_bkg_info(mag_dec, mag_ra, 500, test.bkgdata)
+    field_list[row][col] = compton_cr
 
 fig, ax = plt.subplots(subplot_kw={'projection': ccrs.PlateCarree(central_longitude=0)}, figsize=(10, 6))
 p1 = ax.pcolormesh(x_long, y_lat, field_list, cmap="Blues")
@@ -1281,8 +1281,8 @@ for row, dec in enumerate(dec_range):
     mag_lat, mag_lon = apex15.convert(lat, ra, 'geo', 'apex', height=500)
     # print(f"init : {lat:.12f}, {ra:.12f}              final : {mag_lat:.12f}, {mag_lon:.12f}")
     mag_dec, mag_ra = 90 - mag_lat, mag_lon
-    bkg_values = closest_bkg_info(mag_dec, mag_ra, 500, test.bkgdata)
-    field_list[row][col] = bkg_values[field_index][:2]
+    compton_cr, single_cr, bkg_id = closest_bkg_info(mag_dec, mag_ra, 500, test.bkgdata)
+    field_list[row][col] = single_cr
 
 fig, ax = plt.subplots(subplot_kw={'projection': ccrs.PlateCarree(central_longitude=0)}, figsize=(10, 6))
 p1 = ax.pcolormesh(x_long, y_lat, field_list, cmap="Blues")

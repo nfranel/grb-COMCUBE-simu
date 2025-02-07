@@ -373,6 +373,7 @@ class AllSourceData:
     :param sats_analysis: True if the analysis is done both on the sat data and on the constellation data
     """
     printcom("Analyze of the data - Analyzing the data after extraction and creation of the constellations")
+    printcom("Be aware that the snrs and mdp calculated for the constellation may not use data from all satellites in sight because of beneficial_compton and beneficial_single options")
     init_time = time()
     for source_ite, source in enumerate(self.alldata):
       if source is not None:

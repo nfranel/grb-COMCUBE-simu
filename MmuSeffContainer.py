@@ -47,27 +47,6 @@ class MuSeffContainer(list):
     ergname = f"ergcut-{ergcut[0]}-{ergcut[1]}"
     armname = f"armcut-{armcut}"
     cond_saving = f"condensed-mu-seff-saved_{geom_name}_{self.decs[0]:.0f}-{self.decs[1]:.0f}-{self.decs[2]:.0f}_{self.ras[0]:.0f}-{self.ras[1]:.0f}-{self.ras[2]:.0f}_{ergname}_{armname}.txt"
-    # if saving not in os.listdir(f"./mu100/sim_{geom_name}"):
-    #   init_time = time()
-    #   print("###########################################################################")
-    #   print(" mu/Seff data not saved : Saving ")
-    #   print("###########################################################################")
-    #   self.save_fulldata(f"./mu100/sim_{geom_name}/{saving}")
-    #   self.save_condenseddata(f"./mu100/sim_{geom_name}/{saving}", f"./mu100/sim_{geom_name}/{cond_saving}", ergcut, armcut)
-    #   print("=======================================")
-    #   print(" Saving of mu/Seff data finished in : ", time() - init_time, "seconds")
-    #   print("=======================================")
-    # else:
-    #   if cond_saving not in os.listdir(f"./mu100/sim_{geom_name}"):
-    #     init_time = time()
-    #     print("###########################################################################")
-    #     print(" mu/Seff condensed data not saved : Saving ")
-    #     print("###########################################################################")
-    #     self.save_condenseddata(f"./mu100/sim_{geom_name}/{saving}", f"./mu100/sim_{geom_name}/{cond_saving}", ergcut, armcut)
-    #     print("=======================================")
-    #     print(" Saving of mu/Seff data finished in : ", time() - init_time, "seconds")
-    #     print("=======================================")
-
     if cond_saving not in os.listdir(f"./mu100/sim_{geom_name}"):
       if saving not in os.listdir(f"./mu100/sim_{geom_name}"):
         init_time = time()
@@ -111,8 +90,6 @@ class MuSeffContainer(list):
       f.write(f"# Unpol simulation time : {self.unpoltime}\n")
       f.write(f"# dec min-max-number of value : {self.decs[0]}-{self.decs[1]}-{self.decs[2]}\n")
       f.write(f"# ra min-max-number of value (at equator) : {self.ras[0]}-{self.ras[1]}-{self.ras[2]}\n")
-      # Keys if EVERYTHING is saved
-      # f.write("# Keys : dec | ra | compton_ener_pol | compton_ener_unpol | compton_second_pol | compton_second_unpol | single_ener_pol | single_ener_unpol | compton_firstpos_pol |compton_firstpos_unpol | compton_secpos_pol | compton_secpos_unpol | single_pos_pol | single_pos_unpol | compton_time_pol | compton_time_unpol | single_time_pol | single_time_unpol | single_pol | single_unpol | single_cr_pol | single_cr | compton | compton_cr | calor | dsssd | side\n")
       # Keys if the usefull data are saved
       f.write("# Keys : dec | ra | compton_ener_pol | compton_ener_unpol | compton_second_pol | compton_second_unpol | single_ener_pol\n")
       for dec in np.linspace(self.decs[0], self.decs[1], self.decs[2]):

@@ -42,7 +42,6 @@ class ConstData:
     self.bkg_index = None                       # Appened
     self.compton_b_rate = 0                     # Summed                  # Compton
     self.single_b_rate = 0                      # Summed                  # Single
-    # self.hit_b_rate = 0                         # Summed                  # Trigger quality selection
     # self.sat_dec_wf = None                      # Not changed             #
     # self.sat_ra_wf = None                       # Not changed             #
     # self.sat_alt = None                         # Not changed             #
@@ -65,7 +64,6 @@ class ConstData:
     # self.single_ener = []                       # 1D concatenation        # Single
     self.compton_time = []                      # 1D concatenation        # Compton
     self.single_time = []                       # 1D concatenation        # Single
-    # self.hit_time = []                          # 1D concatenation        # Trigger quality selection
     # self.pol = None                             # 1D concatenation        # Compton
     # self.polar_from_position = None             # 1D concatenation        # Compton
     # This polar angle is the one considered as compton scatter angle by mimrec
@@ -104,11 +102,6 @@ class ConstData:
     ###################################################################################################################
     # Attributes that are used while making const
     self.n_sat_detect = 0                       # Summed                  #
-    # Attributes that are used while determining the deterctor where the interaction occured
-    # self.calor = 0                              # Summed                  # Trigger quality selection ?
-    # self.dsssd = 0                              # Summed                  # Trigger quality selection ?
-    # self.side = 0                               # Summed                  # Trigger quality selection ?
-    # self.total_hits = 0                         # Summed                  # Trigger quality selection ?
     ###################################################################################################################
     self.const_beneficial_compton = True       # Appened                 #
     self.const_beneficial_single = True        # Appened                 #
@@ -164,10 +157,10 @@ class ConstData:
     for int_time in integration_times:
       bins = np.arange(0, source_duration + int_time, int_time)
 
-      hit_hist = np.histogram(np.concatenate((self.compton_time, self.single_time)), bins=bins)[0]
+      hit_hist = np.histogram(np.concatenate((self.compton_time, self.compton_time, self.single_time)), bins=bins)[0]
       hit_argmax = np.argmax(hit_hist)
       hit_max_hist = hit_hist[hit_argmax]
-      snr_ret1 = calc_snr(hit_max_hist, self.hit_b_rate * int_time)
+      snr_ret1 = calc_snr(hit_max_hist, (2 * self.compton_b_rate + self.single_b_rate) * int_time)
       self.hits_snrs.append(snr_ret1[0])
       self.hits_snrs_err.append(snr_ret1[1])
 

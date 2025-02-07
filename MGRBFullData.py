@@ -171,7 +171,6 @@ class GRBFullData:
       self.num_sat = int(next(f))
       self.compton_b_rate = float(next(f))
       self.single_b_rate = float(next(f))
-      # self.hit_b_rate = float(next(f))
       # Information from mu files
       self.mu100_ref = float(next(f))
       self.mu100_err_ref = float(next(f))
@@ -383,8 +382,8 @@ class GRBFullData:
       else:
         self.const_beneficial_trigger_1s[ite_ts] = 0
 
-  def detector_statistics(self, bkg_values, bkg_duration, source_duration, source_name, show=False):
-    bkg_stats = (bkg_values.det_stat_compton + bkg_values.det_stat_single).reshape(4, 5) / bkg_duration
+  def detector_statistics(self, bkg_cont, bkg_duration, source_duration, source_name, show=False):
+    bkg_stats = (bkg_cont.det_stat_compton + bkg_cont.det_stat_single).reshape(4, 5) / bkg_duration
 
     hit_times = np.concatenate((self.compton_time, self.compton_time, self.single_time))
     det_list = np.concatenate((self.compton_first_detector, self.compton_sec_detector, self.single_detector))

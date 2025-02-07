@@ -1028,6 +1028,10 @@ def det_counter(det_idx_array):
                    [np.count_nonzero(det_idx_array == 16), np.count_nonzero(det_idx_array == 17), np.count_nonzero(det_idx_array == 18), np.count_nonzero(det_idx_array == 19), np.count_nonzero(det_idx_array == 20)]])
 
 
+def det_counter_by_type(det_idx_array):
+  return np.count_nonzero(np.isin(det_idx_array, [1, 2, 6, 7, 11, 12, 16, 17])), np.count_nonzero(np.isin(det_idx_array, [3, 4, 8, 9, 13, 14, 18, 19])), np.count_nonzero(np.isin(det_idx_array, [5, 10, 15, 20])), len(det_idx_array)
+
+
 def calc_flux_gbm(catalog, index, ergcut, cat_is_df=False):
   """
   Calculates the fluence per unit time of a given source using an energy cut and its spectrum
