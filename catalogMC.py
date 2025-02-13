@@ -917,6 +917,6 @@ class MCCatalog:
 # testcat = MCCatalog(mode="mc")
 # testcat = MCCatalog(mode="catalog")
 
-# file = "./Sample/mclongv9-300/mc_fit.csv"
+# file = "./Sampled/mclongv9-300/mc_fit.csv"
 # leg_mode = "fine"
 # MC_explo_pairplot(file, leg_mode)
