@@ -259,7 +259,9 @@ class MCCatalog:
       if mode == "mc":
         param_list = None
         par_size = 300
-        fold_name = f"mcv9-{par_size}"
+        mctype = "long"
+        # mctype = "short"
+        fold_name = f"mc{mctype}v9-{par_size}"
         savefile = f"Sampled/{fold_name}/mc_fit.csv"
       elif mode == "parametrized":
         # (l_rate, l_ind1_z, l_ind2_z, l_zb, l_ind1, l_ind2, l_lb, s_rate, s_ind1_z, s_ind2_z, s_zb, s_ind1, s_ind2, s_lb)
@@ -277,18 +279,18 @@ class MCCatalog:
         raise NameError("A simulation with this name already exists, please change it or delete the old simulation before running")
       self.run_mc(par_size, thread_number=thread_num, method=param_list, savefile=savefile)
 
-  def run_mc(self, run_number, thread_number=1, method=None, savefile=None, comment=""):
+  def run_mc(self, run_number, thread_number=1, method=None, savefile=None, comment="", mctype="long"):
     print(f"Starting the run for {run_number} iterations")
     if thread_number == 'all':
       print("Parallel execution with all threads")
       with mp.Pool() as pool:
-        rows_ret = pool.starmap(self.get_sample, zip(range(run_number), repeat(method), repeat(comment), repeat(savefile)))
+        rows_ret = pool.starmap(self.get_sample, zip(range(run_number), repeat(method), repeat(comment), repeat(savefile), repeat(mctype)))
     elif type(thread_number) is int and thread_number > 1:
       print(f"Parallel execution with {thread_number} threads")
       with mp.Pool(thread_number) as pool:
-        rows_ret = pool.starmap(self.get_sample, zip(range(run_number), repeat(method), repeat(comment), repeat(savefile)))
+        rows_ret = pool.starmap(self.get_sample, zip(range(run_number), repeat(method), repeat(comment), repeat(savefile), repeat(mctype)))
     else:
-      rows_ret = [self.get_sample(ite, method=method, comment=comment, savefile=savefile) for ite in range(run_number)]
+      rows_ret = [self.get_sample(ite, method=method, comment=comment, savefile=savefile, mctype=mctype) for ite in range(run_number)]
     self.result_df = pd.DataFrame(data=rows_ret, columns=self.columns)
     if savefile is not None:
       self.result_df.to_csv(savefile, index=False)
@@ -364,7 +366,7 @@ class MCCatalog:
     s_params = s_rate_temp, s_ind1_z_temp, s_ind2_z_temp, s_zb_temp, s_ind1_temp, s_ind2_temp, s_lb_temp, nshort_temp
     return l_params, s_params
 
-  def get_sample(self, run_iteration, method=None, comment="", savefile=None):
+  def get_sample(self, run_iteration, method=None, comment="", savefile=None, mctype="long"):
     # Using a different seed for each thread, somehow the seed what the same without using it
     np.random.seed(os.getpid() + int(time() * 1000) % 2**32)
 
@@ -390,7 +392,13 @@ class MCCatalog:
       l_m_flux_temp, l_p_flux_temp, l_flnc_temp = np.array(l_temp_ret[:, 4], dtype=np.float64), np.array(l_temp_ret[:, 5], dtype=np.float64), np.array(l_temp_ret[:, 7], dtype=np.float64)
       s_m_flux_temp, s_p_flux_temp, s_flnc_temp = np.array(s_temp_ret[:, 4], dtype=np.float64), np.array(s_temp_ret[:, 5], dtype=np.float64), np.array(s_temp_ret[:, 7], dtype=np.float64)
 
-      condition = self.mcmc_condition(l_m_flux_temp, l_p_flux_temp, l_flnc_temp, s_m_flux_temp, s_p_flux_temp, s_flnc_temp, params=params, mode="pflx")
+      if mctype == "long":
+        cond_mode = "l_pflx"
+      elif mctype == "short":
+        cond_mode = "s_pflx"
+      else:
+        raise ValueError("Use a correct value for mctype : 'short' or 'long'")
+      condition = self.mcmc_condition(l_m_flux_temp, l_p_flux_temp, l_flnc_temp, s_m_flux_temp, s_p_flux_temp, s_flnc_temp, params=params, mode=cond_mode)
       pflux_ratio_thresh = 4
       if condition[2] < pflux_ratio_thresh or method is None:
         end_flux_loop = False
