@@ -370,17 +370,16 @@ class MCCatalog:
   def get_sample(self, run_iteration, method=None, comment="", savefile=None, mctype="long"):
     # Using a different seed for each thread, somehow the seed what the same without using it
     np.random.seed(os.getpid() + int(time() * 1000) % 2**32)
-    print(1)
+
     end_flux_loop = True
     while end_flux_loop:
-      print(2)
       if method is None:
         params = self.get_params()
       elif type(method) is list:
         params = self.get_set_params(method[run_iteration])
       else:
         raise ValueError("Wrong method used")
-      print(3)
+
       l_rate_temp, l_ind1_z_temp, l_ind2_z_temp, l_zb_temp, l_ind1_temp, l_ind2_temp, l_lb_temp, nlong_temp = params[0]
       s_rate_temp, s_ind1_z_temp, s_ind2_z_temp, s_zb_temp, s_ind1_temp, s_ind2_temp, s_lb_temp, nshort_temp = params[1]
 
