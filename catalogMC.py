@@ -94,11 +94,7 @@ def MC_explo_pairplot(fileused, legend_mode):
 
   df_selec['pierson_chi2_category'] = pierson_chi2_categories
 
-  fig, ax = plt.subplots(1, 1)
-  title = f"pierson_chi2"
-  fig.suptitle(title)
   sns.pairplot(df_selec.sort_values(by="pierson_chi2", ascending=False), hue="pierson_chi2_category", vars=select_cols, corner=False, plot_kws={'s': 20}, palette="rainbow_r")
-  plt.show()
 
 
 class MCCatalog:
