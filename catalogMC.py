@@ -835,5 +835,5 @@ class MCCatalog:
     plt.show()
 
 
-testcat = MCCatalog(mode="mc")
+# testcat = MCCatalog(mode="mc")
 # testcat = MCCatalog(mode="catalog")
