@@ -335,10 +335,10 @@ class MCCatalog:
     else:
       if mode == "mc":
         param_list = None
-        par_size = 300
-        mctype = "long"
-        # mctype = "short"
-        fold_name = f"mc{mctype}v9-{par_size}"
+        par_size = 2000
+        # mctype = "long"
+        mctype = "short"
+        fold_name = f"mc{mctype}v1-{par_size}"
         savefile = f"Sampled/{fold_name}/mc_fit.csv"
       elif mode == "parametrized":
         # (l_rate, l_ind1_z, l_ind2_z, l_zb, l_ind1, l_ind2, l_lb, s_rate, s_ind1_z, s_ind2_z, s_zb, s_ind1, s_ind2, s_lb)
@@ -634,7 +634,7 @@ class MCCatalog:
     Saves a GRB in a catalog file
     """
     with open(filename, "a") as f:
-      print(f"{name}|{t90}|{lcname}|{fluence}|{mean_flux}|{peak_flux}|{red}|{band_low}|{band_high}|{ep}|{dl}|{lpeak}|{eiso}|{thetaj}\n")
+      # print(f"{name}|{t90}|{lcname}|{fluence}|{mean_flux}|{peak_flux}|{red}|{band_low}|{band_high}|{ep}|{dl}|{lpeak}|{eiso}|{thetaj}\n")
       f.write(f"{name}|{t90}|{lcname}|{fluence}|{mean_flux}|{peak_flux}|{red}|{band_low}|{band_high}|{ep}|{dl}|{lpeak}|{eiso}|{thetaj}\n")
 
   def hist_plotter(self, iteration, histos, params, comment="", savefile=None):
@@ -675,8 +675,8 @@ class MCCatalog:
     ax1l2.grid(True, which='major', linestyle='--', color='black', alpha=0.3)
     ax1l2.legend()
 
-    print(np.array(histos[0]))
-    print(np.array(histos[1]))
+    # print(np.array(histos[0]))
+    # print(np.array(histos[1]))
     ax2l2.hist(self.gbm_l_mp_ratio, bins=30, histtype="step", color="red", label="GBM", weights=[1/len(self.gbm_l_mp_ratio)] * len(self.gbm_l_mp_ratio))
     ax2l2.hist(np.array(histos[1]) / np.array(histos[0]), bins=np.logspace(0, 3, 30), histtype="step", color="blue", label="Sample",  weights=[1/len(histos[1])] * len(histos[1]))
     ax2l2.set(xlabel="p/m ratio lGRB", ylabel="proportion over full population", xscale="log", yscale="linear")
