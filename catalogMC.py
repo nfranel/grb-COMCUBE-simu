@@ -255,13 +255,13 @@ class MCCatalog:
     self.l_zb_min = 2
     self.l_zb_max = 3.5
 
-    self.s_rate_min = 0.4
-    self.s_rate_max = 1.1
+    self.s_rate_min = 0.1
+    self.s_rate_max = 2
     self.s_ind1_z_min = 0.5
-    self.s_ind1_z_max = 4.1
-    self.s_ind2_z_min = 1.1
-    self.s_ind2_z_max = 3.7
-    self.s_zb_min = 2
+    self.s_ind1_z_max = 4.2
+    self.s_ind2_z_min = 0.9
+    self.s_ind2_z_max = 4
+    self.s_zb_min = 1.7
     self.s_zb_max = 3.3
     # Luminosity
     self.l_ind1_min = -0.9
