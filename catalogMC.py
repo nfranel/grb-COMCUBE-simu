@@ -238,6 +238,7 @@ class MCCatalog:
       fold_name = f"cat_to_validate"
       savefolder = f"Sampled/{fold_name}/"
       thread_num = "all"
+      sigma_number = 1
 
       if not (f"{fold_name}" in os.listdir("Sampled/")):
         os.mkdir(f"Sampled/{fold_name}")
@@ -252,7 +253,7 @@ class MCCatalog:
       else:
         print(f"MC execution with 1 thread")
 
-      rows_ret = [self.get_catalog_sample(ite, thread_num, savefolder, method=param_list, comment="") for ite in range(par_size)]
+      rows_ret = [self.get_catalog_sample(ite, thread_num, savefolder, method=param_list, comment="", n_sig=sigma_number) for ite in range(par_size)]
       self.result_df = pd.DataFrame(data=rows_ret, columns=self.columns)
       self.result_df.to_csv(f"{savefolder}catalogs_fit.csv", index=False)
     else:
@@ -416,7 +417,7 @@ class MCCatalog:
 
     return row
 
-  def get_catalog_sample(self, run_iteration, thread_number, savefolder, method=None, comment=""):
+  def get_catalog_sample(self, run_iteration, thread_number, savefolder, method=None, comment="", n_sig=1):
     # Using a different seed for each thread, somehow the seed what the same without using it
     np.random.seed(os.getpid() + int(time() * 1000) % 2**32)
 
@@ -450,7 +451,7 @@ class MCCatalog:
         l_temp_ret = np.array([self.get_long(ite_long, l_rate_temp, l_ind1_z_temp, l_ind2_z_temp, l_zb_temp, l_ind1_temp, l_ind2_temp, l_lb_temp) for ite_long in range(nlong_temp)])
 
       l_m_flux_temp, l_p_flux_temp, l_flnc_temp = np.array(l_temp_ret[:, 4], dtype=np.float64), np.array(l_temp_ret[:, 5], dtype=np.float64), np.array(l_temp_ret[:, 7], dtype=np.float64)
-      condition_long = self.mcmc_condition(l_m_flux_temp, l_p_flux_temp, l_flnc_temp, s_m_flux_temp, s_p_flux_temp, s_flnc_temp, params=params, mode="l_pflx")
+      condition_long = self.mcmc_condition(l_m_flux_temp, l_p_flux_temp, l_flnc_temp, s_m_flux_temp, s_p_flux_temp, s_flnc_temp, params=params, mode="l_pflx", n_sig=n_sig)
       if condition_long[0]:
         print(f"Long catalog fitting : chi2 = {condition_long[1]}")
         cat_loop_long = False
@@ -479,7 +480,7 @@ class MCCatalog:
         s_temp_ret = np.array([self.get_short(ite_short, s_rate_temp, s_ind1_z_temp, s_ind2_z_temp, s_zb_temp, s_ind1_temp, s_ind2_temp, s_lb_temp) for ite_short in range(nshort_temp)])
 
       s_m_flux_temp, s_p_flux_temp, s_flnc_temp = np.array(s_temp_ret[:, 4], dtype=np.float64), np.array(s_temp_ret[:, 5], dtype=np.float64), np.array(s_temp_ret[:, 7], dtype=np.float64)
-      condition_short = self.mcmc_condition(l_m_flux_temp, l_p_flux_temp, l_flnc_temp, s_m_flux_temp, s_p_flux_temp, s_flnc_temp, params=params, mode="s_pflx")
+      condition_short = self.mcmc_condition(l_m_flux_temp, l_p_flux_temp, l_flnc_temp, s_m_flux_temp, s_p_flux_temp, s_flnc_temp, params=params, mode="s_pflx", n_sig=n_sig)
       if condition_short[0]:
         print(f"Short catalog fitting : chi2 = {condition_short[1]}")
         cat_loop_short = False
@@ -503,7 +504,7 @@ class MCCatalog:
       # os.rmdir(f"./sources/SampledSpectra/{int(n_year)}sample")
     print("Deletion done")
 
-    condition = self.mcmc_condition(l_m_flux_temp, l_p_flux_temp, l_flnc_temp, s_m_flux_temp, s_p_flux_temp, s_flnc_temp, params=params, mode="pflx")
+    condition = self.mcmc_condition(l_m_flux_temp, l_p_flux_temp, l_flnc_temp, s_m_flux_temp, s_p_flux_temp, s_flnc_temp, params=params, mode="pflx", n_sig=n_sig)
     if condition[0]:
       row = [l_rate_temp, l_ind1_z_temp, l_ind2_z_temp, l_zb_temp, s_rate_temp, s_ind1_z_temp, s_ind2_z_temp, s_zb_temp, l_ind1_temp, l_ind2_temp, l_lb_temp, s_ind1_temp, s_ind2_temp, s_lb_temp, np.around(condition[1], 3), "Accepted"]
     else:
@@ -515,7 +516,7 @@ class MCCatalog:
 
     return row
 
-  def mcmc_condition(self, l_m_flux_temp, l_p_flux_temp, l_flnc_temp, s_m_flux_temp, s_p_flux_temp, s_flnc_temp, params=None, mode="pflx"):
+  def mcmc_condition(self, l_m_flux_temp, l_p_flux_temp, l_flnc_temp, s_m_flux_temp, s_p_flux_temp, s_flnc_temp, params=None, mode="pflx", n_sig=1):
     """
     Condition on the histograms to consider a value is correct
     """
@@ -548,7 +549,7 @@ class MCCatalog:
     # print("obs", obs_dat)
     # print("exp", expect_dat)
     # chi2 limit is simply np.sum((obs_dat-expect_dat)**2/expect_dat) with obs_dat = expect_dat + np.sqrt(expect_dat) (1 sigma error for poisson distributed variable)
-    chi2_lim = len(expect_dat)
+    chi2_lim = len(expect_dat) * n_sig
     chi2 = np.sum((obs_dat-expect_dat)**2/expect_dat)
     return chi2 < chi2_lim, chi2, end_pflx_ratio
 
