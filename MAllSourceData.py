@@ -1153,6 +1153,8 @@ class AllSourceData:
                 else:
                   sats_det_stats.append(sat.detector_statistics(self.bkgdata[sat.bkg_index], self.bkgdata.sim_time, self.alldata[idx].source_duration, self.alldata[idx].source_name, show=False))
             sats_det_stats_shaped = np.transpose(np.array(sats_det_stats), (1, 2, 0))
+            if self.alldata[idx].source_name == "GRB130427324":
+              print(f"Max from brightest GRB - GRB130427324 : {np.max(sats_det_stats_shaped)}")
             if combined_sats_det_stats_shaped is None:
               combined_sats_det_stats_shaped = sats_det_stats_shaped
             else:
@@ -1191,8 +1193,47 @@ class AllSourceData:
     for itequad in range(len(axes)):
       for itedet, ax in enumerate(axes[itequad]):
         ax.hist(combined_sats_det_stats_shaped[itequad][itedet], bins=30, color="blue")
+        if n_grb > 20 :
+          ax.set(yscale="log")
 
     plt.show()
+
+  def bkg_det_stats(self):
+    combined_sats_det_stats_bkg = None
+    bkg_indexs = []
+    for source in self.alldata:
+      if source is not None:
+        for sim in source:
+          if sim is not None:
+            for sat in sim:
+              if sat is not None:
+                if sat.bkg_index not in bkg_indexs:
+                  bkg_indexs.append(sat.bkg_index)
+
+    for bkg_idx in bkg_indexs:
+      bkg_stats = (self.bkgdata[bkg_idx].det_stat_compton + self.bkgdata[bkg_idx].det_stat_single).reshape(4, 5, 1) / self.bkgdata.sim_time
+      if combined_sats_det_stats_bkg is None:
+        combined_sats_det_stats_bkg = bkg_stats
+        print(combined_sats_det_stats_bkg)
+      else:
+        combined_sats_det_stats_bkg = np.concatenate((combined_sats_det_stats_bkg, bkg_stats), axis=2)
+        print(combined_sats_det_stats_bkg)
+
+    fig, axes = plt.subplots(4, 5)
+    axes[0, 0].set(ylabel="Quad1\nDetector count rate (hit/s)")
+    axes[1, 0].set(ylabel="Quad2\nDetector count rate (hit/s)")
+    axes[2, 0].set(ylabel="Quad3\nDetector count rate (hit/s)")
+    axes[3, 0].set(xlabel="Time(s)\nSideDetX", ylabel="Quad4\nDetector count rate (hit/s)")
+    axes[3, 1].set(xlabel="Time(s)\nSideDetY")
+    axes[3, 2].set(xlabel="Time(s)\nLayer1")
+    axes[3, 3].set(xlabel="Time(s)\nLayer2")
+    axes[3, 4].set(xlabel="Time(s)\nCalorimeter")
+    for itequad in range(len(axes)):
+      for itedet, ax in enumerate(axes[itequad]):
+        ax.hist(combined_sats_det_stats_bkg[itequad][itedet], bins=10, color="green")
+    plt.show()
+
+
   # todo change it
   # def hits_energy_histogram(self, num_grb, num_sim, energy_type="both", selected_sat="const", n_bins=30,
   #                           x_scale='log', y_scale='linear'):

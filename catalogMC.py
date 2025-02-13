@@ -4,6 +4,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import multiprocessing as mp
 import os
+import subprocess
 from itertools import repeat
 from time import time
 
@@ -24,7 +25,7 @@ class MCCatalog:
   """
 
   """
-  def __init__(self, gbm_file="GBM/allGBM.txt", sttype=None, rf_file="GBM/rest_frame_properties.txt", mcmc_number=10):
+  def __init__(self, gbm_file="GBM/allGBM.txt", sttype=None, rf_file="GBM/rest_frame_properties.txt", mode="catalog"):
     """
 
     """
@@ -230,158 +231,51 @@ class MCCatalog:
     # ==============================================================================================================================================================
     thread_num = 60
 
-    # mc_mode = "long_lum"
-    mc_mode = "long_red_lum"
-    # mc_mode = "short_lum"
-    # mc_mode = "short_red"
-    # mc_mode = "mc"
-
-    self.cond_option = "long_pflux"
-    # self.cond_option = "long_flnc"
-    # self.cond_option = "long"
-    # self.cond_option = "short_pflux"
-    # self.cond_option = "short_flnc"
-    # self.cond_option = "short"
-    # self.cond_option = None
-
     print("Starting")
-    if mc_mode == "long_lum":
-      savefile = "Sampled/longlum/longfit_lum.csv"
-      comm = "Long-Luminosity"
-      if not (f"longlum" in os.listdir("Sampled/")):
-        os.mkdir("Sampled/longlum")
-      # param_list = build_params(0.42, 2.07, -0.7, 3.6,  [-0.55, -0.6, -0.65, -0.70, -0.75], [-2.8, -2.9, -3, -3.1, -3.2], [0.7e+52, 0.9e+52, 1.12e+52, 1.4e+52],
-      #                           0.25, 2.8, 3.5, 2.3, -0.53, -3.4, 2.8e52)
-      param_list = build_params(0.42, 2.07, -0.7, 3.6,  [-0.8, -0.7, -0.6, -0.5, -0.4, -0.3, -0.2], [-1.8, -2.1, -2.4, -2.7, -3], [1e51, 5e51, 1e52, 2e52],
-                                0.25, 2.8, 3.5, 2.3, -0.53, -3.4, 2.8e52)
-      par_size = len(param_list)
+    if mode == "catalog":
+      param_list = None
+      par_size = 1
+      fold_name = f"cat_to_validate"
+      savefolder = f"Sampled/{fold_name}/"
+      thread_num = "all"
 
-      self.run_mc(par_size, thread_number=thread_num, method=param_list, savefile=savefile, comment=comm)
-      # for ite_mc in range(len(histograms)):
-        # self.hist_plotter(ite_mc, histograms[ite_mc], param_list[ite_mc], comment=comm, savefile=savefile)
-
-      select_cols = ["long_ind1_lum", "long_ind2_lum", "long_lb", "pierson_chi2"]
-      df_selec = self.result_df[select_cols]
-      plt.subplots(1, 1)
-      title = f"pierson_chi2 on {self.cond_option}"
-      plt.suptitle(title)
-      sns.pairplot(df_selec, hue="pierson_chi2", corner=True, plot_kws={'s': 10})
-      plt.savefig(f"{savefile.split('.csv')[0]}_df")
-      plt.close()
-
-    elif mc_mode == "long_red_lum":
-
-      def categorize_pierson_chi2(value):
-        if value > 20:
-          return "> 20"
-        elif value > 10:
-          return "10 - 20"
-        elif value > 5:
-          return "5 - 10"
-        elif value > -2:
-          return "2 - 5"
-        else:
-          return "0 - 2"
-
-      fold_name = "longredlumv9-4020"
-      savefile = f"Sampled/{fold_name}/longfit_red_lum.csv"
-      comm = "Long-Redshift-Luminosity"
       if not (f"{fold_name}" in os.listdir("Sampled/")):
         os.mkdir(f"Sampled/{fold_name}")
-      # l_rate, l_ind1_z, l_ind2_z, l_zb, l_ind1, l_ind2, l_lb, s_rate, s_ind1_z, s_ind2_z, s_zb, s_ind1, s_ind2, s_lb
-      # param_list = build_params([0.2, 0.3, 0.4, 0.5], [1.2, 1.4, 1.6, 1.8, 2, 2.2, 2.4, 2.6], [-1.1, -0.9, -0.8, -0.7, -0.6, -0.5, -0.4], [2, 2.6, 3.1, 3.6, 4.1, 5], -0.65, -3, 1.12e+52, 0.25, 2.8, 3.5, 2.3, -0.53, -3.4, 2.8e52)
-      # param_list = [[0.42, 2.07, -0.7, 3.6, -0.65, -3, 1.12e+52, 0.25, 2.8, 3.5, 2.3, -0.53, -3.4, 2.8e52]]
-      # param_list = [[0.2, 2.4, -0.6, 5, -0.8, -2.5, 1e51, 0.25, 2.8, 3.5, 2.3, -0.53, -3.4, 2.8e52],
-      #              [0.2, 2.4, -0.6, 5, -0.8, -3, 1e51, 0.25, 2.8, 3.5, 2.3, -0.53, -3.4, 2.8e52],
-      #              [0.2, 2.4, -0.6, 5, -0.8, -3, 1e51, 0.25, 2.8, 3.5, 2.3, -0.53, -3.4, 2.8e52],
-      #              [0.2, 2.4, -0.4, 3.6, -0.2, -3, 1e51, 0.25, 2.8, 3.5, 2.3, -0.53, -3.4, 2.8e52],
-      #              [0.2, 2.6, -1.1, 4.1, -0.8, -2.1, 1e51, 0.25, 2.8, 3.5, 2.3, -0.53, -3.4, 2.8e52],
-      #              [0.2, 3, -0.6, 5, -0.6, -3, 5e51, 0.25, 2.8, 3.5, 2.3, -0.53, -3.4, 2.8e52],
-      #              [0.5, 2.6, -0.4, 4.1, -0.2, -3, 1e51, 0.25, 2.8, 3.5, 2.3, -0.53, -3.4, 2.8e52]]
-      # par_size = len(param_list)
-      # np.random.seed(1)
+      else:
+        raise NameError("A simulation with this name already exists, please change it or delete the old simulation before running")
 
-      param_list = None
-      par_size = 4020
-      # param_list = build_params([0.2, 0.4, 0.5], [2.4, 2.6, 3.], [-1.1, -0.8, -0.6, -0.4], [2, 2.6, 3.6, 4.1, 5], [-0.8, -0.7, -0.6, -0.3, -0.2], [-1.8, -2.1, -2.5, -3], [1e51, 5e51, 1e52, 2e52], 0.25, 2.8, 3.5, 2.3, -0.53, -3.4, 2.8e52)
-      # param_list = [[0.4148, 2.7187, -1.0358, 2.9323, -0.9428, -4.5493, 6.1594e50, 0.7558, 4.0278, 1.7292, 2.4066, -0.8804, -3.2186, 2.9798e52], [0.4148, 2.7187, -1.0358, 2.9323, -0.9428, -4.5493, 6.1594e50, 0.7558, 4.0278, 1.7292, 2.4066, -0.8804, -3.2186, 2.9798e52], [0.4148, 2.7187, -1.0358, 2.9323, -0.9428, -4.5493, 6.1594e50, 0.7558, 4.0278, 1.7292, 2.4066, -0.8804, -3.2186, 2.9798e52], [0.4148, 2.7187, -1.0358, 2.9323, -0.9428, -4.5493, 6.1594e50, 0.7558, 4.0278, 1.7292, 2.4066, -0.8804, -3.2186, 2.9798e52], [0.4148, 2.7187, -1.0358, 2.9323, -0.9428, -4.5493, 6.1594e50, 0.7558, 4.0278, 1.7292, 2.4066, -0.8804, -3.2186, 2.9798e52]]
-      # param_list = [[0.4148, 2.7187, -1.0358, 2.9323, -0.9428, -4.5493, 6.1594e50, 0.7558, 4.0278, 1.7292, 2.4066, -0.8804, -3.2186, 2.9798e52]]
-      # param_list = [[0.41479424572966006, 2.718677743146426, -1.0358413825879906, 2.9322993143450997, -0.9427598188310657, -4.549293114220461, 6.159363506765503e+50, 0.7558, 4.0278, 1.7292, 2.4066, -0.8804, -3.2186, 2.9798e52], [0.41479424572966006, 2.718677743146426, -1.0358413825879906, 2.9322993143450997, -0.9427598188310657, -4.549293114220461, 6.159363506765503e+50, 0.7558, 4.0278, 1.7292, 2.4066, -0.8804, -3.2186, 2.9798e52], [0.41479424572966006, 2.718677743146426, -1.0358413825879906, 2.9322993143450997, -0.9427598188310657, -4.549293114220461, 6.159363506765503e+50, 0.7558, 4.0278, 1.7292, 2.4066, -0.8804, -3.2186, 2.9798e52], [0.41479424572966006, 2.718677743146426, -1.0358413825879906, 2.9322993143450997, -0.9427598188310657, -4.549293114220461, 6.159363506765503e+50, 0.7558, 4.0278, 1.7292, 2.4066, -0.8804, -3.2186, 2.9798e52], [0.41479424572966006, 2.718677743146426, -1.0358413825879906, 2.9322993143450997, -0.9427598188310657, -4.549293114220461, 6.159363506765503e+50, 0.7558, 4.0278, 1.7292, 2.4066, -0.8804, -3.2186, 2.9798e52]]
-      # 0.41479424572966006, 2.718677743146426, -1.0358413825879906, 2.9322993143450997, 0.4545165085958286, 2.861449218884993, 3.1611593795969033, 2.7993308298547532, -0.9427598188310657, -4.549293114220461, 6.159363506765503e+50, -0.667008877140725, -2.8335973226643842, 1.0599183330017105e+52
-      # par_size = len(param_list)
+      print(f"Starting the catalog creation")
+      if thread_num == 'all':
+        print("Parallel MC execution with all threads")
+      elif type(thread_num) is int and thread_num > 1:
+        print(f"Parallel MC execution with {thread_num} threads")
+      else:
+        print(f"MC execution with 1 thread")
+
+      rows_ret = [self.get_catalog_sample(ite, thread_num, savefolder, method=param_list, comment="") for ite in range(par_size)]
+      self.result_df = pd.DataFrame(data=rows_ret, columns=self.columns)
+      self.result_df.to_csv(f"{savefolder}catalogs_fit.csv", index=False)
+    else:
+      if mode == "mc":
+        param_list = None
+        par_size = 300
+        fold_name = f"mcv9-{par_size}"
+        savefile = f"Sampled/{fold_name}/mc_fit.csv"
+      elif mode == "parametrized":
+        # (l_rate, l_ind1_z, l_ind2_z, l_zb, l_ind1, l_ind2, l_lb, s_rate, s_ind1_z, s_ind2_z, s_zb, s_ind1, s_ind2, s_lb)
+        # param_list = build_params([0.2, 0.3, 0.4, 0.5], [1.2, 1.4, 1.6, 1.8, 2, 2.2, 2.4, 2.6], [-1.1, -0.9, -0.8, -0.7, -0.6, -0.5, -0.4], [2, 2.6, 3.1, 3.6, 4.1, 5], -0.65, -3, 1.12e+52, 0.25, 2.8, 3.5, 2.3, -0.53, -3.4, 2.8e52)
+        param_list = [[0.796361, 2.242970, -1.507276, 2.294414, -0.715277, -4.629343, 1.131491e52, 0.577574, 3.107413, 1.179197, 2.318962, -0.602085, -2.148571, 1.899889e52]]
+        par_size = len(param_list)
+        fold_name = f"parametrizedv9-{par_size}"
+        savefile = f"Sampled/{fold_name}/longfit_red_lum.csv"
+      else:
+        raise ValueError("Wrong value for mode. Only 'catalog', 'mc' and 'parametrized' are possible.")
+
+      if not (f"{fold_name}" in os.listdir("Sampled/")):
+        os.mkdir(f"Sampled/{fold_name}")
+      else:
+        raise NameError("A simulation with this name already exists, please change it or delete the old simulation before running")
       self.run_mc(par_size, thread_number=thread_num, method=param_list, savefile=savefile)
-      # for ite_mc in range(len(histograms)):
-      #   self.hist_plotter(ite_mc, histograms[ite_mc], param_list[ite_mc], comment=comm, savefile=savefile)
-
-      self.result_df['pierson_chi2_category'] = self.result_df['pierson_chi2'].apply(categorize_pierson_chi2)
-
-      select_cols = ["long_rate", "long_ind1_z", "long_ind2_z", "long_zb", "long_ind1_lum", "long_ind2_lum", "long_lb", "pierson_chi2_category"]
-      df_selec = self.result_df[select_cols]
-      plt.subplots(1, 1)
-      title = f"pierson_chi2 on {self.cond_option}"
-      plt.suptitle(title)
-      sns.pairplot(df_selec, hue="pierson_chi2_category", corner=True, plot_kws={'s': 50}, palette="viridis_r")
-      plt.savefig(f"{savefile.split('.csv')[0]}_df")
-      plt.close()
-
-    elif mc_mode == "short_lum":
-      savefile = "Sampled/shortlum/shortfit_lum.csv"
-      comm = "Short-Luminosity"
-      if not (f"shortlum" in os.listdir("Sampled/")):
-        os.mkdir("Sampled/shortlum")
-      param_list = build_params(0.42, 2.07, -0.7, 3.6, -0.65, -3, 1.12e+52, 0.25, 2.8, 3.5, 2.3, -0.53, -3.4, 2.8e52)
-      par_size = len(param_list)
-
-      self.run_mc(par_size, thread_number=thread_num, method=param_list, savefile=savefile)
-      # for ite_mc in range(len(histograms)):
-      #   self.hist_plotter(ite_mc, histograms[ite_mc], param_list[ite_mc], comment=comm, savefile=savefile)
-
-      select_cols = ["short_ind1_lum", "short_ind2_lum", "short_lb", "pierson_chi2"]
-      df_selec = self.result_df[select_cols]
-      plt.subplots(1, 1)
-      title = f"pierson_chi2 on {self.cond_option}"
-      plt.suptitle(title)
-      sns.pairplot(df_selec, hue="pierson_chi2", corner=True, plot_kws={'s': 10})
-      plt.savefig(f"{savefile.split('.csv')[0]}_df")
-      plt.close()
-
-    elif mc_mode == "short_red":
-      savefile = "Sampled/shortred/shortfit_red.csv"
-      comm = "Short-Redshift"
-      if not (f"shortred" in os.listdir("Sampled/")):
-        os.mkdir("Sampled/shortred")
-      param_list = build_params(0.42, 2.07, -0.7, 3.6, -0.65, -3, 1.12e+52, 0.25, 2.8, 3.5, 2.3, -0.53, -3.4, 2.8e52)
-      par_size = len(param_list)
-
-      self.run_mc(par_size, thread_number=thread_num, method=param_list, savefile=savefile)
-      # for ite_mc in range(len(histograms)):
-      #   self.hist_plotter(ite_mc, histograms[ite_mc], param_list[ite_mc], comment=comm, savefile=savefile)
-
-      select_cols = ["short_rate", "short_ind1_z", "short_ind2_z", "short_zb", "pierson_chi2"]
-      df_selec = self.result_df[select_cols]
-      plt.subplots(1, 1)
-      title = f"pierson_chi2 on {self.cond_option}"
-      plt.suptitle(title)
-      sns.pairplot(df_selec, hue="pierson_chi2", corner=True, plot_kws={'s': 10})
-      plt.savefig(f"{savefile.split('.csv')[0]}_df")
-      plt.close()
-
-    elif mc_mode == "mc":
-      savefile = "Sampled/mcfit/mc_fit.csv"
-      comm = "All fit"
-      if not (f"mcfit" in os.listdir("Sampled/")):
-        os.mkdir("Sampled/mcfit")
-
-      self.run_mc(mcmc_number, thread_number=thread_num, method=None, savefile=savefile)
-      # for ite_mc in range(len(histograms)):
-      #   self.hist_plotter(ite_mc, histograms[ite_mc], None, comment=comm, savefile=savefile)
-
-      plt.subplots(1, 1)
-      title = f"pierson_chi2 on {self.cond_option}"
-      plt.suptitle(title)
-      sns.pairplot(self.result_df, hue="pierson_chi2", corner=True, plot_kws={'s': 10})
-      plt.savefig(f"{savefile.split('.csv')[0]}_df")
-      plt.close()
 
   def run_mc(self, run_number, thread_number=1, method=None, savefile=None, comment=""):
     print(f"Starting the run for {run_number} iterations")
@@ -473,10 +367,8 @@ class MCCatalog:
   def get_sample(self, run_iteration, method=None, comment="", savefile=None):
     # Using a different seed for each thread, somehow the seed what the same without using it
     np.random.seed(os.getpid() + int(time() * 1000) % 2**32)
-    # np.random.seed(1)
 
     end_flux_loop = True
-
     while end_flux_loop:
       if method is None:
         params = self.get_params()
@@ -488,37 +380,17 @@ class MCCatalog:
       l_rate_temp, l_ind1_z_temp, l_ind2_z_temp, l_zb_temp, l_ind1_temp, l_ind2_temp, l_lb_temp, nlong_temp = params[0]
       s_rate_temp, s_ind1_z_temp, s_ind2_z_temp, s_zb_temp, s_ind1_temp, s_ind2_temp, s_lb_temp, nshort_temp = params[1]
 
-      print(f"début des {nlong_temp} longs et {nshort_temp} courts     [ite {run_iteration}]")
-      l_m_flux_temp, l_p_flux_temp, l_flnc_temp = [], [], []
-      s_m_flux_temp, s_p_flux_temp, s_flnc_temp = [], [], []
-      run_times_long = []
-      run_times_short = []
-      for ite_long in range(nlong_temp):
-        # if ite_long % 100 == 0:
-        #   print(f"number of iteration for the long bursts : {ite_long}     [ite {run_itation}]", end="\r")
-        init_time = time()
-        l_temp_ret = self.get_long(l_rate_temp, l_ind1_z_temp, l_ind2_z_temp, l_zb_temp, l_ind1_temp, l_ind2_temp, l_lb_temp)
-        run_times_long.append(time() - init_time)
-        l_m_flux_temp.append(l_temp_ret[0])
-        l_p_flux_temp.append(l_temp_ret[1])
-        l_flnc_temp.append(l_temp_ret[2])
+      print(f"Begin of {nlong_temp} longs and {nshort_temp} shorts     [ite {run_iteration}]")
+      l_temp_ret = np.array([self.get_long(ite_long, l_rate_temp, l_ind1_z_temp, l_ind2_z_temp, l_zb_temp, l_ind1_temp, l_ind2_temp, l_lb_temp) for ite_long in range(nlong_temp)])
       print(f"Long finished     [ite {run_iteration}]")
-      for ite_short in range(nshort_temp):
-        # if ite_short % 100 == 0:
-        #   print(f"number of iteration for the short bursts : {ite_short}     [ite {run_itation}]", end="\r")
-        init_time = time()
-        s_temp_ret = self.get_short(s_rate_temp, s_ind1_z_temp, s_ind2_z_temp, s_zb_temp, s_ind1_temp, s_ind2_temp, s_lb_temp)
-        run_times_short.append(time() - init_time)
-        s_m_flux_temp.append(s_temp_ret[0])
-        s_p_flux_temp.append(s_temp_ret[1])
-        s_flnc_temp.append(s_temp_ret[2])
-      print(f"Short finished     [ite {run_iteration}]")
-      # fig, ax = plt.subplots(1, 1)
-      # ax.hist(run_times_long, histtype="step", label="long run times")
-      # ax.hist(run_times_short, histtype="step", label="short run times")
-      # plt.show()
 
-      condition = self.mcmc_condition(l_m_flux_temp, l_p_flux_temp, l_flnc_temp, s_m_flux_temp, s_p_flux_temp, s_flnc_temp, params=params)
+      s_temp_ret = np.array([self.get_short(ite_short, s_rate_temp, s_ind1_z_temp, s_ind2_z_temp, s_zb_temp, s_ind1_temp, s_ind2_temp, s_lb_temp) for ite_short in range(nshort_temp)])
+      print(f"Short finished     [ite {run_iteration}]")
+
+      l_m_flux_temp, l_p_flux_temp, l_flnc_temp = np.array(l_temp_ret[:, 4], dtype=np.float64), np.array(l_temp_ret[:, 5], dtype=np.float64), np.array(l_temp_ret[:, 7], dtype=np.float64)
+      s_m_flux_temp, s_p_flux_temp, s_flnc_temp = np.array(s_temp_ret[:, 4], dtype=np.float64), np.array(s_temp_ret[:, 5], dtype=np.float64), np.array(s_temp_ret[:, 7], dtype=np.float64)
+
+      condition = self.mcmc_condition(l_m_flux_temp, l_p_flux_temp, l_flnc_temp, s_m_flux_temp, s_p_flux_temp, s_flnc_temp, params=params, mode="pflx")
       pflux_ratio_thresh = 4
       if condition[2] < pflux_ratio_thresh or method is None:
         end_flux_loop = False
@@ -527,13 +399,8 @@ class MCCatalog:
 
     if condition[0]:
       row = [l_rate_temp, l_ind1_z_temp, l_ind2_z_temp, l_zb_temp, s_rate_temp, s_ind1_z_temp, s_ind2_z_temp, s_zb_temp, l_ind1_temp, l_ind2_temp, l_lb_temp, s_ind1_temp, s_ind2_temp, s_lb_temp, np.around(condition[1], 3), "Accepted"]
-      # data_row = pd.DataFrame(data=[row], columns=self.columns)
-      # self.result_df = pd.concat([self.result_df, data_row], ignore_index=True)
     else:
       row = [l_rate_temp, l_ind1_z_temp, l_ind2_z_temp, l_zb_temp, s_rate_temp, s_ind1_z_temp, s_ind2_z_temp, s_zb_temp, l_ind1_temp, l_ind2_temp, l_lb_temp, s_ind1_temp, s_ind2_temp, s_lb_temp, np.around(condition[1], 3), "Rejected"]
-      # data_row = pd.DataFrame(data=[row], columns=self.columns)
-      # self.result_df = pd.concat([self.result_df, data_row], ignore_index=True)
-      # print(data_row)
       print(f"Rejected : pearson chi2 = {np.around(condition[1], 3)}     [ite {run_iteration}]")
 
     list_param = l_rate_temp, l_ind1_z_temp, l_ind2_z_temp, l_zb_temp, l_ind1_temp, l_ind2_temp, l_lb_temp, s_rate_temp, s_ind1_z_temp, s_ind2_z_temp, s_zb_temp, s_ind1_temp, s_ind2_temp, s_lb_temp
@@ -541,7 +408,106 @@ class MCCatalog:
 
     return row
 
-  def mcmc_condition(self, l_m_flux_temp, l_p_flux_temp, l_flnc_temp, s_m_flux_temp, s_p_flux_temp, s_flnc_temp, params=None):
+  def get_catalog_sample(self, run_iteration, thread_number, savefolder, method=None, comment=""):
+    # Using a different seed for each thread, somehow the seed what the same without using it
+    np.random.seed(os.getpid() + int(time() * 1000) % 2**32)
+
+    # File for saving the catalog
+    savefile = f"{savefolder}sampled_grb_cat_{self.n_year}years_v{run_iteration}.txt"
+    saveplotfile = f"{savefolder}sampled_grb_cat_{self.n_year}years.csv"
+
+    # Setting the arrays with 0 so that there is no issue while using mcmc_condition
+    l_m_flux_temp, l_p_flux_temp, l_flnc_temp = np.zeros(100), np.zeros(100), np.zeros(100)
+    s_m_flux_temp, s_p_flux_temp, s_flnc_temp = np.zeros(100), np.zeros(100), np.zeros(100)
+    cat_loop_long = True
+    cat_loop_short = True
+    print(f"Begin of longs")
+    while cat_loop_long:
+      if method is None:
+        params = self.get_params()
+      elif type(method) is list:
+        params = self.get_set_params(method[run_iteration])
+      else:
+        raise ValueError("Wrong method used")
+
+      l_rate_temp, l_ind1_z_temp, l_ind2_z_temp, l_zb_temp, l_ind1_temp, l_ind2_temp, l_lb_temp, nlong_temp = params[0]
+
+      if thread_number == 'all':
+        with mp.Pool() as pool:
+          l_temp_ret = np.array(pool.starmap(self.get_long, zip(range(nlong_temp), repeat(l_rate_temp), repeat(l_ind1_z_temp), repeat(l_ind2_z_temp), repeat(l_zb_temp), repeat(l_ind1_temp), repeat(l_ind2_temp), repeat(l_lb_temp))))
+      elif type(thread_number) is int and thread_number > 1:
+        with mp.Pool(thread_number) as pool:
+          l_temp_ret = np.array(pool.starmap(self.get_long, zip(range(nlong_temp), repeat(l_rate_temp), repeat(l_ind1_z_temp), repeat(l_ind2_z_temp), repeat(l_zb_temp), repeat(l_ind1_temp), repeat(l_ind2_temp), repeat(l_lb_temp))))
+      else:
+        l_temp_ret = np.array([self.get_long(ite_long, l_rate_temp, l_ind1_z_temp, l_ind2_z_temp, l_zb_temp, l_ind1_temp, l_ind2_temp, l_lb_temp) for ite_long in range(nlong_temp)])
+
+      l_m_flux_temp, l_p_flux_temp, l_flnc_temp = np.array(l_temp_ret[:, 4], dtype=np.float64), np.array(l_temp_ret[:, 5], dtype=np.float64), np.array(l_temp_ret[:, 7], dtype=np.float64)
+      condition_long = self.mcmc_condition(l_m_flux_temp, l_p_flux_temp, l_flnc_temp, s_m_flux_temp, s_p_flux_temp, s_flnc_temp, params=params, mode="l_pflx")
+      if condition_long[0]:
+        print(f"Long catalog fitting : chi2 = {condition_long[1]}")
+        cat_loop_long = False
+      else:
+        print(f"Long catalog not fitting  : chi2 = {condition_long[1]}   -   trying again")
+    print(f"Long finished     [ite {run_iteration}]")
+
+    print(f"Begin of shorts")
+    while cat_loop_short:
+      if method is None:
+        params = self.get_params()
+      elif type(method) is list:
+        params = self.get_set_params(method[run_iteration])
+      else:
+        raise ValueError("Wrong method used")
+
+      s_rate_temp, s_ind1_z_temp, s_ind2_z_temp, s_zb_temp, s_ind1_temp, s_ind2_temp, s_lb_temp, nshort_temp = params[1]
+
+      if thread_number == 'all':
+        with mp.Pool() as pool:
+          s_temp_ret = np.array(pool.starmap(self.get_short, zip(range(nshort_temp), repeat(s_rate_temp), repeat(s_ind1_z_temp), repeat(s_ind2_z_temp), repeat(s_zb_temp), repeat(s_ind1_temp), repeat(s_ind2_temp), repeat(s_lb_temp))))
+      elif type(thread_number) is int and thread_number > 1:
+        with mp.Pool(thread_number) as pool:
+          s_temp_ret = np.array(pool.starmap(self.get_short, zip(range(nshort_temp), repeat(s_rate_temp), repeat(s_ind1_z_temp), repeat(s_ind2_z_temp), repeat(s_zb_temp), repeat(s_ind1_temp), repeat(s_ind2_temp), repeat(s_lb_temp))))
+      else:
+        s_temp_ret = np.array([self.get_short(ite_short, s_rate_temp, s_ind1_z_temp, s_ind2_z_temp, s_zb_temp, s_ind1_temp, s_ind2_temp, s_lb_temp) for ite_short in range(nshort_temp)])
+
+      s_m_flux_temp, s_p_flux_temp, s_flnc_temp = np.array(s_temp_ret[:, 4], dtype=np.float64), np.array(s_temp_ret[:, 5], dtype=np.float64), np.array(s_temp_ret[:, 7], dtype=np.float64)
+      condition_short = self.mcmc_condition(l_m_flux_temp, l_p_flux_temp, l_flnc_temp, s_m_flux_temp, s_p_flux_temp, s_flnc_temp, params=params, mode="s_pflx")
+      if condition_short[0]:
+        print(f"Short catalog fitting : chi2 = {condition_short[1]}")
+        cat_loop_short = False
+      else:
+        print(f"Short catalog not fitting  : chi2 = {condition_short[1]}   -   trying again")
+    print(f"Short finished     [ite {run_iteration}]")
+
+    # Saving the catalog
+    all_grb = np.concatenate((l_temp_ret, s_temp_ret))
+    for sample_number, line in enumerate(all_grb):
+      if line[13] == "Sample short":
+        self.save_grb(savefile, f"sGRB{self.n_year}S{sample_number}", line[6], line[8], line[7], line[4], line[5], line[0], line[9], line[10], line[2], line[11], line[3], line[12], 0)
+      elif line[13] == "Sample long":
+        self.save_grb(savefile, f"lGRB{self.n_year}S{sample_number}", line[6], line[8], line[7], line[4], line[5], line[0], line[9], line[10], line[2], line[11], line[3], line[12], 0)
+      else:
+        raise ValueError(f"Error while making the sample, the Type of the burst should be 'Sample short' or 'Sample long' but value is {line[13]}")
+
+    print("Deleting the old source file if it exists : ")
+    if f"{int(self.n_year)}sample" in os.listdir("./sources/SampledSpectra"):
+      subprocess.call(f"rm -r ./sources/SampledSpectra/{int(self.n_year)}sample", shell=True)
+      # os.rmdir(f"./sources/SampledSpectra/{int(n_year)}sample")
+    print("Deletion done")
+
+    condition = self.mcmc_condition(l_m_flux_temp, l_p_flux_temp, l_flnc_temp, s_m_flux_temp, s_p_flux_temp, s_flnc_temp, params=params, mode="pflx")
+    if condition[0]:
+      row = [l_rate_temp, l_ind1_z_temp, l_ind2_z_temp, l_zb_temp, s_rate_temp, s_ind1_z_temp, s_ind2_z_temp, s_zb_temp, l_ind1_temp, l_ind2_temp, l_lb_temp, s_ind1_temp, s_ind2_temp, s_lb_temp, np.around(condition[1], 3), "Accepted"]
+    else:
+      row = [l_rate_temp, l_ind1_z_temp, l_ind2_z_temp, l_zb_temp, s_rate_temp, s_ind1_z_temp, s_ind2_z_temp, s_zb_temp, l_ind1_temp, l_ind2_temp, l_lb_temp, s_ind1_temp, s_ind2_temp, s_lb_temp, np.around(condition[1], 3), "Rejected"]
+      print(f"Rejected : pearson chi2 = {np.around(condition[1], 3)}     [ite {run_iteration}]")
+
+    list_param = l_rate_temp, l_ind1_z_temp, l_ind2_z_temp, l_zb_temp, l_ind1_temp, l_ind2_temp, l_lb_temp, s_rate_temp, s_ind1_z_temp, s_ind2_z_temp, s_zb_temp, s_ind1_temp, s_ind2_temp, s_lb_temp
+    self.hist_plotter(run_iteration, [l_m_flux_temp, l_p_flux_temp, l_flnc_temp, s_m_flux_temp, s_p_flux_temp, s_flnc_temp, np.around(condition[1], 3)], list_param, comment=comment, savefile=saveplotfile)
+
+    return row
+
+  def mcmc_condition(self, l_m_flux_temp, l_p_flux_temp, l_flnc_temp, s_m_flux_temp, s_p_flux_temp, s_flnc_temp, params=None, mode="pflx"):
     """
     Condition on the histograms to consider a value is correct
     """
@@ -555,36 +521,20 @@ class MCCatalog:
     # smp_flnc_l_hist_norm = smp_flnc_l_hist * np.sum(self.l_flnc_bins) / np.sum(smp_flnc_l_hist)
     # smp_flnc_s_hist_norm = smp_flnc_s_hist * np.sum(self.s_flnc_bins) / np.sum(smp_flnc_s_hist)
 
-    if self.cond_option is None:
-      obs_dat = np.concatenate((smp_pflux_l_hist, smp_pflux_s_hist, smp_flnc_l_hist, smp_flnc_s_hist))
-      expect_dat = np.concatenate((self.l_pflux_bins, self.s_pflux_bins, self.l_flnc_bins, self.s_flnc_bins))
-      end_pflx_ratio = 1
-    elif self.cond_option == "long_pflux":
+    if mode == "pflx":
+      obs_dat = np.concatenate((smp_pflux_l_hist, smp_pflux_s_hist))
+      expect_dat = np.concatenate((self.l_pflux_bins, self.s_pflux_bins))
+      end_pflx_ratio = smp_pflux_l_hist[-1] / self.l_pflux_bins[-1]
+    elif mode == "l_pflx":
       obs_dat = smp_pflux_l_hist
       expect_dat = self.l_pflux_bins
       end_pflx_ratio = smp_pflux_l_hist[-1] / self.l_pflux_bins[-1]
-    elif self.cond_option == "long_flnc":
-      obs_dat = smp_flnc_l_hist
-      expect_dat = self.l_flnc_bins
-      end_pflx_ratio = 1
-    elif self.cond_option == "long":
-      obs_dat = np.concatenate((smp_pflux_l_hist, smp_flnc_l_hist))
-      expect_dat = np.concatenate((self.l_pflux_bins, self.l_flnc_bins))
-      end_pflx_ratio = smp_pflux_l_hist[-1] / self.l_pflux_bins[-1]
-    elif self.cond_option == "short_pflux":
+    elif mode == "s_pflx":
       obs_dat = smp_pflux_s_hist
       expect_dat = self.s_pflux_bins
-      end_pflx_ratio = smp_pflux_s_hist[-1] / self.s_pflux_bins[-1]
-    elif self.cond_option == "short_flnc":
-      obs_dat = smp_flnc_s_hist
-      expect_dat = self.s_flnc_bins
       end_pflx_ratio = 1
-    elif self.cond_option == "short":
-      obs_dat = np.concatenate((smp_pflux_s_hist, smp_flnc_s_hist))
-      expect_dat = np.concatenate((self.s_pflux_bins, self.s_flnc_bins))
-      end_pflx_ratio = smp_pflux_s_hist[-1] / self.s_pflux_bins[-1]
     else:
-      raise ValueError("Wrong value for cond_option : must be None, 'long_pflux', 'long_flnc', 'long', 'short_pflux', 'short_flnc' or 'short'")
+      raise ValueError("Invalid mode for mcmc_condition")
 
     # cond_test = chisquare(obs_dat, f_exp=expect_dat, ddof=0)
     # print("obs", obs_dat)
@@ -594,11 +544,19 @@ class MCCatalog:
     chi2 = np.sum((obs_dat-expect_dat)**2/expect_dat)
     return chi2 < chi2_lim, chi2, end_pflx_ratio
 
+  def save_grb(self, filename, name, t90, lcname, fluence, mean_flux, peak_flux, red, band_low, band_high, ep, dl, lpeak, eiso, thetaj):
+    """
+    Saves a GRB in a catalog file
+    """
+    with open(filename, "a") as f:
+      print(f"{name}|{t90}|{lcname}|{fluence}|{mean_flux}|{peak_flux}|{red}|{band_low}|{band_high}|{ep}|{dl}|{lpeak}|{eiso}|{thetaj}\n")
+      f.write(f"{name}|{t90}|{lcname}|{fluence}|{mean_flux}|{peak_flux}|{red}|{band_low}|{band_high}|{ep}|{dl}|{lpeak}|{eiso}|{thetaj}\n")
+
   def hist_plotter(self, iteration, histos, params, comment="", savefile=None):
     if params is not None:
-      title = f"{comment}\n{params[0:7]}\n{params[7:]}\nPierson chi2 of {self.cond_option} : {histos[6]}"
+      title = f"{comment}\n{params[0:7]}\n{params[7:]}\nPierson chi2 of pflx : {histos[6]}"
     else:
-      title = f"{comment}\nPierson chi2 of {self.cond_option} : {histos[6]}"
+      title = f"{comment}\nPierson chi2 of pflx : {histos[6]}"
 
     yscale = "log"
     fig1, ((ax1l, ax2l, ax3l), (ax1l2, ax2l2, ax3l2), (ax1s, ax2s, ax3s), (ax1s2, ax2s2, ax3s2)) = plt.subplots(nrows=4, ncols=3, figsize=(20, 12))
@@ -632,6 +590,8 @@ class MCCatalog:
     ax1l2.grid(True, which='major', linestyle='--', color='black', alpha=0.3)
     ax1l2.legend()
 
+    print(np.array(histos[0]))
+    print(np.array(histos[1]))
     ax2l2.hist(self.gbm_l_mp_ratio, bins=30, histtype="step", color="red", label="GBM", weights=[1/len(self.gbm_l_mp_ratio)] * len(self.gbm_l_mp_ratio))
     ax2l2.hist(np.array(histos[1]) / np.array(histos[0]), bins=np.logspace(0, 3, 30), histtype="step", color="blue", label="Sample",  weights=[1/len(histos[1])] * len(histos[1]))
     ax2l2.set(xlabel="p/m ratio lGRB", ylabel="proportion over full population", xscale="log", yscale="linear")
@@ -695,20 +655,18 @@ class MCCatalog:
 
     # plt.show()
 
-  def get_short(self, short_rate, ind1_z_s, ind2_z_s, zb_s, ind1_s, ind2_s, lb_s):
+  def get_short(self, ite_num, short_rate, ind1_z_s, ind2_z_s, zb_s, ind1_s, ind2_s, lb_s):
     """
     Creates the quatities of a short burst according to distributions
     Based on Lana Salmon's thesis and Ghirlanda et al, 2016
     """
+    np.random.seed(os.getpid() + int(time() * 1000) % 2 ** 32)
     ##################################################################################################################
     # picking according to distributions
     ##################################################################################################################
     z_obs_temp = acc_reject(red_rate_short, [short_rate, ind1_z_s, ind2_z_s, zb_s], self.zmin, self.zmax)
     # lpeak_rest_temp = acc_reject(broken_plaw, [ind1_s, ind2_s, lb_s], self.lmin, self.lmax)
     lpeak_rest_temp = transfo_broken_plaw(ind1_s, ind2_s, lb_s, self.lmin, self.lmax)
-
-    ep_rest_temp = yonetoku_reverse_short(lpeak_rest_temp)
-    # ep_obs_temp = ep_rest_temp / (1 + z_obs_temp)
 
     band_low_obs_temp, band_high_obs_temp = pick_lognormal_alpha_beta(self.band_low_s_mu, self.band_low_s_sig, self.band_high_s_mu, self.band_high_s_sig)
 
@@ -717,13 +675,12 @@ class MCCatalog:
       t90_obs_temp = 10 ** norm.rvs(-0.025, 0.631)
 
     lc_temp = self.closest_lc(t90_obs_temp)
-    # times, counts = extract_lc(f"./sources/Light_Curves/{lc_temp}")
-    # pflux_to_mflux = np.mean(counts) / np.max(counts)
     pflux_to_mflux = pflux_to_mflux_calculator(lc_temp)
 
-
     dl_obs_temp = self.cosmo.luminosity_distance(z_obs_temp).value / 1000  # Gpc
-    # eiso_rest_temp = amati_short(ep_rest_temp)
+    ep_rest_temp = yonetoku_reverse_short(lpeak_rest_temp)
+    ep_obs_temp = ep_rest_temp / (1 + z_obs_temp)
+    eiso_rest_temp = amati_short(ep_rest_temp)
 
     ##################################################################################################################
     # Calculation of spectrum and data saving
@@ -732,13 +689,15 @@ class MCCatalog:
     norm_val, spec, temp_peak_flux = norm_band_spec_calc(band_low_obs_temp, band_high_obs_temp, z_obs_temp, dl_obs_temp, ep_rest_temp, lpeak_rest_temp, ener_range, verbose=False)
     temp_mean_flux = temp_peak_flux * pflux_to_mflux
 
-    return [temp_mean_flux, temp_peak_flux, temp_mean_flux * t90_obs_temp]
+    return [z_obs_temp, ep_obs_temp, ep_rest_temp, lpeak_rest_temp, temp_mean_flux, temp_peak_flux, t90_obs_temp, temp_mean_flux * t90_obs_temp, lc_temp, band_low_obs_temp, band_high_obs_temp, dl_obs_temp,
+            eiso_rest_temp, "Sample short", "Sample"]
 
-  def get_long(self, long_rate, ind1_z_l, ind2_z_l, zb_l, ind1_l, ind2_l, lb_l):
+  def get_long(self, ite_num, long_rate, ind1_z_l, ind2_z_l, zb_l, ind1_l, ind2_l, lb_l):
     """
     Creates the quatities of a long burst according to distributions
     Based on Sarah Antier's thesis
     """
+    np.random.seed(os.getpid() + int(time() * 1000) % 2 ** 32)
     ##################################################################################################################
     # picking according to distributions
     ##################################################################################################################
@@ -761,15 +720,13 @@ class MCCatalog:
     # timelist.append(time() - init_time)
 
     lc_temp = self.closest_lc(t90_obs_temp)
-    # times, counts = extract_lc(f"./sources/Light_Curves/{lc_temp}")
-    # pflux_to_mflux = np.mean(counts) / np.max(counts)
     pflux_to_mflux = pflux_to_mflux_calculator(lc_temp)
 
     dl_obs_temp = self.cosmo.luminosity_distance(z_obs_temp).value / 1000  # Gpc
     ep_rest_temp = yonetoku_reverse_long(lpeak_rest_temp)
     # init_time = time()
-    # ep_obs_temp = ep_rest_temp / (1 + z_obs_temp)
-    # eiso_rest_temp = amati_long(ep_rest_temp)
+    ep_obs_temp = ep_rest_temp / (1 + z_obs_temp)
+    eiso_rest_temp = amati_long(ep_rest_temp)
 
     ##################################################################################################################
     # Calculation of spectrum and data saving
@@ -782,7 +739,8 @@ class MCCatalog:
     # init_time = time()
     # for times in timelist:
     #   print(f"Time taken : {times:8.6f}s making {times/np.sum(timelist)*100:5.2f}% of the run")
-    return [temp_mean_flux, temp_peak_flux, temp_mean_flux * t90_obs_temp]
+    return [z_obs_temp, ep_obs_temp, ep_rest_temp, lpeak_rest_temp, temp_mean_flux, temp_peak_flux, t90_obs_temp, temp_mean_flux * t90_obs_temp, lc_temp, band_low_obs_temp, band_high_obs_temp, dl_obs_temp,
+            eiso_rest_temp, "Sample long", "Sample"]
 
   def closest_lc(self, searched_time):
     """
@@ -867,4 +825,5 @@ class MCCatalog:
     plt.show()
 
 
-testcat = MCCatalog()
+# testcat = MCCatalog(mode="mc")
+testcat = MCCatalog(mode="catalog")
