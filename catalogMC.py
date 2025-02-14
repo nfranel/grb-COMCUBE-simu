@@ -923,4 +923,5 @@ class MCCatalog:
 #
 # file = "./Sampled/mclongv9-300/mc_fit.csv"
 # leg_mode = "fine"
-# MC_explo_pairplot(file, leg_mode)
+# MC_explo_pairplot(file, leg_mode, grbtype="short")
+# plt.show()
