@@ -80,9 +80,13 @@ def get_df(select_col, csvfile="./Sampled/longred_lum_discreet/longfit_red.csv")
   return result_df[select_col]
 
 
-def MC_explo_pairplot(fileused, legend_mode):
-  extract_cols = ["long_rate", "long_ind1_z", "long_ind2_z", "long_zb", "long_ind1_lum", "long_ind2_lum", "long_lb", "pierson_chi2"]
-  select_cols = ["long_rate", "long_ind1_z", "long_ind2_z", "long_zb", "long_ind1_lum", "long_ind2_lum", "long_lb"]
+def MC_explo_pairplot(fileused, legend_mode, grbtype):
+  if grbtype == "long":
+    extract_cols = ["long_rate", "long_ind1_z", "long_ind2_z", "long_zb", "long_ind1_lum", "long_ind2_lum", "long_lb", "pierson_chi2"]
+    select_cols = ["long_rate", "long_ind1_z", "long_ind2_z", "long_zb", "long_ind1_lum", "long_ind2_lum", "long_lb"]
+  elif grbtype == "short":
+    extract_cols = ["short_rate", "short_ind1_z", "short_ind2_z", "short_zb", "short_ind1_lum", "short_ind2_lum", "short_lb", "pierson_chi2"]
+    select_cols = ["short_rate", "short_ind1_z", "short_ind2_z", "short_zb", "short_ind1_lum", "short_ind2_lum", "short_lb"]
 
   df_selec = get_df(extract_cols, csvfile=fileused)
   # df_selec = df_selec[df_selec.pierson_chi2 > -20]
@@ -909,10 +913,14 @@ class MCCatalog:
     ax3s.legend()
     plt.show()
 
-
+# from catalogMC import *
 # testcat = MCCatalog(mode="mc")
 # testcat = MCCatalog(mode="catalog")
 
+# from catalogMC import *
+# import matplotlib as mpl
+# mpl.use("Qt5Agg")
+#
 # file = "./Sampled/mclongv9-300/mc_fit.csv"
 # leg_mode = "fine"
 # MC_explo_pairplot(file, leg_mode)
