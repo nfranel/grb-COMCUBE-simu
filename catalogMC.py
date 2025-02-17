@@ -339,10 +339,10 @@ class MCCatalog:
     else:
       if mode == "mc":
         param_list = None
-        par_size = 4000
+        par_size = 10000
         # mctype = "long"
         mctype = "short"
-        fold_name = f"mc{mctype}v2-{par_size}"
+        fold_name = f"mc{mctype}v3-{par_size}"
         savefile = f"Sampled/{fold_name}/mc_fit.csv"
       elif mode == "parametrized":
         # (l_rate, l_ind1_z, l_ind2_z, l_zb, l_ind1, l_ind2, l_lb, s_rate, s_ind1_z, s_ind2_z, s_zb, s_ind1, s_ind2, s_lb)
