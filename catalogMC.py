@@ -259,14 +259,14 @@ class MCCatalog:
     self.l_zb_min = 2
     self.l_zb_max = 3.5
 
-    self.s_rate_min = 0.1
-    self.s_rate_max = 1
+    self.s_rate_min = 0.3
+    self.s_rate_max = 0.9
     self.s_ind1_z_min = 0.6
-    self.s_ind1_z_max = 3.7
-    self.s_ind2_z_min = 0.9
+    self.s_ind1_z_max = 3.4
+    self.s_ind2_z_min = 1.6
     self.s_ind2_z_max = 3.5
     self.s_zb_min = 2
-    self.s_zb_max = 3.3
+    self.s_zb_max = 3
     # Luminosity
     self.l_ind1_min = -0.9
     self.l_ind1_max = -0.65
@@ -277,7 +277,7 @@ class MCCatalog:
 
     self.s_ind1_min = -1
     self.s_ind1_max = -0.4
-    self.s_ind2_min = -3.7
+    self.s_ind2_min = -3.3
     self.s_ind2_max = -1.7
     self.s_lb_min = 0.91e52
     self.s_lb_max = 3.4e52
