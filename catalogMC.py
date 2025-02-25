@@ -314,11 +314,11 @@ class MCCatalog:
     print("Starting")
     if mode == "catalog":
       param_list = None
-      par_size = 1
+      par_size = 3
       fold_name = f"cat_to_validate"
       savefolder = f"Sampled/{fold_name}/"
       thread_num = "all"
-      sigma_number = 1
+      sigma_number = 0.5
 
       if not (f"{fold_name}" in os.listdir("Sampled/")):
         os.mkdir(f"Sampled/{fold_name}")
@@ -536,7 +536,7 @@ class MCCatalog:
         print(f"Long catalog fitting : chi2 = {condition_long[1]}")
         cat_loop_long = False
       else:
-        print(f"Long catalog not fitting  : chi2 = {condition_long[1]}   -   trying again")
+        print(f"Long catalog not fitting  : chi2 = {condition_long[1]} > len(ref) * {n_sig} sigma  -   trying again")
     print(f"Long finished     [ite {run_iteration}]")
 
     print(f"Begin of shorts")
@@ -565,11 +565,18 @@ class MCCatalog:
         print(f"Short catalog fitting : chi2 = {condition_short[1]}")
         cat_loop_short = False
       else:
-        print(f"Short catalog not fitting  : chi2 = {condition_short[1]}   -   trying again")
+        print(f"Short catalog not fitting  : chi2 = {condition_short[1]} > len(ref) * {n_sig} sigma  -   trying again")
     print(f"Short finished     [ite {run_iteration}]")
 
     # Saving the catalog
     all_grb = np.concatenate((l_temp_ret, s_temp_ret))
+    with open(savefile, "w") as f:
+      f.write(f"Catalog of synthetic GRBs sampled over {self.n_year} years. Based on differents works, see catalogMC.py for more details\n")
+      f.write(f"Parameters l_rate, l_ind1_z, l_ind2_z, l_zb, l_ind1, l_ind2, l_lb, s_rate, s_ind1_z, s_ind2_z, s_zb, s_ind1, s_ind2, s_lb : {l_rate_temp} - {l_ind1_z_temp} - {l_ind2_z_temp} - {l_zb_temp} - {l_ind1_temp} - {l_ind2_temp} - {l_lb_temp} - {s_rate_temp} - {s_ind1_z_temp} - {s_ind2_z_temp} - {s_zb_temp} - {s_ind1_temp} - {s_ind2_temp} - {s_lb_temp}\n")
+      f.write("Keys and units : \n")
+      f.write("name|t90|light curve name|fluence|mean flux|peak flux|redshift|Band low energy index|Band high energy index|peak energy|luminosity distance|isotropic luminosity|isotropic energy|jet opening angle\n")
+      f.write("[dimensionless] | [s] | [dimensionless] | [ph/cm2] | [ph/cm2/s] | [ph/cm2/s] | [dimensionless] | [dimensionless] | [dimensionless] | [keV] | [Gpc] | [erg/s] | [erg] | [°]\n")
+
     for sample_number, line in enumerate(all_grb):
       if line[13] == "Sample short":
         self.save_grb(savefile, f"sGRB{self.n_year}S{sample_number}", line[6], line[8], line[7], line[4], line[5], line[0], line[9], line[10], line[2], line[11], line[3], line[12], 0)
