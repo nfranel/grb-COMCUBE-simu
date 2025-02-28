@@ -721,10 +721,15 @@ def angle(scatter_vector, grb_dec_sf, grb_ra_sf, source_name, num_sim, num_sat, 
   # Rotations to put the scatter_vector into a frame where z in the source direction and x the polarization vector direction.
   scatter_vector = np.matmul(scatter_vector, np.transpose(mat1))
   scatter_vector = np.matmul(scatter_vector, np.transpose(mat2))
+  try:
+    temp_polar = np.arccos(scatter_vector[:, 2])
+  except:
+    print(scatter_vector[:, 2])
+    stop
   if MEGAlib_direction:
-    polar = 180 - np.rad2deg(np.arccos(scatter_vector[:, 2]))
+    polar = 180 - np.rad2deg(temp_polar)
   else:
-    polar = np.rad2deg(np.arccos(scatter_vector[:, 2]))
+    polar = np.rad2deg(temp_polar)
   # Figure out a good arctan
   azim = np.rad2deg(np.arctan2(scatter_vector[:, 1], scatter_vector[:, 0]))
 
