@@ -196,7 +196,7 @@ def save_log(filename, name, num_grb, num_sim, num_sat, status, inc, ohm, omega,
   :param name: name of the source
   :param num_sim: number of the sime
   :param num_sat: number of the sat
-  :param status: status of the simulation - Simulated - Ignored(horizon) - Ignored(off)
+  :param status: status of the simulation - Simulated - Ignored(horizon) - Ignored(off) - Ignored(faint)
   :param inc: inclination of the satellite's orbite
   :param ohm: ra of the ascending node of the satellite's orbite
   :param omega: argument of periapsis of the satellite's orbite

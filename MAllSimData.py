@@ -51,7 +51,7 @@ class AllSimData(list):
       self.source_name = cat_data.df.name[source_ite]
       self.source_duration = float(cat_data.df.t90[source_ite])
       self.best_fit_model = "band"
-      self.best_fit_p_flux = None
+      self.best_fit_p_flux = float(cat_data.df.peak_flux[source_ite])
       self.best_fit_mean_flux = float(cat_data.df.mean_flux[source_ite])
       self.source_fluence = calc_flux_sample(cat_data, source_ite, options[0]) * self.source_duration
       self.source_energy_fluence = None

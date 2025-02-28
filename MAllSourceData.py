@@ -206,7 +206,7 @@ class AllSourceData:
     # Log information
     printcom("Step 5 - Loading log data and simulation statistics")
     init_time = time()
-    self.n_sim_simulated, self.n_sim_below_horizon, self.n_sim_in_radbelt, grb_names, grb_det_ites, sim_det_ites, sat_det_ites, suffix_ite = LogData(self.sim_prefix).detection_statistics(cat_data, False)
+    self.n_sim_simulated, self.n_sim_below_horizon, self.n_sim_in_radbelt, self.n_sin_faint, grb_names, grb_det_ites, sim_det_ites, sat_det_ites, suffix_ite = LogData(self.sim_prefix).detection_statistics(cat_data, False)
     endtask("Step 5", timevar=init_time)
 
     # Memory check for the class
@@ -215,6 +215,7 @@ class AllSourceData:
       print(f"  self.n_sim_simulated memory used : {asizeof.asizeof(self.n_sim_simulated)} bytes")
       print(f"  self.n_sim_below_horizon memory used : {asizeof.asizeof(self.n_sim_below_horizon)} bytes")
       print(f"  self.n_sim_in_radbelt memory used : {asizeof.asizeof(self.n_sim_in_radbelt)} bytes")
+      print(f"  self.n_sin_faint memory used : {asizeof.asizeof(self.n_sin_faint)} bytes")
       print(f"  grb_names memory used : {asizeof.asizeof(grb_names)} bytes")
       print(f"  grb_det_ites memory used : {asizeof.asizeof(grb_det_ites)} bytes")
       print(f"  sim_det_ites memory used : {asizeof.asizeof(sim_det_ites)} bytes")
@@ -312,7 +313,7 @@ class AllSourceData:
       ext_name.append(temp_name)
       pres_list[grb_det_ites[ite]][sim_det_ites[ite]][sat_det_ites[ite]] = temp_name
     return tobe_ext, ext_name, pres_list.tolist()
-  #
+
   # TODO finish the comments and rework the methods !
   def extract_sources(self, prefix, duration=None):
     """

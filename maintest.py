@@ -622,8 +622,7 @@ def sample_comparison(sim_data):
     temp_t90 = cat_smp.df.t90[ite_smp]
     temp_mflux = cat_smp.df.mean_flux[ite_smp]
     temp_ph_flnc = cat_smp.df.fluence[ite_smp]
-    pflux_to_mflux = pflux_to_mflux_calculator(cat_smp.df.lc[ite_smp])
-    temp_pflux = temp_mflux / pflux_to_mflux
+    temp_pflux = cat_smp.df.peak_flux[ite_smp]
 
     smp_t90.append(temp_t90)
     smp_ph_mflux.append(temp_mflux)
@@ -680,8 +679,7 @@ def sample_comparison(sim_data):
                   temp_t90 = cat_smp.df.t90[smp_ite]
                   temp_mflux = cat_smp.df.mean_flux[smp_ite]
                   temp_ph_flnc = cat_smp.df.fluence[smp_ite]
-                  pflux_to_mflux = pflux_to_mflux_calculator(cat_smp.df.lc[smp_ite])
-                  temp_pflux = temp_mflux / pflux_to_mflux
+                  temp_pflux = cat_smp.df.peak_flux[ite_smp]
 
                   trig_t90.append(temp_t90)
                   trig_ph_mflux.append(temp_mflux)

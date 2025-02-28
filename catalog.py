@@ -427,21 +427,7 @@ class SampleCatalog:
     self.datafile = None
     self.sttype = None
     self.length = 0
-    self.columns = ["name", "z_obs", "dl", "ep_rest", "alpha", "beta", "liso", "eiso", "thetaj", "mean_flux", "t90", "fluence", "lc"]
-
-    # self.name = []
-    # self.red = []
-    # self.dl = []
-    # self.ep = []
-    # self.band_low = []
-    # self.band_high = []
-    # self.liso = []
-    # self.eiso = []
-    # self.thetaj = []
-    # self.mean_flux = []
-    # self.t90 = []
-    # self.fluence = []
-    # self.lc = []
+    self.columns = ["name", "z_obs", "dl", "ep_rest", "alpha", "beta", "liso", "eiso", "thetaj", "mean_flux", "peak_flux", "t90", "fluence", "lc"]
 
     # Catalog attributes
     if not (datafile is None or sttype is None):
@@ -502,8 +488,8 @@ class SampleCatalog:
     data_tab = []
     for line in events:
       data = line.split("|")
-      row = [data[0], float(data[5]), float(data[9]), float(data[8]), float(data[6]), float(data[7]), float(data[10]), float(data[11]),
-             float(data[12]), float(data[4]), float(data[1]), float(data[3]), data[2]]
+      row = [data[0], float(data[6]), float(data[10]), float(data[9]), float(data[7]), float(data[8]), float(data[11]), float(data[12]),
+             float(data[13]), float(data[4]), float(data[5]), float(data[1]), float(data[3]), data[2]]
       data_tab.append(row)
     self.df = pd.DataFrame(data=data_tab, columns=self.columns)
 

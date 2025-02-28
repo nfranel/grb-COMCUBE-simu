@@ -76,10 +76,10 @@ def gen_commands(args):
       if not (f"{cat.df.name[i]}_spectrum.dat" in os.listdir(spectrafolder)):
         logE = np.logspace(1, 3, 100)  # energy (log scale)
         with open(spectrumfile, "w") as f:
-          norm_val, spec, pht_pflux = norm_band_spec_calc(cat.df.alpha[i], cat.df.beta[i], cat.df.z_obs[i], cat.df.dl[i], cat.df.ep_rest[i], cat.df.liso[i], logE)
+          norm_val, spec, pht_pflx = norm_band_spec_calc(cat.df.alpha[i], cat.df.beta[i], cat.df.z_obs[i], cat.df.dl[i], cat.df.ep_rest[i], cat.df.liso[i], logE)
           f.write(f"#model normalized Band:   norm={norm_val}, alpha={cat.df.alpha[i]}, beta={cat.df.beta[i]}, epeak={cat.df.ep_rest[i]}keV\n")
           f.write(f"# Measured mean flux: {pht_mflx} ph/cm2/s in the 10-1000 keV band\n")
-          f.write(f"# Measured peak flux: {pht_pflux} ph/cm2/s in the 10-1000 keV band\n")
+          f.write(f"# Measured peak flux: {pht_pflx} ph/cm2/s in the 10-1000 keV band\n")
           f.write("\nIP LOGLOG\n\n")
           for ite_E, E in enumerate(logE):
             f.write(f"DP {E} {spec[ite_E]}\n")
@@ -131,6 +131,9 @@ def gen_commands(args):
           for E in logE:
             f.write(f"DP {E} {fun(E, *func_args)}\n")
           f.write("\nEN\n\n")
+    # Used for the GBM bursts that do not have pflux values, to still simulate them
+    if pht_pflx == "No value fitted":
+      pht_pflx = 1
     for j in range(args.simulationsperevent):
       dec_grb_world_frame, ra_grb_world_frame = random_grb_dec_ra(args.position[0], args.position[1], args.position[2], args.position[3])  # deg
       rand_time = np.around(np.random.rand()*315567360.0, 4)  # Time of the GRB, taken randomly over a 10 years time window
@@ -140,7 +143,9 @@ def gen_commands(args):
         true_anomaly = true_anomaly_calc(rand_time, orbital_period)
         dec_sat_world_frame, ra_sat_world_frame = orbitalparam2decra(s[0], s[1], s[2], nu=true_anomaly)  # deg
         ra_sat_world_frame = np.mod(ra_sat_world_frame - earth_ra_offset, 360)
-        if verif_rad_belts(dec_sat_world_frame, ra_sat_world_frame, s[3]):  # checks if sat is in the switch off zone
+        if pht_pflx <= 0.1:
+          save_log(f"{sim_directory}/simulation_logs.txt", cat.df.name[i], i, j, k, "Ignored(faint)", s[0], s[1], s[2], s[3], rand_time, dec_sat_world_frame, ra_sat_world_frame, dec_grb_world_frame, ra_grb_world_frame, None, None)
+        elif verif_rad_belts(dec_sat_world_frame, ra_sat_world_frame, s[3]):  # checks if sat is in the switch off zone
           save_log(f"{sim_directory}/simulation_logs.txt", cat.df.name[i], i, j, k, "Ignored(off)", s[0], s[1], s[2], s[3], rand_time, dec_sat_world_frame, ra_sat_world_frame, dec_grb_world_frame, ra_grb_world_frame, None, None)
         else:
           theta, phi, theta_err, phi_err, thetap, phip, polstr = grb_decrapol_worldf2satf(dec_grb_world_frame, ra_grb_world_frame, dec_sat_world_frame, ra_sat_world_frame)[1:]
@@ -161,9 +166,6 @@ def gen_commands(args):
               simtime = None
               lc_bool = False
               vprint("simtime in parameter file unknown. Check parameter file.", __verbose__, 0)
-            # if cat.df.name[i] in ["GRB080804456", "GRB120420858", "GRB130215063", "GRB140603476"]:
-            #   print("COMMAND : ", (not(args.nocosima), not(args.norevan), not(args.nomimrec), cat.df.name[i], k, spectrumfile, pht_mflx, simtime, lc_bool, lc_name, polstr, j, f"{dec_grb_world_frame:.4f}_{ra_grb_world_frame:.4f}_{rand_time:.4f}", theta, phi))
-            #   print("LOG : ", f"{sim_directory}/simulation_logs.txt", cat.df.name[i], i, j, k, "Simulated", s[0], s[1], s[2], s[3], rand_time, dec_sat_world_frame, ra_sat_world_frame, dec_grb_world_frame, ra_grb_world_frame, theta, phi)
             args.commands.append((not(args.nocosima), not(args.norevan), not(args.nomimrec), cat.df.name[i], k, spectrumfile, pht_mflx, simtime, lc_bool, lc_name, polstr, j, f"{dec_grb_world_frame:.4f}_{ra_grb_world_frame:.4f}_{rand_time:.4f}", theta, phi))
             save_log(f"{sim_directory}/simulation_logs.txt", cat.df.name[i], i, j, k, "Simulated", s[0], s[1], s[2], s[3], rand_time, dec_sat_world_frame, ra_sat_world_frame, dec_grb_world_frame, ra_grb_world_frame, theta, phi)
   for i in range(len(cat.df)):

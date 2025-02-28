@@ -68,7 +68,7 @@ class LogData:
       self.sat_rawf.append(float(data[11]))
       self.grb_decwf.append(float(data[12]))
       self.grb_rawf.append(float(data[13]))
-      if data[3] == 'Ignored(off)':
+      if data[3] == 'Ignored(off)' or data[3] == 'Ignored(faint)':
         self.grb_decsf.append(data[14])
         self.grb_rasf.append(data[15])
       else:
@@ -98,19 +98,21 @@ class LogData:
     simulated = np.sum(np.where(self.status == "Simulated", 1, 0))
     horizon = np.sum(np.where(self.status == "Ignored(horizon)", 1, 0))
     off = np.sum(np.where(self.status == "Ignored(off)", 1, 0))
+    faint = np.sum(np.where(self.status == "Ignored(faint)", 1, 0))
     print("The detection statistics for the simulated grbs is the following :")
     print(f"   Number of simulation possible : {len(self.name)}")
     print(f"   Number of simulation done : {simulated}")
     print(f"   Number of ignored simulation : {len(self.name) - simulated}")
     print(f"       With {horizon} ignored because the source is bellow the atmosphere")
     print(f"       With {off} ignored because the satellite is switch off")
+    print(f"       With {faint} ignored because the GRB is too faint (peak flux < 0.1 ph/cm²/s")
     if existing_check:
       print("   = Checking the existence of all simulations found in the log file =")
       error_message = self.check_existing_files(cat)
       if error_message != "":
         raise FileNotFoundError(f"Some simulation files are not found : \n{error_message}")
     ret_name, ret_name_ite, ret_sim_ite, ret_sat_ite, ret_suffix_ite = self.detected_iteration_values(cat)
-    return simulated, horizon, off, ret_name, ret_name_ite, ret_sim_ite, ret_sat_ite, ret_suffix_ite
+    return simulated, horizon, off, faint, ret_name, ret_name_ite, ret_sim_ite, ret_sat_ite, ret_suffix_ite
 
   def detected_iteration_values(self, cat):
     ret_name = []
