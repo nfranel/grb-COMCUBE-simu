@@ -105,7 +105,7 @@ class LogData:
     print(f"   Number of ignored simulation : {len(self.name) - simulated}")
     print(f"       With {horizon} ignored because the source is bellow the atmosphere")
     print(f"       With {off} ignored because the satellite is switch off")
-    print(f"       With {faint} ignored because the GRB is too faint (peak flux < 0.1 ph/cm²/s")
+    print(f"       With {faint} ignored because the GRB is too faint (peak flux < 0.1 ph/cm²/s)")
     if existing_check:
       print("   = Checking the existence of all simulations found in the log file =")
       error_message = self.check_existing_files(cat)
