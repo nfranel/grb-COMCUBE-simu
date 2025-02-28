@@ -724,8 +724,8 @@ def angle(scatter_vector, grb_dec_sf, grb_ra_sf, source_name, num_sim, num_sat, 
   try:
     temp_polar = np.arccos(scatter_vector[:, 2])
   except:
-    print(scatter_vector[:, 2])
-
+    for value in scatter_vector[:, 2]:
+      print(value)
     print(len(scatter_vector[:, 2]))
     stop
   if MEGAlib_direction:
