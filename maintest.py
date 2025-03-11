@@ -105,14 +105,14 @@ for ite_const, num_down in enumerate(test.number_of_down_per_const):
   for source in test.alldata:
     if source is not None:
       if source.source_duration > 2:
-        if source.best_fit_p_flux is not None:
-          pfluxes_l.append(source.best_fit_p_flux)
-          mfluxes_l.append(source.best_fit_mean_flux)
+        if source.ergcut_peak_flux is not None:
+          pfluxes_l.append(source.ergcut_peak_flux)
+          mfluxes_l.append(source.ergcut_mean_flux)
           flnces_l.append(source.source_fluence)
       else:
-        if source.best_fit_p_flux is not None:
-          pfluxes_s.append(source.best_fit_p_flux)
-          mfluxes_s.append(source.best_fit_mean_flux)
+        if source.ergcut_peak_flux is not None:
+          pfluxes_s.append(source.ergcut_peak_flux)
+          mfluxes_s.append(source.ergcut_mean_flux)
           flnces_s.append(source.source_fluence)
       for sim in source:
         if sim is not None:
@@ -127,29 +127,29 @@ for ite_const, num_down in enumerate(test.number_of_down_per_const):
                     mdp_list_sup.append((sim.const_data[ite_const].mdp + sim.const_data[ite_const].mdp_err) * 100)
                   if source.source_duration > 2:
                     if sim.const_data[ite_const].mdp <= 0.1:
-                      pflux_inf_10_l.append(source.best_fit_p_flux)
-                      mflux_inf_10_l.append(source.best_fit_mean_flux)
+                      pflux_inf_10_l.append(source.ergcut_peak_flux)
+                      mflux_inf_10_l.append(source.ergcut_mean_flux)
                       flnc_inf_10_l.append(source.source_fluence)
                     elif sim.const_data[ite_const].mdp <= 0.3:
-                      pflux_inf_30_l.append(source.best_fit_p_flux)
-                      mflux_inf_30_l.append(source.best_fit_mean_flux)
+                      pflux_inf_30_l.append(source.ergcut_peak_flux)
+                      mflux_inf_30_l.append(source.ergcut_mean_flux)
                       flnc_inf_30_l.append(source.source_fluence)
                     elif sim.const_data[ite_const].mdp <= 0.5:
-                      pflux_inf_50_l.append(source.best_fit_p_flux)
-                      mflux_inf_50_l.append(source.best_fit_mean_flux)
+                      pflux_inf_50_l.append(source.ergcut_peak_flux)
+                      mflux_inf_50_l.append(source.ergcut_mean_flux)
                       flnc_inf_50_l.append(source.source_fluence)
                   else:
                     if sim.const_data[ite_const].mdp <= 0.1:
-                      pflux_inf_10_s.append(source.best_fit_p_flux)
-                      mflux_inf_10_s.append(source.best_fit_mean_flux)
+                      pflux_inf_10_s.append(source.ergcut_peak_flux)
+                      mflux_inf_10_s.append(source.ergcut_mean_flux)
                       flnc_inf_10_s.append(source.source_fluence)
                     elif sim.const_data[ite_const].mdp <= 0.3:
-                      pflux_inf_30_s.append(source.best_fit_p_flux)
-                      mflux_inf_30_s.append(source.best_fit_mean_flux)
+                      pflux_inf_30_s.append(source.ergcut_peak_flux)
+                      mflux_inf_30_s.append(source.ergcut_mean_flux)
                       flnc_inf_30_s.append(source.source_fluence)
                     elif sim.const_data[ite_const].mdp <= 0.5:
-                      pflux_inf_50_s.append(source.best_fit_p_flux)
-                      mflux_inf_50_s.append(source.best_fit_mean_flux)
+                      pflux_inf_50_s.append(source.ergcut_peak_flux)
+                      mflux_inf_50_s.append(source.ergcut_mean_flux)
                       flnc_inf_50_s.append(source.source_fluence)
 
   mdp_list = np.array(mdp_list)
@@ -863,7 +863,7 @@ mflu = []
 flu = []
 tim = []
 for source in test.alldata:
-  mflu.append(source.best_fit_mean_flux)
+  mflu.append(source.ergcut_mean_flux)
   flu.append(source.source_fluence)
   tim.append(source.source_duration)
 
@@ -1928,11 +1928,11 @@ for source in test.alldata:
               sat_instant_triggers += 1
             if sat.snr_single >= test.snr_min - 2:
               sat_reduced_instant_triggers += 1
-            if source.best_fit_p_flux is None:
+            if source.ergcut_peak_flux is None:
               sat_peak_snr = sat.snr_single
             else:
               sat_peak_snr = calc_snr(
-                rescale_cr_to_GBM_pf(sat.single_cr, source.best_fit_mean_flux, source.best_fit_p_flux),
+                rescale_cr_to_GBM_pf(sat.single_cr, source.ergcut_mean_flux, source.ergcut_peak_flux),
                 sat.single_b_rate)[0]
             if sat_peak_snr >= test.snr_min:
               sat_peak_triggers += 1
@@ -1943,11 +1943,11 @@ for source in test.alldata:
             if sat.snr_single_t90 >= test.snr_min - 2:
               sat_reduced_t90_triggers += 1
         # Calculation for the whole constellation
-        if source.best_fit_p_flux is None:
+        if source.ergcut_peak_flux is None:
           const_peak_snr = sim.const_data.snr_single
         else:
           const_peak_snr = calc_snr(
-            rescale_cr_to_GBM_pf(sim.const_data.single_cr, source.best_fit_mean_flux, source.best_fit_p_flux),
+            rescale_cr_to_GBM_pf(sim.const_data.single_cr, source.ergcut_mean_flux, source.ergcut_peak_flux),
             sim.const_data.single_b_rate)[0]
         # 1s mean triggers
         if sim.const_data.snr_single >= test.snr_min:

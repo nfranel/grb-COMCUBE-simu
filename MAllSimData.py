@@ -36,6 +36,7 @@ class AllSimData(list):
       self.best_fit_model = cat_data.df.flnc_best_fitting_model[source_ite]
       p_model = cat_data.df.pflx_best_fitting_model[source_ite]
       if type(p_model) == str:
+        # The peak flux is the one obtained after fitting the best pflux model - it is the one for the pic ! So for short GRBs it's not the one over 1s but over the peak duration
         self.best_fit_p_flux = cat_data.df[f"{p_model}_phtflux"][source_ite]
       else:
         if np.isnan(p_model):
@@ -44,16 +45,23 @@ class AllSimData(list):
           raise ValueError("A value for pflx_best_fitting_model is not set properly")
       self.best_fit_mean_flux = cat_data.df[f"{self.best_fit_model}_phtflux"][source_ite]
       # Retrieving fluence of the source [photons/cm²]
-      self.source_fluence = calc_flux_gbm(cat_data, source_ite, options[0]) * self.source_duration
+      self.ergcut_mean_flux = calc_flux_gbm(cat_data, source_ite, options[0])
+      if self.best_fit_p_flux is not None:
+        self.ergcut_peak_flux = self.best_fit_p_flux * self.ergcut_mean_flux / self.best_fit_mean_flux
+      else:
+        self.ergcut_peak_flux = None
+      self.source_fluence = self.ergcut_mean_flux * self.source_duration
       # Retrieving energy fluence of the source [erg/cm²]
       self.source_energy_fluence = cat_data.df.fluence[source_ite]
     elif cat_data.cat_type == "sampled":
       self.source_name = cat_data.df.name[source_ite]
       self.source_duration = float(cat_data.df.t90[source_ite])
       self.best_fit_model = "band"
-      self.best_fit_p_flux = float(cat_data.df.peak_flux[source_ite])
       self.best_fit_mean_flux = float(cat_data.df.mean_flux[source_ite])
-      self.source_fluence = calc_flux_sample(cat_data, source_ite, options[0]) * self.source_duration
+      self.best_fit_p_flux = float(cat_data.df.peak_flux[source_ite])
+      self.ergcut_mean_flux = calc_flux_sample(cat_data, source_ite, options[0])
+      self.ergcut_peak_flux = self.best_fit_p_flux * self.ergcut_mean_flux / self.best_fit_mean_flux
+      self.source_fluence = self.ergcut_mean_flux * self.source_duration
       self.source_energy_fluence = None
     else:
       raise ValueError("Wrong catalog type")
