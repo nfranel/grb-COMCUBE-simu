@@ -748,7 +748,6 @@ class MCCatalog:
       # plt.savefig(f"{savefile.split('.csv')[0]}_{iteration}_{pval_suf}_{int(histos[7])}")
       plt.savefig(f"{savefile.split('.csv')[0]}_{iteration}_{int(histos[6])}")
     plt.close(fig1)
-
     # plt.show()
 
   def get_short(self, ite_num, short_rate, ind1_z_s, ind2_z_s, zb_s, ind1_s, ind2_s, lb_s):
