@@ -34,16 +34,17 @@ class AllSimData(list):
       self.source_duration = cat_data.df.t90[source_ite]
       # Retrieving pflux and mean flux : the photon flux at the peak flux (or mean photon flux) of the burst [photons/cm2/s]
       self.best_fit_model = cat_data.df.flnc_best_fitting_model[source_ite]
-      p_model = cat_data.df.pflx_best_fitting_model[source_ite]
-      if type(p_model) == str:
-        # The peak flux is the one obtained after fitting the best pflux model - it is the one for the pic ! So for short GRBs it's not the one over 1s but over the peak duration
-        self.best_fit_p_flux = cat_data.df[f"{p_model}_phtflux"][source_ite]
-      else:
-        if np.isnan(p_model):
-          self.best_fit_p_flux = None
-        else:
-          raise ValueError("A value for pflx_best_fitting_model is not set properly")
-      self.best_fit_mean_flux = cat_data.df[f"{self.best_fit_model}_phtflux"][source_ite]
+      self.best_fit_mean_flux = cat_data.df.mean_flux[source_ite]
+      self.best_fit_p_flux = cat_data.df.peak_flux[source_ite]
+      # p_model = cat_data.df.pflx_best_fitting_model[source_ite]
+      # if type(p_model) == str:
+      # #   The peak flux is the one obtained after fitting the best pflux model - it is the one for the pic ! So for short GRBs it's not the one over 1s but over the peak duration
+        # self.best_fit_p_flux = cat_data.df[f"{p_model}_phtflux"][source_ite]
+      # else:
+      #   if np.isnan(p_model):
+      #     self.best_fit_p_flux = None
+      #   else:
+      #     raise ValueError("A value for pflx_best_fitting_model is not set properly")
       # Retrieving fluence of the source [photons/cm²]
       self.ergcut_mean_flux = calc_flux_gbm(cat_data, source_ite, options[0])
       if self.best_fit_p_flux is not None:

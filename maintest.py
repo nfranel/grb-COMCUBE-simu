@@ -1591,6 +1591,9 @@ ax2.grid(True, which='minor', linestyle=':', color='black', alpha=0.2)
 plt.show()
 
 
+#####################################################
+# THESIS PLOTS
+#####################################################
 from MAllSourceData import AllSourceData
 from MBkgContainer import BkgContainer
 from MmuSeffContainer import MuSeffContainer
@@ -1607,7 +1610,7 @@ import cartopy.crs as ccrs
 grb_sim_param = "/pdisk/ESA/COMCUBEv15--500km--0-0-0--27sat/polGBM.par"
 bkg_param = "./bkg/bkg-v15.par"
 mu_param = "./mu100/mu100-v15.par"
-ergcut = (30, 1000)
+ergcut = (10, 1000)
 armcut = 180
 bkgdata = BkgContainer(bkg_param, True, ergcut)
 muSeffdata = MuSeffContainer(mu_param, ergcut, armcut)

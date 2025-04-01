@@ -88,15 +88,18 @@ def gen_commands(args):
       spectrumfile = f"{args.spectrafilepath}{cat.df.name[i]}_spectrum.dat"
       lc_name = None
       model = cat.df.flnc_best_fitting_model[i]
-      pht_mflx = cat.df[f"{model}_phtflux"][i]
-      pfluxmodel = cat.df.pflx_best_fitting_model[i]
-      if type(pfluxmodel) == str:
-        pht_pflx = cat.df[f"{pfluxmodel}_phtflux"][i]
-      else:
-        if np.isnan(pfluxmodel):
-          pht_pflx = "No value fitted"
-        else:
-          raise ValueError("A value for pflx_best_fitting_model is not set properly")
+      pht_mflx = cat.df.mean_flux[i]
+      # pfluxmodel = cat.df.pflx_best_fitting_model[i]
+      pht_pflx = cat.df.peak_flux[i]
+      if np.isnan(pht_pflx):
+        pht_pflx = "No value fitted"
+      # if type(pfluxmodel) == str:
+      #   pht_pflx = cat.df[f"{pfluxmodel}_phtflux"][i]
+      # else:
+      #   if np.isnan(pfluxmodel):
+      #     pht_pflx = "No value fitted"
+      #   else:
+      #     raise ValueError("A value for pflx_best_fitting_model is not set properly")
       # Creation of spectra if they have not been created yet
       if not (f"{cat.df.name[i]}_spectrum.dat" in os.listdir(args.spectrafilepath)):
         logE = np.logspace(1, 3, 100)  # energy (log scale)

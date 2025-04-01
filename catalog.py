@@ -1,8 +1,11 @@
 import numpy as np
 import pandas as pd
+import seaborn as sns
 import matplotlib.pyplot as plt
 import matplotlib.colors as colors
-from funcmod import comp, band, plaw, sbpl, calc_flux_gbm
+import matplotlib as mpl
+from funcmod import comp, band, plaw, sbpl, calc_flux_gbm, gauss, double_gauss
+from scipy.optimize import curve_fit
 
 # Version 2, Created by Adrien Laviron, updated by Nathan Franel
 
@@ -141,6 +144,31 @@ class Catalog:
         data_row += [np.nan] * 14
       data_tab.append(data_row)
     self.df = pd.DataFrame(data=data_tab, columns=items)
+    self.set_fluxes()
+
+  def set_fluxes(self):
+    """
+
+    """
+    pht_mflx_list = []
+    pht_pflx_list = []
+    for ite in range(len(self.df)):
+      model = self.df.flnc_best_fitting_model[ite]
+      pht_mflx = float(self.df[f"{model}_phtflux"][ite])
+
+      pfluxmodel = self.df.pflx_best_fitting_model[ite]
+      if type(pfluxmodel) == str:
+        pht_pflx = float(self.df[f"{pfluxmodel}_phtflux"][ite])
+      else:
+        if np.isnan(pfluxmodel):
+          pht_pflx = np.nan
+        else:
+          raise ValueError("A value for pflx_best_fitting_model is not set properly")
+      pht_mflx_list.append(pht_mflx)
+      pht_pflx_list.append(pht_pflx)
+
+    self.df["mean_flux"] = np.array(pht_mflx_list)
+    self.df["peak_flux"] = np.array(pht_pflx_list)
 
   def grb_map_plot(self, mode="no_cm"):
     """
@@ -414,6 +442,141 @@ class Catalog:
     ax4.legend()
 
     plt.show()
+
+  def T90_hardness_graphs(self, show_fit_stats=False):
+    """
+
+    """
+    mpl.use("Qt5Agg")
+
+    # Extracting and creating the values I need
+    temp_df = self.df[["name", "t90"]].copy()
+    ergcut1 = (10, 100)
+    ergcut2 = (100, 300)
+    temp_df["flux_low"] = [calc_flux_gbm(self, source_ite, ergcut1) for source_ite in range(len(self.df))]
+    temp_df["flux_high"] = [calc_flux_gbm(self, source_ite, ergcut2) for source_ite in range(len(self.df))]
+    temp_df["log_HR"] = np.log10(temp_df.flux_high.values / temp_df.flux_low.values)
+    temp_df["log_t90"] = np.log10(temp_df.t90.values)
+    temp_df["type"] = ["Short" if t90 <= 2 else "Long" for t90 in temp_df.t90.values]
+
+    # print(temp_df)
+
+    # Fitting the T90 distribution
+    bins = np.logspace(-3, 3, 30)
+    log_bin_centroids = np.log10((bins[1:] + bins[:-1]) / 2)  # Value is logged because the fit is in the log phase diagram
+    short_hist = np.histogram(temp_df[temp_df.t90 <= 2].t90.values, bins=bins)[0]
+    popt_short, pcov_short = curve_fit(gauss, log_bin_centroids, short_hist)[:2]
+
+    long_hist = np.histogram(temp_df[temp_df.t90 > 2].t90.values, bins=bins)[0]
+    popt_long, pcov_long = curve_fit(gauss, log_bin_centroids, long_hist)[:2]
+
+    energies = np.logspace(-3, 3, 1000)
+    energies_log = np.log10(energies)
+
+    fig_t90, ax = plt.subplots(1, 1, figsize=(10, 6))
+    ax.hist(temp_df.t90.values, bins=bins, label="T90 distribution")
+    ax.plot(energies, gauss(energies_log, *popt_short), label="T90 distribution of short GRBs")
+    ax.plot(energies, gauss(energies_log, *popt_long), label="T90 distribution of long GRBs")
+    # ax.plot(energies, gauss(energies_log, *popt_short) + gauss(energies_log, *popt_long), label="T90 distribution of all GRBs")
+    ax.set(xlabel="T90 (s)", ylabel="Number of GRB over the 10 year GBM catalog", xscale="log", yscale="linear", ylim=(0.7, 500))
+
+    nshort = 320
+    lshort = []
+    short_loc, short_scale = round(popt_short[1], 4), round(popt_short[2], 4)
+    for ite in range(nshort):
+      tshort = 1000
+      while tshort > 2:
+        tshort = 10 ** np.random.normal(short_loc, short_scale)
+      lshort.append(tshort)
+    nlong = 2000
+    llong = []
+    long_loc, long_scale = round(popt_long[1], 4), round(popt_long[2], 4)
+    for ite in range(nlong):
+      tlong = 0
+      while tlong <= 2:
+        tlong = 10 ** np.random.normal(long_loc, long_scale)
+      llong.append(tlong)
+    ltimes = lshort + llong
+    ax.hist(ltimes, bins=bins, histtype="step", label=f"T90 drawn distribution \nshort fit : $\mu$ = {short_loc} $\pm$ {pcov_short[1][1]:.4f}, $\sigma$ = {short_scale} $\pm$ {pcov_short[2][2]:.4f}\nlong fit : $\mu$ = {long_loc} $\pm$ {pcov_long[1][1]:.4f}, $\sigma$ = {long_scale} $\pm$ {pcov_long[2][2]:.4f}")
+
+    ax.legend(loc="upper left")
+    plt.show()
+
+    fig_hr, ax_hr = plt.subplots(1, 1, figsize=(10, 6))
+    sns.scatterplot(data=temp_df, x="log_t90", y="log_HR", ax=ax_hr, s=10)
+    sns.kdeplot(data=temp_df, x="log_t90", y="log_HR", ax=ax_hr, thresh=.1)
+
+  def spectral_index_graphs(self):
+    """
+
+    """
+
+    cat_type_list = ["short", "long", "all"]
+
+    for cat_type in cat_type_list:
+      if cat_type == "short":
+        df_used = self.df[self.df.t90 < 2]
+      elif cat_type == "long":
+        df_used = self.df[self.df.t90 >= 2]
+      else:
+        df_used = self.df
+
+      df_used.index = range(0, len(df_used), 1)
+
+      alpha_band = []
+      beta_band = []
+      alpha_comp = []
+      alpha_sbpl = []
+      beta_sbpl = []
+      alpha_plaw = []
+      for ite, model in enumerate(df_used["flnc_best_fitting_model"].values):
+        if model == "flnc_band":
+          alpha_band.append(df_used.flnc_band_alpha[ite])
+          beta_band.append(df_used.flnc_band_beta[ite])
+        elif model == "flnc_comp":
+          alpha_comp.append(df_used.flnc_comp_index[ite])
+        elif model == "flnc_sbpl":
+          alpha_sbpl.append(df_used.flnc_sbpl_indx1[ite])
+          beta_sbpl.append(df_used.flnc_sbpl_indx2[ite])
+        elif model == "flnc_plaw":
+          alpha_plaw.append(df_used.flnc_plaw_index[ite])
+
+      full_alpha = alpha_band + alpha_comp + alpha_sbpl
+      full_beta = beta_band + beta_sbpl
+
+      nbin = 30
+      binsa = np.linspace(-4, 1, nbin)
+      binsb = np.linspace(-5, -0.9, nbin)
+
+      ya, xa = np.histogram(full_alpha, bins=binsa)[:2]
+      yb, xb = np.histogram(full_beta, bins=binsb)[:2]
+      xa = (xa[1:] + xa[:-1])/2
+      xb = (xb[1:] + xb[:-1])/2
+      popt_a, pcov_a = curve_fit(gauss, xdata=xa, ydata=ya, bounds=((0, -np.inf, 0.1), (np.inf, np.inf, 1)))
+      popt_b, pcov_b = curve_fit(gauss, xdata=xb, ydata=yb, bounds=((0, -np.inf, 0.1), (np.inf, np.inf, 1)))
+
+      dis_a, ax1 = plt.subplots(1, 1, figsize=(10, 6))
+      plt.suptitle(f"Alpha distribution {cat_type} GRB")
+      ax1.hist(alpha_band, bins=binsa, histtype="step", label="BAND", color="blue")
+      ax1.hist(alpha_comp, bins=binsa, histtype="step", label="COMP", color="green")
+      ax1.hist(alpha_sbpl, bins=binsa, histtype="step", label="SBPL", color="red")
+      ax1.hist(alpha_plaw, bins=binsa, histtype="step",  label="PLAW", color="orange")
+      ax1.plot(np.linspace(-4, 1, 1000), gauss(np.linspace(-4, 1, 1000), *popt_a), label=f"Gaussian fit\n$\mu$ = {popt_a[1]:.4f} $\pm$ {pcov_a[1][1]:.4f}\n$\sigma$ = {popt_a[2]:.4f} $\pm$ {pcov_a[2][2]:.4f}", color="purple")
+      ax1.hist(full_alpha, bins=binsa, histtype="step", label="BAND + COMP + SBPL", color="black")
+      ax1.set(xlabel=r"$\alpha$", ylabel="Number of values")
+      ax1.legend(loc="upper left")
+      plt.show()
+
+      dis_a, ax2 = plt.subplots(1, 1, figsize=(10, 6))
+      plt.suptitle(f"Beta distribution {cat_type} GRB")
+      ax2.hist(beta_band, bins=binsb, histtype="step", label="BAND", color="blue")
+      ax2.hist(beta_sbpl, bins=binsb, histtype="step", label="SBPL", color="red")
+      ax2.plot(np.linspace(-5, -0.9, 1000), gauss(np.linspace(-5, -0.9, 1000), *popt_b), label=f"Gaussian fit\n$\mu$ = {popt_b[1]:.4f} $\pm$ {pcov_b[1][1]:.4f}\n$\sigma$ = {popt_b[2]:.4f} $\pm$ {pcov_b[2][2]:.4f}", color="purple")
+      ax2.hist(full_beta, bins=binsb, histtype="step", label="BAND + SBPL", color="black")
+      ax2.set(xlabel=r"$\beta$", ylabel="Number of values")
+      ax2.legend()
+
+      plt.show()
 
 
 class SampleCatalog:

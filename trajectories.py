@@ -1,6 +1,8 @@
-# import matplotlib as mpl
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 import cartopy.crs as ccrs
+from matplotlib.pyplot import ylabel
+
 # import cartopy.feature as cfeature
 from funcmod import *
 
@@ -171,6 +173,9 @@ def trajectory(inc, ohm, nsat, alt, excludefile=None, omega=0, projection="carre
 
 # trajectory([0], [0], [27], 500, excludefile="all", projection="carre")
 
+
+
+
 def calc_duty(inc, ohm, omega, alt, show=False):
   """
   Calculates the duty cycle caused by the radiation belts
@@ -181,7 +186,7 @@ def calc_duty(inc, ohm, omega, alt, show=False):
   :param show: If True shows the trajectory of a satellite on this orbit and the exclusion zones
   """
   orbit_period = orbital_period_calc(alt)
-  n_orbit = 1000
+  n_orbit = 100
   n_val_per_orbit = 100
   time_vals = np.linspace(0, n_orbit * orbit_period, n_orbit * n_val_per_orbit)
   earth_ra_offset = earth_rotation_offset(time_vals)
@@ -293,41 +298,47 @@ def calc_partial_duty(inc, ohm, omega, alt, exclusionfile):
   plt.show()
 
 
-# files = ["./bkg/exclusion/400km/AE8max_400km.out", "./bkg/exclusion/400km/AP8min_400km.out",
-#          "./bkg/exclusion/500km/AE8max_500km.out", "./bkg/exclusion/500km/AP8min_500km.out"]
-# # for file in files:
-# #   calc_partial_duty(90, 0, 0, 400, file)
-inc = 40
-showfig = False
-# calc_duty(inc, 0, 0, 500, show=showfig)
-# calc_duty(inc, 45, 0, 500, show=showfig)
-# calc_duty(inc, 90, 0, 500, show=showfig)
-# calc_duty(inc, 135, 0, 500, show=showfig)
-# calc_duty(inc, 180, 0, 500, show=showfig)
-# calc_duty(0, 0, 0, 500, show=showfig)
-# calc_duty(5, 0, 0, 500, show=showfig)
-# calc_duty(45, 0, 0, 500, show=showfig)
-# calc_duty(83, 0, 0, 500, show=showfig)
 
-incl = np.linspace(0, 90, 46)
-duty_list = []
-for incli in incl:
-  duty_list.append(calc_duty(incli, 0, 0, 500))
-fig, ax = plt.subplots(figsize=(10, 6))
-ax.plot(incl, duty_list)
-ax.set(xticks=np.arange(0, 91, 5), yticks=np.arange(max(duty_list), min(duty_list), -0.02), title="Variation of duty cycle with inclination", xlabel=None, ylabel="Inclination (°)")
-ax.grid()
-ax.legend()
-plt.show()
+# show_non_op_area(500, zonetype="all")
+# show_non_op_area(500, zonetype="electron")
+# show_non_op_area(500, zonetype="proton")
+duty_variation_plot(alt=500)
 
-# calc_duty(0, 0, 0, 400)
-# calc_duty(0, 0, 0, 500)
-# calc_duty(5, 0, 0, 400)
-# calc_duty(5, 0, 0, 500)
-# calc_duty(45, 0, 0, 400)
-# calc_duty(45, 0, 0, 500)
-# calc_duty(82.5, 0, 0, 400)
-# calc_duty(82.5, 0, 0, 500)
-# calc_duty(83, 0, 0, 400)
-# calc_duty(83, 0, 0, 500)
-# calc_duty(90, 0, 0, 500)
+# # files = ["./bkg/exclusion/400km/AE8max_400km.out", "./bkg/exclusion/400km/AP8min_400km.out",
+# #          "./bkg/exclusion/500km/AE8max_500km.out", "./bkg/exclusion/500km/AP8min_500km.out"]
+# # # for file in files:
+# # #   calc_partial_duty(90, 0, 0, 400, file)
+# inc = 40
+# showfig = False
+# # calc_duty(inc, 0, 0, 500, show=showfig)
+# # calc_duty(inc, 45, 0, 500, show=showfig)
+# # calc_duty(inc, 90, 0, 500, show=showfig)
+# # calc_duty(inc, 135, 0, 500, show=showfig)
+# # calc_duty(inc, 180, 0, 500, show=showfig)
+# # calc_duty(0, 0, 0, 500, show=showfig)
+# # calc_duty(5, 0, 0, 500, show=showfig)
+# # calc_duty(45, 0, 0, 500, show=showfig)
+# # calc_duty(83, 0, 0, 500, show=showfig)
+#
+# incl = np.linspace(0, 90, 46)
+# duty_list = []
+# for incli in incl:
+#   duty_list.append(calc_duty(incli, 0, 0, 500))
+# fig, ax = plt.subplots(figsize=(10, 6))
+# ax.plot(incl, duty_list)
+# ax.set(xticks=np.arange(0, 91, 5), yticks=np.arange(max(duty_list), min(duty_list), -0.02), title="Variation of duty cycle with inclination", xlabel=None, ylabel="Inclination (°)")
+# ax.grid()
+# ax.legend()
+# plt.show()
+#
+# # calc_duty(0, 0, 0, 400)
+# # calc_duty(0, 0, 0, 500)
+# # calc_duty(5, 0, 0, 400)
+# # calc_duty(5, 0, 0, 500)
+# # calc_duty(45, 0, 0, 400)
+# # calc_duty(45, 0, 0, 500)
+# # calc_duty(82.5, 0, 0, 400)
+# # calc_duty(82.5, 0, 0, 500)
+# # calc_duty(83, 0, 0, 400)
+# # calc_duty(83, 0, 0, 500)
+# # calc_duty(90, 0, 0, 500)

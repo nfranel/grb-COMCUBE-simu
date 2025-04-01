@@ -91,12 +91,13 @@ if indexes:
   binsb = np.linspace(-5, -0.9, nbin)
   dis, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 6))
   ax1.hist(alpha_band, bins=binsa, histtype="step", label="Alpha band")
-  ax1.hist(alpha_comp, bins=binsa, histtype="step",  label = "Alpha comp")
-  ax1.hist(alpha_sbpl, bins=binsa, histtype="step",  label = "Alpha sbpl")
+  ax1.hist(alpha_comp, bins=binsa, histtype="step",  label="Alpha comp")
+  ax1.hist(alpha_sbpl, bins=binsa, histtype="step",  label="Alpha sbpl")
   # ax1.hist(alpha_plaw, bins=binsa, histtype="step",  label = "Alpha plaw")
   # ax1.scatter(xa, ya, s=1, label="kde")
   # ax1.scatter(xa, yaf, s=1, label=f"gaussian fit\nmu={popt_a[1]:.2f}+-{pcov_a[1][1]:.2f}\nsig={popt_a[2]:.2f}+-{pcov_a[2][2]:.2f}")
   ax1.hist(full_alpha, bins=binsa, histtype="step",  label = "Alpha all", color="black")
+  ax1.set(xlabel=r"$\alpha$", ylabel="Number of values")
   ax1.legend()
 
   ax2.hist(beta_band, bins=binsb, histtype="step",  label="Beta band")
@@ -104,6 +105,7 @@ if indexes:
   # ax2.scatter(xb, yb, s=1, label="kde")
   # ax2.scatter(xb, ybf, s=1, label=f"gaussian fit\nmu={popt_b[1]:.2f}+-{pcov_b[1][1]:.2f}\nsig={popt_b[2]:.2f}+-{pcov_b[2][2]:.2f}")
   ax2.hist(full_beta, bins=binsb, histtype="step", label="Beta all", color="black")
+  ax2.set(xlabel=r"$\beta$", ylabel="Number of values")
   ax2.legend()
 
   plt.suptitle(f"{cattype} GRB")
@@ -126,7 +128,7 @@ if durations:
   ax1.plot(xlist, gauss(np.log10(xlist), *popt_long), label="Gaussian fit")
   made_long = []
   while len(made_long) < len(times_long):
-    temp_time = 10**norm.rvs(1.4875, 0.45669)
+    temp_time = 10**np.random.normal(1.4875, 0.45669)
     if temp_time > 2:
       made_long.append(temp_time)
   ax1.hist(made_long, bins=bins, histtype="step", label="Made lGRBs")
@@ -140,7 +142,7 @@ if durations:
   ax2.plot(xlist, gauss(np.log10(xlist), *popt_short), label="Gaussian fit")
   made_short = []
   while len(made_short) < len(times_short):
-    temp_time = 10**norm.rvs(-0.025, 0.631)
+    temp_time = 10**np.random.normal(-0.025, 0.631)
     if temp_time <= 2:
       made_short.append(temp_time)
 
@@ -402,7 +404,7 @@ if limits:
 
 if distribution_display:
   from time import time
-  from funcsample import red_rate_long, red_rate_short, broken_plaw, yonetoku_reverse_short, pick_lognormal_alpha_beta, norm_band_spec_calc, yonetoku_reverse_long
+  from funcsample import red_rate_long, red_rate_short, broken_plaw, yonetoku_reverse_short, pick_normal_alpha_beta, norm_band_spec_calc, yonetoku_reverse_long
   from funcmod import extract_lc
   from astropy.cosmology import FlatLambdaCDM
 
@@ -480,12 +482,12 @@ if distribution_display:
     ep_rest_temp = yonetoku_reverse_short(lpeak_rest_temp)
 
     init_time = time()
-    band_low_obs_temp, band_high_obs_temp = pick_lognormal_alpha_beta(band_low_s_mu, band_low_s_sig, band_high_s_mu, band_high_s_sig)
+    band_low_obs_temp, band_high_obs_temp = pick_normal_alpha_beta(band_low_s_mu, band_low_s_sig, band_high_s_mu, band_high_s_sig)
     timelist.append(time() - init_time)
     init_time = time()
     t90_obs_temp = 1000
     while t90_obs_temp > 2:
-      t90_obs_temp = 10 ** norm.rvs(-0.025, 0.631)
+      t90_obs_temp = 10 ** np.random.normal(-0.025, 0.631)
     timelist.append(time() - init_time)
 
     dl_obs_temp = cosmo.luminosity_distance(z_obs_temp).value / 1000  # Gpc
@@ -529,12 +531,12 @@ if distribution_display:
     lpeak_rest_temp = transfo_broken_plaw(ind1_l, ind2_l, lb_l, lmin, lmax)
     timelist.append(time() - init_time)
     init_time = time()
-    band_low_obs_temp, band_high_obs_temp = pick_lognormal_alpha_beta(band_low_l_mu, band_low_l_sig, band_high_l_mu, band_high_l_sig)
+    band_low_obs_temp, band_high_obs_temp = pick_normal_alpha_beta(band_low_l_mu, band_low_l_sig, band_high_l_mu, band_high_l_sig)
     timelist.append(time() - init_time)
     init_time = time()
     t90_obs_temp = 0
     while t90_obs_temp <= 2:
-      t90_obs_temp = 10 ** norm.rvs(1.4875, 0.45669)
+      t90_obs_temp = 10 ** np.random.normal(1.4875, 0.45669)
     timelist.append(time() - init_time)
 
     dl_obs_temp = cosmo.luminosity_distance(z_obs_temp).value / 1000  # Gpc

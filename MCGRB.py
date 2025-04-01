@@ -274,12 +274,12 @@ class GRBSample:
     ep_rest_temp = yonetoku_reverse_short(lpeak_rest_temp)
     ep_obs_temp = ep_rest_temp / (1 + z_obs_temp)
 
-    band_low_obs_temp, band_high_obs_temp = pick_lognormal_alpha_beta(self.band_low_s_mu, self.band_low_s_sig, self.band_high_s_mu, self.band_high_s_sig)
+    band_low_obs_temp, band_high_obs_temp = pick_normal_alpha_beta(self.band_low_s_mu, self.band_low_s_sig, self.band_high_s_mu, self.band_high_s_sig)
 
     # t90_obs_temp = 10 ** self.kde_long_log_t90.resample(1)[0][0]
     t90_obs_temp = 10
     while t90_obs_temp >= 2:
-      t90_obs_temp = 10 ** norm.rvs(1.4875, 0.45669)
+      t90_obs_temp = 10 ** np.random.normal(1.4875, 0.45669)
 
     lc_temp = self.closest_lc(t90_obs_temp)
     times, counts = extract_lc(f"./sources/Light_Curves/{lc_temp}")
@@ -315,12 +315,12 @@ class GRBSample:
     # lpeak_rest_temp = acc_reject(broken_plaw, [self.ind1_l, self.ind2_l, self.lb_l], self.lmin, self.lmax)
     lpeak_rest_temp = transfo_broken_plaw(self.ind1_l, self.ind2_l, self.lb_l, self.lmin, self.lmax)
 
-    band_low_obs_temp, band_high_obs_temp = pick_lognormal_alpha_beta(self.band_low_l_mu, self.band_low_l_sig, self.band_high_l_mu, self.band_high_l_sig)
+    band_low_obs_temp, band_high_obs_temp = pick_normal_alpha_beta(self.band_low_l_mu, self.band_low_l_sig, self.band_high_l_mu, self.band_high_l_sig)
 
     # t90_obs_temp = 10 ** self.kde_long_log_t90.resample(1)[0][0]
     t90_obs_temp = 0
     while t90_obs_temp < 2:
-      t90_obs_temp = 10 ** norm.rvs(1.4875, 0.45669)
+      t90_obs_temp = 10 ** np.random.normal(1.4875, 0.45669)
 
     lc_temp = self.closest_lc(t90_obs_temp)
     # times, counts = extract_lc(f"./sources/Light_Curves/{lc_temp}")

@@ -12,9 +12,6 @@ from gbm.finder import TriggerFtp
 import numpy as np
 import subprocess
 from catalog import Catalog
-import multiprocessing as mp
-from itertools import repeat
-
 
 def bin_selector(lc, tstart, tstop, minedges, maxedges):
   """
@@ -88,7 +85,7 @@ def save_LC(rates, centroids, fullname):
     f.write("EN")
 
 
-def make_tte_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_mask, bin_size=0.1, ener_range=(10, 1000), show=False, directory="./sources/"):
+def make_tte_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_mask, bin_size=0.1, ener_range=(10, 1000), show=False, directory="./sources/", saving=True):
   """
 
   """
@@ -104,7 +101,7 @@ def make_tte_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_mas
   if files == []:
     cfiles = trig_finder.ls_cspec()
     if cfiles != []:
-      return make_cspec_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_mask, ener_range=ener_range, show=show, directory=directory)
+      return make_cspec_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_mask, ener_range=ener_range, show=show, directory=directory, saving=saving)
     else:
       return name
   else:
@@ -122,7 +119,7 @@ def make_tte_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_mas
     #####################################################################################################################
     if t_low_rangemax > bkg_range[0][0] or t_high_rangemin < bkg_range[1][1]:
       rm_files(files, directory)
-      return make_cspec_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_mask, ener_range=ener_range, show=show, directory=directory)
+      return make_cspec_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_mask, ener_range=ener_range, show=show, directory=directory, saving=saving)
     else:
       tte_total = ttes[0].merge(ttes)
 
@@ -177,6 +174,24 @@ def make_tte_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_mas
       ###################################################################################################################
       # Ploting if requested and saving the figure and light curves
       ###################################################################################################################
+      fig_full, ax_full = plt.subplots(figsize=(10, 6))
+      ax_full.step(lc.centroids, lc.rates)
+      if type(lc_bkgd) is gbm.data.primitives.TimeBins or type(lc_bkgd) is gbm.background.background.BackgroundRates:
+        bkg_plot_rates = lc_bkgd.rates
+      elif type(lc_bkgd) is np.ndarray:
+        bkg_plot_rates = lc_bkgd
+      else:
+        print(type(lc_bkgd))
+      ax_full.step(lc.centroids, bkg_plot_rates, color="red", label="Background fitted")
+      ax_full.set(xlabel="Time(s)", ylabel="Count rate (count/s)", title=f"Light curve {name} with tte with background")
+      ax_full.axvline(start_t90, color="black", label="T90 start and stop")
+      ax_full.axvline(end_t90, color="black")
+      ax_full.legend()
+      if show:
+        plt.show()
+      else:
+        plt.close(fig_full)
+
       fig, ax = plt.subplots(figsize=(10, 6))
       ax.step(lc_select.centroids, substracted_rates)
       ax.set(xlabel="Time(s)", ylabel="Count rate (count/s)", title=f"Light curve {name} with tte")
@@ -186,8 +201,9 @@ def make_tte_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_mas
         plt.show()
       else:
         plt.close(fig)
-      fig.savefig(f"sources/LC_plots/LightCurve_{name}.png")
-      save_LC(substracted_rates, lc_select.centroids, f"sources/Light_Curves/LightCurve_{name}.dat")
+      if saving:
+        fig.savefig(f"sources/LC_plots/LightCurve_{name}.png")
+        save_LC(substracted_rates, lc_select.centroids, f"sources/Light_Curves/LightCurve_{name}.dat")
 
       ###################################################################################################################
       # removing the files
@@ -196,7 +212,7 @@ def make_tte_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_mas
       return 0
 
 
-def make_cspec_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_mask, ener_range=(10, 1000), show=False, directory="./sources/"):
+def make_cspec_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_mask, ener_range=(10, 1000), show=False, directory="./sources/", saving=True):
   """
 
   """
@@ -288,6 +304,18 @@ def make_cspec_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_m
   #####################################################################################################################
   # Creating background
   #####################################################################################################################
+  fig_full, ax_full = plt.subplots(figsize=(10, 6))
+  ax_full.step(lc_list[0].centroids, source_rates)
+  ax_full.step(lc_list[0].centroids, bkgd_rates, color="red", label="Background fitted")
+  ax_full.set(xlabel="Time(s)", ylabel="Count rate (count/s)", title=f"Light curve {name} with cspec with background")
+  ax_full.axvline(start_t90, color="black", label="T90 start and stop")
+  ax_full.axvline(end_t90, color="black")
+  ax_full.legend()
+  if show:
+    plt.show()
+  else:
+    plt.close(fig_full)
+
   fig, ax = plt.subplots(figsize=(10, 6))
   ax.step(used_centroids, substracted_rates)
   ax.set(xlabel="Time(s)", ylabel="Count rate (count/s)", title=f"Light curve {name} with cspec")
@@ -297,8 +325,9 @@ def make_cspec_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_m
     plt.show()
   else:
     plt.close(fig)
-  fig.savefig(f"sources/LC_plots/LightCurve_{name}.png")
-  save_LC(substracted_rates, used_centroids, f"sources/Light_Curves/LightCurve_{name}.dat")
+  if saving:
+    fig.savefig(f"sources/LC_plots/LightCurve_{name}.png")
+    save_LC(substracted_rates, used_centroids, f"sources/Light_Curves/LightCurve_{name}.dat")
 
   #####################################################################################################################
   # removing the files
@@ -307,7 +336,7 @@ def make_cspec_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_m
   return 0
 
 
-def create_lc(cat, ite_grb, bin_size="auto", ener_range=(10, 1000), show=False, directory="./sources/"):
+def create_lc(cat, ite_grb, bin_size="auto", ener_range=(10, 1000), show=False, directory="./sources/", saving=True):
   """
 
   """
@@ -348,14 +377,20 @@ def create_lc(cat, ite_grb, bin_size="auto", ener_range=(10, 1000), show=False, 
 
   print(f"Running {GRBname}, ite : {ite_grb}")
   # print("==== 1 ====")
-  return make_tte_lc(GRBname, start_t90, end_t90, time_range, bkg_range, lc_detector_mask, bin_size=bin_size, ener_range=ener_range, show=show, directory=directory)
+  return make_tte_lc(GRBname, start_t90, end_t90, time_range, bkg_range, lc_detector_mask, bin_size=bin_size, ener_range=ener_range, show=show, directory=directory, saving=saving)
 
 
 gbm_cat = Catalog("./GBM/allGBM.txt", [4, '\n', 5, '|', 4000], "GBM/rest_frame_properties.txt")
 # with mp.Pool() as pool:
 #   pool.starmap(create_lc, zip(repeat(gbm_cat), range(len(gbm_cat))))
 
-# for grb_ite in [17, 890, 1057, 1350]:
-# for grb_ite in [17]:
-for grb_ite in range(1800, len(gbm_cat)):
-  create_lc(gbm_cat, grb_ite, bin_size="auto", ener_range=(10, 1000), show=False, directory="./sources/")
+# # for grb_ite in [17, 890, 1057, 1350]:
+# # for grb_ite in [17]:
+# for grb_ite in range(1800, len(gbm_cat)):
+#   create_lc(gbm_cat, grb_ite, bin_size="auto", ener_range=(10, 1000), show=False, directory="./sources/")
+
+import matplotlib as mpl
+mpl.use("Qt5Agg")
+for grb_ite in [960, 972, 589, 949]:
+  create_lc(gbm_cat, grb_ite, bin_size="auto", ener_range=(10, 1000), show=True, directory="./sources/", saving=False)
+# create_lc(gbm_cat, 972, bin_size="auto", ener_range=(10, 1000), show=True, directory="./sources/", saving=False)

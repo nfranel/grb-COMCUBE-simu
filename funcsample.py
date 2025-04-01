@@ -38,6 +38,7 @@ def normalisation_calc(ind1, ind2):
 def band_norm(ener, norm, ind1, ind2):
   """
   Normalized Band function as described in Sarah Antier's thesis
+  Returns B~
   """
   xb = (ind1-ind2) / (ind1+2)
   if type(ener) is float or type(ener) is int:
@@ -81,12 +82,16 @@ def norm_band_spec_calc(band_low, band_high, red, dl, ep, liso, ener_range, verb
     print("Spectrum information :")
     print("Integral of x*B(x), supposed to be 1 from 0 to +inf : ")
     print(f"   With energy range : {np.min(ener_range)}-{np.max(ener_range)} keV  :  ", ratio_norm)
-    xtest = (1 + red) * np.logspace(-4, 8, 100000) / ep
+    xtest = (1 + red) * np.logspace(-4, 8, 1000000) / ep
     spec_norm_test = band_norm(xtest, ampl_norm, band_low, band_high)
     print(f"   With energy range : {1e-4}-{1e8} keV  :  ", trapezoid(xtest * spec_norm_test, xtest))
     print("Peak photon flux method 1 direct : ")
     print(f"   Between : {np.min(ener_range)}-{np.min(ener_range)} keV  :  {peak_flux} ph/cm²/s")
     print(f"   Between : {1e-4}-{1e8} keV  :  {pflux_norm * trapezoid(spec_norm_test, xtest)} ph/cm²/s")
+    print("Peak bolom flux method 1 direct : ")
+    print(f"   from L / area  :  {liso/(4 * np.pi * (dl * Gpc_to_cm) ** 2) / keV_to_erg} keV/cm²/s")
+    print(f"   Between : {1e-4}-{1e8} keV  :  {pflux_norm * trapezoid(spec_norm_test, xtest)} keV/cm²/s")
+    print(f"   With the convention Fbol = K * Ep² : {norm * ep**2 / (1+red)**2}")
     print("Integrated normalized spectrum value : ", int_norm_spec)
     print(f"Part of total luminosity on energy range {np.min(ener_range)}-{np.max(ener_range)} keV : ", ratio_norm)
 
@@ -111,7 +116,7 @@ def sbplaw(x, A, xb, alpha1, alpha2, delta):
   return A * (x/xb)**(-alpha1) * (1/2*(1+(x/xb)**(1/delta)))**((alpha1-alpha2)*delta)
 
 
-def pick_lognormal_alpha_beta(mu_alpha, sig_alpha, mu_beta, sig_beta):
+def pick_normal_alpha_beta(mu_alpha, sig_alpha, mu_beta, sig_beta):
   """
   Used to obtain alpha and beta using lognormal distributions so that the spectrum is feasible (norm>0)
   """

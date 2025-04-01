@@ -283,10 +283,10 @@ class MCCatalog:
     self.s_lb_max = 3.4e52
 
     # Spectrum indexes gaussian distributions
-    self.band_low_l_mu, self.band_low_l_sig = -0.95, 0.31
-    self.band_high_l_mu, self.band_high_l_sig = -2.17, 0.30
-    self.band_low_s_mu, self.band_low_s_sig = -0.57, 0.32
-    self.band_high_s_mu, self.band_high_s_sig = -2.17, 0.31
+    self.band_low_l_mu, self.band_low_l_sig = -0.9608, 0.3008
+    self.band_high_l_mu, self.band_high_l_sig = -2.1643, 0.2734
+    self.band_low_s_mu, self.band_low_s_sig = -0.5749, 0.3063
+    self.band_high_s_mu, self.band_high_s_sig = -2.1643, 0.2734
     # T90 gaussian distributions
     # amplitude long : 467, mean long : 1.4875, stdev long : 0.45669
     # amplitude short : 137.5, mean short : -0.025, stdev short : 0.631
@@ -339,7 +339,7 @@ class MCCatalog:
     else:
       if mode == "mc":
         param_list = None
-        par_size = 10000
+        par_size = 1
         # mctype = "long"
         mctype = "short"
         fold_name = f"mc{mctype}v3-{par_size}"
@@ -764,14 +764,15 @@ class MCCatalog:
     # lpeak_rest_temp = acc_reject(broken_plaw, [ind1_s, ind2_s, lb_s], self.lmin, self.lmax)
     lpeak_rest_temp = transfo_broken_plaw(ind1_s, ind2_s, lb_s, self.lmin, self.lmax)
 
-    band_low_obs_temp, band_high_obs_temp = pick_lognormal_alpha_beta(self.band_low_s_mu, self.band_low_s_sig, self.band_high_s_mu, self.band_high_s_sig)
+    band_low_obs_temp, band_high_obs_temp = pick_normal_alpha_beta(self.band_low_s_mu, self.band_low_s_sig, self.band_high_s_mu, self.band_high_s_sig)
 
     t90_obs_temp = 1000
     while t90_obs_temp > 2:
-      t90_obs_temp = 10 ** norm.rvs(-0.025, 0.631)
+      t90_obs_temp = 10 ** np.random.normal(-0.2373, 0.4058)
 
-    lc_temp = self.closest_lc(t90_obs_temp)
-    pflux_to_mflux = pflux_to_mflux_calculator(lc_temp)
+    lc_temp, gbm_mflux, gbm_pflux = self.closest_lc(t90_obs_temp)
+    pflux_to_mflux = gbm_mflux / gbm_pflux
+    # pflux_to_mflux = pflux_to_mflux_calculator(lc_temp, gbm_t90)
 
     dl_obs_temp = self.cosmo.luminosity_distance(z_obs_temp).value / 1000  # Gpc
     ep_rest_temp = yonetoku_reverse_short(lpeak_rest_temp)
@@ -783,6 +784,7 @@ class MCCatalog:
     ##################################################################################################################
     ener_range = np.logspace(1, 3, 10001)
     norm_val, spec, temp_peak_flux = norm_band_spec_calc(band_low_obs_temp, band_high_obs_temp, z_obs_temp, dl_obs_temp, ep_rest_temp, lpeak_rest_temp, ener_range, verbose=False)
+    # temp_peak_flux OBSERVED and on this energy range
     temp_mean_flux = temp_peak_flux * pflux_to_mflux
 
     return [z_obs_temp, ep_obs_temp, ep_rest_temp, lpeak_rest_temp, temp_mean_flux, temp_peak_flux, t90_obs_temp, temp_mean_flux * t90_obs_temp, lc_temp, band_low_obs_temp, band_high_obs_temp, dl_obs_temp,
@@ -807,16 +809,17 @@ class MCCatalog:
     lpeak_rest_temp = transfo_broken_plaw(ind1_l, ind2_l, lb_l, self.lmin, self.lmax)
     # timelist.append(time() - init_time)
     # init_time = time()
-    band_low_obs_temp, band_high_obs_temp = pick_lognormal_alpha_beta(self.band_low_l_mu, self.band_low_l_sig, self.band_high_l_mu, self.band_high_l_sig)
+    band_low_obs_temp, band_high_obs_temp = pick_normal_alpha_beta(self.band_low_l_mu, self.band_low_l_sig, self.band_high_l_mu, self.band_high_l_sig)
     # timelist.append(time() - init_time)
     # init_time = time()
     t90_obs_temp = 0
     while t90_obs_temp <= 2:
-      t90_obs_temp = 10 ** norm.rvs(1.4875, 0.45669)
+      t90_obs_temp = 10 ** np.random.normal(1.4438, 0.4956)
     # timelist.append(time() - init_time)
 
-    lc_temp = self.closest_lc(t90_obs_temp)
-    pflux_to_mflux = pflux_to_mflux_calculator(lc_temp)
+    lc_temp, gbm_mflux, gbm_pflux = self.closest_lc(t90_obs_temp)
+    pflux_to_mflux = gbm_mflux / gbm_pflux
+    # pflux_to_mflux = pflux_to_mflux_calculator(lc_temp, gbm_t90)
 
     dl_obs_temp = self.cosmo.luminosity_distance(z_obs_temp).value / 1000  # Gpc
     ep_rest_temp = yonetoku_reverse_long(lpeak_rest_temp)
@@ -845,7 +848,9 @@ class MCCatalog:
     abs_diff = np.abs(np.array(self.gbm_cat.df.t90, dtype=float) - searched_time)
     gbm_index = np.argmin(abs_diff)
     # print(searched_time, float(self.gbm_cat.t90[gbm_index]))
-    return f"LightCurve_{self.gbm_cat.df.name[gbm_index]}.dat"
+    # print(self.gbm_cat.df)
+    # print(self.gbm_cat.df.mean_flux)
+    return f"LightCurve_{self.gbm_cat.df.name[gbm_index]}.dat", self.gbm_cat.df.mean_flux[gbm_index], self.gbm_cat.df.peak_flux[gbm_index]  # self.gbm_cat.df.t90[gbm_index]
 
   def gbm_reference_distri(self, print_bins=True):
     """
@@ -921,7 +926,7 @@ class MCCatalog:
     plt.show()
 
 # from catalogMC import *
-# testcat = MCCatalog(mode="mc")
+testcat = MCCatalog(mode="mc")
 # testcat = MCCatalog(mode="catalog")
 
 # from catalogMC import *

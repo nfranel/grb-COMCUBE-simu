@@ -7,6 +7,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib as mpl
+from matplotlib import ticker
 import cartopy.crs as ccrs
 from apexpy import Apex
 # Developped modules imports
@@ -21,7 +22,7 @@ from MLogData import LogData
 ############################################################
 # Usefull functions :
 ############################################################
-def bkg_data_map(field, bkgdata, altitude, dec_range=np.linspace(0, 180, 181), ra_range=np.linspace(0, 360, 361), language="en"):
+def bkg_data_map(field, bkgdata, altitude, dec_range=np.linspace(0, 180, 181), ra_range=np.linspace(0, 360, 361), language="en", proj="carre"):
   """
   TODO testing for the detectors !!!
   :param field: Field ploted on the map :
@@ -36,6 +37,7 @@ def bkg_data_map(field, bkgdata, altitude, dec_range=np.linspace(0, 180, 181), r
   :param dec_range: range of declinations for the map
   :param ra_range: range of right ascensions for the map
   """
+  mpl.use("TkAgg")
   x_long, y_lat = np.meshgrid(ra_range, 90 - dec_range)
   field_list = np.zeros((len(dec_range), len(ra_range)))
   apex15 = Apex(date=2025)
@@ -47,37 +49,37 @@ def bkg_data_map(field, bkgdata, altitude, dec_range=np.linspace(0, 180, 181), r
       item_legend = "single events count rate (counts/s)"
       field_index = 1
     elif field == "calor":
-      item_legend = "bottom calorimeter count number (counts)"
+      item_legend = "D2A count rate (counts/s)"
       field_index = 2
     elif field == "dsssd":
-      item_legend = "DSSSD count number (counts)"
+      item_legend = "D1A and D1B count rate (counts/s)"
       field_index = 3
     elif field == "side":
-      item_legend = "side detector count number (counts)"
+      item_legend = "D2B count rate (counts/s)"
       field_index = 4
     elif field == "total_hits":
-      item_legend = "total count number (counts)"
+      item_legend = "hit count rate (counts/s)"
       field_index = 5
     else:
       raise ValueError("Wrong name given for the background field")
   elif language == "fr":
     if field == "compton_cr":
-      item_legend = "Taux de comptage d'évènements Compton (#/s)"
+      item_legend = "Taux de comptage d'évènements Compton (coups/s)"
       field_index = 0
     elif field == "single_cr":
-      item_legend = "Taux de comptage d'évènements simples (#/s)"
+      item_legend = "Taux de comptage d'évènements simples (coups/s)"
       field_index = 1
     elif field == "calor":
-      item_legend = "Nombre d'évènements dans le calorimètre (#)"
+      item_legend = "Taux de comptage dans le calorimètre (coups/s)"
       field_index = 2
     elif field == "dsssd":
-      item_legend = "Nombre d'évènements dans les DSSD (#)"
+      item_legend = "Taux de comptage dans les DSSD (coups/s)"
       field_index = 3
     elif field == "side":
-      item_legend = "Nombre d'évènements dans le scintillateur de côté (#)"
+      item_legend = "Taux de comptage dans le scintillateur de côté (coups/s)"
       field_index = 4
     elif field == "total_hits":
-      item_legend = "Nombre total d'évènements dans les détecteurs (#)"
+      item_legend = "Taux de comptage total dans les détecteurs (coups/s)"
       field_index = 5
     else:
       raise ValueError("Wrong name given for the background field")
@@ -97,21 +99,261 @@ def bkg_data_map(field, bkgdata, altitude, dec_range=np.linspace(0, 180, 181), r
       dsssd_count = det_count[2] + det_count[3] + det_count[7] + det_count[8] + det_count[12] + det_count[13] + det_count[17] + det_count[18]
       calor_count = det_count[4] + det_count[9] + det_count[14] + det_count[19]
       total_hits = np.sum(det_count)
-      bkg_values = [compton_cr, single_cr, calor_count, dsssd_count, side_count, total_hits]
+      bkg_values = [compton_cr, single_cr, calor_count / bkgdata.sim_time, dsssd_count / bkgdata.sim_time, side_count / bkgdata.sim_time, total_hits / bkgdata.sim_time]
       field_list[row][col] = bkg_values[field_index]
+      # if ra == 0:
+      #   print("dec, ra = ", lat, ra)
+      #   print("bkg mag dec : ", bkgdata[bkg_id].dec)
+      #   print("compton_cr : ", bkgdata[bkg_id].compton_cr)
+        # print("single_cr : ", bkgdata[bkg_id].single_cr)
+        # print("compton_cr : ", compton_cr)
+        # print("single_cr : ", single_cr)
+        # print("side_cr : ", side_count / bkgdata.sim_time)
+        # print("dssd_cr : ", dsssd_count / bkgdata.sim_time)
+        # print("ucd_cr : ", calor_count / bkgdata.sim_time)
+        # print("hits_cr : ", total_hits / bkgdata.sim_time)
 
-  fig, ax = plt.subplots(subplot_kw={'projection': ccrs.PlateCarree(central_longitude=0)})
-  p1 = ax.pcolormesh(x_long, y_lat, field_list, cmap="Blues")
+  if proj == "carre":
+    fig, ax = plt.subplots(subplot_kw={'projection': ccrs.PlateCarree()}, figsize=(10, 6))
+  elif proj == "mollweide":
+    fig, ax = plt.subplots(subplot_kw={'projection': ccrs.Mollweide()}, figsize=(10, 6))
+  else:
+    raise ValueError("Use a correct value for proj 'carre' or 'mollweide'")
+  p1 = ax.pcolormesh(x_long, y_lat, field_list, cmap="Blues", transform=ccrs.PlateCarree())
+  ax.grid(True)
+  ax.set_global()
   ax.coastlines()
   cbar = fig.colorbar(p1)
   if language == "en":
-    ax.set(xlabel="Longitude (deg)", ylabel="Latitude (deg)", title=f"Background map for {item_legend} at {altitude}km")
-    cbar.set_label(f"Background {item_legend}", rotation=270, labelpad=20)
+    plt.suptitle(f"Background map for {item_legend} at {altitude} km")
+    ax.set(xlabel="Longitude (deg)", ylabel="Latitude (deg)")
+    cbar.set_label(f"Background {item_legend}", rotation=270, labelpad=20, fontsize=12)
   elif language == "fr":
-    ax.set(xlabel="Longitude (deg)", ylabel="Latitude (deg)", title=f"{item_legend} dû au bruit de fond à {altitude}km")
-    cbar.set_label(f"{item_legend}", rotation=270, labelpad=20)
+    plt.suptitle(f"{item_legend} dû au bruit de fond à {altitude}km")
+    ax.set(xlabel="Longitude (deg)", ylabel="Latitude (deg)")
+    cbar.set_label(f"{item_legend}", rotation=270, labelpad=20, fontsize=12)
   else:
     raise ValueError("Wrong value given for the language : only en (english) and fr (french) set")
+  plt.show()
+
+
+def mu100_data_map( mu100data, theta_sat=np.linspace(0, 114, 115), phi_sat=np.linspace(0, 360, 181)):
+  """
+
+  """
+  mpl.use("TkAgg")
+
+  nrows = len(theta_sat)
+  ncols = len(phi_sat)
+  mu100list = np.zeros((nrows, ncols))
+  seff_com_list = np.zeros((nrows, ncols))
+  seff_sin_list = np.zeros((nrows, ncols))
+  for i, theta in enumerate(theta_sat):
+    for j, phi in enumerate(phi_sat):
+      mu_ret = closest_mufile(theta, phi, mu100data)
+      mu100list[i, j] = mu_ret[0]
+      seff_com_list[i, j] = mu_ret[2]
+      seff_sin_list[i, j] = mu_ret[3]
+  # smoothing the values
+  smooth_mu100list = np.zeros((nrows, ncols))
+  v2smooth_mu100list = np.zeros((nrows, ncols))
+  smooth_seff_com_list = np.zeros((nrows, ncols))
+  smooth_seff_sin_list = np.zeros((nrows, ncols))
+  mu100_vs_dec = np.mean(mu100list, axis=1)
+  seff_com_vs_dec = np.mean(seff_com_list, axis=1)
+  seff_sin_vs_dec = np.mean(seff_sin_list, axis=1)
+  for i, theta in enumerate(theta_sat):
+    for j, phi in enumerate(phi_sat):
+      smooth_mu100list[i, j] = (mu100list[i, np.mod(j - 1, ncols)] + mu100list[i, j] + mu100list[i, np.mod(j + 1, ncols)]) / 3
+      v2smooth_mu100list[i, j] = (mu100list[i, np.mod(j - 2, ncols)] + mu100list[i, np.mod(j - 1, ncols)] + mu100list[i, j] + mu100list[i, np.mod(j + 1, ncols)] + mu100list[i, np.mod(j + 2, ncols)]) / 5
+      smooth_seff_com_list[i, j] = (seff_com_list[i, np.mod(j - 1, ncols)] + seff_com_list[i, j] + seff_com_list[i, np.mod(j + 1, ncols)]) / 3
+      smooth_seff_sin_list[i, j] = (seff_sin_list[i, np.mod(j - 1, ncols)] + seff_sin_list[i, j] + seff_sin_list[i, np.mod(j + 1, ncols)]) / 3
+
+  x_mu, y_mu = np.meshgrid(phi_sat, 90 - theta_sat)
+
+  xgrid, ygrid = np.arange(-135, 136, 45), np.arange(-30, 90, 30)
+  # # Seff maps
+  # fig, ax = plt.subplots(subplot_kw={'projection': ccrs.LambertConformal(central_longitude=0, central_latitude=0)}, figsize=(10, 6))
+  # plt.suptitle("Compton event effective area map")
+  # p1 = ax.pcolormesh(x_mu, y_mu, seff_com_list, cmap="Blues", transform=ccrs.PlateCarree())
+  # cbar = fig.colorbar(p1, ax=ax)
+  # cbar.set_label("Compton event effective area (cm²)", rotation=270, labelpad=20, fontsize=12)
+  # ax.set(xlabel="Right ascension (deg)", ylabel="Latitude (deg)")
+  # ax.gridlines(draw_labels=False, xlocs=xgrid, ylocs=ygrid)
+  # ax.text(0, 90, ' 90°\n\n', transform=ccrs.PlateCarree(), fontsize=10, ha="center", va='center')
+  # ax.text(180, 60, ' 60°\n\n', transform=ccrs.PlateCarree(), fontsize=10, ha="center", va='center')
+  # ax.text(180, 30, ' 30°\n\n', transform=ccrs.PlateCarree(), fontsize=10, ha="center", va='center')
+  # ax.text(180, 0, '0°\n\n', transform=ccrs.PlateCarree(), fontsize=10, ha="center", va='center')
+  # ax.text(0, -35, '0°', transform=ccrs.PlateCarree(), fontsize=10, ha="center", va='baseline')
+  # ax.text(45, -35, '45°', transform=ccrs.PlateCarree(), fontsize=10, ha="center", va='baseline')
+  # ax.text(90, -35, '90°', transform=ccrs.PlateCarree(), fontsize=10, ha="center", va='baseline')
+  # ax.text(135, -35, '135°', transform=ccrs.PlateCarree(), fontsize=10, ha="center", va='baseline')
+  # ax.text(-45, -35, '-45°', transform=ccrs.PlateCarree(), fontsize=10, ha="center", va='baseline')
+  # ax.text(-90, -35, '-90°', transform=ccrs.PlateCarree(), fontsize=10, ha="center", va='baseline')
+  # ax.text(-135, -35, '-135°', transform=ccrs.PlateCarree(), fontsize=10, ha="center", va='baseline')
+  # plt.show()
+  #
+  # fig, ax = plt.subplots(subplot_kw={'projection': ccrs.LambertConformal(central_longitude=0, central_latitude=0)}, figsize=(10, 6))
+  # plt.suptitle("Single event effective area map")
+  # p2 = ax.pcolormesh(x_mu, y_mu, seff_sin_list, cmap="Blues", transform=ccrs.PlateCarree())
+  # cbar = fig.colorbar(p2, ax=ax)
+  # cbar.set_label("Single event effective area (cm²)", rotation=270, labelpad=20, fontsize=12)
+  # ax.set(xlabel="Right ascension (deg)", ylabel="Latitude (deg)")
+  # ax.gridlines(draw_labels=False, xlocs=xgrid, ylocs=ygrid)
+  # ax.text(0, 90, ' 90°\n\n', transform=ccrs.PlateCarree(), fontsize=10, ha="center", va='center')
+  # ax.text(180, 60, ' 60°\n\n', transform=ccrs.PlateCarree(), fontsize=10, ha="center", va='center')
+  # ax.text(180, 30, ' 30°\n\n', transform=ccrs.PlateCarree(), fontsize=10, ha="center", va='center')
+  # ax.text(180, 0, '0°\n\n', transform=ccrs.PlateCarree(), fontsize=10, ha="center", va='center')
+  # ax.text(0, -35, '0°', transform=ccrs.PlateCarree(), fontsize=10, ha="center", va='baseline')
+  # ax.text(45, -35, '45°', transform=ccrs.PlateCarree(), fontsize=10, ha="center", va='baseline')
+  # ax.text(90, -35, '90°', transform=ccrs.PlateCarree(), fontsize=10, ha="center", va='baseline')
+  # ax.text(135, -35, '135°', transform=ccrs.PlateCarree(), fontsize=10, ha="center", va='baseline')
+  # ax.text(-45, -35, '-45°', transform=ccrs.PlateCarree(), fontsize=10, ha="center", va='baseline')
+  # ax.text(-90, -35, '-90°', transform=ccrs.PlateCarree(), fontsize=10, ha="center", va='baseline')
+  # ax.text(-135, -35, '-135°', transform=ccrs.PlateCarree(), fontsize=10, ha="center", va='baseline')
+  # plt.show()
+
+  # Smoothed Seff maps
+  fig, ax = plt.subplots(subplot_kw={'projection': ccrs.LambertConformal(central_longitude=0, central_latitude=0)}, figsize=(10, 6))
+  plt.suptitle("Smoothed Compton event effective area map")
+  p3 = ax.pcolormesh(x_mu, y_mu, smooth_seff_com_list, cmap="Blues", transform=ccrs.PlateCarree())
+  cbar = fig.colorbar(p3, ax=ax)
+  cbar.set_label("Compton event effective area (cm²)", rotation=270, labelpad=20, fontsize=12)
+  ax.set(xlabel="Right ascension (deg)", ylabel="Latitude (deg)")
+  ax.gridlines(draw_labels=False, xlocs=xgrid, ylocs=ygrid)
+  ax.text(0, 90, ' 90°\n\n', transform=ccrs.PlateCarree(), fontsize=10, ha="center", va='center')
+  ax.text(180, 60, ' 60°\n\n', transform=ccrs.PlateCarree(), fontsize=10, ha="center", va='center')
+  ax.text(180, 30, ' 30°\n\n', transform=ccrs.PlateCarree(), fontsize=10, ha="center", va='center')
+  ax.text(180, 0, '0°\n\n', transform=ccrs.PlateCarree(), fontsize=10, ha="center", va='center')
+  ax.text(0, -35, '0°', transform=ccrs.PlateCarree(), fontsize=10, ha="center", va='baseline')
+  ax.text(45, -35, '45°', transform=ccrs.PlateCarree(), fontsize=10, ha="center", va='baseline')
+  ax.text(90, -35, '90°', transform=ccrs.PlateCarree(), fontsize=10, ha="center", va='baseline')
+  ax.text(135, -35, '135°', transform=ccrs.PlateCarree(), fontsize=10, ha="center", va='baseline')
+  ax.text(-45, -35, '-45°', transform=ccrs.PlateCarree(), fontsize=10, ha="center", va='baseline')
+  ax.text(-90, -35, '-90°', transform=ccrs.PlateCarree(), fontsize=10, ha="center", va='baseline')
+  ax.text(-135, -35, '-135°', transform=ccrs.PlateCarree(), fontsize=10, ha="center", va='baseline')
+  plt.show()
+
+  fig, ax = plt.subplots(subplot_kw={'projection': ccrs.LambertConformal(central_longitude=0, central_latitude=0)}, figsize=(10, 6))
+  plt.suptitle("Smoothed single event effective area map")
+  p4 = ax.pcolormesh(x_mu, y_mu, smooth_seff_sin_list, cmap="Blues", transform=ccrs.PlateCarree())
+  cbar = fig.colorbar(p4, ax=ax)
+  cbar.set_label("Single event effective area (cm²)", rotation=270, labelpad=20, fontsize=12)
+  ax.set(xlabel="Right ascension (deg)", ylabel="Latitude (deg)")
+  ax.gridlines(draw_labels=False, xlocs=xgrid, ylocs=ygrid)
+  ax.text(0, 90, ' 90°\n\n', transform=ccrs.PlateCarree(), fontsize=10, ha="center", va='center')
+  ax.text(180, 60, ' 60°\n\n', transform=ccrs.PlateCarree(), fontsize=10, ha="center", va='center')
+  ax.text(180, 30, ' 30°\n\n', transform=ccrs.PlateCarree(), fontsize=10, ha="center", va='center')
+  ax.text(180, 0, '0°\n\n', transform=ccrs.PlateCarree(), fontsize=10, ha="center", va='center')
+  ax.text(0, -35, '0°', transform=ccrs.PlateCarree(), fontsize=10, ha="center", va='baseline')
+  ax.text(45, -35, '45°', transform=ccrs.PlateCarree(), fontsize=10, ha="center", va='baseline')
+  ax.text(90, -35, '90°', transform=ccrs.PlateCarree(), fontsize=10, ha="center", va='baseline')
+  ax.text(135, -35, '135°', transform=ccrs.PlateCarree(), fontsize=10, ha="center", va='baseline')
+  ax.text(-45, -35, '-45°', transform=ccrs.PlateCarree(), fontsize=10, ha="center", va='baseline')
+  ax.text(-90, -35, '-90°', transform=ccrs.PlateCarree(), fontsize=10, ha="center", va='baseline')
+  ax.text(-135, -35, '-135°', transform=ccrs.PlateCarree(), fontsize=10, ha="center", va='baseline')
+  plt.show()
+
+  # Seff vs declination
+  fig, ax = plt.subplots(figsize=(10, 6))
+  plt.suptitle("Variation of Compton event effective area with declination")
+  ax.plot(theta_sat, seff_com_vs_dec)
+  ax.set(xlabel="Declination (°)", ylabel="Compton event effective area (cm²)")
+  ax.grid()
+  plt.show()
+
+  fig, ax = plt.subplots(figsize=(10, 6))
+  plt.suptitle("Variation of single event effective area with declination")
+  ax.plot(theta_sat, seff_sin_vs_dec)
+  ax.set(xlabel="Declination (°)", ylabel="Single event effective area (cm²)")
+  ax.grid()
+  plt.show()
+
+  fig, ax1 = plt.subplots(figsize=(10, 6))
+  plt.suptitle("Variation of single and Compton event effective area with declination")
+  c1 = ax1.plot(theta_sat, seff_sin_vs_dec, label="Single events", color="blue")[0]
+  ax1.set_xlabel("Declination (°)")
+  ax1.set_ylabel("Single event effective area (cm²)", color="blue")
+  ax1.tick_params(axis='y', labelcolor="blue")
+  ax1.grid()
+  ax2 = ax1.twinx()
+  c2 = ax2.plot(theta_sat, seff_com_vs_dec, label="Compton events", color="red")[0]
+  ax2.set_ylabel("Compton event effective area (cm²)", color="red")
+  ax2.tick_params(axis='y', labelcolor="red")
+  # ax2.grid()
+  ax1.legend([c1, c2], [c1.get_label(), c2.get_label()])
+  # fig.tight_layout()
+  plt.show()
+
+  # mu100 maps
+  fig, ax = plt.subplots(subplot_kw={'projection': ccrs.LambertConformal(central_longitude=0, central_latitude=0)}, figsize=(10, 6))
+  plt.suptitle(r"$\mu_{100}$ map")
+  p5 = ax.pcolormesh(x_mu, y_mu, mu100list, cmap="Blues", transform=ccrs.PlateCarree())
+  cbar = fig.colorbar(p5, ax=ax)
+  cbar.set_label(r"$\mu_{100}$ values", rotation=270, labelpad=20, fontsize=12)
+  ax.set(xlabel="Right ascension (deg)", ylabel="Latitude (deg)")
+  ax.gridlines(draw_labels=False, xlocs=xgrid, ylocs=ygrid)
+  ax.text(0, 90, ' 90°\n\n', transform=ccrs.PlateCarree(), fontsize=10, ha="center", va='center')
+  ax.text(180, 60, ' 60°\n\n', transform=ccrs.PlateCarree(), fontsize=10, ha="center", va='center')
+  ax.text(180, 30, ' 30°\n\n', transform=ccrs.PlateCarree(), fontsize=10, ha="center", va='center')
+  ax.text(180, 0, '0°\n\n', transform=ccrs.PlateCarree(), fontsize=10, ha="center", va='center')
+  ax.text(0, -35, '0°', transform=ccrs.PlateCarree(), fontsize=10, ha="center", va='baseline')
+  ax.text(45, -35, '45°', transform=ccrs.PlateCarree(), fontsize=10, ha="center", va='baseline')
+  ax.text(90, -35, '90°', transform=ccrs.PlateCarree(), fontsize=10, ha="center", va='baseline')
+  ax.text(135, -35, '135°', transform=ccrs.PlateCarree(), fontsize=10, ha="center", va='baseline')
+  ax.text(-45, -35, '-45°', transform=ccrs.PlateCarree(), fontsize=10, ha="center", va='baseline')
+  ax.text(-90, -35, '-90°', transform=ccrs.PlateCarree(), fontsize=10, ha="center", va='baseline')
+  ax.text(-135, -35, '-135°', transform=ccrs.PlateCarree(), fontsize=10, ha="center", va='baseline')
+  plt.show()
+
+  # Smoothed mu100 maps
+  fig, ax = plt.subplots(subplot_kw={'projection': ccrs.LambertConformal(central_longitude=0, central_latitude=0)}, figsize=(10, 6))
+  plt.suptitle(r"Smoothed $\mu_{100}$ map")
+  p6 = ax.pcolormesh(x_mu, y_mu, smooth_mu100list, cmap="Blues", transform=ccrs.PlateCarree())
+  cbar = fig.colorbar(p6, ax=ax, pad=0.1)
+  cbar.set_label(r"$\mu_{100}$ values", rotation=270, labelpad=20, fontsize=12)
+  ax.set(xlabel="Right ascension (deg)", ylabel="Latitude (deg)")
+  ax.gridlines(draw_labels=False, xlocs=xgrid, ylocs=ygrid)
+  ax.text(0, 90, ' 90°\n\n', transform=ccrs.PlateCarree(), fontsize=10, ha="center", va='center')
+  ax.text(180, 60, ' 60°\n\n', transform=ccrs.PlateCarree(), fontsize=10, ha="center", va='center')
+  ax.text(180, 30, ' 30°\n\n', transform=ccrs.PlateCarree(), fontsize=10, ha="center", va='center')
+  ax.text(180, 0, '0°\n\n', transform=ccrs.PlateCarree(), fontsize=10, ha="center", va='center')
+  ax.text(0, -35, '0°', transform=ccrs.PlateCarree(), fontsize=10, ha="center", va='baseline')
+  ax.text(45, -35, '45°', transform=ccrs.PlateCarree(), fontsize=10, ha="center", va='baseline')
+  ax.text(90, -35, '90°', transform=ccrs.PlateCarree(), fontsize=10, ha="center", va='baseline')
+  ax.text(135, -35, '135°', transform=ccrs.PlateCarree(), fontsize=10, ha="center", va='baseline')
+  ax.text(-45, -35, '-45°', transform=ccrs.PlateCarree(), fontsize=10, ha="center", va='baseline')
+  ax.text(-90, -35, '-90°', transform=ccrs.PlateCarree(), fontsize=10, ha="center", va='baseline')
+  ax.text(-135, -35, '-135°', transform=ccrs.PlateCarree(), fontsize=10, ha="center", va='baseline')
+  plt.show()
+
+
+  # fig, ax = plt.subplots(subplot_kw={'projection': ccrs.LambertConformal(central_longitude=0, central_latitude=0)}, figsize=(10, 6))
+  # plt.suptitle(r"Smoothed $\mu_{100}$ map")
+  # p7 = ax.pcolormesh(x_mu, y_mu, v2smooth_mu100list, cmap="Blues", transform=ccrs.PlateCarree())
+  # cbar = fig.colorbar(p7, ax=ax)
+  # cbar.set_label(r"$\mu_{100}$ values", rotation=270, labelpad=20, fontsize=12)
+  # ax.set(xlabel="Right ascension (deg)", ylabel="Latitude (deg)")
+  # ax.gridlines(draw_labels=False, xlocs=xgrid, ylocs=ygrid)
+  # ax.text(0, 90, ' 90°\n\n', transform=ccrs.PlateCarree(), fontsize=10, ha="center", va='center')
+  # ax.text(180, 60, ' 60°\n\n', transform=ccrs.PlateCarree(), fontsize=10, ha="center", va='center')
+  # ax.text(180, 30, ' 30°\n\n', transform=ccrs.PlateCarree(), fontsize=10, ha="center", va='center')
+  # ax.text(180, 0, '0°\n\n', transform=ccrs.PlateCarree(), fontsize=10, ha="center", va='center')
+  # ax.text(0, -35, '0°', transform=ccrs.PlateCarree(), fontsize=10, ha="center", va='baseline')
+  # ax.text(45, -35, '45°', transform=ccrs.PlateCarree(), fontsize=10, ha="center", va='baseline')
+  # ax.text(90, -35, '90°', transform=ccrs.PlateCarree(), fontsize=10, ha="center", va='baseline')
+  # ax.text(135, -35, '135°', transform=ccrs.PlateCarree(), fontsize=10, ha="center", va='baseline')
+  # ax.text(-45, -35, '-45°', transform=ccrs.PlateCarree(), fontsize=10, ha="center", va='baseline')
+  # ax.text(-90, -35, '-90°', transform=ccrs.PlateCarree(), fontsize=10, ha="center", va='baseline')
+  # ax.text(-135, -35, '-135°', transform=ccrs.PlateCarree(), fontsize=10, ha="center", va='baseline')
+  # plt.show()
+
+  # mu100 vs declination
+  fig, ax = plt.subplots(figsize=(10, 6))
+  plt.suptitle(r"Variation of $\mu_{100}$ with declination")
+  ax.plot(theta_sat, mu100_vs_dec)
+  ax.set(xlabel="Declination (°)", ylabel=r"$\mu_{100}$ value")
+  ax.grid()
   plt.show()
 
 
@@ -234,6 +476,46 @@ def calc_duty(inc, ohm, omega, alt, show=False, show_sat=False):
 
     plt.show()
   return counter / len(time_vals)
+
+
+def duty_variation_plot(alt=500):
+  mpl.use("Qt5Agg")
+
+  inclinations = np.linspace(0, 98, 401)
+  duties = [100 * calc_duty(inc, 0, 0, alt) for inc in inclinations]
+
+  fig, ax = plt.subplots(1, 1, figsize=(10, 6))
+  ax.plot(inclinations, duties)
+  ax.set(xlabel="Orbit inclination (°)", ylabel="Duty cycle (%)")
+  plt.show()
+
+
+def show_non_op_area(alt, zonetype="all"):
+  """
+
+  """
+  mpl.use("Qt5Agg")
+  fig, ax = plt.subplots(subplot_kw={'projection': ccrs.PlateCarree(central_longitude=0)})
+  ax.set_global()
+
+  theta_verif = np.linspace(0, 180, 181)
+  phi_verif = np.linspace(0, 360, 360, endpoint=False)
+  plottitle = f"Map of {zonetype} radiation belt at {alt} km"
+
+  cancel_theta = []
+  cancel_phi = []
+  for theta in theta_verif:
+    for phi in phi_verif:
+      if verif_rad_belts(theta, phi, alt, zonetype=zonetype):
+        cancel_theta.append(90 - theta)
+        cancel_phi.append(phi if phi <= 180 else phi % 180 - 180)
+  cancel_theta = np.array(cancel_theta)
+  cancel_phi = np.array(cancel_phi)
+  ax.scatter(cancel_phi, cancel_theta, s=1)
+  ax.set(title=plottitle)
+  # Adding the coasts
+  ax.coastlines()
+  plt.show()
 
 
 def fov_const(parfile, mu100par, num_val=500, erg_cut=(10, 1000), armcut=180, show=True, save=False, bigfont=True, language="en"):

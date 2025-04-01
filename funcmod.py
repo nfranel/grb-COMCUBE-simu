@@ -1,10 +1,11 @@
 import numpy as np
 import gzip
 from scipy.integrate import quad, simpson, IntegrationWarning
+from scipy.stats import binned_statistic
 import warnings
 warnings.simplefilter("error", RuntimeWarning)
 
-from scipy.stats import skewnorm
+from scipy.stats import skewnorm, norm
 from time import time
 import os
 import subprocess
@@ -231,16 +232,34 @@ def extract_lc(fullname):
   return np.array(times, dtype=float), np.array(counts, dtype=float)
 
 
-def pflux_to_mflux_calculator(lc_name):
+def pflux_to_mflux_calculator(lc_name, t90):
   """
   Returns the conversion value from pflux to mflux.
   It's based on a 1-second pflux as the Lpeak in the Yonetoku correlation is based on a 1-second timescale.
   """
   times, counts = extract_lc(f"./sources/Light_Curves/{lc_name}")
   delta_time = times[1:]-times[:-1]
+
+  if t90 <= 2:
+    peak_duration = 0.064
+  else:
+    peak_duration = 1.024
+
+  # if times[-1] < t90:
+  #   old_bins = np.append(times, t90)
+  # else:
+  #   old_bins = np.append(times, times[-1] + delta_time[0])
+  new_bins = np.arange(0, t90 + peak_duration, peak_duration)
+
+  rebinned_lc = binned_statistic(times, counts, statistic="sum", bins=new_bins)[0]
+  print("counts", len(counts))
+  print("rebin", len(rebinned_lc))
+  print("nbin edges", len(new_bins))
+  print("new mc", np.sum(rebinned_lc) / t90)
   reduced_count = counts[:-1]
   # Mean number of count/second
-  mean_count = np.sum(reduced_count) / times[-1]
+  mean_count = np.sum(reduced_count) / t90
+  print("mc", mean_count)
   if times[-1] <= 1:
     # Case where the T90 <1s, mflux and pflux over 1s are then the same
     pflux_to_mflux = 1
@@ -954,18 +973,29 @@ def closest_bkg_info(sat_dec, sat_ra, sat_alt, bkg_list):  # TODO : limits on va
   if len(bkg_list) == 0:
     return 0.000001
   else:
-    bkg_selec = []
+    # bkg_selec = []
+    bkg_count = 0
+    dec_error = []
+    ra_error = np.array([0 for bkg in bkg_list])
+    # ra_error = np.array([(bkg.ra - sat_ra) ** 2 for bkg in bkg_selec])
+
     for bkg in bkg_list:
       if bkg.alt == sat_alt:
-        bkg_selec.append(bkg)
-    if bkg_selec == []:
+        bkg_count += 1
+        # bkg_selec.append(bkg)
+        dec_error.append((bkg.dec - sat_dec) ** 2)
+      else:
+        dec_error.append(np.inf)
+    if bkg_count == 0:
       raise FileNotFoundError("No background file were loaded for the given altitude.")
-    dec_error = np.array([(bkg.dec - sat_dec) ** 2 for bkg in bkg_selec])
-    # ra_error = np.array([(bkg.ra - sat_ra) ** 2 for bkg in bkg_selec])
-    ra_error = np.array([0 for bkg in bkg_selec])
+    dec_error = np.array(dec_error)
     total_error = np.sqrt(dec_error + ra_error)
     index = np.argmin(total_error)
-    return [bkg_selec[index].compton_cr, bkg_selec[index].single_cr, index]
+    # if index+1 < len(bkg_list) and sat_ra == 0:
+    #   print()
+    #   print("dec, dec find before and after : ", sat_dec, bkg_list[index].dec, bkg_list[index-1].dec, bkg_list[index+1].dec)
+    #   print()
+    return [bkg_list[index].compton_cr, bkg_list[index].single_cr, index]
 
 
 def geo_to_mag(dec_wf, ra_wf, altitude):  # TODO : limits on variables
@@ -1487,7 +1517,7 @@ def ra2lon(ra):
     return ra - 360
 
 
-def verif_rad_belts(dec, ra, alt):
+def verif_rad_belts(dec, ra, alt, zonetype="all"):
   """
   Function to verify whether a coordinate is in the exclusion area of several exclusion files at a certain altitude
   The exclusion files represent the Earth's radiation belts
@@ -1498,10 +1528,15 @@ def verif_rad_belts(dec, ra, alt):
   """
   dec_verif(dec)
   ra_verif(ra)
-  files = ["./bkg/exclusion/400km/AE8max_400km.out", "./bkg/exclusion/400km/AP8min_400km.out",
-           "./bkg/exclusion/500km/AE8max_500km.out", "./bkg/exclusion/500km/AP8min_500km.out"]
-  # files = ["./bkg/exclusion/400km/AP8min_400km.out",
-  #          "./bkg/exclusion/500km/AP8min_500km.out"]
+  if zonetype == "all":
+    files = ["./bkg/exclusion/400km/AE8max_400km.out", "./bkg/exclusion/400km/AP8min_400km.out",
+             "./bkg/exclusion/500km/AE8max_500km.out", "./bkg/exclusion/500km/AP8min_500km.out"]
+  elif zonetype == "electron":
+    files = ["./bkg/exclusion/400km/AE8max_400km.out", "./bkg/exclusion/500km/AE8max_500km.out"]
+  elif zonetype == "proton":
+    files = ["./bkg/exclusion/400km/AP8min_400km.out", "./bkg/exclusion/500km/AP8min_500km.out"]
+  else:
+    raise ValueError("Please chose a correct value for zonetype : 'all', 'electron' or 'proton'")
   for file in files:
     file_alt = int(file.split("km/")[0].split("/")[-1])
     if alt == file_alt:
@@ -1749,15 +1784,18 @@ def sbpl(e, ampl, l1, l2, eb, delta, pivot=100):
   return ampl * (e / pivot) ** b * 10 ** (a - ap)
 
 
+def gauss(x, amp, mu, sig):
+  """
+
+  """
+  return amp * norm.pdf(x, loc=mu, scale=sig)
 
 
+def double_gauss(x, amp1, mu1, sig1, amp2, mu2, sig2):
+  """
 
-
-
-
-
-
-
+  """
+  return gauss(x, amp1, mu1, sig1) + gauss(x, amp2, mu2, sig2)
 
 
 # To put in a separate class for triggers

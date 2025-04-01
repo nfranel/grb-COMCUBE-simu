@@ -52,11 +52,15 @@ LeoBack = LEO(args.altitude, args.inclination)
 #         (5, 10), (5, 3, 3, 3), (5, 5, 5, 5), (3, 5),
 #         (9, 2), (7, 3)]
         
+# LeoBackfunc = [LeoBack.AtmosphericNeutrons, LeoBack.CosmicPhotons, LeoBack.AlbedoPhotons,
+#               LeoBack.PrimaryProtons, LeoBack.SecondaryProtonsUpward,
+#               LeoBack.PrimaryElectrons, LeoBack.SecondaryElectrons,
+#               LeoBack.PrimaryPositrons, LeoBack.SecondaryPositrons,
+#               LeoBack.PrimaryAlphas]
 LeoBackfunc = [LeoBack.AtmosphericNeutrons, LeoBack.CosmicPhotons, LeoBack.AlbedoPhotons,
               LeoBack.PrimaryProtons, LeoBack.SecondaryProtonsUpward,
               LeoBack.PrimaryElectrons, LeoBack.SecondaryElectrons,
-              LeoBack.PrimaryPositrons, LeoBack.SecondaryPositrons,
-              LeoBack.PrimaryAlphas]
+              LeoBack.PrimaryPositrons, LeoBack.SecondaryPositrons]
 Title = ["Atmospheric Neutrons", "Cosmic Photons", "Albedo Photons",
         "Primary Protons", "Secondary Protons",
         "Primary Electrons", "Secondary Electrons",
