@@ -1,6 +1,6 @@
 from decimal import DivisionByZero
 
-from gbm.data import TTE, Cspec, GbmDetectorCollection
+from gbm.data import TTE, Cspec
 from gbm.binning.unbinned import bin_by_time
 from gbm.plot import Lightcurve, Spectrum
 import matplotlib.pyplot as plt
