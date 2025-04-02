@@ -11,6 +11,7 @@ from gbm.finder import TriggerFtp
 
 import numpy as np
 import subprocess
+import os
 from catalog import Catalog
 
 def bin_selector(lc, tstart, tstop, minedges, maxedges):
@@ -426,6 +427,10 @@ def create_lc(cat, ite_grb, bin_size="auto", ener_range=(10, 1000), show=False, 
   # print("==== 1 ====")
   return make_tte_lc(GRBname, start_t90, end_t90, time_range, bkg_range, lc_detector_mask, p_to_m_flux, bin_size=bin_size, ener_range=ener_range, show=show, directory=directory, saving=saving)
 
+if not os.path.exists("sources/GBM_Light_Curves"):
+  os.mkdir("sources/GBM_Light_Curves")
+if not os.path.exists("sources/LC_plots_GBM"):
+  os.mkdir("sources/LC_plots_GBM")
 
 gbm_cat = Catalog("./GBM/allGBM.txt", [4, '\n', 5, '|', 4000], "GBM/rest_frame_properties.txt")
 
