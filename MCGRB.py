@@ -282,7 +282,7 @@ class GRBSample:
       t90_obs_temp = 10 ** np.random.normal(1.4875, 0.45669)
 
     lc_temp = self.closest_lc(t90_obs_temp)
-    times, counts = extract_lc(f"./sources/Light_Curves/{lc_temp}")
+    times, counts = extract_lc(f"./sources/GBM_Light_Curves/{lc_temp}")
     pflux_to_mflux = np.mean(counts) / np.max(counts)
 
     dl_obs_temp = self.cosmo.luminosity_distance(z_obs_temp).value / 1000  # Gpc
@@ -323,7 +323,7 @@ class GRBSample:
       t90_obs_temp = 10 ** np.random.normal(1.4875, 0.45669)
 
     lc_temp = self.closest_lc(t90_obs_temp)
-    # times, counts = extract_lc(f"./sources/Light_Curves/{lc_temp}")
+    # times, counts = extract_lc(f"./sources/GBM_Light_Curves/{lc_temp}")
     # pflux_to_mflux = np.mean(counts) / np.max(counts)
     pflux_to_mflux = pflux_to_mflux_calculator(lc_temp)
 

@@ -2123,7 +2123,7 @@ def closest_lc(cat, searched_time):
 
 lc_temp, gbm_mflux, gbm_pflux = closest_lc(gbm_cat, 90)
 print(f"Light curve : {lc_temp}, mean flux : {gbm_mflux}, peak flux : {gbm_pflux}, ratio peak to mean : {gbm_mflux / gbm_pflux}")
-times, counts = extract_lc(f"./sources/Light_Curves/{lc_temp}")
+times, counts = extract_lc(f"./sources/GBM_Light_Curves/{lc_temp}")
 print("last bin beginning : ", times[-1])
 print("LC ratio peak to mean : ", np.mean(counts)/np.max(counts))
 
@@ -2133,7 +2133,7 @@ for valtime in gbm_cat.df.t90:
 # for valtime in np.logspace(-2, 3, 10000):
   lc_temp, gbm_mflux, gbm_pflux = closest_lc(gbm_cat, valtime)
   real_ratio = gbm_mflux / gbm_pflux
-  times, counts = extract_lc(f"./sources/Light_Curves/{lc_temp}")
+  times, counts = extract_lc(f"./sources/GBM_Light_Curves/{lc_temp}")
   lc_ratio = np.mean(counts)/np.max(counts)
   rrlist.append(real_ratio)
   lcr_list.append(lc_ratio)

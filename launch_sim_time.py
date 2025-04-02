@@ -233,9 +233,9 @@ def maketmpsf(command, args, pid):
         f.write(f"{source}.Flux {command[6]}")
         if command[8]:
           if command[9] is None:  # Case using GBM data, catalog doesn't have light curve name so we find it using the GRB name
-            f.write(f"\n{source}.Lightcurve File true ./sources/Light_Curves/LightCurve_{command[3]}.dat")
+            f.write(f"\n{source}.Lightcurve File true ./sources/GBM_Light_Curves/LightCurve_{command[3]}.dat")
           else:  # Case using Sampled data, catalog has light curve name so use it directly
-            f.write(f"\n{source}.Lightcurve File true ./sources/Light_Curves/{command[9]}")
+            f.write(f"\n{source}.Lightcurve File true ./sources/Sample_Light_Curves/{command[9]}")
       else:
         f.write(line)
       f.write("\n")

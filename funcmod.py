@@ -237,7 +237,7 @@ def pflux_to_mflux_calculator(lc_name, t90):
   Returns the conversion value from pflux to mflux.
   It's based on a 1-second pflux as the Lpeak in the Yonetoku correlation is based on a 1-second timescale.
   """
-  times, counts = extract_lc(f"./sources/Light_Curves/{lc_name}")
+  times, counts = extract_lc(f"./sources/GBM_Light_Curves/{lc_name}")
   delta_time = times[1:]-times[:-1]
 
   if t90 <= 2:

@@ -275,7 +275,7 @@ class GRBSample:
 
       t90_obs_temp = 10 ** self.kde_short_log_t90.resample(1)[0][0]
       lc_temp = self.closest_lc(t90_obs_temp)
-      times, counts = extract_lc(f"./sources/Light_Curves/{lc_temp}")
+      times, counts = extract_lc(f"./sources/GBM_Light_Curves/{lc_temp}")
       pflux_to_mflux = np.mean(counts) / np.max(counts)
 
       ##################################################################################################################
@@ -297,7 +297,7 @@ class GRBSample:
 
       t90_obs_temp = 10 ** self.kde_short_log_t90.resample(1)[0][0]
       lc_temp = self.closest_lc(t90_obs_temp)
-      times, counts = extract_lc(f"./sources/Light_Curves/{lc_temp}")
+      times, counts = extract_lc(f"./sources/GBM_Light_Curves/{lc_temp}")
       pflux_to_mflux = np.mean(counts) / np.max(counts)
 
       dl_obs_temp = self.cosmo.luminosity_distance(z_obs_temp).value / 1000  # Gpc
@@ -317,7 +317,7 @@ class GRBSample:
 
       t90_obs_temp = 10 ** self.kde_short_log_t90.resample(1)[0][0]
       lc_temp = self.closest_lc(t90_obs_temp)
-      times, counts = extract_lc(f"./sources/Light_Curves/{lc_temp}")
+      times, counts = extract_lc(f"./sources/GBM_Light_Curves/{lc_temp}")
       pflux_to_mflux = np.mean(counts) / np.max(counts)
 
       dl_obs_temp = self.cosmo.luminosity_distance(z_obs_temp).value / 1000  # Gpc
@@ -378,7 +378,7 @@ class GRBSample:
       # With a distribution : the value is taken in a log distribution and then put back in linear value
       t90_obs_temp = 10 ** self.kde_long_log_t90.resample(1)[0][0]
       lc_temp = self.closest_lc(t90_obs_temp)
-      times, counts = extract_lc(f"./sources/Light_Curves/{lc_temp}")
+      times, counts = extract_lc(f"./sources/GBM_Light_Curves/{lc_temp}")
       pflux_to_mflux = np.mean(counts) / np.max(counts)
 
       ##################################################################################################################
@@ -410,7 +410,7 @@ class GRBSample:
 
       t90_obs_temp = 10 ** self.kde_long_log_t90.resample(1)[0][0]
       lc_temp = self.closest_lc(t90_obs_temp)
-      times, counts = extract_lc(f"./sources/Light_Curves/{lc_temp}")
+      times, counts = extract_lc(f"./sources/GBM_Light_Curves/{lc_temp}")
       pflux_to_mflux = np.mean(counts) / np.max(counts)
 
       dl_obs_temp = self.cosmo.luminosity_distance(z_obs_temp).value / 1000  # Gpc
@@ -442,7 +442,7 @@ class GRBSample:
 
       t90_obs_temp = 10 ** self.kde_long_log_t90.resample(1)[0][0]
       lc_temp = self.closest_lc(t90_obs_temp)
-      times, counts = extract_lc(f"./sources/Light_Curves/{lc_temp}")
+      times, counts = extract_lc(f"./sources/GBM_Light_Curves/{lc_temp}")
       pflux_to_mflux = np.mean(counts) / np.max(counts)
 
       dl_obs_temp = self.cosmo.luminosity_distance(z_obs_temp).value / 1000  # Gpc
@@ -472,7 +472,7 @@ class GRBSample:
 
       t90_obs_temp = 10 ** self.kde_long_log_t90.resample(1)[0][0]
       lc_temp = self.closest_lc(t90_obs_temp)
-      times, counts = extract_lc(f"./sources/Light_Curves/{lc_temp}")
+      times, counts = extract_lc(f"./sources/GBM_Light_Curves/{lc_temp}")
       pflux_to_mflux = np.mean(counts) / np.max(counts)
 
       dl_obs_temp = self.cosmo.luminosity_distance(z_obs_temp).value / 1000  # Gpc
@@ -523,7 +523,7 @@ class GRBSample:
 
       t90_obs_temp = 10 ** self.kde_long_log_t90.resample(1)[0][0]
       lc_temp = self.closest_lc(t90_obs_temp)
-      times, counts = extract_lc(f"./sources/Light_Curves/{lc_temp}")
+      times, counts = extract_lc(f"./sources/GBM_Light_Curves/{lc_temp}")
       pflux_to_mflux = np.mean(counts) / np.max(counts)
 
       dl_obs_temp = self.cosmo.luminosity_distance(z_obs_temp).value / 1000  # Gpc
@@ -1339,7 +1339,7 @@ def fitting_flux(smp, nbin=200, flim=2, showfig=False):
 #   norm_val, spec = norn_band_spec_calc(self.band_low_short, self.band_high_short, z_temp, dl_temp, ep_temp, lpeak_temp, ener_range)
 #   temp_peak_flux = trapezoid(spec, ener_range)
 #
-#   times, counts = extract_lc(f"./sources/Light_Curves/{lc_temp}")
+#   times, counts = extract_lc(f"./sources/GBM_Light_Curves/{lc_temp}")
 #   temp_mean_flux = temp_peak_flux / np.max(counts) * np.mean(counts)
 #
 #   data_row = pd.DataFrame(data=[[z_temp, ep_obs_temp, ep_temp, lpeak_temp, temp_mean_flux, temp_peak_flux, temp_t90, temp_mean_flux * temp_t90, lc_temp, temp_band_low, temp_band_high, dl_temp, eiso_temp, "Sample short",
@@ -1409,7 +1409,7 @@ def fitting_flux(smp, nbin=200, flim=2, showfig=False):
 #   # temp_t90 = (1+z_temp) * eiso_temp / lpeak_temp
 #   temp_peak_flux = trapezoid(spec, ener_range)
 #
-#   times, counts = extract_lc(f"./sources/Light_Curves/{lc_temp}")
+#   times, counts = extract_lc(f"./sources/GBM_Light_Curves/{lc_temp}")
 #   temp_mean_flux = temp_peak_flux / np.max(counts) * np.mean(counts)
 #
 #   data_row = pd.DataFrame(data=[[z_temp, epObstemp, ep_temp, lpeak_temp, temp_mean_flux, temp_peak_flux, temp_t90, temp_mean_flux * temp_t90, lc_temp, temp_band_low, temp_band_high, dl_temp, eiso_temp, "Sample long",
