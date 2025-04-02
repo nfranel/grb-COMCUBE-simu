@@ -227,8 +227,8 @@ def make_tte_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_mas
       else:
         plt.close(fig)
       if saving:
-        fig.savefig(f"sources/LC_plots/LightCurve_{name}.png")
-        save_LC(counts_corr, lc_select.centroids, f"sources/Light_Curves/LightCurve_{name}.dat")
+        fig.savefig(f"sources/LC_plots_GBM/LightCurve_{name}.png")
+        save_LC(counts_corr, lc_select.centroids, f"sources/GBM_Light_Curves/LightCurve_{name}.dat")
 
       ###################################################################################################################
       # removing the files
@@ -373,8 +373,8 @@ def make_cspec_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_m
   else:
     plt.close(fig)
   if saving:
-    fig.savefig(f"sources/LC_plots/LightCurve_{name}.png")
-    save_LC(counts_corr, used_centroids, f"sources/Light_Curves/LightCurve_{name}.dat")
+    fig.savefig(f"sources/LC_plots_GBM/LightCurve_{name}.png")
+    save_LC(counts_corr, used_centroids, f"sources/GBM_Light_Curves/LightCurve_{name}.dat")
 
   #####################################################################################################################
   # removing the files
@@ -428,16 +428,14 @@ def create_lc(cat, ite_grb, bin_size="auto", ener_range=(10, 1000), show=False, 
 
 
 gbm_cat = Catalog("./GBM/allGBM.txt", [4, '\n', 5, '|', 4000], "GBM/rest_frame_properties.txt")
-# with mp.Pool() as pool:
-#   pool.starmap(create_lc, zip(repeat(gbm_cat), range(len(gbm_cat))))
 
 # # for grb_ite in [17, 890, 1057, 1350]:
 # # for grb_ite in [17]:
-# for grb_ite in range(1800, len(gbm_cat)):
-#   create_lc(gbm_cat, grb_ite, bin_size="auto", ener_range=(10, 1000), show=False, directory="./sources/")
+for grb_ite in range(len(gbm_cat)):
+  create_lc(gbm_cat, grb_ite, bin_size="auto", ener_range=(10, 1000), show=False, directory="./sources/", saving=True)
 
-import matplotlib as mpl
-mpl.use("Qt5Agg")
-for grb_ite in [960, 972, 589, 949]:
-  create_lc(gbm_cat, grb_ite, bin_size="auto", ener_range=(10, 1000), show=True, directory="./sources/", saving=True)
+# import matplotlib as mpl
+# mpl.use("Qt5Agg")
+# for grb_ite in [960, 972, 589, 949]:
+#   create_lc(gbm_cat, grb_ite, bin_size="auto", ener_range=(10, 1000), show=True, directory="./sources/", saving=True)
 # create_lc(gbm_cat, 972, bin_size="auto", ener_range=(10, 1000), show=True, directory="./sources/", saving=False)
