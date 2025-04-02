@@ -769,7 +769,7 @@ class MCCatalog:
     while t90_obs_temp > 2:
       t90_obs_temp = 10 ** np.random.normal(-0.2373, 0.4058)
 
-    lc_temp, gbm_mflux, gbm_pflux = self.closest_lc(t90_obs_temp)
+    lc_temp, gbm_mflux, gbm_pflux = self.closest_lc(t90_obs_temp)[:3]
     pflux_to_mflux = gbm_mflux / gbm_pflux
     # pflux_to_mflux = pflux_to_mflux_calculator(lc_temp, gbm_t90)
 
@@ -816,7 +816,7 @@ class MCCatalog:
       t90_obs_temp = 10 ** np.random.normal(1.4438, 0.4956)
     # timelist.append(time() - init_time)
 
-    lc_temp, gbm_mflux, gbm_pflux = self.closest_lc(t90_obs_temp)
+    lc_temp, gbm_mflux, gbm_pflux = self.closest_lc(t90_obs_temp)[:3]
     pflux_to_mflux = gbm_mflux / gbm_pflux
     # pflux_to_mflux = pflux_to_mflux_calculator(lc_temp, gbm_t90)
 
@@ -845,11 +845,15 @@ class MCCatalog:
     Find the lightcurve file with a duration which is the closest to the sampled t90 time
     """
     abs_diff = np.abs(np.array(self.gbm_cat.df.t90, dtype=float) - searched_time)
-    gbm_index = np.argmin(abs_diff)
-    # print(searched_time, float(self.gbm_cat.t90[gbm_index]))
-    # print(self.gbm_cat.df)
-    # print(self.gbm_cat.df.mean_flux)
-    return f"LightCurve_{self.gbm_cat.df.name[gbm_index]}.dat", self.gbm_cat.df.mean_flux[gbm_index], self.gbm_cat.df.peak_flux[gbm_index]  # self.gbm_cat.df.t90[gbm_index]
+    gbm_indexes = np.where(abs_diff == np.min(abs_diff))[0]
+    # print(gbm_indexes)
+    if len(gbm_indexes) == 0:
+      raise ValueError("No GRB found for the closest GRB duration")
+    elif len(gbm_indexes) == 1:
+      gbm_index = gbm_indexes[0]
+    else:
+      gbm_index = gbm_indexes[np.random.randint(len(gbm_indexes))]
+    return f"LightCurve_{self.gbm_cat.df.name[gbm_index]}.dat", self.gbm_cat.df.mean_flux[gbm_index], self.gbm_cat.df.peak_flux[gbm_index], self.gbm_cat.df.t90[gbm_index]
 
   def gbm_reference_distri(self, print_bins=True):
     """

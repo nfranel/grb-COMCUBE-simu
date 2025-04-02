@@ -75,17 +75,20 @@ def save_LC(rates, centroids, fullname):
   for value_ite in range(len(centroids) - 1):
     if centroids[value_ite + 1] <= centroids[value_ite]:
       raise ValueError(f"The x values for {fullname} are not in increasing order, correction needed")
+
   with open(fullname, "w") as f:
     f.write("# Light curve file, first column is time, second is count rate\n")
     f.write("\n")
     f.write("IP LinLin\n")
     centroids -= centroids[0]
     for ite in range(len(rates)):
+      if rates[ite] < 0:
+        raise ValueError("Error : one of the light curve bin has a negative number of counts")
       f.write(f"DP {centroids[ite]} {rates[ite]}\n")
     f.write("EN")
 
 
-def make_tte_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_mask, bin_size=0.1, ener_range=(10, 1000), show=False, directory="./sources/", saving=True):
+def make_tte_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_mask, p_to_m_flux, bin_size=0.1, ener_range=(10, 1000), show=False, directory="./sources/", saving=True):
   """
 
   """
@@ -101,7 +104,7 @@ def make_tte_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_mas
   if files == []:
     cfiles = trig_finder.ls_cspec()
     if cfiles != []:
-      return make_cspec_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_mask, ener_range=ener_range, show=show, directory=directory, saving=saving)
+      return make_cspec_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_mask, p_to_m_flux, ener_range=ener_range, show=show, directory=directory, saving=saving)
     else:
       return name
   else:
@@ -119,7 +122,7 @@ def make_tte_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_mas
     #####################################################################################################################
     if t_low_rangemax > bkg_range[0][0] or t_high_rangemin < bkg_range[1][1]:
       rm_files(files, directory)
-      return make_cspec_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_mask, ener_range=ener_range, show=show, directory=directory, saving=saving)
+      return make_cspec_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_mask, p_to_m_flux, ener_range=ener_range, show=show, directory=directory, saving=saving)
     else:
       tte_total = ttes[0].merge(ttes)
 
@@ -171,29 +174,51 @@ def make_tte_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_mas
       rates_bkg_select_total = bin_selector(lc_bkgd, start_t90, end_t90, lc.lo_edges, lc.hi_edges)
       substracted_rates = substract_bkg(lc_select.rates, rates_bkg_select_total)
 
+      if np.isnan(p_to_m_flux):
+        corr = 0
+      else:
+        corr = (np.mean(substracted_rates) - p_to_m_flux * np.max(substracted_rates)) / (p_to_m_flux - 1)
+
+      if corr >= 0:
+        counts_corr = (substracted_rates + np.random.poisson(corr, len(substracted_rates)))
+      else:
+        counts_corr = (substracted_rates - np.random.poisson(-corr, len(substracted_rates)))
+        if np.min(counts_corr) < 0:
+          counts_corr -= np.min(counts_corr)
+      counts_corr = counts_corr / np.max(counts_corr) * np.max(substracted_rates)
+
+      if show:
+        print(f"ratio peak to mean : {p_to_m_flux}")
+        print("LC ratio peak to mean corrected : ", np.mean(counts_corr) / np.max(counts_corr))
+        fig, ax = plt.subplots(1, 1, figsize=(10, 6))
+        plt.suptitle(f"Light curve correction - {name}")
+        ax.step(lc_select.centroids, substracted_rates, where="post", label="Reconstructed LC")
+        ax.step(lc_select.centroids, counts_corr, where="post", label="Corrected LC")
+        ax.set(xlabel="Time (s)", ylabel="Number of counts")
+        ax.legend()
+        plt.show()
+
       ###################################################################################################################
       # Ploting if requested and saving the figure and light curves
       ###################################################################################################################
-      fig_full, ax_full = plt.subplots(figsize=(10, 6))
-      ax_full.step(lc.centroids, lc.rates)
-      if type(lc_bkgd) is gbm.data.primitives.TimeBins or type(lc_bkgd) is gbm.background.background.BackgroundRates:
-        bkg_plot_rates = lc_bkgd.rates
-      elif type(lc_bkgd) is np.ndarray:
-        bkg_plot_rates = lc_bkgd
-      else:
-        print(type(lc_bkgd))
-      ax_full.step(lc.centroids, bkg_plot_rates, color="red", label="Background fitted")
-      ax_full.set(xlabel="Time(s)", ylabel="Count rate (count/s)", title=f"Light curve {name} with tte with background")
-      ax_full.axvline(start_t90, color="black", label="T90 start and stop")
-      ax_full.axvline(end_t90, color="black")
-      ax_full.legend()
       if show:
+        fig_full, ax_full = plt.subplots(figsize=(10, 6))
+        ax_full.step(lc.centroids, lc.rates)
+        if type(lc_bkgd) is gbm.data.primitives.TimeBins or type(lc_bkgd) is gbm.background.background.BackgroundRates:
+          bkg_plot_rates = lc_bkgd.rates
+        elif type(lc_bkgd) is np.ndarray:
+          bkg_plot_rates = lc_bkgd
+        else:
+          print(type(lc_bkgd))
+        ax_full.step(lc.centroids, bkg_plot_rates, color="red", label="Background fitted")
+        ax_full.set(xlabel="Time(s)", ylabel="Count rate (count/s)", title=f"Light curve {name} with tte with background")
+        ax_full.axvline(start_t90, color="black", label="T90 start and stop")
+        ax_full.axvline(end_t90, color="black")
+        ax_full.legend()
         plt.show()
-      else:
-        plt.close(fig_full)
 
       fig, ax = plt.subplots(figsize=(10, 6))
-      ax.step(lc_select.centroids, substracted_rates)
+      ax.step(lc_select.centroids, counts_corr)
       ax.set(xlabel="Time(s)", ylabel="Count rate (count/s)", title=f"Light curve {name} with tte")
       ax.axvline(start_t90, color="black")
       ax.axvline(end_t90, color="black")
@@ -203,7 +228,7 @@ def make_tte_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_mas
         plt.close(fig)
       if saving:
         fig.savefig(f"sources/LC_plots/LightCurve_{name}.png")
-        save_LC(substracted_rates, lc_select.centroids, f"sources/Light_Curves/LightCurve_{name}.dat")
+        save_LC(counts_corr, lc_select.centroids, f"sources/Light_Curves/LightCurve_{name}.dat")
 
       ###################################################################################################################
       # removing the files
@@ -212,7 +237,7 @@ def make_tte_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_mas
       return 0
 
 
-def make_cspec_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_mask, ener_range=(10, 1000), show=False, directory="./sources/", saving=True):
+def make_cspec_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_mask, p_to_m_flux, ener_range=(10, 1000), show=False, directory="./sources/", saving=True):
   """
 
   """
@@ -301,23 +326,45 @@ def make_cspec_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_m
   bkgd_rates_select = bin_selector(bkgd_rates, start_t90, end_t90, lc_list[0].lo_edges, lc_list[0].hi_edges)
   substracted_rates = substract_bkg(source_rates_select, bkgd_rates_select)
 
+  if np.isnan(p_to_m_flux):
+    corr = 0
+  else:
+    corr = (np.mean(substracted_rates) - p_to_m_flux * np.max(substracted_rates)) / (p_to_m_flux - 1)
+
+  if corr >= 0:
+    counts_corr = (substracted_rates + np.random.poisson(corr, len(substracted_rates)))
+  else:
+    counts_corr = (substracted_rates - np.random.poisson(-corr, len(substracted_rates)))
+    if np.min(counts_corr) < 0:
+      counts_corr -= np.min(counts_corr)
+  counts_corr = counts_corr / np.max(counts_corr) * np.max(substracted_rates)
+
+  if show:
+    print(f"ratio peak to mean : {p_to_m_flux}")
+    print("LC ratio peak to mean corrected : ", np.mean(counts_corr) / np.max(counts_corr))
+    fig, ax = plt.subplots(1, 1, figsize=(10, 6))
+    plt.suptitle(f"Light curve correction - {name}")
+    ax.step(used_centroids, substracted_rates, where="post", label="Reconstructed LC")
+    ax.step(used_centroids, counts_corr, where="post", label="Corrected LC")
+    ax.set(xlabel="Time (s)", ylabel="Number of counts")
+    ax.legend()
+    plt.show()
+
   #####################################################################################################################
   # Creating background
   #####################################################################################################################
-  fig_full, ax_full = plt.subplots(figsize=(10, 6))
-  ax_full.step(lc_list[0].centroids, source_rates)
-  ax_full.step(lc_list[0].centroids, bkgd_rates, color="red", label="Background fitted")
-  ax_full.set(xlabel="Time(s)", ylabel="Count rate (count/s)", title=f"Light curve {name} with cspec with background")
-  ax_full.axvline(start_t90, color="black", label="T90 start and stop")
-  ax_full.axvline(end_t90, color="black")
-  ax_full.legend()
   if show:
+    fig_full, ax_full = plt.subplots(figsize=(10, 6))
+    ax_full.step(lc_list[0].centroids, source_rates)
+    ax_full.step(lc_list[0].centroids, bkgd_rates, color="red", label="Background fitted")
+    ax_full.set(xlabel="Time(s)", ylabel="Count rate (count/s)", title=f"Light curve {name} with cspec with background")
+    ax_full.axvline(start_t90, color="black", label="T90 start and stop")
+    ax_full.axvline(end_t90, color="black")
+    ax_full.legend()
     plt.show()
-  else:
-    plt.close(fig_full)
 
   fig, ax = plt.subplots(figsize=(10, 6))
-  ax.step(used_centroids, substracted_rates)
+  ax.step(used_centroids, counts_corr)
   ax.set(xlabel="Time(s)", ylabel="Count rate (count/s)", title=f"Light curve {name} with cspec")
   ax.axvline(start_t90, color="black")
   ax.axvline(end_t90, color="black")
@@ -327,7 +374,7 @@ def make_cspec_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_m
     plt.close(fig)
   if saving:
     fig.savefig(f"sources/LC_plots/LightCurve_{name}.png")
-    save_LC(substracted_rates, used_centroids, f"sources/Light_Curves/LightCurve_{name}.dat")
+    save_LC(counts_corr, used_centroids, f"sources/Light_Curves/LightCurve_{name}.dat")
 
   #####################################################################################################################
   # removing the files
@@ -356,7 +403,7 @@ def create_lc(cat, ite_grb, bin_size="auto", ener_range=(10, 1000), show=False, 
   flu_integ_stop_time = float(cat.df.flnc_spectrum_stop[ite_grb])
   # print("verif :", GRBname, t90, start_t90, end_t90, time_integ_lower_energy, time_integ_higher_energy, bk_time_low_start,
   #       bk_time_low_stop, bk_time_high_start, bk_time_high_stop, lc_detector_mask, spec_detector_mask, flu_integ_start_time, flu_integ_stop_time)
-
+  p_to_m_flux = cat.df.mean_flux[ite_grb] / cat.df.peak_flux[ite_grb]
   if bin_size == "auto":
     # a and b in 10**(a * log(T90) + b) obtained by fitting these values with lx the T90 and ly the desired bins
     # lx = [0.02, 0.04, 0.1, 0.2, 0.4, 1, 10, 100]
@@ -377,7 +424,7 @@ def create_lc(cat, ite_grb, bin_size="auto", ener_range=(10, 1000), show=False, 
 
   print(f"Running {GRBname}, ite : {ite_grb}")
   # print("==== 1 ====")
-  return make_tte_lc(GRBname, start_t90, end_t90, time_range, bkg_range, lc_detector_mask, bin_size=bin_size, ener_range=ener_range, show=show, directory=directory, saving=saving)
+  return make_tte_lc(GRBname, start_t90, end_t90, time_range, bkg_range, lc_detector_mask, p_to_m_flux, bin_size=bin_size, ener_range=ener_range, show=show, directory=directory, saving=saving)
 
 
 gbm_cat = Catalog("./GBM/allGBM.txt", [4, '\n', 5, '|', 4000], "GBM/rest_frame_properties.txt")
@@ -392,5 +439,5 @@ gbm_cat = Catalog("./GBM/allGBM.txt", [4, '\n', 5, '|', 4000], "GBM/rest_frame_p
 import matplotlib as mpl
 mpl.use("Qt5Agg")
 for grb_ite in [960, 972, 589, 949]:
-  create_lc(gbm_cat, grb_ite, bin_size="auto", ener_range=(10, 1000), show=True, directory="./sources/", saving=False)
+  create_lc(gbm_cat, grb_ite, bin_size="auto", ener_range=(10, 1000), show=True, directory="./sources/", saving=True)
 # create_lc(gbm_cat, 972, bin_size="auto", ener_range=(10, 1000), show=True, directory="./sources/", saving=False)

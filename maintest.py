@@ -2103,3 +2103,100 @@ with open("test_mdp", "w") as f:
     print(f"   MDP<=30%  : {mdp30}")
     print(f"   MDP<=20%  : {mdp20}")
     print(f"   MDP<=10%  : {mdp10}")
+
+
+from catalog import Catalog
+from funcmod import extract_lc
+import numpy as np
+import matplotlib.pyplot as plt
+gbm_cat = Catalog("GBM/allGBM.txt", [4, '\n', 5, '|', 4000], "GBM/rest_frame_properties.txt")
+
+
+def closest_lc(cat, searched_time):
+  """
+  Find the lightcurve file with a duration which is the closest to the sampled t90 time
+  """
+  abs_diff = np.abs(np.array(cat.df.t90, dtype=float) - searched_time)
+  gbm_index = np.argmin(abs_diff)
+  print(f"searched time vs gbm time : ", searched_time, float(cat.df.t90[gbm_index]))
+  return f"LightCurve_{cat.df.name[gbm_index]}.dat", cat.df.mean_flux[gbm_index], cat.df.peak_flux[gbm_index]  # cat.df.t90[gbm_index]
+
+lc_temp, gbm_mflux, gbm_pflux = closest_lc(gbm_cat, 90)
+print(f"Light curve : {lc_temp}, mean flux : {gbm_mflux}, peak flux : {gbm_pflux}, ratio peak to mean : {gbm_mflux / gbm_pflux}")
+times, counts = extract_lc(f"./sources/Light_Curves/{lc_temp}")
+print("last bin beginning : ", times[-1])
+print("LC ratio peak to mean : ", np.mean(counts)/np.max(counts))
+
+rrlist = []
+lcr_list = []
+for valtime in gbm_cat.df.t90:
+# for valtime in np.logspace(-2, 3, 10000):
+  lc_temp, gbm_mflux, gbm_pflux = closest_lc(gbm_cat, valtime)
+  real_ratio = gbm_mflux / gbm_pflux
+  times, counts = extract_lc(f"./sources/Light_Curves/{lc_temp}")
+  lc_ratio = np.mean(counts)/np.max(counts)
+  rrlist.append(real_ratio)
+  lcr_list.append(lc_ratio)
+  if lc_ratio / real_ratio < 0.5:
+    print("ici")
+
+rrlist = np.array(rrlist)
+lcr_list = np.array(lcr_list)
+fig, ax = plt.subplots(1, 1, figsize=(10, 6))
+ax.hist((lcr_list)/rrlist * 100, bins=50)
+plt.show()
+
+# fig, ax = plt.subplots(1, 1, figsize=(10, 6))
+# ax.step(times, counts, where="post")
+# plt.show()
+
+
+from catalog import Catalog
+from funcmod import extract_lc
+import numpy as np
+import matplotlib.pyplot as plt
+gbm_cat = Catalog("GBM/allGBM.txt", [4, '\n', 5, '|', 4000], "GBM/rest_frame_properties.txt")
+
+
+def closest_lc(cat, searched_time):
+  """
+  Find the lightcurve file with a duration which is the closest to the sampled t90 time
+  """
+  abs_diff = np.abs(np.array(cat.df.t90, dtype=float) - searched_time)
+  gbm_indexes = np.where(abs_diff == np.min(abs_diff))[0]
+  # print(gbm_indexes)
+  if len(gbm_indexes) == 0:
+    raise ValueError("No GRB found for the closest GRB duration")
+  elif len(gbm_indexes) == 1:
+    gbm_index = gbm_indexes[0]
+  else:
+    gbm_index = gbm_indexes[np.random.randint(len(gbm_indexes))]
+  return f"LightCurve_{cat.df.name[gbm_index]}.dat", cat.df.mean_flux[gbm_index], cat.df.peak_flux[gbm_index], cat.df.t90[gbm_index]
+
+long_timediff = []
+for ite in range(100000):
+  t90_obs_temp = 0
+  while t90_obs_temp <= 2:
+    t90_obs_temp = 10 ** np.random.normal(1.4438, 0.4956)
+  lc_temp, gbm_mflux, gbm_pflux, gbmt90 = closest_lc(gbm_cat, t90_obs_temp)
+  long_timediff.append(abs(t90_obs_temp - gbmt90)/gbmt90)
+long_timediff = np.array(long_timediff)
+
+fig, ax = plt.subplots(1, 1, figsize=(10, 6))
+ax.hist(long_timediff*100, bins=np.logspace(-4, 2, 200), weights=[1/len(long_timediff)]*len(long_timediff))
+ax.set(xlabel="Absolute time difference (%)", ylabel="Probability of occurence", xscale="log")
+plt.show()
+
+short_timediff = []
+for ite in range(100000):
+  t90_obs_temp = 1000
+  while t90_obs_temp > 2:
+    t90_obs_temp = 10 ** np.random.normal(-0.2373, 0.4058)
+  lc_temp, gbm_mflux, gbm_pflux, gbmt90 = closest_lc(gbm_cat, t90_obs_temp)
+  short_timediff.append(abs(t90_obs_temp - gbmt90)/gbmt90)
+short_timediff = np.array(short_timediff)
+
+fig, ax = plt.subplots(1, 1, figsize=(10, 6))
+ax.hist(short_timediff*100, bins=np.logspace(-4, 2, 200), weights=[1/len(short_timediff)]*len(short_timediff))
+ax.set(xlabel="Absolute time difference (%)", ylabel="Probability of occurence", xscale="log")
+plt.show()
