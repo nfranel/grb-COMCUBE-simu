@@ -274,7 +274,7 @@ Constant ElectronicsSize           {InstrumentSize}                             
 Constant ElectronicsThickness      4.5                                                                                            // 4.5
 Constant ElectronicsPosZ           {CalorPosZ-0.5*CalorThickness-0.5*ElectronicsThickness}                                        //
 Constant ElectronicsPCBThickness   0.15                                                                                           // 0.15
-Constant NElecPCB                  2                                                                                              // 2
+Constant NElecPCB                  6                                                                                              // 6
 Constant ElectronicsPCBDistance    {ElectronicsThickness/NElecPCB}                                                                // 2.25
 
 // -- Relative to the platform
