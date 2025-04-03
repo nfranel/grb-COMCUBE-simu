@@ -2,7 +2,7 @@ from decimal import DivisionByZero
 
 from gbm.data import TTE, Cspec
 from gbm.binning.unbinned import bin_by_time
-from gbm.plot import Lightcurve, Spectrum
+# from gbm.plot import Lightcurve, Spectrum
 import matplotlib.pyplot as plt
 from gbm.background import BackgroundFitter
 from gbm.background.binned import Polynomial
@@ -176,17 +176,18 @@ def make_tte_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_mas
       substracted_rates = substract_bkg(lc_select.rates, rates_bkg_select_total)
 
       if np.isnan(p_to_m_flux):
-        corr = 0
+        counts_corr = substracted_rates
+      elif p_to_m_flux == 1:
+        counts_corr = np.zeros(len(substracted_rates)) + np.max(substracted_rates)
       else:
         corr = (np.mean(substracted_rates) - p_to_m_flux * np.max(substracted_rates)) / (p_to_m_flux - 1)
-
-      if corr >= 0:
-        counts_corr = (substracted_rates + np.random.poisson(corr, len(substracted_rates)))
-      else:
-        counts_corr = (substracted_rates - np.random.poisson(-corr, len(substracted_rates)))
-        if np.min(counts_corr) < 0:
-          counts_corr -= np.min(counts_corr)
-      counts_corr = counts_corr / np.max(counts_corr) * np.max(substracted_rates)
+        if corr >= 0:
+          counts_corr = (substracted_rates + np.random.poisson(corr, len(substracted_rates)))
+        else:
+          counts_corr = (substracted_rates - np.random.poisson(-corr, len(substracted_rates)))
+          if np.min(counts_corr) < 0:
+            counts_corr -= np.min(counts_corr)
+        counts_corr = counts_corr / np.max(counts_corr) * np.max(substracted_rates)
 
       if show:
         print(f"ratio peak to mean : {p_to_m_flux}")
@@ -328,17 +329,18 @@ def make_cspec_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_m
   substracted_rates = substract_bkg(source_rates_select, bkgd_rates_select)
 
   if np.isnan(p_to_m_flux):
-    corr = 0
+    counts_corr = substracted_rates
+  elif p_to_m_flux == 1:
+    counts_corr = np.zeros(len(substracted_rates)) + np.max(substracted_rates)
   else:
     corr = (np.mean(substracted_rates) - p_to_m_flux * np.max(substracted_rates)) / (p_to_m_flux - 1)
-
-  if corr >= 0:
-    counts_corr = (substracted_rates + np.random.poisson(corr, len(substracted_rates)))
-  else:
-    counts_corr = (substracted_rates - np.random.poisson(-corr, len(substracted_rates)))
-    if np.min(counts_corr) < 0:
-      counts_corr -= np.min(counts_corr)
-  counts_corr = counts_corr / np.max(counts_corr) * np.max(substracted_rates)
+    if corr >= 0:
+      counts_corr = (substracted_rates + np.random.poisson(corr, len(substracted_rates)))
+    else:
+      counts_corr = (substracted_rates - np.random.poisson(-corr, len(substracted_rates)))
+      if np.min(counts_corr) < 0:
+        counts_corr -= np.min(counts_corr)
+    counts_corr = counts_corr / np.max(counts_corr) * np.max(substracted_rates)
 
   if show:
     print(f"ratio peak to mean : {p_to_m_flux}")
@@ -438,6 +440,8 @@ gbm_cat = Catalog("./GBM/allGBM.txt", [4, '\n', 5, '|', 4000], "GBM/rest_frame_p
 # # for grb_ite in [17]:
 for grb_ite in range(len(gbm_cat)):
   create_lc(gbm_cat, grb_ite, bin_size="auto", ener_range=(10, 1000), show=False, directory="./sources/", saving=True)
+# for grb_ite in [17, 41, 890, 1057, 1350]:
+#   create_lc(gbm_cat, grb_ite, bin_size="auto", ener_range=(10, 1000), show=True, directory="./sources/", saving=True)
 
 # import matplotlib as mpl
 # mpl.use("Qt5Agg")
