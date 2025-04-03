@@ -669,7 +669,7 @@ ElectronicsPCB.Visibility InstrumentElectronicsVisibility
 ElectronicsPCB.Color 2
 ElectronicsPCB.Shape BRIK {0.5*ElectronicsSize} {0.5*ElectronicsSize} {0.5*ElectronicsPCBThickness}
 
-For Z {ElectronicsThickness/ElectronicsPCBDistance} {0.5*(ElectronicsThickness-ElectronicsPCBThickness)} {-ElectronicsPCBDistance}
+For Z NElecPCB {0.5*(ElectronicsThickness-ElectronicsPCBThickness)} {-ElectronicsPCBDistance}
   ElectronicsPCB.Copy ElectronicsPCB_%Z
   ElectronicsPCB_%Z.Position 0. 0. $Z
   ElectronicsPCB_%Z.Mother Electronics1
