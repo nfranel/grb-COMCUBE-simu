@@ -266,13 +266,13 @@ def make_cspec_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_m
 
   lc_select_list = [lc.slice(start_t90, end_t90) for lc in lc_list]
 
-  # for lc in lc_select_list:
+  # # for lc in lc_select_list:
   #   # print(lc.centroids[0], lc.centroids[-1], start_t90, end_t90)
   #   # lc.centroids = np.linspace(start_t90, end_t90, len(lc.centroids))
   # print(lc_select_list[0].centroids[1:] - lc_select_list[0].centroids[:-1])
   # print(lc_select_list[0].centroids)
   # print(np.linspace(lc_select_list[0].centroids[0], lc_select_list[0].centroids[-1], len(lc_select_list[0].centroids)) - lc_select_list[0].centroids)
-  # print(type(lc.centroids))
+  # # print(type(lc.centroids))
 
   source_rates = np.sum(np.vstack(np.array([lc.rates for lc in lc_list])), axis=0)
   source_rates_select_list = np.array([lc.rates for lc in lc_select_list])
@@ -284,7 +284,7 @@ def make_cspec_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_m
     if lc_select_list[0].centroids[value_ite + 1] <= lc_select_list[0].centroids[value_ite]:
       if lc_select_list[0].centroids[value_ite - 1] > 0:
         correct_centroids = True
-        print(f"The centroids list has been corrected for {name}")
+        print(f"The centroids list will be corrected for {name}")
       else:
         raise ValueError("The centroids list has to be corrected for a situation not implemented")
 
@@ -295,7 +295,7 @@ def make_cspec_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_m
     temp_selec_cent = lc_select_list[0].centroids
     temp_cent = lc_list[0].centroids
     for value_ite in range(len(lc_select_list[0].centroids) - 1):
-      if lc_select_list[0].centroids[value_ite + 1] <= lc_select_list[0].centroids[value_ite]: # no need to check again is value is > 0
+      if lc_select_list[0].centroids[value_ite + 1] <= lc_select_list[0].centroids[value_ite]: # no need to check again if value is > 0
         temp_selec_cent[value_ite + 1] = 2 * lc_select_list[0].centroids[value_ite] - lc_select_list[0].centroids[value_ite - 1]
     for value_ite in range(len(lc_list[0].centroids) - 1):
       if lc_list[0].centroids[value_ite + 1] <= lc_list[0].centroids[value_ite]:
@@ -308,19 +308,26 @@ def make_cspec_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_m
     bkgd_rates = (high_mean - low_mean) / (bkg_range[1][0] - bkg_range[0][1]) * (temp_cent - bkg_range[0][1]) + low_mean
     used_centroids = temp_selec_cent
   else:
-    backfitter_list = [BackgroundFitter.from_phaii(cspec, Polynomial, bkg_range) for cspec in cspecs]
     try:
-      for backfitter in backfitter_list:
-        backfitter.fit(order=1)
-      bkgd_model_list = [backfitter.interpolate_bins(lc_list[0].lo_edges, lc_list[0].hi_edges) for backfitter in backfitter_list]
-      bkgd_lc_list = [bkgd_model.integrate_energy(ener_range[0], ener_range[1]) for bkgd_model in bkgd_model_list]
+      backfitter_list = [BackgroundFitter.from_phaii(cspec, Polynomial, bkg_range) for cspec in cspecs]
+      try:
+        for backfitter in backfitter_list:
+          backfitter.fit(order=1)
+        bkgd_model_list = [backfitter.interpolate_bins(lc_list[0].lo_edges, lc_list[0].hi_edges) for backfitter in backfitter_list]
+        bkgd_lc_list = [bkgd_model.integrate_energy(ener_range[0], ener_range[1]) for bkgd_model in bkgd_model_list]
 
-      bkgd_rates = np.sum(np.vstack(np.array([lc.rates for lc in bkgd_lc_list])), axis=0)
-    except (RuntimeError, np.linalg.LinAlgError):
+        bkgd_rates = np.sum(np.vstack(np.array([lc.rates for lc in bkgd_lc_list])), axis=0)
+      except (RuntimeError, np.linalg.LinAlgError):
+        low_mean = np.mean(source_rates[np.where(lc_list[0].centroids < bkg_range[0][1], True, False)])
+        high_mean = np.mean(source_rates[np.where(lc_list[0].centroids > bkg_range[1][0], True, False)])
+        bkgd_rates = (high_mean - low_mean) / (bkg_range[1][0] - bkg_range[0][1]) * (lc_list[0].centroids - bkg_range[0][1]) + low_mean
+      used_centroids = lc_select_list[0].centroids
+    except RuntimeWarning:
       low_mean = np.mean(source_rates[np.where(lc_list[0].centroids < bkg_range[0][1], True, False)])
       high_mean = np.mean(source_rates[np.where(lc_list[0].centroids > bkg_range[1][0], True, False)])
       bkgd_rates = (high_mean - low_mean) / (bkg_range[1][0] - bkg_range[0][1]) * (lc_list[0].centroids - bkg_range[0][1]) + low_mean
-    used_centroids = lc_select_list[0].centroids
+      used_centroids = lc_select_list[0].centroids
+      # raise DivisionByZero("Division error probably coming from BackgroundFitter")
 
   #####################################################################################################################
   # Correcting and combining the rates and selecting the good bins
@@ -440,7 +447,7 @@ gbm_cat = Catalog("./GBM/allGBM.txt", [4, '\n', 5, '|', 4000], "GBM/rest_frame_p
 # # for grb_ite in [17]:
 for grb_ite in range(len(gbm_cat)):
   create_lc(gbm_cat, grb_ite, bin_size="auto", ener_range=(10, 1000), show=False, directory="./sources/", saving=True)
-# for grb_ite in [17, 41, 890, 1057, 1350]:
+# for grb_ite in [200]:#, 17, 41, 890, 1057, 1350]:
 #   create_lc(gbm_cat, grb_ite, bin_size="auto", ener_range=(10, 1000), show=True, directory="./sources/", saving=True)
 
 # import matplotlib as mpl
