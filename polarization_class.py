@@ -473,7 +473,7 @@ for model in ["SO", "SR", "CD", "PJ"]:
 # for model in ["SO", "SR"]:
     test_distri = PolVSAngleRatio(model=model, gamma_range=100, red_z_range=1, theta_j_range=list(np.sqrt([0.1, 1, 10, 100]) / 100),
                                      theta_nu_range="toma_curve", nu_0_range=3.5, alpha_range=-0.8, beta_range=-2.2,
-                                     nu_min=None, nu_max=None, integ_steps=200, confidence=1.96, parallel="all")
+                                     nu_min=None, nu_max=None, integ_steps=200, confidence=1.96, parallel=20)
     test_distri.toma_display()
 print(f"TIME TAKEN FOR 4 MODELS : {time.time() - simtime} s")
 
