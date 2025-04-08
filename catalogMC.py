@@ -339,9 +339,9 @@ class MCCatalog:
     else:
       if mode == "mc":
         param_list = None
-        par_size = 1
-        # mctype = "long"
-        mctype = "short"
+        par_size = 400
+        mctype = "long"
+        # mctype = "short"
         fold_name = f"mc{mctype}v3-{par_size}"
         savefile = f"Sampled/{fold_name}/mc_fit.csv"
       elif mode == "parametrized":
@@ -358,7 +358,7 @@ class MCCatalog:
         os.mkdir(f"Sampled/{fold_name}")
       else:
         raise NameError("A simulation with this name already exists, please change it or delete the old simulation before running")
-      self.run_mc(par_size, thread_number=thread_num, method=param_list, savefile=savefile)
+      self.run_mc(par_size, thread_number=thread_num, method=param_list, savefile=savefile, mctype=mctype)
 
   def run_mc(self, run_number, thread_number=1, method=None, savefile=None, comment="", mctype="long"):
     print(f"Starting the run for {run_number} iterations")
