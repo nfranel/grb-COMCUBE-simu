@@ -929,7 +929,7 @@ class MCCatalog:
     plt.show()
 
 # from catalogMC import *
-testcat = MCCatalog(mode="mc")
+# testcat = MCCatalog(mode="mc")
 # testcat = MCCatalog(mode="catalog")
 
 # from catalogMC import *
