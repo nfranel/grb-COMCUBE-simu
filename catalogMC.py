@@ -317,7 +317,7 @@ class MCCatalog:
       par_size = 3
       fold_name = f"cat_to_validate"
       savefolder = f"Sampled/{fold_name}/"
-      thread_num = 50
+      thread_num = 60
       sigma_number = 0.5
 
       if not (f"{fold_name}" in os.listdir("Sampled/")):
