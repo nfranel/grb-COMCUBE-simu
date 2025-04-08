@@ -349,7 +349,7 @@ class MCCatalog:
         # param_list = build_params([0.2, 0.3, 0.4, 0.5], [1.2, 1.4, 1.6, 1.8, 2, 2.2, 2.4, 2.6], [-1.1, -0.9, -0.8, -0.7, -0.6, -0.5, -0.4], [2, 2.6, 3.1, 3.6, 4.1, 5], -0.65, -3, 1.12e+52, 0.25, 2.8, 3.5, 2.3, -0.53, -3.4, 2.8e52)
         param_list = [[0.796361, 2.242970, -1.507276, 2.294414, -0.715277, -4.629343, 1.131491e52, 0.577574, 3.107413, 1.179197, 2.318962, -0.602085, -2.148571, 1.899889e52]]
         par_size = len(param_list)
-        fold_name = f"parametrizedv9-{par_size}"
+        fold_name = f"parametrizedv10-{par_size}"
         savefile = f"Sampled/{fold_name}/longfit_red_lum.csv"
       else:
         raise ValueError("Wrong value for mode. Only 'catalog', 'mc' and 'parametrized' are possible.")
