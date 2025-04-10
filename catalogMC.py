@@ -176,25 +176,26 @@ class MCCatalog:
     self.nflncbin_l = [30, 4, 1]
     self.nflncbin_s = [30, 1, 1]
     self.usual_bins = np.logspace(-1, 4, 50)
-    self.bin_flux_l = np.concatenate((np.logspace(-1, np.log10(self.flux_lim[0]), self.nfluxbin_l[0] + 1),
-                                      np.logspace(np.log10(self.flux_lim[0]), np.log10(self.flux_lim[1]), self.nfluxbin_l[1] + 1)[1:],
-                                      np.logspace(np.log10(self.flux_lim[1]), 4, self.nfluxbin_l[2] + 1)[1:]))
-    self.bin_flux_s = np.concatenate((np.logspace(-1, np.log10(self.flux_lim[0]), self.nfluxbin_s[0] + 1),
-                                      np.logspace(np.log10(self.flux_lim[0]), np.log10(self.flux_lim[1]), self.nfluxbin_s[1] + 1)[1:],
-                                      np.logspace(np.log10(self.flux_lim[1]), 4, self.nfluxbin_s[2] + 1)[1:]))
+    # l_pflux_bright = np.array([16.44, 27, 44.4, 73, 120 , 1000])
+    l_pflux_bright = np.array([12, 14, 16, 19, 22, 27, 35, 45, 57, 73, 120, 1000])
+    # s_pflux_bright = np.array([10,  23,  52.4, 120 , 1000])
+    s_pflux_bright = np.array([12.3, 15.2, 18.7, 24, 35,  52.4, 120 , 1000])
+    self.bin_flux_l = np.concatenate((np.logspace(-1, np.log10(self.flux_lim[0]), self.nfluxbin_l[0] + 1), l_pflux_bright))
+    self.bin_flux_s = np.concatenate((np.logspace(-1, np.log10(self.flux_lim[0]), self.nfluxbin_s[0] + 1), s_pflux_bright))
     self.bin_flnc_l = np.concatenate((np.logspace(-1, np.log10(self.flnc_l_lim[0]), self.nflncbin_l[0] + 1),
                                       np.logspace(np.log10(self.flnc_l_lim[0]), np.log10(self.flnc_l_lim[1]), self.nflncbin_l[1] + 1)[1:],
                                       np.logspace(np.log10(self.flnc_l_lim[1]), 4, self.nflncbin_l[2] + 1)[1:]))
     self.bin_flnc_s = np.concatenate((np.logspace(-1, np.log10(self.flnc_s_lim[0]), self.nflncbin_s[0] + 1),
                                       np.logspace(np.log10(self.flnc_s_lim[0]), np.log10(self.flnc_s_lim[1]), self.nflncbin_s[1] + 1)[1:],
                                       np.logspace(np.log10(self.flnc_s_lim[1]), 4, self.nflncbin_s[2] + 1)[1:]))
-    print(self.bin_flux_l)
-    print(self.bin_flux_s)
     pflux_l_hist = np.histogram(self.gbm_l_pflux, bins=self.bin_flux_l, weights=[self.gbm_weight] * len(self.gbm_l_pflux))[0]
     pflux_s_hist = np.histogram(self.gbm_s_pflux, bins=self.bin_flux_s, weights=[self.gbm_weight] * len(self.gbm_s_pflux))[0]
     flnc_l_hist = np.histogram(self.gbm_l_flnc, bins=self.bin_flnc_l, weights=[self.gbm_weight] * len(self.gbm_l_flnc))[0]
     flnc_s_hist = np.histogram(self.gbm_s_flnc, bins=self.bin_flnc_s, weights=[self.gbm_weight] * len(self.gbm_s_flnc))[0]
-
+    print(self.bin_flux_l)
+    print(pflux_l_hist)
+    print(self.bin_flux_s)
+    print(pflux_s_hist)
     #   Flux
     # Binned GBM counts
     # Version treating high and low bins differently

@@ -906,18 +906,18 @@ If {UseUCDscintDet}
     UCDscintDet.TriggerThreshold       15.
     UCDscintDet.NoiseThresholdEqualsTriggerThreshold true
 
-    // Energy resolution (1 sigma in keV) assuming sigma with FWHM = 5% of 662 keV @662 keV; -> sigmaE = 0.05*sqrt(662)/(2*sqrt(2*ln(2)))*sqrt(E)
-    UCDscintDet.EnergyResolution  Gauss   10.     10.   	1.73
-    UCDscintDet.EnergyResolution  Gauss   20.     20.   	2.44
-    UCDscintDet.EnergyResolution  Gauss   50.     50.   	3.86
-    UCDscintDet.EnergyResolution  Gauss   100.    100.   	5.46
-    UCDscintDet.EnergyResolution  Gauss   200.    200.   	7.73
-    UCDscintDet.EnergyResolution  Gauss   500.    500.   	12.2
-    UCDscintDet.EnergyResolution  Gauss   1000.   1000.         17.3
-    UCDscintDet.EnergyResolution  Gauss   2000.   2000.         24.4
-    UCDscintDet.EnergyResolution  Gauss   5000.   5000.         38.6
-    UCDscintDet.EnergyResolution  Gauss   10000.  10000.        54.6
-    UCDscintDet.EnergyResolution  Gauss   100000. 100000.       172.8
+    // Energy resolution (1 sigma in keV) assuming sigma with FWHM = 7.5% of 662 keV @662 keV; -> sigmaE = 0.05*sqrt(662)/(2*sqrt(2*ln(2)))*sqrt(E)
+    UCDscintDet.EnergyResolution  Gauss   10.     10.     2.59
+    UCDscintDet.EnergyResolution  Gauss   20.     20.     3.66
+    UCDscintDet.EnergyResolution  Gauss   50.     50.     5.79
+    UCDscintDet.EnergyResolution  Gauss   100.    100.    8.19
+    UCDscintDet.EnergyResolution  Gauss   200.    200.    11.6
+    UCDscintDet.EnergyResolution  Gauss   500.    500.    18.3
+    UCDscintDet.EnergyResolution  Gauss   1000.   1000.   25.9
+    UCDscintDet.EnergyResolution  Gauss   2000.   2000.   36.6
+    UCDscintDet.EnergyResolution  Gauss   5000.   5000.   57.9
+    UCDscintDet.EnergyResolution  Gauss   10000.  10000.  81.9
+    UCDscintDet.EnergyResolution  Gauss   100000. 100000. 259.1
 
     UCDscintDet.FailureRate          0.0
     //UCDscintDet.Overflow             3000.0
