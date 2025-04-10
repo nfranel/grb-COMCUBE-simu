@@ -192,10 +192,6 @@ class MCCatalog:
     pflux_s_hist = np.histogram(self.gbm_s_pflux, bins=self.bin_flux_s, weights=[self.gbm_weight] * len(self.gbm_s_pflux))[0]
     flnc_l_hist = np.histogram(self.gbm_l_flnc, bins=self.bin_flnc_l, weights=[self.gbm_weight] * len(self.gbm_l_flnc))[0]
     flnc_s_hist = np.histogram(self.gbm_s_flnc, bins=self.bin_flnc_s, weights=[self.gbm_weight] * len(self.gbm_s_flnc))[0]
-    print(self.bin_flux_l)
-    print(pflux_l_hist)
-    print(self.bin_flux_s)
-    print(pflux_s_hist)
     #   Flux
     # Binned GBM counts
     # Version treating high and low bins differently
@@ -220,30 +216,30 @@ class MCCatalog:
 
     # min and max values for distributions (estimated with ranges from Pescalli 2016, Ghirlanda 2016)
     # # Redshift
-    # self.l_rate_min = 0.2
-    # self.l_rate_max = 0.6
+    # self.l_rate_min = 0.4
+    # self.l_rate_max = 2.1
     # self.l_ind1_z_min = 1.5
-    # self.l_ind1_z_max = 2.5
-    # self.l_ind2_z_min = -0.5
-    # self.l_ind2_z_max = -0.9
-    # self.l_zb_min = 3
-    # self.l_zb_max = 4.2
+    # self.l_ind1_z_max = 4.3
+    # self.l_ind2_z_min = -2.4
+    # self.l_ind2_z_max = -0.1
+    # self.l_zb_min = 2.3
+    # self.l_zb_max = 3.7
     #
-    # self.s_rate_min = 0.4
+    # self.s_rate_min = 0.1
     # self.s_rate_max = 1.1
     # self.s_ind1_z_min = 0.5
     # self.s_ind1_z_max = 4.1
-    # self.s_ind2_z_min = 1.1
-    # self.s_ind2_z_max = 3.7
-    # self.s_zb_min = 2
+    # self.s_ind2_z_min = 0.9
+    # self.s_ind2_z_max = 4
+    # self.s_zb_min = 1.7
     # self.s_zb_max = 3.3
     # # Luminosity
-    # self.l_ind1_min = -1.6
-    # self.l_ind1_max = -0.7
-    # self.l_ind2_min = -2.6
-    # self.l_ind2_max = -1.6
+    # self.l_ind1_min = -1.5
+    # self.l_ind1_max = -0.1
+    # self.l_ind2_min = -2.1
+    # self.l_ind2_max = -0.8
     # self.l_lb_min = 2e51
-    # self.l_lb_max = 6e52
+    # self.l_lb_max = 3e+53
     #
     # self.s_ind1_min = -1
     # self.s_ind1_max = -0.39
@@ -320,7 +316,6 @@ class MCCatalog:
       par_size = 1
       fold_name = f"cat_to_validate"
       savefolder = f"Sampled/{fold_name}/"
-      thread_num = 10
       sigma_number = 3
 
       if not (f"{fold_name}" in os.listdir("Sampled/")):
@@ -345,14 +340,14 @@ class MCCatalog:
         par_size = 400
         mctype = "long"
         # mctype = "short"
-        fold_name = f"mc{mctype}v3-{par_size}"
+        fold_name = f"mc{mctype}v1-{par_size}"
         savefile = f"Sampled/{fold_name}/mc_fit.csv"
       elif mode == "parametrized":
         # (l_rate, l_ind1_z, l_ind2_z, l_zb, l_ind1, l_ind2, l_lb, s_rate, s_ind1_z, s_ind2_z, s_zb, s_ind1, s_ind2, s_lb)
         # param_list = build_params([0.2, 0.3, 0.4, 0.5], [1.2, 1.4, 1.6, 1.8, 2, 2.2, 2.4, 2.6], [-1.1, -0.9, -0.8, -0.7, -0.6, -0.5, -0.4], [2, 2.6, 3.1, 3.6, 4.1, 5], -0.65, -3, 1.12e+52, 0.25, 2.8, 3.5, 2.3, -0.53, -3.4, 2.8e52)
         param_list = [[0.796361, 2.242970, -1.507276, 2.294414, -0.715277, -4.629343, 1.131491e52, 0.577574, 3.107413, 1.179197, 2.318962, -0.602085, -2.148571, 1.899889e52]]
         par_size = len(param_list)
-        fold_name = f"parametrizedv10-{par_size}"
+        fold_name = f"parametrizedv1-{par_size}"
         savefile = f"Sampled/{fold_name}/longfit_red_lum.csv"
       else:
         raise ValueError("Wrong value for mode. Only 'catalog', 'mc' and 'parametrized' are possible.")
