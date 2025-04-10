@@ -47,8 +47,12 @@ def gen_commands(args):
   if args.simmode == "GBM":
     cat = Catalog(args.grbfile, args.sttype, cat_rest_info)
     vprint("Running with GBM data on flnc mode.", __verbose__, 0)
+    make_lc_files = False
   elif args.simmode == "sampled":
     cat = SampleCatalog(args.grbfile, args.sttype)
+    if not os.path.exists("./sources/Sample_Light_Curves"):
+      os.mkdir("./sources/Sample_Light_Curves")
+    make_lc_files = not (int(subprocess.getoutput("ls ./sources/Sample_Light_Curves | wc").strip().split("  ")[0]) == len(cat.df))
   else:
     raise ValueError("Wrong simulation mode in .par file")
   args.commands = []
@@ -67,6 +71,7 @@ def gen_commands(args):
     if args.simmode == "sampled":
       lc_name = cat.df.lc[i]
       pht_mflx = cat.df.mean_flux[i]
+      pht_pflx = cat.df.peak_flux[i]
       n_year = float(args.grbfile.split("years")[0].split("_")[-1])
       spectrafolder = f"{args.spectrafilepath}{int(n_year)}sample/"
       spectrumfile = f"{spectrafolder}{cat.df.name[i]}_spectrum.dat"
@@ -84,6 +89,12 @@ def gen_commands(args):
           for ite_E, E in enumerate(logE):
             f.write(f"DP {E} {spec[ite_E]}\n")
           f.write("\nEN\n\n")
+      # Creation of the light curves files if not created yet
+      if (not (f"LightCurve_{cat.df.name[i]}" in os.listdir("./sources/Sample_Light_Curves")) or make_lc_files):
+        gbm_cat = Catalog("GBM/allGBM.txt", [4, '\n', 5, '|', 4000], "GBM/rest_frame_properties.txt")
+        closest_gmb_t90_name = cat.df.lc[i].split(".")[0].split("_")[-1]
+        gbmt90 = gbm_cat.df.t90[gbm_cat.df.name == closest_gmb_t90_name].iloc[0]
+        make_sample_lc(cat, i, gbmt90)
     else:
       spectrumfile = f"{args.spectrafilepath}{cat.df.name[i]}_spectrum.dat"
       lc_name = None

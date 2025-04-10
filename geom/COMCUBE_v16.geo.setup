@@ -280,7 +280,8 @@ Constant ElectronicsSize           {InstrumentSize}                             
 Constant ElectronicsThickness      4.5                                                                                            // 4.5
 Constant ElectronicsPosZ           {CalorPosZ-0.5*CalorThickness-0.5*ElectronicsThickness}                                        //
 Constant ElectronicsPCBThickness   0.15                                                                                           // 0.15
-Constant ElectronicsPCBDistance    0.7                                                                                            // 0.7
+Constant NElecPCB                  6                                                                                              // 6
+Constant ElectronicsPCBDistance    {ElectronicsThickness/NElecPCB}                                                                // 0.75
 
 // -- Relative to the platform
 // Platform units (considered as electronics)
@@ -687,7 +688,7 @@ ElectronicsPCB.Visibility InstrumentElectronicsVisibility
 ElectronicsPCB.Color 2
 ElectronicsPCB.Shape BRIK {0.5*ElectronicsSize} {0.5*ElectronicsSize} {0.5*ElectronicsPCBThickness}
 
-For Z {ElectronicsThickness/ElectronicsPCBDistance} {0.5*(ElectronicsThickness-ElectronicsPCBThickness)} {-ElectronicsPCBDistance}
+For Z NElecPCB {0.5*(ElectronicsThickness-ElectronicsPCBThickness)} {-ElectronicsPCBDistance}
   ElectronicsPCB.Copy ElectronicsPCB_%Z
   ElectronicsPCB_%Z.Position 0. 0. $Z
   ElectronicsPCB_%Z.Mother Electronics1

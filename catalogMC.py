@@ -188,6 +188,8 @@ class MCCatalog:
     self.bin_flnc_s = np.concatenate((np.logspace(-1, np.log10(self.flnc_s_lim[0]), self.nflncbin_s[0] + 1),
                                       np.logspace(np.log10(self.flnc_s_lim[0]), np.log10(self.flnc_s_lim[1]), self.nflncbin_s[1] + 1)[1:],
                                       np.logspace(np.log10(self.flnc_s_lim[1]), 4, self.nflncbin_s[2] + 1)[1:]))
+    print(self.bin_flux_l)
+    print(self.bin_flux_s)
     pflux_l_hist = np.histogram(self.gbm_l_pflux, bins=self.bin_flux_l, weights=[self.gbm_weight] * len(self.gbm_l_pflux))[0]
     pflux_s_hist = np.histogram(self.gbm_s_pflux, bins=self.bin_flux_s, weights=[self.gbm_weight] * len(self.gbm_s_pflux))[0]
     flnc_l_hist = np.histogram(self.gbm_l_flnc, bins=self.bin_flnc_l, weights=[self.gbm_weight] * len(self.gbm_l_flnc))[0]
@@ -314,11 +316,11 @@ class MCCatalog:
     print("Starting")
     if mode == "catalog":
       param_list = None
-      par_size = 3
+      par_size = 1
       fold_name = f"cat_to_validate"
       savefolder = f"Sampled/{fold_name}/"
-      thread_num = 60
-      sigma_number = 0.5
+      thread_num = 10
+      sigma_number = 3
 
       if not (f"{fold_name}" in os.listdir("Sampled/")):
         os.mkdir(f"Sampled/{fold_name}")
@@ -635,8 +637,8 @@ class MCCatalog:
     # cond_test = chisquare(obs_dat, f_exp=expect_dat, ddof=0)
     # print("obs", obs_dat)
     # print("exp", expect_dat)
-    # chi2 limit is simply np.sum((obs_dat-expect_dat)**2/expect_dat) with obs_dat = expect_dat + np.sqrt(expect_dat) (1 sigma error for poisson distributed variable)
-    chi2_lim = len(expect_dat) * n_sig
+    # chi2 limit is simply np.sum((obs_dat-expect_dat)**2/expect_dat) with obs_dat = expect_dat + n np.sqrt(expect_dat) (1 sigma error for poisson distributed variable)
+    chi2_lim = len(expect_dat) * n_sig**2
     chi2 = np.sum((obs_dat-expect_dat)**2/expect_dat)
     return chi2 < chi2_lim, chi2, end_pflx_ratio
 
@@ -748,7 +750,42 @@ class MCCatalog:
       # plt.savefig(f"{savefile.split('.csv')[0]}_{iteration}_{pval_suf}_{int(histos[7])}")
       plt.savefig(f"{savefile.split('.csv')[0]}_{iteration}_{int(histos[6])}")
     plt.close(fig1)
-    # plt.show()
+
+    fig2, ((axv21, axv22), (axv23, axv24)) = plt.subplots(nrows=2, ncols=2, figsize=(20, 12))
+    fig2.suptitle(title)
+
+    axv21.hist(self.gbm_l_pflux, bins=self.bin_flux_l, histtype="step", color="red", label="GBM", weights=[self.gbm_weight] * len(self.gbm_l_pflux))
+    axv21.hist(histos[1], bins=self.bin_flux_l, histtype="step", color="blue", label="Sample")
+    axv21.axvline(self.flux_lim[0])
+    axv21.axvline(self.flux_lim[1])
+    axv21.set(xlabel="pflux (ph/cm²/s)", ylabel="Number of GRB", xscale="log", yscale=yscale)
+    axv21.grid(True, which='major', linestyle='--', color='black', alpha=0.3)
+    axv21.legend()
+
+    axv22.hist(self.gbm_s_pflux, bins=self.bin_flux_s, histtype="step", color="red", label="GBM", weights=[self.gbm_weight] * len(self.gbm_s_pflux))
+    axv22.hist(histos[4], bins=self.bin_flux_s, histtype="step", color="blue", label="Sample")
+    axv22.axvline(self.flux_lim[0])
+    axv22.axvline(self.flux_lim[1])
+    axv22.set(xlabel="pflux (ph/cm²/s)", ylabel="Number of GRB", xscale="log", yscale=yscale)
+    axv22.grid(True, which='major', linestyle='--', color='black', alpha=0.3)
+    axv22.legend()
+
+    axv23.hist(self.gbm_l_pflux, bins=self.usual_bins, histtype="step", color="red", label="GBM", weights=[self.gbm_weight] * len(self.gbm_l_pflux))
+    axv23.hist(histos[1], bins=self.usual_bins, histtype="step", color="blue", label="Sample")
+    axv23.set(xlabel="pflux (ph/cm²/s)", ylabel="Number of GRB", xscale="log", yscale=yscale)
+    axv23.grid(True, which='major', linestyle='--', color='black', alpha=0.3)
+    axv23.legend()
+
+    axv24.hist(self.gbm_s_pflux, bins=self.usual_bins, histtype="step", color="red", label="GBM", weights=[self.gbm_weight] * len(self.gbm_s_pflux))
+    axv24.hist(histos[4], bins=self.usual_bins, histtype="step", color="blue", label="Sample")
+    axv24.set(xlabel="pflux (ph/cm²/s)", ylabel="Number of GRB", xscale="log", yscale=yscale)
+    axv24.grid(True, which='major', linestyle='--', color='black', alpha=0.3)
+    axv24.legend()
+
+    if savefile is not None:
+      plt.savefig(f"{savefile.split('.csv')[0]}_compact_{iteration}_{int(histos[6])}")
+    plt.close(fig1)
+
 
   def get_short(self, ite_num, short_rate, ind1_z_s, ind2_z_s, zb_s, ind1_s, ind2_s, lb_s):
     """

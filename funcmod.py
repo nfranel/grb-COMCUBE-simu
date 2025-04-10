@@ -280,6 +280,26 @@ def pflux_to_mflux_calculator(lc_name, t90):
   return pflux_to_mflux
 
 
+def make_sample_lc(smp_cat, cat_ite, gbmt90):
+  """
+  
+  """
+  corr = smp_cat.df.t90[cat_ite] / gbmt90
+  times, counts = extract_lc(f"./sources/GBM_Light_Curves/{smp_cat.df.lc[cat_ite]}")
+  corrtimes = times * corr
+  fullname = f"./sources/Sample_Light_Curves/LightCurve_{smp_cat.df.name[cat_ite]}"
+  with open(fullname, "w") as f:
+    f.write("# Light curve file, first column is time, second is count rate\n")
+    f.write("\n")
+    f.write("IP LinLin\n")
+    corrtimes -= corrtimes[0]
+    for ite in range(len(counts)):
+      if counts[ite] < 0:
+        raise ValueError("Error : one of the light curve bin has a negative number of counts")
+      f.write(f"DP {corrtimes[ite]} {counts[ite]}\n")
+    f.write("EN")
+
+
 def read_grbpar(parfile):
   """
   reads a source's parameter file to get useful information for the analysis
