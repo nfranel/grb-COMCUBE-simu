@@ -782,7 +782,7 @@ class MCCatalog:
 
     if savefile is not None:
       plt.savefig(f"{savefile.split('.csv')[0]}_compact_{iteration}_{int(histos[6])}")
-    plt.close(fig1)
+    plt.close(fig2)
 
 
   def get_short(self, ite_num, short_rate, ind1_z_s, ind2_z_s, zb_s, ind1_s, ind2_s, lb_s):
