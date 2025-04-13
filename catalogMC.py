@@ -222,7 +222,7 @@ class MCCatalog:
     self.l_ind1_z_min = 1.5
     self.l_ind1_z_max = 4.3
     self.l_ind2_z_min = -2.4
-    self.l_ind2_z_max = -0.1
+    self.l_ind2_z_max = 1
     self.l_zb_min = 2.3
     self.l_zb_max = 3.7
 
@@ -318,7 +318,7 @@ class MCCatalog:
       par_size = 1
       fold_name = f"cat_to_validate"
       savefolder = f"Sampled/{fold_name}/"
-      sigma_number = 3
+      sigma_number = 1
 
       if not (f"{fold_name}" in os.listdir("Sampled/")):
         os.mkdir(f"Sampled/{fold_name}")
