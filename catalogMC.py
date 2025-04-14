@@ -236,7 +236,7 @@ class MCCatalog:
     self.s_zb_max = 3.3
     # Luminosity
     self.l_ind1_min = -1.5
-    self.l_ind1_max = -0.1
+    self.l_ind1_max = -1.2
     self.l_ind2_min = -2.1
     self.l_ind2_max = -0.8
     self.l_lb_min = 2e51
@@ -342,7 +342,7 @@ class MCCatalog:
         par_size = 2000
         mctype = "long"
         # mctype = "short"
-        fold_name = f"mc{mctype}v1-{par_size}"
+        fold_name = f"mc{mctype}v2-{par_size}"
         savefile = f"Sampled/{fold_name}/mc_fit.csv"
       elif mode == "parametrized":
         # (l_rate, l_ind1_z, l_ind2_z, l_zb, l_ind1, l_ind2, l_lb, s_rate, s_ind1_z, s_ind2_z, s_zb, s_ind1, s_ind2, s_lb)
