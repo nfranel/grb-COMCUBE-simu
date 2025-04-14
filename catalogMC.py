@@ -217,6 +217,40 @@ class MCCatalog:
 
     # INITIAL min and max values for distributions (Wandermann & Piran 2021, Lien, 2014, Lan et al 2019 for long GRBs and Ghirlanda, 2016 for short ones)
     # Redshift
+    # self.l_rate_min = 0.4
+    # self.l_rate_max = 2.1
+    # self.l_ind1_z_min = 1.5
+    # self.l_ind1_z_max = 4.3
+    # self.l_ind2_z_min = -2.4
+    # self.l_ind2_z_max = 1
+    # self.l_zb_min = 2.3
+    # self.l_zb_max = 3.7
+    #
+    # self.s_rate_min = 0.1
+    # self.s_rate_max = 1.1
+    # self.s_ind1_z_min = 0.5
+    # self.s_ind1_z_max = 4.1
+    # self.s_ind2_z_min = 0.9
+    # self.s_ind2_z_max = 4
+    # self.s_zb_min = 1.7
+    # self.s_zb_max = 3.3
+    # # Luminosity
+    # self.l_ind1_min = -1.5
+    # self.l_ind1_max = -0.1
+    # self.l_ind2_min = -2.1
+    # self.l_ind2_max = -0.8
+    # self.l_lb_min = 2e51
+    # self.l_lb_max = 3e+53
+    #
+    # self.s_ind1_min = -1
+    # self.s_ind1_max = -0.39
+    # self.s_ind2_min = -3.7
+    # self.s_ind2_max = -1.7
+    # self.s_lb_min = 0.91e52
+    # self.s_lb_max = 3.4e52
+
+    # Narrower parameter space after studying the results of Monte Carlo
+    # Redshift
     self.l_rate_min = 0.4
     self.l_rate_max = 2.1
     self.l_ind1_z_min = 1.5
@@ -248,40 +282,6 @@ class MCCatalog:
     self.s_ind2_max = -1.7
     self.s_lb_min = 0.91e52
     self.s_lb_max = 3.4e52
-
-    # Narrower parameter space after studying the results of Monte Carlo
-    # Redshift
-    # self.l_rate_min = 0.4
-    # self.l_rate_max = 0.8
-    # self.l_ind1_z_min = 1.9
-    # self.l_ind1_z_max = 3
-    # self.l_ind2_z_min = -2.4
-    # self.l_ind2_z_max = -0.01
-    # self.l_zb_min = 2
-    # self.l_zb_max = 3.5
-    #
-    # self.s_rate_min = 0.3
-    # self.s_rate_max = 0.9
-    # self.s_ind1_z_min = 0.6
-    # self.s_ind1_z_max = 3.4
-    # self.s_ind2_z_min = 1.6
-    # self.s_ind2_z_max = 3.5
-    # self.s_zb_min = 2
-    # self.s_zb_max = 3
-    # # Luminosity
-    # self.l_ind1_min = -0.9
-    # self.l_ind1_max = -0.65
-    # self.l_ind2_min = -5
-    # self.l_ind2_max = -3
-    # self.l_lb_min = 1e52
-    # self.l_lb_max = 1.9e52
-    #
-    # self.s_ind1_min = -1
-    # self.s_ind1_max = -0.4
-    # self.s_ind2_min = -3.3
-    # self.s_ind2_max = -1.7
-    # self.s_lb_min = 0.91e52
-    # self.s_lb_max = 3.4e52
 
     # Spectrum indexes gaussian distributions
     self.band_low_l_mu, self.band_low_l_sig = -0.9608, 0.3008
