@@ -83,7 +83,7 @@ def get_df(select_col, csvfile="./Sampled/longred_lum_discreet/longfit_red.csv")
 def MC_explo_pairplot(fileused, legend_mode, grbtype):
   if grbtype == "long":
     extract_cols = ["long_rate", "long_ind1_z", "long_ind2_z", "long_zb", "long_ind1_lum", "long_ind2_lum", "long_lb", "pierson_chi2"]
-    select_cols = ["long_rate", "long_ind1_z", "long_ind2_z", "long_zb", "long_ind1_lum", "long_ind2_lum", "long_lb"]
+    select_cols = ["long_rate", "long_ind1_z", "long_ind2_z", "long_zb", "long_ind1_lum", "long_ind2_lum", "long_lb_log"]
   elif grbtype == "short":
     extract_cols = ["short_rate", "short_ind1_z", "short_ind2_z", "short_zb", "short_ind1_lum", "short_ind2_lum", "short_lb", "pierson_chi2"]
     select_cols = ["short_rate", "short_ind1_z", "short_ind2_z", "short_zb", "short_ind1_lum", "short_ind2_lum", "short_lb"]
@@ -97,6 +97,7 @@ def MC_explo_pairplot(fileused, legend_mode, grbtype):
   # palette = {cat: rainbow_palette[i] for i, cat in enumerate(order_hue)}
 
   df_selec['pierson_chi2_category'] = pierson_chi2_categories
+  df_selec['long_lb_log'] = np.log10(df_selec['long_lb'])
 
   sns.pairplot(df_selec.sort_values(by="pierson_chi2", ascending=False), hue="pierson_chi2_category", vars=select_cols, corner=False, plot_kws={'s': 20}, palette="rainbow_r")
 
@@ -252,7 +253,7 @@ class MCCatalog:
     # Narrower parameter space after studying the results of Monte Carlo
     # Redshift
     self.l_rate_min = 0.4
-    self.l_rate_max = 2.1
+    self.l_rate_max = 1.5
     self.l_ind1_z_min = 1.5
     self.l_ind1_z_max = 4.3
     self.l_ind2_z_min = -2.4
@@ -272,9 +273,9 @@ class MCCatalog:
     self.l_ind1_min = -1.5
     self.l_ind1_max = -1.2
     self.l_ind2_min = -2.1
-    self.l_ind2_max = -0.8
+    self.l_ind2_max = -1.25
     self.l_lb_min = 2e51
-    self.l_lb_max = 3e+53
+    self.l_lb_max = 3e53
 
     self.s_ind1_min = -1
     self.s_ind1_max = -0.39
