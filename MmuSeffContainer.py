@@ -492,11 +492,17 @@ class MuSeffContainer(list):
         histo = hist_pol_norm / hist_unpol_norm * np.mean(hist_unpol_norm)
         fit_mod = Fit(modulation_func, var_x, histo, yerr=polarigram_error, comment="modulation")
 
-    fig, ax = plt.subplots(1, 1, figsize=(10, 6))
-    ax.stairs(hist_pol_norm, self.bins, label="Polarized histogram")
-    ax.stairs(hist_unpol_norm, self.bins, label="Unpolarized histogram")
-    ax.stairs(histo, self.bins, label="Unpolarized histogram")
-    ax.plot(np.linspace(-180, 180, 21, dtype=np.float32), modulation_func(np.linspace(-180, 180, 21, dtype=np.float32), *fit_mod.popt), label="Fitted modulation")
+    fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(10, 6), sharey=True)
+    ax1.stairs(hist_pol_norm, self.bins, label="Polarized histogram")
+    ax1.set(xlabel=r"\eta'")
+    ax1.legend()
+    ax2.stairs(hist_unpol_norm, self.bins, label="Unpolarized histogram")
+    ax2.set(xlabel=r"\eta'")
+    ax2.legend()
+    ax3.stairs(histo, self.bins, label="Unpolarized histogram")
+    ax3.plot(np.linspace(-180, 180, 100, dtype=np.float32), modulation_func(np.linspace(-180, 180, 100, dtype=np.float32), *fit_mod.popt), label="Fitted modulation")
+    ax3.set(xlabel=r"\eta'")
+    ax3.legend()
     plt.show()
 
 
