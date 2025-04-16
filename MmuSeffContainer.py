@@ -492,7 +492,7 @@ class MuSeffContainer(list):
         histo = hist_pol_norm / hist_unpol_norm * np.mean(hist_unpol_norm)
         fit_mod = Fit(modulation_func, var_x, histo, yerr=polarigram_error, comment="modulation")
 
-    fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(18, 4), sharey=True)
+    fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(15, 4), sharey=True)
     ax1.stairs(hist_pol_norm, self.bins, label="Initial histogram")
     ax1.set(xlabel=r"$\eta$'")
     ax1.legend()
