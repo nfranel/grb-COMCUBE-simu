@@ -503,6 +503,7 @@ class MuSeffContainer(list):
     ax3.plot(np.linspace(-180, 180, 100, dtype=np.float32), modulation_func(np.linspace(-180, 180, 100, dtype=np.float32), *fit_mod.popt), label="Fitted modulation")
     ax3.set(xlabel=r"$\eta$'")
     ax3.legend()
+    plt.thight_layout()
     plt.show()
 
 
