@@ -799,7 +799,7 @@ def angle(scatter_vector, grb_dec_sf, grb_ra_sf, source_name, num_sim, num_sat, 
                        (np.sin(-grb_dec_sf) * val_u * scatter_vector_err[:, 2])**2 +
                        (angleder_v4(init_vector, grb_dec_sf, grb_ra_sf) * val_u * grb_dec_sf_err)**2 +
                        ((angleder_u5(init_vector, grb_ra_sf) * val_v - angleder_v5(init_vector, grb_dec_sf, grb_ra_sf) * val_u) * grb_ra_sf_err)**2) /
-                (val_v ** 2 * (1 + (val_u / val_v) ** 2))))
+                                             (val_v ** 2 * (1 + (val_u / val_v) ** 2))))
   else:
     azim_err = 0
   return azim, polar, azim_err
