@@ -23,22 +23,6 @@ mpl.use('Agg')
 
 
 def categorize_pierson_chi2(pierson_chi2_array, mode="fine", grbtype="long"):
-  # sup18 =
-  # sup50 = np.sum(np.where(pierson_chi2_array >= 50, 1, 0))
-  # sup300 = np.sum(np.where(pierson_chi2_array >= 300, 1, 0))
-  # sup1000 = np.sum(np.where(pierson_chi2_array >= 1000, 1, 0))
-  # c0to6 =
-  # c0to12 = np.sum(np.where(pierson_chi2_array >= 0, np.where(pierson_chi2_array < 12, 1, 0), 0))
-  # c0to18 = np.sum(np.where(pierson_chi2_array >= 0, np.where(pierson_chi2_array < 18, 1, 0), 0))
-  # c0to50 = np.sum(np.where(pierson_chi2_array >= 0, np.where(pierson_chi2_array < 50, 1, 0), 0))
-  # c6to12 = np.sum(np.where(pierson_chi2_array >= 6, np.where(pierson_chi2_array < 12, 1, 0), 0))
-  # c12to18 = np.sum(np.where(pierson_chi2_array >= 12, np.where(pierson_chi2_array < 18, 1, 0), 0))
-  # c12to24 = np.sum(np.where(pierson_chi2_array >= 12, np.where(pierson_chi2_array < 24, 1, 0), 0))
-  # c18to50 = np.sum(np.where(pierson_chi2_array >= 18, np.where(pierson_chi2_array < 50, 1, 0), 0))
-  # c24to50 = np.sum(np.where(pierson_chi2_array >= 24, np.where(pierson_chi2_array < 50, 1, 0), 0))
-  # c50to300 = np.sum(np.where(pierson_chi2_array >= 50, np.where(pierson_chi2_array < 300, 1, 0), 0))
-  # c300to1000 = np.sum(np.where(pierson_chi2_array >= 300, np.where(pierson_chi2_array < 1000, 1, 0), 0))
-
   if grbtype == "long":
     nbins = 12
   else:
@@ -59,13 +43,6 @@ def categorize_pierson_chi2(pierson_chi2_array, mode="fine", grbtype="long"):
     f3 = np.sum(np.where(pierson_chi2_array >= chilim[1], np.where(pierson_chi2_array < chilim[2], 1, 0), 0))
     f4 = np.sum(np.where(pierson_chi2_array >= chilim[2], 1, 0))
 
-    # c1 = f"0 - 12  |  {c0to12} sims"
-    # c2 = f"12 - 24  |  {c12to24} sims"
-    # c3 = f"24 - 50  |  {c24to50} sims"
-    # c4 = f">= 50  |  {sup50} sims"
-    # categorized = np.where(pierson_chi2_array >= 50, c4, np.where(pierson_chi2_array >= 24, c3, np.where(pierson_chi2_array >= 12, c2, c1)))
-    # hue_order = [c1, c2, c3, c4]
-
   elif mode == "medium_coarse":
     siglim = np.array([1.5, 2, 3])
     chilim = np.around(nbins * siglim**2, 3)
@@ -73,13 +50,6 @@ def categorize_pierson_chi2(pierson_chi2_array, mode="fine", grbtype="long"):
     f2 = np.sum(np.where(pierson_chi2_array >= chilim[0], np.where(pierson_chi2_array < chilim[1], 1, 0), 0))
     f3 = np.sum(np.where(pierson_chi2_array >= chilim[1], np.where(pierson_chi2_array < chilim[2], 1, 0), 0))
     f4 = np.sum(np.where(pierson_chi2_array >= chilim[2], 1, 0))
-
-    # c1 = f"0 - 18  |  {c0to18} sims"
-    # c2 = f"18 - 50  |  {c18to50} sims"
-    # c3 = f"50 - 300  |  {c50to300} sims"
-    # c4 = f">= 300  |  {sup300} sims"
-    # categorized = np.where(pierson_chi2_array >= 300, c4, np.where(pierson_chi2_array >= 50, c3, np.where(pierson_chi2_array >= 18, c2, c1)))
-    # hue_order = [c1, c2, c3, c4]
 
   elif mode == "coarse":
     siglim = np.array([2, 3, 5])
@@ -96,13 +66,6 @@ def categorize_pierson_chi2(pierson_chi2_array, mode="fine", grbtype="long"):
     f2 = np.sum(np.where(pierson_chi2_array >= chilim[0], np.where(pierson_chi2_array < chilim[1], 1, 0), 0))
     f3 = np.sum(np.where(pierson_chi2_array >= chilim[1], np.where(pierson_chi2_array < chilim[2], 1, 0), 0))
     f4 = np.sum(np.where(pierson_chi2_array >= chilim[2], 1, 0))
-
-    # c1 = f"0 - 50  |  {c0to50} sims"
-    # c2 = f"50 - 300  |  {c50to300} sims"
-    # c3 = f"300 - 1000  |  {c300to1000} sims"
-    # c4 = f">= 1000  |  {sup1000} sims"
-    # categorized = np.where(pierson_chi2_array >= 1000, c4, np.where(pierson_chi2_array >= 300, c3, np.where(pierson_chi2_array >= 50, c2, c1)))
-    # hue_order = [c1, c2, c3, c4]
 
   else:
     raise ValueError("Wrong name for mode")
