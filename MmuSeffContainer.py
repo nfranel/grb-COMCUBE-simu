@@ -2,6 +2,7 @@
 # Date 01/12/2023
 # Version 2 :
 # Separating the code in different modules
+import os.path
 
 # Package imports
 # import matplotlib.pyplot as plt
@@ -361,107 +362,142 @@ class MuSeffContainer(list):
     return [Mu100Data(file_saved) for file_saved in files_saved[1:]]
 
   def show_fit(self, dec_plot, ra_plot, armcut=180):
+
     geom_name = self.geometry.split(".geo.setup")[0].split("/")[-1]
-    saving = f"mu-seff-saved_{geom_name}_{self.decs[0]:.0f}-{self.decs[1]:.0f}-{self.decs[2]:.0f}_{self.ras[0]:.0f}-{self.ras[1]:.0f}-{self.ras[2]:.0f}.txt"
-    fullfile = f"./mu100/sim_{geom_name}/{saving}"
+    polsname = f"./mu100/sim_{geom_name}/sim/mu100_{dec_plot:.1f}_{ra_plot:.1f}pol.inc1.id1.extracted.tra"
+    unpolsname = f"./mu100/sim_{geom_name}/sim/mu100_{dec_plot:.1f}_{ra_plot:.1f}unpol.inc1.id1.extracted.tra"
+    if not(os.path.exists(polsname) and os.path.exists(unpolsname)):
+      raise FileNotFoundError("Polarized or unpolarized file is not found")
+    # print("====== files loaded ======")
+    datapol = readfile(polsname)
+    dataunpol = readfile(unpolsname)
+    compton_second_pol = []
+    compton_second_unpol = []
+    compton_ener_pol = []
+    compton_ener_unpol = []
+    compton_firstpos_pol = []
+    compton_firstpos_unpol = []
+    compton_secpos_pol = []
+    compton_secpos_unpol = []
+    single_ener_pol = []
+
+    compton_second_pol_err = []
+    compton_ener_pol_err = []
+    compton_firstpos_pol_err = []
+    compton_secpos_pol_err = []
+    compton_second_unpol_err = []
+    compton_ener_unpol_err = []
+    compton_firstpos_unpol_err = []
+    compton_secpos_unpol_err = []
+    for event_pol in datapol:
+      reading_pol = readevt(event_pol, None)
+      if len(reading_pol) == 9:
+        compton_second_pol.append(reading_pol[0])
+        compton_ener_pol.append(reading_pol[1])
+        compton_firstpos_pol.append(reading_pol[3])
+        compton_secpos_pol.append(reading_pol[4])
+        compton_second_pol_err.append(reading_pol[5])
+        compton_ener_pol_err.append(reading_pol[6])
+        compton_firstpos_pol_err.append(reading_pol[7])
+        compton_secpos_pol_err.append(reading_pol[8])
+      elif len(reading_pol) == 3:
+        single_ener_pol.append(reading_pol[0])
+    for event_unpol in dataunpol:
+      reading_unpol = readevt(event_unpol, None)
+      if len(reading_unpol) == 9:
+        compton_second_unpol.append(reading_unpol[0])
+        compton_ener_unpol.append(reading_unpol[1])
+        compton_firstpos_unpol.append(reading_unpol[3])
+        compton_secpos_unpol.append(reading_unpol[4])
+        compton_second_unpol_err.append(reading_unpol[5])
+        compton_ener_unpol_err.append(reading_unpol[6])
+        compton_firstpos_unpol_err.append(reading_unpol[7])
+        compton_secpos_unpol_err.append(reading_unpol[8])
+
+    compton_second_pol = np.array(compton_second_pol)
+    compton_second_unpol = np.array(compton_second_unpol)
+    compton_ener_pol = np.array(compton_ener_pol)
+    compton_ener_unpol = np.array(compton_ener_unpol)
+    compton_firstpos_pol = np.array(compton_firstpos_pol)
+    compton_firstpos_unpol = np.array(compton_firstpos_unpol)
+    compton_secpos_pol = np.array(compton_secpos_pol)
+    compton_secpos_unpol = np.array(compton_secpos_unpol)
+    single_ener_pol = np.array(single_ener_pol)
+
+    compton_second_pol_err = np.array(compton_second_pol_err)
+    compton_ener_pol_err = np.array(compton_ener_pol_err)
+    compton_firstpos_pol_err = np.array(compton_firstpos_pol_err)
+    compton_secpos_pol_err = np.array(compton_secpos_pol_err)
+    compton_second_unpol_err = np.array(compton_second_unpol_err)
+    compton_ener_unpol_err = np.array(compton_ener_unpol_err)
+    compton_firstpos_unpol_err = np.array(compton_firstpos_unpol_err)
+    compton_secpos_unpol_err = np.array(compton_secpos_unpol_err)
 
     var_x = .5 * (self.bins[1:] + self.bins[:-1])
     binw = self.bins[1:] - self.bins[:-1]
-    with open(fullfile, "r") as fullf:
-      fulldata = fullf.read().split("NewPos\n")
-    list_dec = []
-    list_ra = []
-    for filedata in fulldata[1:]:
-      lines = filedata.split("\n")
-      # Extraction of position
-      dec = float(lines[0])
-      ra = float(lines[1])
-      list_dec.append(dec)
-      list_ra.append(ra)
-      if dec == dec_plot and ra == ra_plot:
-        # Extraction of compton energies for pol and unpol events
-        compton_second_pol = np.array(lines[2].split("|"), dtype=float)
-        compton_second_unpol = np.array(lines[3].split("|"), dtype=float)
-        compton_second_pol_err = np.array(lines[4].split("|"), dtype=float)
-        compton_second_unpol_err = np.array(lines[5].split("|"), dtype=float)
-        compton_ener_pol = np.array(lines[6].split("|"), dtype=float)
-        compton_ener_unpol = np.array(lines[7].split("|"), dtype=float)
-        compton_ener_pol_err = np.array(lines[8].split("|"), dtype=float)
-        compton_ener_unpol_err = np.array(lines[9].split("|"), dtype=float)
-        # Extraction of compton position for pol and unpol events
-        compton_firstpos_pol = np.array([val.split("_") for val in lines[10].split("|")], dtype=float)
-        compton_firstpos_unpol = np.array([val.split("_") for val in lines[11].split("|")], dtype=float)
-        compton_firstpos_pol_err = np.array([val.split("_") for val in lines[12].split("|")], dtype=float)
-        compton_firstpos_unpol_err = np.array([val.split("_") for val in lines[13].split("|")], dtype=float)
-        compton_secpos_pol = np.array([val.split("_") for val in lines[14].split("|")], dtype=float)
-        compton_secpos_unpol = np.array([val.split("_") for val in lines[15].split("|")], dtype=float)
-        compton_secpos_pol_err = np.array([val.split("_") for val in lines[16].split("|")], dtype=float)
-        compton_secpos_unpol_err = np.array([val.split("_") for val in lines[17].split("|")], dtype=float)
-        # Extraction of energy for single events
-        single_ener_pol = np.array(lines[18].split("|"), dtype=float)
 
-        if self.ergcut is not None:
-          compton_pol_index = np.where(compton_ener_pol >= self.ergcut[0], np.where(compton_ener_pol <= self.ergcut[1], True, False), False)
-          compton_unpol_index = np.where(compton_ener_unpol >= self.ergcut[0], np.where(compton_ener_unpol <= self.ergcut[1], True, False), False)
-          single_index = np.where(single_ener_pol >= self.ergcut[0], np.where(single_ener_pol <= self.ergcut[1], True, False), False)
+    if self.ergcut is not None:
+      compton_pol_index = np.where(compton_ener_pol >= self.ergcut[0], np.where(compton_ener_pol <= self.ergcut[1], True, False), False)
+      compton_unpol_index = np.where(compton_ener_unpol >= self.ergcut[0], np.where(compton_ener_unpol <= self.ergcut[1], True, False), False)
+      single_index = np.where(single_ener_pol >= self.ergcut[0], np.where(single_ener_pol <= self.ergcut[1], True, False), False)
 
-          compton_second_pol = compton_second_pol[compton_pol_index]
-          compton_second_unpol = compton_second_unpol[compton_unpol_index]
-          compton_ener_pol = compton_ener_pol[compton_pol_index]
-          compton_ener_unpol = compton_ener_unpol[compton_unpol_index]
-          compton_firstpos_pol = compton_firstpos_pol[compton_pol_index]
-          compton_firstpos_unpol = compton_firstpos_unpol[compton_unpol_index]
-          compton_secpos_pol = compton_secpos_pol[compton_pol_index]
-          compton_secpos_unpol = compton_secpos_unpol[compton_unpol_index]
-          single_ener_pol = single_ener_pol[single_index]
-          compton_second_pol_err = compton_second_pol_err[compton_pol_index]
-          compton_second_unpol_err = compton_second_unpol_err[compton_unpol_index]
-          compton_ener_pol_err = compton_ener_pol_err[compton_pol_index]
-          compton_ener_unpol_err = compton_ener_unpol_err[compton_unpol_index]
-          compton_firstpos_pol_err = compton_firstpos_pol_err[compton_pol_index]
-          compton_firstpos_unpol_err = compton_firstpos_unpol_err[compton_unpol_index]
-          compton_secpos_pol_err = compton_secpos_pol_err[compton_pol_index]
-          compton_secpos_unpol_err = compton_secpos_unpol_err[compton_unpol_index]
-        scat_vec_pol_err = np.sqrt(compton_secpos_pol_err ** 2 + compton_firstpos_pol_err ** 2)
-        scat_vec_unpol_err = np.sqrt(compton_secpos_unpol_err ** 2 + compton_firstpos_unpol_err ** 2)
+      compton_second_pol = compton_second_pol[compton_pol_index]
+      compton_second_unpol = compton_second_unpol[compton_unpol_index]
+      compton_ener_pol = compton_ener_pol[compton_pol_index]
+      compton_ener_unpol = compton_ener_unpol[compton_unpol_index]
+      compton_firstpos_pol = compton_firstpos_pol[compton_pol_index]
+      compton_firstpos_unpol = compton_firstpos_unpol[compton_unpol_index]
+      compton_secpos_pol = compton_secpos_pol[compton_pol_index]
+      compton_secpos_unpol = compton_secpos_unpol[compton_unpol_index]
+      single_ener_pol = single_ener_pol[single_index]
+      compton_second_pol_err = compton_second_pol_err[compton_pol_index]
+      compton_second_unpol_err = compton_second_unpol_err[compton_unpol_index]
+      compton_ener_pol_err = compton_ener_pol_err[compton_pol_index]
+      compton_ener_unpol_err = compton_ener_unpol_err[compton_unpol_index]
+      compton_firstpos_pol_err = compton_firstpos_pol_err[compton_pol_index]
+      compton_firstpos_unpol_err = compton_firstpos_unpol_err[compton_unpol_index]
+      compton_secpos_pol_err = compton_secpos_pol_err[compton_pol_index]
+      compton_secpos_unpol_err = compton_secpos_unpol_err[compton_unpol_index]
+    scat_vec_pol_err = np.sqrt(compton_secpos_pol_err ** 2 + compton_firstpos_pol_err ** 2)
+    scat_vec_unpol_err = np.sqrt(compton_secpos_unpol_err ** 2 + compton_firstpos_unpol_err ** 2)
 
-        dec_err, ra_err = 1.12, 1.01  #  !! peut etre à re evaluer avec des valeurs de grb_wf err
-        pol, polar_from_position_pol, pol_err = angle(compton_secpos_pol - compton_firstpos_pol, dec, ra, f"{dec}_{ra}_pol", 0, 0, scatter_vector_err=scat_vec_pol_err, grb_dec_sf_err=dec_err, grb_ra_sf_err=ra_err)
-        unpol, polar_from_position_unpol, unpol_err = angle(compton_secpos_unpol - compton_firstpos_unpol, dec, ra, f"{dec}_{ra}_unpol", 0, 0, scatter_vector_err=scat_vec_unpol_err, grb_dec_sf_err=dec_err, grb_ra_sf_err=ra_err)
+    dec_err, ra_err = 1.12, 1.01  #  !! peut etre à re evaluer avec des valeurs de grb_wf err
+    pol, polar_from_position_pol, pol_err = angle(compton_secpos_pol - compton_firstpos_pol, dec_plot, ra_plot, f"{dec_plot}_{ra_plot}_pol", 0, 0, scatter_vector_err=scat_vec_pol_err, grb_dec_sf_err=dec_err, grb_ra_sf_err=ra_err)
+    unpol, polar_from_position_unpol, unpol_err = angle(compton_secpos_unpol - compton_firstpos_unpol, dec_plot, ra_plot, f"{dec_plot}_{ra_plot}_unpol", 0, 0, scatter_vector_err=scat_vec_unpol_err, grb_dec_sf_err=dec_err, grb_ra_sf_err=ra_err)
 
-        polar_from_energy_pol, polar_from_energy_pol_err = calculate_polar_angle(compton_second_pol, compton_ener_pol, ener_sec_err=compton_second_pol_err, ener_tot_err=compton_ener_pol_err)
-        polar_from_energy_unpol, polar_from_energy_unpol_err = calculate_polar_angle(compton_second_unpol, compton_ener_unpol, ener_sec_err=compton_second_unpol_err, ener_tot_err=compton_ener_unpol_err)
-        arm_pol = polar_from_position_pol - polar_from_energy_pol
-        arm_unpol = polar_from_position_unpol - polar_from_energy_unpol
-        accepted_arm_pol = np.where(np.abs(arm_pol) <= armcut, True, False)
-        accepted_arm_unpol = np.where(np.abs(arm_unpol) <= armcut, True, False)
-        pol = pol[accepted_arm_pol]
-        unpol = unpol[accepted_arm_unpol]
+    polar_from_energy_pol, polar_from_energy_pol_err = calculate_polar_angle(compton_second_pol, compton_ener_pol, ener_sec_err=compton_second_pol_err, ener_tot_err=compton_ener_pol_err)
+    polar_from_energy_unpol, polar_from_energy_unpol_err = calculate_polar_angle(compton_second_unpol, compton_ener_unpol, ener_sec_err=compton_second_unpol_err, ener_tot_err=compton_ener_unpol_err)
+    arm_pol = polar_from_position_pol - polar_from_energy_pol
+    arm_unpol = polar_from_position_unpol - polar_from_energy_unpol
+    accepted_arm_pol = np.where(np.abs(arm_pol) <= armcut, True, False)
+    accepted_arm_unpol = np.where(np.abs(arm_unpol) <= armcut, True, False)
+    pol = pol[accepted_arm_pol]
+    unpol = unpol[accepted_arm_unpol]
 
-        hist_pol = np.histogram(pol, self.bins)[0]
-        hist_unpol = np.histogram(unpol, self.bins)[0]
-        hist_pol_err, hist_unpol_err = pol_unpol_hist_err(pol, unpol, pol_err, unpol_err, self.bins)
+    hist_pol = np.histogram(pol, self.bins)[0]
+    hist_unpol = np.histogram(unpol, self.bins)[0]
+    hist_pol_err, hist_unpol_err = pol_unpol_hist_err(pol, unpol, pol_err, unpol_err, self.bins)
 
-        # The polarigrams are normalized with the bin width !
-        hist_pol_norm = hist_pol / binw
-        hist_unpol_norm = hist_unpol / binw
-        fit_mod = None
-        if 0. in hist_unpol_norm:
-          print(f"Unpolarized data do not allow a fit - {dec}_{ra} : a bin is empty")
-        else:
-          polarigram_error = err_calculation(hist_pol, hist_unpol, binw, hist_pol_err, hist_unpol_err)
-          if 0. in polarigram_error:
-            print(f"Polarized data do not allow a fit - {dec}_{ra} : a bin is empty leading to uncorrect fit")
-          else:
-            histo = hist_pol_norm / hist_unpol_norm * np.mean(hist_unpol_norm)
-            fit_mod = Fit(modulation_func, var_x, histo, yerr=polarigram_error, comment="modulation")
+    # The polarigrams are normalized with the bin width !
+    hist_pol_norm = hist_pol / binw
+    hist_unpol_norm = hist_unpol / binw
+    fit_mod = None
+    if 0. in hist_unpol_norm:
+      print(f"Unpolarized data do not allow a fit - {dec_plot}_{ra_plot} : a bin is empty")
+    else:
+      polarigram_error = err_calculation(hist_pol, hist_unpol, binw, hist_pol_err, hist_unpol_err)
+      if 0. in polarigram_error:
+        print(f"Polarized data do not allow a fit - {dec_plot}_{ra_plot} : a bin is empty leading to uncorrect fit")
+      else:
+        histo = hist_pol_norm / hist_unpol_norm * np.mean(hist_unpol_norm)
+        fit_mod = Fit(modulation_func, var_x, histo, yerr=polarigram_error, comment="modulation")
 
-        fig, ax = plt.subplots(1, 1, figsize=(10, 6))
-        ax.stairs(hist_pol_norm, self.bins, label="Polarized histogram")
-        ax.stairs(hist_unpol_norm, self.bins, label="Unpolarized histogram")
-        ax.stairs(histo, self.bins, label="Unpolarized histogram")
-        ax.plot(np.linspace(-180, 180, 21, dtype=np.float32), modulation_func(np.linspace(-180, 180, 21, dtype=np.float32), *fit_mod.popt), label="Fitted modulation")
-        plt.show()
+    fig, ax = plt.subplots(1, 1, figsize=(10, 6))
+    ax.stairs(hist_pol_norm, self.bins, label="Polarized histogram")
+    ax.stairs(hist_unpol_norm, self.bins, label="Unpolarized histogram")
+    ax.stairs(histo, self.bins, label="Unpolarized histogram")
+    ax.plot(np.linspace(-180, 180, 21, dtype=np.float32), modulation_func(np.linspace(-180, 180, 21, dtype=np.float32), *fit_mod.popt), label="Fitted modulation")
+    plt.show()
 
 
 class Mu100Data:
