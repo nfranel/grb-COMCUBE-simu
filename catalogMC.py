@@ -22,56 +22,98 @@ import matplotlib as mpl
 mpl.use('Agg')
 
 
-def categorize_pierson_chi2(pierson_chi2_array, mode="fine"):
-  sup18 = np.sum(np.where(pierson_chi2_array >= 18, 1, 0))
-  sup50 = np.sum(np.where(pierson_chi2_array >= 50, 1, 0))
-  sup300 = np.sum(np.where(pierson_chi2_array >= 300, 1, 0))
-  sup1000 = np.sum(np.where(pierson_chi2_array >= 1000, 1, 0))
-  c0to6 = np.sum(np.where(pierson_chi2_array >= 0, np.where(pierson_chi2_array < 6, 1, 0), 0))
-  c0to12 = np.sum(np.where(pierson_chi2_array >= 0, np.where(pierson_chi2_array < 12, 1, 0), 0))
-  c0to18 = np.sum(np.where(pierson_chi2_array >= 0, np.where(pierson_chi2_array < 18, 1, 0), 0))
-  c0to50 = np.sum(np.where(pierson_chi2_array >= 0, np.where(pierson_chi2_array < 50, 1, 0), 0))
-  c6to12 = np.sum(np.where(pierson_chi2_array >= 6, np.where(pierson_chi2_array < 12, 1, 0), 0))
-  c12to18 = np.sum(np.where(pierson_chi2_array >= 12, np.where(pierson_chi2_array < 18, 1, 0), 0))
-  c12to24 = np.sum(np.where(pierson_chi2_array >= 12, np.where(pierson_chi2_array < 24, 1, 0), 0))
-  c18to50 = np.sum(np.where(pierson_chi2_array >= 18, np.where(pierson_chi2_array < 50, 1, 0), 0))
-  c24to50 = np.sum(np.where(pierson_chi2_array >= 24, np.where(pierson_chi2_array < 50, 1, 0), 0))
-  c50to300 = np.sum(np.where(pierson_chi2_array >= 50, np.where(pierson_chi2_array < 300, 1, 0), 0))
-  c300to1000 = np.sum(np.where(pierson_chi2_array >= 300, np.where(pierson_chi2_array < 1000, 1, 0), 0))
+def categorize_pierson_chi2(pierson_chi2_array, mode="fine", grbtype="long"):
+  # sup18 =
+  # sup50 = np.sum(np.where(pierson_chi2_array >= 50, 1, 0))
+  # sup300 = np.sum(np.where(pierson_chi2_array >= 300, 1, 0))
+  # sup1000 = np.sum(np.where(pierson_chi2_array >= 1000, 1, 0))
+  # c0to6 =
+  # c0to12 = np.sum(np.where(pierson_chi2_array >= 0, np.where(pierson_chi2_array < 12, 1, 0), 0))
+  # c0to18 = np.sum(np.where(pierson_chi2_array >= 0, np.where(pierson_chi2_array < 18, 1, 0), 0))
+  # c0to50 = np.sum(np.where(pierson_chi2_array >= 0, np.where(pierson_chi2_array < 50, 1, 0), 0))
+  # c6to12 = np.sum(np.where(pierson_chi2_array >= 6, np.where(pierson_chi2_array < 12, 1, 0), 0))
+  # c12to18 = np.sum(np.where(pierson_chi2_array >= 12, np.where(pierson_chi2_array < 18, 1, 0), 0))
+  # c12to24 = np.sum(np.where(pierson_chi2_array >= 12, np.where(pierson_chi2_array < 24, 1, 0), 0))
+  # c18to50 = np.sum(np.where(pierson_chi2_array >= 18, np.where(pierson_chi2_array < 50, 1, 0), 0))
+  # c24to50 = np.sum(np.where(pierson_chi2_array >= 24, np.where(pierson_chi2_array < 50, 1, 0), 0))
+  # c50to300 = np.sum(np.where(pierson_chi2_array >= 50, np.where(pierson_chi2_array < 300, 1, 0), 0))
+  # c300to1000 = np.sum(np.where(pierson_chi2_array >= 300, np.where(pierson_chi2_array < 1000, 1, 0), 0))
+
+  if grbtype == "long":
+    nbins = 12
+  else:
+    nbins = 8
   if mode == "fine":
-    c1 = f"0 - 6  |  {c0to6} sims"
-    c2 = f"6 - 12  |  {c6to12} sims"
-    c3 = f"12 - 18  |  {c12to18} sims"
-    c4 = f">= 18  |  {sup18} sims"
-    categorized = np.where(pierson_chi2_array >= 18, c4, np.where(pierson_chi2_array >= 12, c3, np.where(pierson_chi2_array >= 6, c2, c1)))
-    hue_order = [c1, c2, c3, c4]
+    siglim = np.array([0.7, 1, 1.5])
+    chilim = np.around(nbins * siglim**2, 3)
+    f1 = np.sum(np.where(pierson_chi2_array >= 0, np.where(pierson_chi2_array < chilim[0], 1, 0), 0))
+    f2 = np.sum(np.where(pierson_chi2_array >= chilim[0], np.where(pierson_chi2_array < chilim[1], 1, 0), 0))
+    f3 = np.sum(np.where(pierson_chi2_array >= chilim[1], np.where(pierson_chi2_array < chilim[2], 1, 0), 0))
+    f4 = np.sum(np.where(pierson_chi2_array >= chilim[2], 1, 0))
 
   elif mode == "medium_fine":
-    c1 = f"0 - 12  |  {c0to12} sims"
-    c2 = f"12 - 24  |  {c12to24} sims"
-    c3 = f"24 - 50  |  {c24to50} sims"
-    c4 = f">= 50  |  {sup50} sims"
-    categorized = np.where(pierson_chi2_array >= 50, c4, np.where(pierson_chi2_array >= 24, c3, np.where(pierson_chi2_array >= 12, c2, c1)))
-    hue_order = [c1, c2, c3, c4]
+    siglim = np.array([1, 1.5, 2])
+    chilim = np.around(nbins * siglim**2, 3)
+    f1 = np.sum(np.where(pierson_chi2_array >= 0, np.where(pierson_chi2_array < chilim[0], 1, 0), 0))
+    f2 = np.sum(np.where(pierson_chi2_array >= chilim[0], np.where(pierson_chi2_array < chilim[1], 1, 0), 0))
+    f3 = np.sum(np.where(pierson_chi2_array >= chilim[1], np.where(pierson_chi2_array < chilim[2], 1, 0), 0))
+    f4 = np.sum(np.where(pierson_chi2_array >= chilim[2], 1, 0))
+
+    # c1 = f"0 - 12  |  {c0to12} sims"
+    # c2 = f"12 - 24  |  {c12to24} sims"
+    # c3 = f"24 - 50  |  {c24to50} sims"
+    # c4 = f">= 50  |  {sup50} sims"
+    # categorized = np.where(pierson_chi2_array >= 50, c4, np.where(pierson_chi2_array >= 24, c3, np.where(pierson_chi2_array >= 12, c2, c1)))
+    # hue_order = [c1, c2, c3, c4]
 
   elif mode == "medium_coarse":
-    c1 = f"0 - 18  |  {c0to18} sims"
-    c2 = f"18 - 50  |  {c18to50} sims"
-    c3 = f"50 - 300  |  {c50to300} sims"
-    c4 = f">= 300  |  {sup300} sims"
-    categorized = np.where(pierson_chi2_array >= 300, c4, np.where(pierson_chi2_array >= 50, c3, np.where(pierson_chi2_array >= 18, c2, c1)))
-    hue_order = [c1, c2, c3, c4]
+    siglim = np.array([1.5, 2, 3])
+    chilim = np.around(nbins * siglim**2, 3)
+    f1 = np.sum(np.where(pierson_chi2_array >= 0, np.where(pierson_chi2_array < chilim[0], 1, 0), 0))
+    f2 = np.sum(np.where(pierson_chi2_array >= chilim[0], np.where(pierson_chi2_array < chilim[1], 1, 0), 0))
+    f3 = np.sum(np.where(pierson_chi2_array >= chilim[1], np.where(pierson_chi2_array < chilim[2], 1, 0), 0))
+    f4 = np.sum(np.where(pierson_chi2_array >= chilim[2], 1, 0))
+
+    # c1 = f"0 - 18  |  {c0to18} sims"
+    # c2 = f"18 - 50  |  {c18to50} sims"
+    # c3 = f"50 - 300  |  {c50to300} sims"
+    # c4 = f">= 300  |  {sup300} sims"
+    # categorized = np.where(pierson_chi2_array >= 300, c4, np.where(pierson_chi2_array >= 50, c3, np.where(pierson_chi2_array >= 18, c2, c1)))
+    # hue_order = [c1, c2, c3, c4]
 
   elif mode == "coarse":
-    c1 = f"0 - 50  |  {c0to50} sims"
-    c2 = f"50 - 300  |  {c50to300} sims"
-    c3 = f"300 - 1000  |  {c300to1000} sims"
-    c4 = f">= 1000  |  {sup1000} sims"
-    categorized = np.where(pierson_chi2_array >= 1000, c4, np.where(pierson_chi2_array >= 300, c3, np.where(pierson_chi2_array >= 50, c2, c1)))
-    hue_order = [c1, c2, c3, c4]
+    siglim = np.array([2, 3, 5])
+    chilim = np.around(nbins * siglim**2, 3)
+    f1 = np.sum(np.where(pierson_chi2_array >= 0, np.where(pierson_chi2_array < chilim[0], 1, 0), 0))
+    f2 = np.sum(np.where(pierson_chi2_array >= chilim[0], np.where(pierson_chi2_array < chilim[1], 1, 0), 0))
+    f3 = np.sum(np.where(pierson_chi2_array >= chilim[1], np.where(pierson_chi2_array < chilim[2], 1, 0), 0))
+    f4 = np.sum(np.where(pierson_chi2_array >= chilim[2], 1, 0))
+
+  elif mode == "very_coarse":
+    siglim = np.array([3, 5, 9])
+    chilim = np.around(nbins * siglim ** 2, 3)
+    f1 = np.sum(np.where(pierson_chi2_array >= 0, np.where(pierson_chi2_array < chilim[0], 1, 0), 0))
+    f2 = np.sum(np.where(pierson_chi2_array >= chilim[0], np.where(pierson_chi2_array < chilim[1], 1, 0), 0))
+    f3 = np.sum(np.where(pierson_chi2_array >= chilim[1], np.where(pierson_chi2_array < chilim[2], 1, 0), 0))
+    f4 = np.sum(np.where(pierson_chi2_array >= chilim[2], 1, 0))
+
+    # c1 = f"0 - 50  |  {c0to50} sims"
+    # c2 = f"50 - 300  |  {c50to300} sims"
+    # c3 = f"300 - 1000  |  {c300to1000} sims"
+    # c4 = f">= 1000  |  {sup1000} sims"
+    # categorized = np.where(pierson_chi2_array >= 1000, c4, np.where(pierson_chi2_array >= 300, c3, np.where(pierson_chi2_array >= 50, c2, c1)))
+    # hue_order = [c1, c2, c3, c4]
 
   else:
     raise ValueError("Wrong name for mode")
+
+  c1 = f"0 - {siglim[0]} $\sigma$  |  {f1} sims\n  {0} <= $\chi^2$ < {chilim[0]} "
+  c2 = f"{siglim[0]} - {siglim[1]} $\sigma$  |  {f2} sims\n  {chilim[0]} <= $\chi^2$ < {chilim[1]} "
+  c3 = f"{siglim[1]} - {siglim[2]} $\sigma$  |  {f3} sims\n  {chilim[1]} <= $\chi^2$ < {chilim[2]} "
+  c4 = f">= {siglim[2]} $\sigma$  |  {f4} sims\n  $\chi^2$ >= {chilim[2]} "
+  categorized = np.where(pierson_chi2_array >= chilim[2], c4, np.where(pierson_chi2_array >= chilim[1], c3, np.where(pierson_chi2_array >= chilim[0], c2, c1)))
+  hue_order = [c1, c2, c3, c4]
+
   return categorized, hue_order
 
 
@@ -82,22 +124,38 @@ def get_df(select_col, csvfile="./Sampled/longred_lum_discreet/longfit_red.csv")
 
 def MC_explo_pairplot(fileused, legend_mode, grbtype):
   if grbtype == "long":
-    extract_cols = ["long_rate", "long_ind1_z", "long_ind2_z", "long_zb", "long_ind1_lum", "long_ind2_lum", "long_lb", "pierson_chi2"]
-    select_cols = ["long_rate", "long_ind1_z", "long_ind2_z", "long_zb", "long_ind1_lum", "long_ind2_lum", "long_lb_log"]
+    extract_cols = ["nlong", "long_rate", "long_ind1_z", "long_ind2_z", "long_zb", "long_ind1_lum", "long_ind2_lum", "long_lb", "pierson_chi2"]
+    select_cols = ["nlong", "long_rate", "long_ind1_z", "long_ind2_z", "long_zb", "long_ind1_lum", "long_ind2_lum", "long_lb_2"]
+    # select_cols = ["nlong", "long_rate", "long_ind1_z", "long_ind2_z", "long_zb", "long_ind1_lum", "long_ind2_lum", "long_lb"]
   elif grbtype == "short":
-    extract_cols = ["short_rate", "short_ind1_z", "short_ind2_z", "short_zb", "short_ind1_lum", "short_ind2_lum", "short_lb", "pierson_chi2"]
-    select_cols = ["short_rate", "short_ind1_z", "short_ind2_z", "short_zb", "short_ind1_lum", "short_ind2_lum", "short_lb"]
+    extract_cols = ["nshort", "short_rate", "short_ind1_z", "short_ind2_z", "short_zb", "short_ind1_lum", "short_ind2_lum", "short_lb", "pierson_chi2"]
+    select_cols = ["nshort", "short_rate", "short_ind1_z", "short_ind2_z", "short_zb", "short_ind1_lum", "short_ind2_lum", "short_lb"]
 
-  df_selec = get_df(extract_cols, csvfile=fileused)
-  # df_selec = df_selec[df_selec.pierson_chi2 > -20]
+  try:
+    df_selec = get_df(extract_cols, csvfile=fileused)
+  except KeyError:
+    if grbtype == "long":
+      extract_cols = ["long_rate", "long_ind1_z", "long_ind2_z", "long_zb", "long_ind1_lum", "long_ind2_lum", "long_lb", "pierson_chi2"]
+      select_cols = ["long_rate", "long_ind1_z", "long_ind2_z", "long_zb", "long_ind1_lum", "long_ind2_lum", "long_lb_2"]
+      # select_cols = ["long_rate", "long_ind1_z", "long_ind2_z", "long_zb", "long_ind1_lum", "long_ind2_lum", "long_lb"]
+    elif grbtype == "short":
+      extract_cols = ["short_rate", "short_ind1_z", "short_ind2_z", "short_zb", "short_ind1_lum", "short_ind2_lum", "short_lb", "pierson_chi2"]
+      select_cols = ["short_rate", "short_ind1_z", "short_ind2_z", "short_zb", "short_ind1_lum", "short_ind2_lum", "short_lb"]
+    df_selec = get_df(extract_cols, csvfile=fileused)
+    if grbtype == "long":
+      df_selec['nlong'] = [int(10 * use_scipyquad(red_rate_long, 0, 10, func_args=(df_selec.long_rate[ite], df_selec.long_ind1_z[ite], df_selec.long_ind2_z[ite], df_selec.long_zb[ite]), x_logscale=False)[0]) for ite in range(len(df_selec))]
+      select_cols = ["nlong", "long_rate", "long_ind1_z", "long_ind2_z", "long_zb", "long_ind1_lum", "long_ind2_lum", "long_lb_2"]
+    elif grbtype == "short":
+      df_selec['nshort'] = [int(10 * use_scipyquad(red_rate_short, 0, 10, func_args=(df_selec.short_rate[ite], df_selec.short_ind1_z[ite], df_selec.short_ind2_z[ite], df_selec.short_zb[ite]), x_logscale=False)[0]) for ite in range(len(df_selec))]
+      select_cols = ["nshort", "short_rate", "short_ind1_z", "short_ind2_z", "short_zb", "short_ind1_lum", "short_ind2_lum", "short_lb"]
 
-  pierson_chi2_categories, order_hue = categorize_pierson_chi2(df_selec['pierson_chi2'].values, mode=legend_mode)
+  pierson_chi2_categories, order_hue = categorize_pierson_chi2(df_selec['pierson_chi2'].values, mode=legend_mode, grbtype=grbtype)
 
   # rainbow_palette = sns.color_palette("rainbow", len(order_hue))  # Nombre de catégories
   # palette = {cat: rainbow_palette[i] for i, cat in enumerate(order_hue)}
 
   df_selec['pierson_chi2_category'] = pierson_chi2_categories
-  df_selec['long_lb_log'] = np.log10(df_selec['long_lb'])
+  df_selec['long_lb_2'] = df_selec['long_lb'] / 1e51
 
   sns.pairplot(df_selec.sort_values(by="pierson_chi2", ascending=False), hue="pierson_chi2_category", vars=select_cols, corner=False, plot_kws={'s': 20}, palette="rainbow_r")
 
@@ -255,7 +313,7 @@ class MCCatalog:
     self.l_rate_min = 0.4
     self.l_rate_max = 1.5
     self.l_ind1_z_min = 1.5
-    self.l_ind1_z_max = 4.3
+    self.l_ind1_z_max = 3.1
     self.l_ind2_z_min = -2.4
     self.l_ind2_z_max = 1
     self.l_zb_min = 2.3
@@ -270,12 +328,12 @@ class MCCatalog:
     self.s_zb_min = 1.7
     self.s_zb_max = 3.3
     # Luminosity
-    self.l_ind1_min = -1.5
-    self.l_ind1_max = -1.2
+    self.l_ind1_min = -1.45
+    self.l_ind1_max = -1.25
     self.l_ind2_min = -2.1
-    self.l_ind2_max = -1.25
+    self.l_ind2_max = -1.5
     self.l_lb_min = 2e51
-    self.l_lb_max = 3e53
+    self.l_lb_max = 1.5e53
 
     self.s_ind1_min = -1
     self.s_ind1_max = -0.39
@@ -296,7 +354,7 @@ class MCCatalog:
     self.log_t90_s_mu, self.log_t90_s_sig = -0.025, 0.631
 
     # variables containing the MCMC results
-    self.columns = ["long_rate", "long_ind1_z", "long_ind2_z", "long_zb", "short_rate", "short_ind1_z", "short_ind2_z", "short_zb", "long_ind1_lum", "long_ind2_lum", "long_lb", "short_ind1_lum", "short_ind2_lum",
+    self.columns = ["nlong", "long_rate", "long_ind1_z", "long_ind2_z", "long_zb", "nshort", "short_rate", "short_ind1_z", "short_ind2_z", "short_zb", "long_ind1_lum", "long_ind2_lum", "long_lb", "short_ind1_lum", "short_ind2_lum",
                     "short_lb", "pierson_chi2", "status"]
     self.result_df = pd.DataFrame(columns=self.columns)
 
@@ -488,9 +546,9 @@ class MCCatalog:
         print(f"====== LOOPING - pflux ratio : {round(condition[2], 2)} > {pflux_ratio_thresh} ======")
 
     if condition[0]:
-      row = [l_rate_temp, l_ind1_z_temp, l_ind2_z_temp, l_zb_temp, s_rate_temp, s_ind1_z_temp, s_ind2_z_temp, s_zb_temp, l_ind1_temp, l_ind2_temp, l_lb_temp, s_ind1_temp, s_ind2_temp, s_lb_temp, np.around(condition[1], 3), "Accepted"]
+      row = [nlong_temp, l_rate_temp, l_ind1_z_temp, l_ind2_z_temp, l_zb_temp, nshort_temp, s_rate_temp, s_ind1_z_temp, s_ind2_z_temp, s_zb_temp, l_ind1_temp, l_ind2_temp, l_lb_temp, s_ind1_temp, s_ind2_temp, s_lb_temp, np.around(condition[1], 3), "Accepted"]
     else:
-      row = [l_rate_temp, l_ind1_z_temp, l_ind2_z_temp, l_zb_temp, s_rate_temp, s_ind1_z_temp, s_ind2_z_temp, s_zb_temp, l_ind1_temp, l_ind2_temp, l_lb_temp, s_ind1_temp, s_ind2_temp, s_lb_temp, np.around(condition[1], 3), "Rejected"]
+      row = [nlong_temp, l_rate_temp, l_ind1_z_temp, l_ind2_z_temp, l_zb_temp, nshort_temp, s_rate_temp, s_ind1_z_temp, s_ind2_z_temp, s_zb_temp, l_ind1_temp, l_ind2_temp, l_lb_temp, s_ind1_temp, s_ind2_temp, s_lb_temp, np.around(condition[1], 3), "Rejected"]
       print(f"Rejected : pearson chi2 = {np.around(condition[1], 3)}     [ite {run_iteration}]")
 
     list_param = l_rate_temp, l_ind1_z_temp, l_ind2_z_temp, l_zb_temp, l_ind1_temp, l_ind2_temp, l_lb_temp, s_rate_temp, s_ind1_z_temp, s_ind2_z_temp, s_zb_temp, s_ind1_temp, s_ind2_temp, s_lb_temp
@@ -594,9 +652,9 @@ class MCCatalog:
 
     condition = self.mcmc_condition(l_m_flux_temp, l_p_flux_temp, l_flnc_temp, s_m_flux_temp, s_p_flux_temp, s_flnc_temp, params=params, mode="pflx", n_sig=n_sig)
     if condition[0]:
-      row = [l_rate_temp, l_ind1_z_temp, l_ind2_z_temp, l_zb_temp, s_rate_temp, s_ind1_z_temp, s_ind2_z_temp, s_zb_temp, l_ind1_temp, l_ind2_temp, l_lb_temp, s_ind1_temp, s_ind2_temp, s_lb_temp, np.around(condition[1], 3), "Accepted"]
+      row = [nlong_temp, l_rate_temp, l_ind1_z_temp, l_ind2_z_temp, l_zb_temp, nshort_temp, s_rate_temp, s_ind1_z_temp, s_ind2_z_temp, s_zb_temp, l_ind1_temp, l_ind2_temp, l_lb_temp, s_ind1_temp, s_ind2_temp, s_lb_temp, np.around(condition[1], 3), "Accepted"]
     else:
-      row = [l_rate_temp, l_ind1_z_temp, l_ind2_z_temp, l_zb_temp, s_rate_temp, s_ind1_z_temp, s_ind2_z_temp, s_zb_temp, l_ind1_temp, l_ind2_temp, l_lb_temp, s_ind1_temp, s_ind2_temp, s_lb_temp, np.around(condition[1], 3), "Rejected"]
+      row = [nlong_temp, l_rate_temp, l_ind1_z_temp, l_ind2_z_temp, l_zb_temp, nshort_temp, s_rate_temp, s_ind1_z_temp, s_ind2_z_temp, s_zb_temp, l_ind1_temp, l_ind2_temp, l_lb_temp, s_ind1_temp, s_ind2_temp, s_lb_temp, np.around(condition[1], 3), "Rejected"]
       print(f"Rejected : pearson chi2 = {np.around(condition[1], 3)}     [ite {run_iteration}]")
 
     list_param = l_rate_temp, l_ind1_z_temp, l_ind2_z_temp, l_zb_temp, l_ind1_temp, l_ind2_temp, l_lb_temp, s_rate_temp, s_ind1_z_temp, s_ind2_z_temp, s_zb_temp, s_ind1_temp, s_ind2_temp, s_lb_temp
