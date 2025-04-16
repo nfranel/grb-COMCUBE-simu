@@ -794,13 +794,14 @@ def angle(scatter_vector, grb_dec_sf, grb_ra_sf, source_name, num_sim, num_sat, 
     val_u = angle_u(init_vector, grb_ra_sf)
     val_v = angle_v(init_vector, grb_dec_sf, grb_ra_sf)
 
-    print(val_v)
-    azim_err = np.where(val_v == 0, np.nan, (np.sqrt(((np.sin(-grb_ra_sf) * val_v - np.cos(-grb_ra_sf) * np.cos(-grb_dec_sf) * val_u) * scatter_vector_err[:, 0])**2 +
+    # val_v can take zero values, these values are set as np.nan to prevent from triggering RuntimeWarning
+    val_v = np.where(val_v == 0, np.nan, val_v)
+    azim_err = (np.sqrt(((np.sin(-grb_ra_sf) * val_v - np.cos(-grb_ra_sf) * np.cos(-grb_dec_sf) * val_u) * scatter_vector_err[:, 0])**2 +
                        ((np.cos(-grb_ra_sf) * val_v + np.sin(-grb_ra_sf) * np.cos(-grb_dec_sf) * val_u) * scatter_vector_err[:, 1])**2 +
                        (np.sin(-grb_dec_sf) * val_u * scatter_vector_err[:, 2])**2 +
                        (angleder_v4(init_vector, grb_dec_sf, grb_ra_sf) * val_u * grb_dec_sf_err)**2 +
                        ((angleder_u5(init_vector, grb_ra_sf) * val_v - angleder_v5(init_vector, grb_dec_sf, grb_ra_sf) * val_u) * grb_ra_sf_err)**2) /
-                                             (val_v ** 2 * (1 + (val_u / val_v) ** 2))))
+                (val_v ** 2 * (1 + (val_u / val_v) ** 2)))
   else:
     azim_err = 0
   return azim, polar, azim_err
