@@ -274,11 +274,11 @@ class MCCatalog:
     # Narrower parameter space after studying the results of Monte Carlo
     # Redshift
     self.l_rate_min = 0.4
-    self.l_rate_max = 1.1
-    self.l_ind1_z_min = 2.1
+    self.l_rate_max = 0.8
+    self.l_ind1_z_min = 2.2
     self.l_ind1_z_max = 3.1
     self.l_ind2_z_min = -2.4
-    self.l_ind2_z_max = -0.1
+    self.l_ind2_z_max = -0.8
     self.l_zb_min = 2.3
     self.l_zb_max = 3.7
 
@@ -294,7 +294,7 @@ class MCCatalog:
     self.l_ind1_min = -1.45
     self.l_ind1_max = -1.25
     self.l_ind2_min = -2.1
-    self.l_ind2_max = -1.5
+    self.l_ind2_max = -1.7
     self.l_lb_min = 5e51
     self.l_lb_max = 1.5e53
 
