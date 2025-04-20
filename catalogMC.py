@@ -359,6 +359,7 @@ class MCCatalog:
       self.result_df = pd.DataFrame(data=rows_ret, columns=self.columns)
       self.result_df.to_csv(f"{savefolder}catalogs_fit.csv", index=False)
     else:
+      print("test")
       if mode == "mc":
         param_list = None
         par_size = 4000
