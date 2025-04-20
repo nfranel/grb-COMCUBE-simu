@@ -361,7 +361,7 @@ class MCCatalog:
     else:
       if mode == "mc":
         param_list = None
-        par_size = 4000
+        par_size = 2000
         mctype = "long"
         # mctype = "short"
         fold_name = f"mc{mctype}v7-{par_size}"
