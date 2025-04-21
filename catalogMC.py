@@ -275,12 +275,12 @@ class MCCatalog:
     # Redshift
     self.l_rate_min = 0.4
     self.l_rate_max = 0.8
-    self.l_ind1_z_min = 2.2
+    self.l_ind1_z_min = 2.5
     self.l_ind1_z_max = 3.1
     self.l_ind2_z_min = -2.4
     self.l_ind2_z_max = -0.8
     self.l_zb_min = 2.3
-    self.l_zb_max = 3.7
+    self.l_zb_max = 3.5
 
     self.s_rate_min = 0.1
     self.s_rate_max = 1.1
@@ -291,7 +291,7 @@ class MCCatalog:
     self.s_zb_min = 1.7
     self.s_zb_max = 3.3
     # Luminosity
-    self.l_ind1_min = -1.45
+    self.l_ind1_min = -1.38
     self.l_ind1_max = -1.25
     self.l_ind2_min = -2.1
     self.l_ind2_max = -1.7
@@ -359,12 +359,13 @@ class MCCatalog:
       self.result_df = pd.DataFrame(data=rows_ret, columns=self.columns)
       self.result_df.to_csv(f"{savefolder}catalogs_fit.csv", index=False)
     else:
+      print("test")
       if mode == "mc":
         param_list = None
-        par_size = 2000
+        par_size = 4000
         mctype = "long"
         # mctype = "short"
-        fold_name = f"mc{mctype}v7-{par_size}"
+        fold_name = f"mc{mctype}v8-{par_size}"
         savefile = f"Sampled/{fold_name}/mc_fit.csv"
       elif mode == "parametrized":
         # (l_rate, l_ind1_z, l_ind2_z, l_zb, l_ind1, l_ind2, l_lb, s_rate, s_ind1_z, s_ind2_z, s_zb, s_ind1, s_ind2, s_lb)
