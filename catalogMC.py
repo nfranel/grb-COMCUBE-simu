@@ -275,12 +275,12 @@ class MCCatalog:
     # Redshift
     self.l_rate_min = 0.4
     self.l_rate_max = 0.8
-    self.l_ind1_z_min = 2.2
+    self.l_ind1_z_min = 2.5
     self.l_ind1_z_max = 3.1
     self.l_ind2_z_min = -2.4
     self.l_ind2_z_max = -0.8
     self.l_zb_min = 2.3
-    self.l_zb_max = 3.7
+    self.l_zb_max = 3.5
 
     self.s_rate_min = 0.1
     self.s_rate_max = 1.1
@@ -291,7 +291,7 @@ class MCCatalog:
     self.s_zb_min = 1.7
     self.s_zb_max = 3.3
     # Luminosity
-    self.l_ind1_min = -1.45
+    self.l_ind1_min = -1.38
     self.l_ind1_max = -1.25
     self.l_ind2_min = -2.1
     self.l_ind2_max = -1.7
