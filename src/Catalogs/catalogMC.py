@@ -361,19 +361,22 @@ class MCCatalog:
         mctype = "long"
         # mctype = "short"
         fold_name = f"mc{mctype}v8-{par_size}"
-        savefile = f"Data/CatData/CatSampling/{fold_name}/mc_fit.csv"
+        savefile = f"Data/CatData/CatSampling/space_explo/{fold_name}/mc_fit.csv"
       elif mode == "parametrized":
         # (l_rate, l_ind1_z, l_ind2_z, l_zb, l_ind1, l_ind2, l_lb, s_rate, s_ind1_z, s_ind2_z, s_zb, s_ind1, s_ind2, s_lb)
         # param_list = build_params([0.2, 0.3, 0.4, 0.5], [1.2, 1.4, 1.6, 1.8, 2, 2.2, 2.4, 2.6], [-1.1, -0.9, -0.8, -0.7, -0.6, -0.5, -0.4], [2, 2.6, 3.1, 3.6, 4.1, 5], -0.65, -3, 1.12e+52, 0.25, 2.8, 3.5, 2.3, -0.53, -3.4, 2.8e52)
         param_list = [[0.796361, 2.242970, -1.507276, 2.294414, -0.715277, -4.629343, 1.131491e52, 0.577574, 3.107413, 1.179197, 2.318962, -0.602085, -2.148571, 1.899889e52]]
         par_size = len(param_list)
         fold_name = f"parametrizedv1-{par_size}"
-        savefile = f"Data/CatData/CatSampling/{fold_name}/longfit_red_lum.csv"
+        savefile = f"Data/CatData/CatSampling/space_explo/{fold_name}/longfit_red_lum.csv"
       else:
         raise ValueError("Wrong value for mode. Only 'catalog', 'mc' and 'parametrized' are possible.")
 
-      if not (f"{fold_name}" in os.listdir("Data/CatData/CatSampling/")):
-        os.mkdir(f"Data/CatData/CatSampling/{fold_name}")
+      if not (f"space_explo" in os.listdir("Data/CatData/CatSampling/")):
+        os.mkdir(f"Data/CatData/CatSampling/space_explo")
+
+      if not (f"{fold_name}" in os.listdir("Data/CatData/CatSampling/space_explo/")):
+        os.mkdir(f"Data/CatData/CatSampling/space_explo/{fold_name}")
       else:
         raise NameError("A simulation with this name already exists, please change it or delete the old simulation before running")
       self.run_mc(par_size, thread_number=thread_num, method=param_list, savefile=savefile, mctype=mctype)
