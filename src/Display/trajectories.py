@@ -163,8 +163,8 @@ def trajectory(inc, ohm, nsat, alt, excludefile=None, omega=0, projection="carre
   ax.coastlines()
   plt.show()
 
-# files = ["./Data/bkg/exclusion/400km/AE8max_400km.out", "./Data/bkg/exclusion/400km/AP8min_400km.out",
-#          "./Data/bkg/exclusion/500km/AE8max_500km.out", "./Data/bkg/exclusion/500km/AP8min_500km.out"]
+# files = ["../Data/bkg/exclusion/400km/AE8max_400km.out", "../Data/bkg/exclusion/400km/AP8min_400km.out",
+#          "../Data/bkg/exclusion/500km/AE8max_500km.out", "../Data/bkg/exclusion/500km/AP8min_500km.out"]
 
 # for file in files:
 #     trajectory([5, 5, 45], [0, 180, 90], [12, 12, 12], 400, excludefile=file, projection="carre")
@@ -304,8 +304,8 @@ def calc_partial_duty(inc, ohm, omega, alt, exclusionfile):
 # show_non_op_area(500, zonetype="proton")
 # duty_variation_plot(alt=500)
 
-# # files = ["./Data/bkg/exclusion/400km/AE8max_400km.out", "./Data/bkg/exclusion/400km/AP8min_400km.out",
-# #          "./Data/bkg/exclusion/500km/AE8max_500km.out", "./Data/bkg/exclusion/500km/AP8min_500km.out"]
+# # files = ["../Data/bkg/exclusion/400km/AE8max_400km.out", "../Data/bkg/exclusion/400km/AP8min_400km.out",
+# #          "../Data/bkg/exclusion/500km/AE8max_500km.out", "../Data/bkg/exclusion/500km/AP8min_500km.out"]
 # # # for file in files:
 # # #   calc_partial_duty(90, 0, 0, 400, file)
 # inc = 40

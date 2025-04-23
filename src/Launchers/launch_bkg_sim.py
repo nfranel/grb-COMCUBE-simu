@@ -21,17 +21,17 @@ def make_directories(geomfile, spectrapath):
   :param spectrapath: path of the folder in which the background spectra are saved
   """
   # Creating the bkg_source_spectra repertory if it doesn't exist
-  if not spectrapath.split("/")[-1] in os.listdir("./Data/bkg"):
+  if not spectrapath.split("/")[-1] in os.listdir("../Data/bkg"):
     os.mkdir(spectrapath)
   # Creating a directory specific to the geometry
   geom_name = geomfile.split(".geo.setup")[0].split("/")[-1]
-  if f"sim_{geom_name}" not in os.listdir("./Data/bkg"):
-    os.mkdir(f"./Data/bkg/sim_{geom_name}")
+  if f"sim_{geom_name}" not in os.listdir("../Data/bkg"):
+    os.mkdir(f"../Data/bkg/sim_{geom_name}")
     # Creating the sim and rawsim repertories if they don't exist
-  if f"sim" not in os.listdir(f"./Data/bkg/sim_{geom_name}"):
-    os.mkdir(f"./Data/bkg/sim_{geom_name}/sim")
-  if f"rawsim" not in os.listdir(f"./Data/bkg/sim_{geom_name}"):
-    os.mkdir(f"./Data/bkg/sim_{geom_name}/rawsim")
+  if f"sim" not in os.listdir(f"../Data/bkg/sim_{geom_name}"):
+    os.mkdir(f"../Data/bkg/sim_{geom_name}/sim")
+  if f"rawsim" not in os.listdir(f"../Data/bkg/sim_{geom_name}"):
+    os.mkdir(f"../Data/bkg/sim_{geom_name}/rawsim")
 
 
 def make_spectra(params):
@@ -42,13 +42,13 @@ def make_spectra(params):
   spectrapath, alt, lat = params[6], params[0], params[1]
   if f"source-dat--alt_{alt:.1f}--lat_{lat:.1f}" not in os.listdir(spectrapath):
     os.mkdir(f"{spectrapath}/source-dat--alt_{alt:.1f}--lat_{lat:.1f}")
-  os.chdir("./Data/bkg")
+  os.chdir("../Data/bkg")
   subprocess.call(f"python CreateBackgroundSpectrumMEGAlib.py -i {lat} -a {alt}", shell=True)
   # source_spectra = subprocess.getoutput(f"ls *_Spec_{alt:.1f}km_{lat:.1f}deg.dat").split("\n")
   source_spectra = glob.glob(f"*_Spec_{alt:.1f}km_{lat:.1f}deg.dat")
   os.chdir("..")
   for spectrum in source_spectra:
-    subprocess.call(f"mv ./Data/bkg/{spectrum} {spectrapath}/source-dat--alt_{alt:.1f}--lat_{lat:.1f}", shell=True)
+    subprocess.call(f"mv ../Data/bkg/{spectrum} {spectrapath}/source-dat--alt_{alt:.1f}--lat_{lat:.1f}", shell=True)
 
 
 def read_flux_from_spectrum(file):
@@ -81,7 +81,7 @@ def make_tmp_source(alt, lat, geom, source_model, spectrapath, simduration):
   """
   fname = f"tmp_{os.getpid()}.source"
   geom_name = geom.split(".geo.setup")[0].split("/")[-1]
-  sname = f"./Data/bkg/sim_{geom_name}/sim/bkg_{alt:.1f}_{lat:.1f}_{simduration:.0f}s"
+  sname = f"../Data/bkg/sim_{geom_name}/sim/bkg_{alt:.1f}_{lat:.1f}_{simduration:.0f}s"
   source_list = ["SecondaryElectrons", "AtmosphericNeutrons", "AlbedoPhotons", "SecondaryPositrons", "SecondaryProtonsUpward", "SecondaryProtonsDownward", "PrimaryElectrons", "CosmicPhotons", "PrimaryPositrons", "PrimaryProtons"]
   with open(source_model) as f:
     lines = f.read().split("\n")
@@ -109,7 +109,7 @@ def make_tmp_source(alt, lat, geom, source_model, spectrapath, simduration):
           print("Name of source is not valid. Should be one of the ones for which a spectrum was calculated.")
       elif line.startswith(f"{source}.Beam"):
         if particle in ["AtmosphericNeutrons", "AlbedoPhotons"]:
-          f.write(f"{source}.Beam FarFieldFileZenithDependent ./Data/bkg/AlbedoPhotonBeam.dat")
+          f.write(f"{source}.Beam FarFieldFileZenithDependent ../Data/bkg/AlbedoPhotonBeam.dat")
         else:
           f.write(line)
       elif line.startswith(f"{source}.Spectrum"):

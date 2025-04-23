@@ -44,16 +44,16 @@ def gen_commands(args):
   """
   args.commands = []
   args.geometry, args.rcf, args.mcf, args.simmode, args.spectrafilepath, args.grbfile, args.csf, args.prefix, args.sttype, args.simulationsperevent, args.simtime, args.position, args.satellites = read_grbpar(args.parameterfile)
-  cat_rest_info = "./Data/CatData/rest_frame_properties.txt"
+  cat_rest_info = "../Data/CatData/rest_frame_properties.txt"
   if args.simmode == "GBM":
     cat = Catalog(args.grbfile, args.sttype, cat_rest_info)
     vprint("Running with GBM data on flnc mode.", __verbose__, 0)
     make_lc_files = False
   elif args.simmode == "sampled":
     cat = SampleCatalog(args.grbfile, args.sttype)
-    if not os.path.exists("./Data/sources/Sample_Light_Curves"):
-      os.mkdir("./Data/sources/Sample_Light_Curves")
-    make_lc_files = not (int(subprocess.getoutput("ls ./Data/sources/Sample_Light_Curves | wc").strip().split("  ")[0]) == len(cat.df))
+    if not os.path.exists("../Data/sources/Sample_Light_Curves"):
+      os.mkdir("../Data/sources/Sample_Light_Curves")
+    make_lc_files = not (int(subprocess.getoutput("ls ../Data/sources/Sample_Light_Curves | wc").strip().split("  ")[0]) == len(cat.df))
   else:
     raise ValueError("Wrong simulation mode in .par file")
   args.commands = []
@@ -91,8 +91,8 @@ def gen_commands(args):
             f.write(f"DP {E} {spec[ite_E]}\n")
           f.write("\nEN\n\n")
       # Creation of the light curves files if not created yet
-      if (not (f"LightCurve_{cat.df.name[i]}" in os.listdir("./Data/sources/Sample_Light_Curves")) or make_lc_files):
-        gbm_cat = Catalog("Data/CatData/allGBM.txt", [4, '\n', 5, '|', 4000], "Data/CatData/rest_frame_properties.txt")
+      if (not (f"LightCurve_{cat.df.name[i]}" in os.listdir("../Data/sources/Sample_Light_Curves")) or make_lc_files):
+        gbm_cat = Catalog("../Data/CatData/allGBM.txt", [4, '\n', 5, '|', 4000], "../Data/CatData/rest_frame_properties.txt")
         closest_gmb_t90_name = cat.df.lc[i].split(".")[0].split("_")[-1]
         gbmt90 = gbm_cat.df.t90[gbm_cat.df.name == closest_gmb_t90_name].iloc[0]
         make_sample_lc(cat, i, gbmt90)
@@ -245,9 +245,9 @@ def maketmpsf(command, args, pid):
         f.write(f"{source}.Flux {command[6]}")
         if command[8]:
           if command[9] is None:  # Case using GBM data, catalog doesn't have light curve name so we find it using the GRB name
-            f.write(f"\n{source}.Lightcurve File true ./Data/sources/GBM_Light_Curves/LightCurve_{command[3]}.dat")
+            f.write(f"\n{source}.Lightcurve File true ../Data/sources/GBM_Light_Curves/LightCurve_{command[3]}.dat")
           else:  # Case using Sampled data, catalog has light curve name so use it directly
-            f.write(f"\n{source}.Lightcurve File true ./Data/sources/Sample_Light_Curves/{command[9]}")
+            f.write(f"\n{source}.Lightcurve File true ../Data/sources/Sample_Light_Curves/{command[9]}")
       else:
         f.write(line)
       f.write("\n")

@@ -500,12 +500,12 @@ def verif_rad_belts(dec, ra, alt, zonetype="all"):
   dec_verif(dec)
   ra_verif(ra)
   if zonetype == "all":
-    files = ["./Data/bkg/exclusion/400km/AE8max_400km.out", "./Data/bkg/exclusion/400km/AP8min_400km.out",
-             "./Data/bkg/exclusion/500km/AE8max_500km.out", "./Data/bkg/exclusion/500km/AP8min_500km.out"]
+    files = ["../Data/bkg/exclusion/400km/AE8max_400km.out", "../Data/bkg/exclusion/400km/AP8min_400km.out",
+             "../Data/bkg/exclusion/500km/AE8max_500km.out", "../Data/bkg/exclusion/500km/AP8min_500km.out"]
   elif zonetype == "electron":
-    files = ["./Data/bkg/exclusion/400km/AE8max_400km.out", "./Data/bkg/exclusion/500km/AE8max_500km.out"]
+    files = ["../Data/bkg/exclusion/400km/AE8max_400km.out", "../Data/bkg/exclusion/500km/AE8max_500km.out"]
   elif zonetype == "proton":
-    files = ["./Data/bkg/exclusion/400km/AP8min_400km.out", "./Data/bkg/exclusion/500km/AP8min_500km.out"]
+    files = ["../Data/bkg/exclusion/400km/AP8min_400km.out", "../Data/bkg/exclusion/500km/AP8min_500km.out"]
   else:
     raise ValueError("Please chose a correct value for zonetype : 'all', 'electron' or 'proton'")
   for file in files:
@@ -1344,7 +1344,7 @@ def pflux_to_mflux_calculator(lc_name, t90):
   Returns the conversion value from pflux to mflux.
   It's based on a 1-second pflux as the Lpeak in the Yonetoku correlation is based on a 1-second timescale.
   """
-  times, counts = extract_lc(f"./Data/sources/GBM_Light_Curves/{lc_name}")
+  times, counts = extract_lc(f"../Data/sources/GBM_Light_Curves/{lc_name}")
   delta_time = times[1:]-times[:-1]
 
   if t90 <= 2:
@@ -1449,9 +1449,9 @@ def make_sample_lc(smp_cat, cat_ite, gbmt90):
   
   """
   corr = smp_cat.df.t90[cat_ite] / gbmt90
-  times, counts = extract_lc(f"./Data/sources/GBM_Light_Curves/{smp_cat.df.lc[cat_ite]}")
+  times, counts = extract_lc(f"../Data/sources/GBM_Light_Curves/{smp_cat.df.lc[cat_ite]}")
   corrtimes = times * corr
-  fullname = f"./Data/sources/Sample_Light_Curves/LightCurve_{smp_cat.df.name[cat_ite]}"
+  fullname = f"../Data/sources/Sample_Light_Curves/LightCurve_{smp_cat.df.name[cat_ite]}"
   with open(fullname, "w") as f:
     f.write("# Light curve file, first column is time, second is count rate\n")
     f.write("\n")
