@@ -75,7 +75,7 @@ def categorize_pierson_chi2(pierson_chi2_array, mode="fine", grbtype="long"):
   return categorized, hue_order
 
 
-def get_df(select_col, csvfile="./Data/CatData/CatSampling/longred_lum_discreet/longfit_red.csv"):
+def get_df(select_col, csvfile="../Data/CatData/CatSampling/longred_lum_discreet/longfit_red.csv"):
   result_df = pd.read_csv(csvfile)
   return result_df[select_col]
 
@@ -122,7 +122,7 @@ class MCCatalog:
   """
 
   """
-  def __init__(self, gbm_file="Data/CatData/allGBM.txt", sttype=None, rf_file="Data/CatData/rest_frame_properties.txt", mode="catalog"):
+  def __init__(self, gbm_file="../Data/CatData/allGBM.txt", sttype=None, rf_file="../Data/CatData/rest_frame_properties.txt", mode="catalog"):
     """
 
     """
@@ -334,11 +334,11 @@ class MCCatalog:
       param_list = None
       par_size = 1
       fold_name = f"cat_to_validate"
-      savefolder = f"Data/CatData/CatSampling/{fold_name}/"
+      savefolder = f"../Data/CatData/CatSampling/{fold_name}/"
       sigma_number = 1
 
-      if not (f"{fold_name}" in os.listdir("Data/CatData/CatSampling/")):
-        os.mkdir(f"Data/CatData/CatSampling/{fold_name}")
+      if not (f"{fold_name}" in os.listdir("../Data/CatData/CatSampling/")):
+        os.mkdir(f"../Data/CatData/CatSampling/{fold_name}")
       else:
         raise NameError("A simulation with this name already exists, please change it or delete the old simulation before running")
 
@@ -361,22 +361,22 @@ class MCCatalog:
         mctype = "long"
         # mctype = "short"
         fold_name = f"mc{mctype}v8-{par_size}"
-        savefile = f"Data/CatData/CatSampling/space_explo/{fold_name}/mc_fit.csv"
+        savefile = f"../Data/CatData/CatSampling/space_explo/{fold_name}/mc_fit.csv"
       elif mode == "parametrized":
         # (l_rate, l_ind1_z, l_ind2_z, l_zb, l_ind1, l_ind2, l_lb, s_rate, s_ind1_z, s_ind2_z, s_zb, s_ind1, s_ind2, s_lb)
         # param_list = build_params([0.2, 0.3, 0.4, 0.5], [1.2, 1.4, 1.6, 1.8, 2, 2.2, 2.4, 2.6], [-1.1, -0.9, -0.8, -0.7, -0.6, -0.5, -0.4], [2, 2.6, 3.1, 3.6, 4.1, 5], -0.65, -3, 1.12e+52, 0.25, 2.8, 3.5, 2.3, -0.53, -3.4, 2.8e52)
         param_list = [[0.796361, 2.242970, -1.507276, 2.294414, -0.715277, -4.629343, 1.131491e52, 0.577574, 3.107413, 1.179197, 2.318962, -0.602085, -2.148571, 1.899889e52]]
         par_size = len(param_list)
         fold_name = f"parametrizedv1-{par_size}"
-        savefile = f"Data/CatData/CatSampling/space_explo/{fold_name}/longfit_red_lum.csv"
+        savefile = f"../Data/CatData/CatSampling/space_explo/{fold_name}/longfit_red_lum.csv"
       else:
         raise ValueError("Wrong value for mode. Only 'catalog', 'mc' and 'parametrized' are possible.")
 
-      if not (f"space_explo" in os.listdir("Data/CatData/CatSampling/")):
-        os.mkdir(f"Data/CatData/CatSampling/space_explo")
+      if not (f"space_explo" in os.listdir("../Data/CatData/CatSampling/")):
+        os.mkdir(f"../Data/CatData/CatSampling/space_explo")
 
-      if not (f"{fold_name}" in os.listdir("Data/CatData/CatSampling/space_explo/")):
-        os.mkdir(f"Data/CatData/CatSampling/space_explo/{fold_name}")
+      if not (f"{fold_name}" in os.listdir("../Data/CatData/CatSampling/space_explo/")):
+        os.mkdir(f"../Data/CatData/CatSampling/space_explo/{fold_name}")
       else:
         raise NameError("A simulation with this name already exists, please change it or delete the old simulation before running")
       self.run_mc(par_size, thread_number=thread_num, method=param_list, savefile=savefile, mctype=mctype)
@@ -607,9 +607,9 @@ class MCCatalog:
         raise ValueError(f"Error while making the sample, the Type of the burst should be 'Sample short' or 'Sample long' but value is {line[13]}")
 
     print("Deleting the old source file if it exists : ")
-    if f"{int(self.n_year)}sample" in os.listdir("./Data/sources/SampledSpectra"):
-      subprocess.call(f"rm -r ./Data/sources/SampledSpectra/{int(self.n_year)}sample", shell=True)
-      # os.rmdir(f"./Data/sources/SampledSpectra/{int(n_year)}sample")
+    if f"{int(self.n_year)}sample" in os.listdir("../Data/sources/SampledSpectra"):
+      subprocess.call(f"rm -r ../Data/sources/SampledSpectra/{int(self.n_year)}sample", shell=True)
+      # os.rmdir(f"../Data/sources/SampledSpectra/{int(n_year)}sample")
     print("Deletion done")
 
     condition = self.mcmc_condition(l_m_flux_temp, l_p_flux_temp, l_flnc_temp, s_m_flux_temp, s_p_flux_temp, s_flnc_temp, params=params, mode="pflx", n_sig=n_sig)
@@ -988,7 +988,7 @@ class MCCatalog:
 # import matplotlib as mpl
 # mpl.use("Qt5Agg")
 #
-# file = "./Data/CatData/CatSampling/mclongv9-300/mc_fit.csv"
+# file = "../Data/CatData/CatSampling/mclongv9-300/mc_fit.csv"
 # leg_mode = "fine"
 # MC_explo_pairplot(file, leg_mode, grbtype="short")
 # plt.show()

@@ -51,14 +51,14 @@ class MuSeffContainer(list):
     ergname = f"ergcut-{ergcut[0]}-{ergcut[1]}"
     armname = f"armcut-{armcut}"
     cond_saving = f"condensed-mu-seff-saved_{geom_name}_{self.decs[0]:.0f}-{self.decs[1]:.0f}-{self.decs[2]:.0f}_{self.ras[0]:.0f}-{self.ras[1]:.0f}-{self.ras[2]:.0f}_{ergname}_{armname}.txt"
-    if cond_saving not in os.listdir(f"./Data/mu100/sim_{geom_name}"):
-      if saving not in os.listdir(f"./Data/mu100/sim_{geom_name}"):
+    if cond_saving not in os.listdir(f"../Data/mu100/sim_{geom_name}"):
+      if saving not in os.listdir(f"../Data/mu100/sim_{geom_name}"):
         init_time = time()
         print("###########################################################################")
         print(" mu/Seff data not saved : Saving ")
         print("###########################################################################")
-        self.save_fulldata(f"./Data/mu100/sim_{geom_name}/{saving}")
-        self.save_condenseddata(f"./Data/mu100/sim_{geom_name}/{saving}", f"./Data/mu100/sim_{geom_name}/{cond_saving}", ergcut, armcut)
+        self.save_fulldata(f"../Data/mu100/sim_{geom_name}/{saving}")
+        self.save_condenseddata(f"../Data/mu100/sim_{geom_name}/{saving}", f"../Data/mu100/sim_{geom_name}/{cond_saving}", ergcut, armcut)
         print("=======================================")
         print(" Saving of mu/Seff data finished in : ", time() - init_time, "seconds")
         print("=======================================")
@@ -67,7 +67,7 @@ class MuSeffContainer(list):
         print("###########################################################################")
         print(" mu/Seff condensed data not saved : Saving ")
         print("###########################################################################")
-        self.save_condenseddata(f"./Data/mu100/sim_{geom_name}/{saving}", f"./Data/mu100/sim_{geom_name}/{cond_saving}", ergcut, armcut)
+        self.save_condenseddata(f"../Data/mu100/sim_{geom_name}/{saving}", f"../Data/mu100/sim_{geom_name}/{cond_saving}", ergcut, armcut)
         print("=======================================")
         print(" Saving of mu/Seff data finished in : ", time() - init_time, "seconds")
         print("=======================================")
@@ -75,7 +75,7 @@ class MuSeffContainer(list):
     print("###########################################################################")
     print(" Extraction of mu/Seff data ")
     print("###########################################################################")
-    list.__init__(self, self.read_data(f"./Data/mu100/sim_{geom_name}/{cond_saving}"))
+    list.__init__(self, self.read_data(f"../Data/mu100/sim_{geom_name}/{cond_saving}"))
     print("=======================================")
     print(" Extraction of mu/Seff data finished in : ", time() - init_time, "seconds")
     print("=======================================")
@@ -100,8 +100,8 @@ class MuSeffContainer(list):
         for ra in make_ra_list(self.ras, dec):
           #  The commented parts are the ones that may not be useful
           geom_name = self.geometry.split(".geo.setup")[0].split("/")[-1]
-          polsname = f"./Data/mu100/sim_{geom_name}/sim/mu100_{dec:.1f}_{ra:.1f}pol.inc1.id1.extracted.tra"
-          unpolsname = f"./Data/mu100/sim_{geom_name}/sim/mu100_{dec:.1f}_{ra:.1f}unpol.inc1.id1.extracted.tra"
+          polsname = f"../Data/mu100/sim_{geom_name}/sim/mu100_{dec:.1f}_{ra:.1f}pol.inc1.id1.extracted.tra"
+          unpolsname = f"../Data/mu100/sim_{geom_name}/sim/mu100_{dec:.1f}_{ra:.1f}unpol.inc1.id1.extracted.tra"
           # print("====== files loaded ======")
           datapol = readfile(polsname)
           dataunpol = readfile(unpolsname)
@@ -366,8 +366,8 @@ class MuSeffContainer(list):
   def show_fit(self, dec_plot, ra_plot, armcut=180):
 
     geom_name = self.geometry.split(".geo.setup")[0].split("/")[-1]
-    polsname = f"./Data/mu100/sim_{geom_name}/sim/mu100_{dec_plot:.1f}_{ra_plot:.1f}pol.inc1.id1.extracted.tra"
-    unpolsname = f"./Data/mu100/sim_{geom_name}/sim/mu100_{dec_plot:.1f}_{ra_plot:.1f}unpol.inc1.id1.extracted.tra"
+    polsname = f"../Data/mu100/sim_{geom_name}/sim/mu100_{dec_plot:.1f}_{ra_plot:.1f}pol.inc1.id1.extracted.tra"
+    unpolsname = f"../Data/mu100/sim_{geom_name}/sim/mu100_{dec_plot:.1f}_{ra_plot:.1f}unpol.inc1.id1.extracted.tra"
     if not(os.path.exists(polsname) and os.path.exists(unpolsname)):
       raise FileNotFoundError("Polarized or unpolarized file is not found")
     # print("====== files loaded ======")

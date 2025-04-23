@@ -20,13 +20,13 @@ def make_directories(geomfile):
   """
   # Creating a directory specific to the geometry
   geom_name = geomfile.split(".geo.setup")[0].split("/")[-1]
-  if f"sim_{geom_name}" not in os.listdir("./Data/mu100"):
-    os.mkdir(f"./Data/mu100/sim_{geom_name}")
+  if f"sim_{geom_name}" not in os.listdir("../Data/mu100"):
+    os.mkdir(f"../Data/mu100/sim_{geom_name}")
     # Creating the sim and rawsim repertories if they don't exist
-  if f"sim" not in os.listdir(f"./Data/mu100/sim_{geom_name}"):
-    os.mkdir(f"./Data/mu100/sim_{geom_name}/sim")
-  if f"rawsim" not in os.listdir(f"./Data/mu100/sim_{geom_name}"):
-    os.mkdir(f"./Data/mu100/sim_{geom_name}/rawsim")
+  if f"sim" not in os.listdir(f"../Data/mu100/sim_{geom_name}"):
+    os.mkdir(f"../Data/mu100/sim_{geom_name}/sim")
+  if f"rawsim" not in os.listdir(f"../Data/mu100/sim_{geom_name}"):
+    os.mkdir(f"../Data/mu100/sim_{geom_name}/rawsim")
 
 
 def make_spectrum(filepath, bandpar):
@@ -61,7 +61,7 @@ def make_tmp_source(dec, ra, geom, source_model, spectrapath, timepol, timeunpol
   """
   fname = f"tmp_{os.getpid()}.source"
   geom_name = geometry.split(".geo.setup")[0].split("/")[-1]
-  sname = f"./Data/mu100/sim_{geom_name}/sim/mu100_{dec:.1f}_{ra:.1f}"
+  sname = f"../Data/mu100/sim_{geom_name}/sim/mu100_{dec:.1f}_{ra:.1f}"
   with open(source_model) as f:
     lines = f.read().split("\n")
   with open(fname, "w") as f:

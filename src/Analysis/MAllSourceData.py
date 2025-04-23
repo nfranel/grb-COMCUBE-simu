@@ -77,7 +77,7 @@ class AllSourceData:
       print("Warning : wrong option for the polarigram bins, it should be fixed (default), limited or optimized. Hence the option has been set to default value.")
       self.polarigram_bins = "fixed"
     # Setup of some options
-    self.rest_cat_file = "./Data/CatData/rest_frame_properties.txt"
+    self.rest_cat_file = "../Data/CatData/rest_frame_properties.txt"
     self.save_time = True
     self.init_correction = False
     self.snr_min = 5

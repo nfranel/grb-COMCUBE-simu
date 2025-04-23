@@ -39,13 +39,13 @@ class BkgContainer(list):
     # print("self.fold_name", self.fold_name)
     # print("saving", saving)
     # print("cond_saving", cond_saving)
-    if cond_saving not in os.listdir(f"./Data/bkg/sim_{self.fold_name}"):
-      if saving not in os.listdir(f"./Data/bkg/sim_{self.fold_name}"):
+    if cond_saving not in os.listdir(f"../Data/bkg/sim_{self.fold_name}"):
+      if saving not in os.listdir(f"../Data/bkg/sim_{self.fold_name}"):
         init_time = time()
         print("###########################################################################")
         print(" bkg data not saved : Saving ")
         print("###########################################################################")
-        self.save_data(f"./Data/bkg/sim_{self.fold_name}/{saving}", f"./Data/bkg/sim_{self.fold_name}/{cond_saving}", ergcut)
+        self.save_data(f"../Data/bkg/sim_{self.fold_name}/{saving}", f"../Data/bkg/sim_{self.fold_name}/{cond_saving}", ergcut)
         print("=======================================")
         print(" Saving of bkg data finished in : ", time() - init_time, "seconds")
         print("=======================================")
@@ -54,7 +54,7 @@ class BkgContainer(list):
         print("###########################################################################")
         print(" bkg condensed data not saved : Saving ")
         print("###########################################################################")
-        self.save_cond_only(f"./Data/bkg/sim_{self.fold_name}/{saving}", f"./Data/bkg/sim_{self.fold_name}/{cond_saving}", ergcut)
+        self.save_cond_only(f"../Data/bkg/sim_{self.fold_name}/{saving}", f"../Data/bkg/sim_{self.fold_name}/{cond_saving}", ergcut)
         print("=======================================")
         print(" Saving of bkg data finished in : ", time() - init_time, "seconds")
         print("=======================================")
@@ -64,9 +64,9 @@ class BkgContainer(list):
     print(" Extraction of bkg data ")
     print("###########################################################################")
     # # Saving the data with a full format
-    # list.__init__(self, self.read_data(f"./Data/bkg/sim_{self.fold_name}/{saving}", save_time, ergcut, data_type="full"))
+    # list.__init__(self, self.read_data(f"../Data/bkg/sim_{self.fold_name}/{saving}", save_time, ergcut, data_type="full"))
     # Saving the data with a condensed format
-    list.__init__(self, self.read_data(f"./Data/bkg/sim_{self.fold_name}/{cond_saving}", save_time, ergcut, data_type="cond"))
+    list.__init__(self, self.read_data(f"../Data/bkg/sim_{self.fold_name}/{cond_saving}", save_time, ergcut, data_type="cond"))
     print("=======================================")
     print(" Extraction of bkg data finished in : ", time() - init_time, "seconds")
     print("=======================================")
@@ -100,7 +100,7 @@ class BkgContainer(list):
         for alt in self.alt_range:
           for lat in self.lat_range:
             # self.fold_name = self.geometry.split(".geo.setup")[0].split("/")[-1]
-            data = readfile(f"./Data/bkg/sim_{self.fold_name}/sim/bkg_{alt:.1f}_{lat:.1f}_{self.sim_time:.0f}s.inc1.id1.extracted.tra")
+            data = readfile(f"../Data/bkg/sim_{self.fold_name}/sim/bkg_{alt:.1f}_{lat:.1f}_{self.sim_time:.0f}s.inc1.id1.extracted.tra")
             decbkg = 90 - lat
             altbkg = alt
             compton_second = []

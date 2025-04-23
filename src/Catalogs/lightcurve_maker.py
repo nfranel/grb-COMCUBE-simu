@@ -88,7 +88,7 @@ def save_LC(rates, centroids, fullname):
     f.write("EN")
 
 
-def make_tte_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_mask, p_to_m_flux, bin_size=0.1, ener_range=(10, 1000), show=False, directory="./Data/sources/", saving=True):
+def make_tte_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_mask, p_to_m_flux, bin_size=0.1, ener_range=(10, 1000), show=False, directory="../Data/sources/", saving=True):
   """
 
   """
@@ -228,8 +228,8 @@ def make_tte_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_mas
       else:
         plt.close(fig)
       if saving:
-        fig.savefig(f"Data/sources/LC_plots_GBM/LightCurve_{name}.png")
-        save_LC(counts_corr, lc_select.centroids, f"Data/sources/GBM_Light_Curves/LightCurve_{name}.dat")
+        fig.savefig(f"../Data/sources/LC_plots_GBM/LightCurve_{name}.png")
+        save_LC(counts_corr, lc_select.centroids, f"../Data/sources/GBM_Light_Curves/LightCurve_{name}.dat")
 
       ###################################################################################################################
       # removing the files
@@ -238,7 +238,7 @@ def make_tte_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_mas
       return 0
 
 
-def make_cspec_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_mask, p_to_m_flux, ener_range=(10, 1000), show=False, directory="./Data/sources/", saving=True):
+def make_cspec_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_mask, p_to_m_flux, ener_range=(10, 1000), show=False, directory="../Data/sources/", saving=True):
   """
 
   """
@@ -382,8 +382,8 @@ def make_cspec_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_m
   else:
     plt.close(fig)
   if saving:
-    fig.savefig(f"Data/sources/LC_plots_GBM/LightCurve_{name}.png")
-    save_LC(counts_corr, used_centroids, f"Data/sources/GBM_Light_Curves/LightCurve_{name}.dat")
+    fig.savefig(f"../Data/sources/LC_plots_GBM/LightCurve_{name}.png")
+    save_LC(counts_corr, used_centroids, f"../Data/sources/GBM_Light_Curves/LightCurve_{name}.dat")
 
   #####################################################################################################################
   # removing the files
@@ -392,7 +392,7 @@ def make_cspec_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_m
   return 0
 
 
-def create_lc(cat, ite_grb, bin_size="auto", ener_range=(10, 1000), show=False, directory="./Data/sources/", saving=True):
+def create_lc(cat, ite_grb, bin_size="auto", ener_range=(10, 1000), show=False, directory="../Data/sources/", saving=True):
   """
 
   """
@@ -435,22 +435,22 @@ def create_lc(cat, ite_grb, bin_size="auto", ener_range=(10, 1000), show=False, 
   # print("==== 1 ====")
   return make_tte_lc(GRBname, start_t90, end_t90, time_range, bkg_range, lc_detector_mask, p_to_m_flux, bin_size=bin_size, ener_range=ener_range, show=show, directory=directory, saving=saving)
 
-if not os.path.exists("Data/sources/GBM_Light_Curves"):
-  os.mkdir("Data/sources/GBM_Light_Curves")
-if not os.path.exists("Data/sources/LC_plots_GBM"):
-  os.mkdir("Data/sources/LC_plots_GBM")
+if not os.path.exists("../Data/sources/GBM_Light_Curves"):
+  os.mkdir("../Data/sources/GBM_Light_Curves")
+if not os.path.exists("../Data/sources/LC_plots_GBM"):
+  os.mkdir("../Data/sources/LC_plots_GBM")
 
-gbm_cat = Catalog("./Data/CatData/allGBM.txt", [4, '\n', 5, '|', 4000], "Data/CatData/rest_frame_properties.txt")
+gbm_cat = Catalog("../Data/CatData/allGBM.txt", [4, '\n', 5, '|', 4000], "../Data/CatData/rest_frame_properties.txt")
 
 # # for grb_ite in [17, 890, 1057, 1350]:
 # # for grb_ite in [17]:
 for grb_ite in range(len(gbm_cat)):
-  create_lc(gbm_cat, grb_ite, bin_size="auto", ener_range=(10, 1000), show=False, directory="./Data/sources/", saving=True)
+  create_lc(gbm_cat, grb_ite, bin_size="auto", ener_range=(10, 1000), show=False, directory="../Data/sources/", saving=True)
 # for grb_ite in [200]:#, 17, 41, 890, 1057, 1350]:
-#   create_lc(gbm_cat, grb_ite, bin_size="auto", ener_range=(10, 1000), show=True, directory="./Data/sources/", saving=True)
+#   create_lc(gbm_cat, grb_ite, bin_size="auto", ener_range=(10, 1000), show=True, directory="../Data/sources/", saving=True)
 
 # import matplotlib as mpl
 # mpl.use("Qt5Agg")
 # for grb_ite in [960, 972, 589, 949]:
-#   create_lc(gbm_cat, grb_ite, bin_size="auto", ener_range=(10, 1000), show=True, directory="./Data/sources/", saving=True)
-# create_lc(gbm_cat, 972, bin_size="auto", ener_range=(10, 1000), show=True, directory="./Data/sources/", saving=False)
+#   create_lc(gbm_cat, grb_ite, bin_size="auto", ener_range=(10, 1000), show=True, directory="../Data/sources/", saving=True)
+# create_lc(gbm_cat, 972, bin_size="auto", ener_range=(10, 1000), show=True, directory="../Data/sources/", saving=False)
