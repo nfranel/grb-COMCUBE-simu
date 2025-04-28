@@ -1845,7 +1845,7 @@ def find_detector(pos_first_compton, pos_sec_compton, pos_single, geometry):
   return det_first_compton, det_sec_compton, det_single
 
 
-def execute_finder(file, events, geometry, cpp_routine="./src/Analysis/find_detector"):
+def execute_finder(file, events, geometry, cpp_routine="find_detector"):
   """
   Executes the "find_detector" c++ routine that find the detector of interaction of different position of interaction
   stored in a file
