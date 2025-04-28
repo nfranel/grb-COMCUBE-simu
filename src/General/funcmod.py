@@ -1813,25 +1813,6 @@ def compile_finder():
   subprocess.call(f"make -f Makefile PRG=find_detector", shell=True)
   os.chdir("../..")
 
-def execute_finder(file, events, geometry, cpp_routine="find_detector"):
-  """
-  Executes the "find_detector" c++ routine that find the detector of interaction of different position of interaction
-  stored in a file
-  :param file: file name used to create the files
-  :param events: array containing the 3 coordinate of multiple events
-  :param geometry: geometry to use
-  :param cpp_routine: name of the c++ routine
-  :returns: an array containing a list [Instrument unit of the interaction, detector where interaction happened]
-  """
-  with open(f"{file}.txt", "w") as data_file:
-    for event in events:
-      data_file.write(f"{event[0]} {event[1]} {event[2]}\n")
-  subprocess.call(f"{cpp_routine} -g {geometry} -f {file}", shell=True, stdout=open(os.devnull, 'wb'), stderr=open(os.devnull, 'wb'))
-  with open(f"{file}save.txt", "r") as save_file:
-    lines = save_file.read().split("\n")[:-1]
-    positions = list(map(format_detector, lines))
-  return np.array(positions, dtype=np.int8)
-
 
 def find_detector(pos_first_compton, pos_sec_compton, pos_single, geometry):
   """
@@ -1862,6 +1843,26 @@ def find_detector(pos_first_compton, pos_sec_compton, pos_single, geometry):
   else:
     det_single = np.array([])
   return det_first_compton, det_sec_compton, det_single
+
+
+def execute_finder(file, events, geometry, cpp_routine="./src/Analysis/find_detector"):
+  """
+  Executes the "find_detector" c++ routine that find the detector of interaction of different position of interaction
+  stored in a file
+  :param file: file name used to create the files
+  :param events: array containing the 3 coordinate of multiple events
+  :param geometry: geometry to use
+  :param cpp_routine: name of the c++ routine
+  :returns: an array containing a list [Instrument unit of the interaction, detector where interaction happened]
+  """
+  with open(f"{file}.txt", "w") as data_file:
+    for event in events:
+      data_file.write(f"{event[0]} {event[1]} {event[2]}\n")
+  subprocess.call(f"{cpp_routine} -g {geometry} -f {file}", shell=True, stdout=open(os.devnull, 'wb'), stderr=open(os.devnull, 'wb'))
+  with open(f"{file}save.txt", "r") as save_file:
+    lines = save_file.read().split("\n")[:-1]
+    positions = list(map(format_detector, lines))
+  return np.array(positions, dtype=np.int8)
 
 
 ######################################################################################################################################################
