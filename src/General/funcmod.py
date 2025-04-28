@@ -1809,7 +1809,7 @@ def compile_finder():
   """
 
   """
-  os.chdir(".src/Analysis")
+  os.chdir("./src/Analysis")
   subprocess.call(f"make -f Makefile PRG=find_detector", shell=True)
   os.chdir("../..")
 
