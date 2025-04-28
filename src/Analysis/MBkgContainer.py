@@ -11,7 +11,7 @@ import os
 import pandas as pd
 
 # Developped modules imports
-from src.General.funcmod import readevt, readfile, save_value, det_counter, find_detector, analyze_bkg_event
+from src.General.funcmod import det_counter, analyze_bkg_event, compile_finder
 from src.Launchers.launch_bkg_sim import read_bkgpar
 
 
@@ -45,6 +45,7 @@ class BkgContainer:
         print("###########################################################################")
         print(" bkg data not saved : Saving ")
         print("###########################################################################")
+        compile_finder()
         self.save_fulldata(f"../Data/bkg/sim_{self.fold_name}/{saving}", f"../Data/bkg/sim_{self.fold_name}/{cond_saving}", ergcut)
         print("=======================================")
         print(" Saving of bkg data finished in : ", time() - init_time, "seconds")

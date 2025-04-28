@@ -13,7 +13,7 @@ from time import time
 import os.path
 
 # Developped modules imports
-from src.General.funcmod import read_mupar, use_scipyquad, set_bins, band, pol_unpol_hist_err, err_calculation, modulation_func, get_pol_unpol_event_data
+from src.General.funcmod import read_mupar, use_scipyquad, set_bins, band, pol_unpol_hist_err, err_calculation, modulation_func, get_pol_unpol_event_data, compile_finder
 from src.Launchers.launch_mu100_sim import make_ra_list
 from src.Analysis.MFit import Fit
 
@@ -59,6 +59,7 @@ class MuSeffContainer:
         print("###########################################################################")
         print(" mu/Seff data not saved : Saving ")
         print("###########################################################################")
+        compile_finder()
         self.save_fulldata(f"../Data/mu100/sim_{geom_name}/{saving}", f"../Data/mu100/sim_{geom_name}/{cond_saving}")
         print("=======================================")
         print(" Saving of mu/Seff data finished in : ", time() - init_time, "seconds")

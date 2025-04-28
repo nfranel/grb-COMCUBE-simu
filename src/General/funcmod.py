@@ -1805,6 +1805,14 @@ def format_detector(det_str):
   return det_id
 
 
+def compile_finder():
+  """
+
+  """
+  os.chdir(".src/Analysis")
+  subprocess.call(f"make -f Makefile PRG=find_detector", shell=True)
+  os.chdir("../..")
+
 def execute_finder(file, events, geometry, cpp_routine="find_detector"):
   """
   Executes the "find_detector" c++ routine that find the detector of interaction of different position of interaction

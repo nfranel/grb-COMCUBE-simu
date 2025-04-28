@@ -18,7 +18,7 @@ from time import time
 import os
 
 # Developped modules imports
-from src.General.funcmod import printcom, printv, endtask, read_grbpar, horizon_angle, save_grb_data, eff_area_func, make_error_histogram
+from src.General.funcmod import printcom, printv, endtask, read_grbpar, horizon_angle, save_grb_data, eff_area_func, make_error_histogram, compile_finder
 from src.Catalogs.catalog import Catalog, SampleCatalog
 from src.Analysis.MBkgContainer import BkgContainer
 from src.Analysis.MmuSeffContainer import MuSeffContainer
@@ -124,7 +124,7 @@ class AllSourceData:
       print("==================================== Memory check ====================================")
 
     # Compiling the position finder
-    subprocess.call(f"make -f Makefile PRG=find_detector", shell=True)
+    compile_finder()
     print("Compiling of the position finder finished")
     endtask("Step 1")
 
