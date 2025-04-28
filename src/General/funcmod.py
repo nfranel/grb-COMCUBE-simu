@@ -1824,9 +1824,9 @@ def find_detector(pos_first_compton, pos_sec_compton, pos_single, geometry):
   :returns: 3 arrays containing a list [Instrument unit of the interaction, detector where interaction happened]
   """
   pid = os.getpid()
-  file_fc = f"temp_pos_fc_{pid}"
-  file_sc = f"temp_pos_sc_{pid}"
-  file_s = f"temp_pos_s_{pid}"
+  file_fc = f"./src/Analysis/temp_pos_fc_{pid}"
+  file_sc = f"./src/Analysis/temp_pos_sc_{pid}"
+  file_s = f"./src/Analysis/temp_pos_s_{pid}"
   if len(pos_first_compton) >= 1:
     det_first_compton = execute_finder(file_fc, pos_first_compton, geometry)
     subprocess.call(f"rm {file_fc}*", shell=True)
