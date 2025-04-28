@@ -52,7 +52,7 @@ class MuSeffContainer:
     geom_name = geom.split(".geo.setup")[0].split("/")[-1]
 
     saving = f"mu-seff-saved_{geom_name}_{self.decs[0]:.0f}-{self.decs[1]:.0f}-{self.decs[2]:.0f}_{self.ras[0]:.0f}-{self.ras[1]:.0f}-{self.ras[2]:.0f}.txt"
-    cond_saving = f"cond_mu-seff-saved_{geom_name}_{self.decs[0]:.0f}-{self.decs[1]:.0f}-{self.decs[2]:.0f}_{self.ras[0]:.0f}-{self.ras[1]:.0f}-{self.ras[2]:.0f}_ergcut-{ergcut[0]}-{ergcut[1]}_armcut-{armcut}.txt"
+    cond_saving = f"cond_mu-seff-saved_{geom_name}_{self.decs[0]:.0f}-{self.decs[1]:.0f}-{self.decs[2]:.0f}_{self.ras[0]:.0f}-{self.ras[1]:.0f}-{self.ras[2]:.0f}_ergcut-{ergcut[0]}-{ergcut[1]}_armcut-{armcut}.h5"
     if cond_saving not in os.listdir(f"../Data/mu100/sim_{geom_name}"):
       if saving not in os.listdir(f"../Data/mu100/sim_{geom_name}"):
         init_time = time()
@@ -246,14 +246,13 @@ class MuSeffContainer:
       fcond.get_storer("mu-seff_df").attrs.ergcut = f"energy cut : {self.ergcut[0]}-{self.ergcut[1]}"
       fcond.get_storer("mu-seff_df").attrs.armcut = f"ARM cut : {self.armcut}"
 
-  def read_data(self, file):
+  def read_data(self, condensed_file):
     """
     Function used to read the bkg txt file
     :param file: path of the file where condensed data is saved
     """
-    with open(file, "r") as f:
-      files_saved = f.read().split("NewPos\n")
-    return [Mu100Data(file_saved) for file_saved in files_saved[1:]]
+    with pd.HDFStore(condensed_file, mode="r") as fcond:
+      return fcond["mu-seff_df"]
 
   def show_fit(self, dec_plot, ra_plot):
 
