@@ -40,28 +40,8 @@ class ConstData:
 
     ###################################################################################################################
     # Attributes filled with file reading (or to be used from this moment)
-    # self.grb_dec_sat_frame = None               # Not changed             #
-    # self.grb_ra_sat_frame = None                # Not changed             #
-    # self.expected_pa = None                     # Not changed             #
-    # self.compton_ener = []                      # 1D concatenation        # Compton
-    # self.compton_second = []                    # 1D concatenation        # Compton
-    # self.single_ener = []                       # 1D concatenation        # Single
     self.compton_time = []                      # 1D concatenation        # Compton
     self.single_time = []                       # 1D concatenation        # Single
-    # self.pol = None                             # 1D concatenation        # Compton
-    # self.polar_from_position = None             # 1D concatenation        # Compton
-    # This polar angle is the one considered as compton scatter angle by mimrec
-    # self.polar_from_energy = None               # 1D concatenation        # Compton
-    # self.arm_pol = None                         # 1D concatenation        # Compton
-    # self.azim_angle_corrected = False           # Set to true             #
-    ###################################################################################################################
-    # interaction position attributes
-    compton_firstpos = []
-    compton_secpos = []
-    single_pos = []
-    # self.compton_first_detector = []            # 1D concatenation        # Compton
-    # self.compton_sec_detector = []              # 1D concatenation        # Compton
-    # self.single_detector = []                   # 1D concatenation        # Single
     ###################################################################################################################
     # Attributes filled after the reading
     # Set using extracted data

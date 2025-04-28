@@ -7,11 +7,13 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib as mpl
+import pandas as pd
+# from scipy.stats import chi2
 from time import time
 import os.path
 
 # Developped modules imports
-from src.General.funcmod import read_mupar, readfile, readevt, use_scipyquad, set_bins, band, angle, calculate_polar_angle, pol_unpol_hist_err, err_calculation, modulation_func
+from src.General.funcmod import read_mupar, use_scipyquad, set_bins, band, pol_unpol_hist_err, err_calculation, modulation_func, get_pol_unpol_event_data
 from src.Launchers.launch_mu100_sim import make_ra_list
 from src.Analysis.MFit import Fit
 
@@ -33,6 +35,7 @@ class MuSeffContainer(list):
     :param ergcut: energy cut to apply
     :param armcut: ARM cut to apply
     """
+    self.array_dtype = np.float32
     geom, revanf, mimrecf, source_base, spectra, bandparam, poltime, unpoltime, decs, ras = read_mupar(mu100parfile)
     self.geometry = geom       # TODO To compare with data/mu100 and make sure everything works with the same softs
     self.revanfile = revanf    # To compare with data/mu100 and make sure everything works with the same softs
@@ -44,21 +47,19 @@ class MuSeffContainer(list):
     self.ras = ras
     self.bins = set_bins("fixed")
     self.ergcut = ergcut
+    self.armcut = armcut
     self.fluence = use_scipyquad(band, self.ergcut[0], self.ergcut[1], func_args=tuple(bandparam), x_logscale=True)[0] * self.poltime
     geom_name = geom.split(".geo.setup")[0].split("/")[-1]
 
     saving = f"mu-seff-saved_{geom_name}_{self.decs[0]:.0f}-{self.decs[1]:.0f}-{self.decs[2]:.0f}_{self.ras[0]:.0f}-{self.ras[1]:.0f}-{self.ras[2]:.0f}.txt"
-    ergname = f"ergcut-{ergcut[0]}-{ergcut[1]}"
-    armname = f"armcut-{armcut}"
-    cond_saving = f"condensed-mu-seff-saved_{geom_name}_{self.decs[0]:.0f}-{self.decs[1]:.0f}-{self.decs[2]:.0f}_{self.ras[0]:.0f}-{self.ras[1]:.0f}-{self.ras[2]:.0f}_{ergname}_{armname}.txt"
+    cond_saving = f"cond_mu-seff-saved_{geom_name}_{self.decs[0]:.0f}-{self.decs[1]:.0f}-{self.decs[2]:.0f}_{self.ras[0]:.0f}-{self.ras[1]:.0f}-{self.ras[2]:.0f}_ergcut-{ergcut[0]}-{ergcut[1]}_armcut-{armcut}.txt"
     if cond_saving not in os.listdir(f"../Data/mu100/sim_{geom_name}"):
       if saving not in os.listdir(f"../Data/mu100/sim_{geom_name}"):
         init_time = time()
         print("###########################################################################")
         print(" mu/Seff data not saved : Saving ")
         print("###########################################################################")
-        self.save_fulldata(f"../Data/mu100/sim_{geom_name}/{saving}")
-        self.save_condenseddata(f"../Data/mu100/sim_{geom_name}/{saving}", f"../Data/mu100/sim_{geom_name}/{cond_saving}", ergcut, armcut)
+        self.save_fulldata(f"../Data/mu100/sim_{geom_name}/{saving}", f"../Data/mu100/sim_{geom_name}/{cond_saving}")
         print("=======================================")
         print(" Saving of mu/Seff data finished in : ", time() - init_time, "seconds")
         print("=======================================")
@@ -67,7 +68,7 @@ class MuSeffContainer(list):
         print("###########################################################################")
         print(" mu/Seff condensed data not saved : Saving ")
         print("###########################################################################")
-        self.save_condenseddata(f"../Data/mu100/sim_{geom_name}/{saving}", f"../Data/mu100/sim_{geom_name}/{cond_saving}", ergcut, armcut)
+        self.save_condensed_data(f"../Data/mu100/sim_{geom_name}/{saving}", f"../Data/mu100/sim_{geom_name}/{cond_saving}")
         print("=======================================")
         print(" Saving of mu/Seff data finished in : ", time() - init_time, "seconds")
         print("=======================================")
@@ -80,247 +81,136 @@ class MuSeffContainer(list):
     print(" Extraction of mu/Seff data finished in : ", time() - init_time, "seconds")
     print("=======================================")
 
-  def save_fulldata(self, file):
+  def save_fulldata(self, file, condensed_file):
     """
     Function used to save the mu100/seff data into a txt file
     :param file: path of the file to save full data
+    :param condensed_file: path of the file to save condensed data
     """
-    with open(file, "w") as f:
-      f.write("# File containing raw mu100 data for : \n")
-      f.write(f"# Geometry : {self.geometry}\n")
-      f.write(f"# Revan file : {self.revanfile}\n")
-      f.write(f"# Mimrec file : {self.mimrecfile}\n")
-      f.write(f"# Pol simulation time : {self.poltime}\n")
-      f.write(f"# Unpol simulation time : {self.unpoltime}\n")
-      f.write(f"# dec min-max-number of value : {self.decs[0]}-{self.decs[1]}-{self.decs[2]}\n")
-      f.write(f"# ra min-max-number of value (at equator) : {self.ras[0]}-{self.ras[1]}-{self.ras[2]}\n")
-      # Keys if the usefull data are saved
+    with pd.HDFStore(file, mode="w") as f:
+      f.get_storer("/").attrs.description = f"# File containing mu100 and Seff data for : \n# Geometry : {self.geometry}\n# Revan file : {self.revanfile}\n# Mimrec file : {self.mimrecfile}\n# Polarized simulation time : {self.poltime}\n# Unpolarized simulation time : {self.unpoltime}\n# dec min-max-number of value : {self.decs[0]}-{self.decs[1]}-{self.decs[2]}\n# ra min-max-number of value (at equator) : {self.ras[0]}-{self.ras[1]}-{self.ras[2]}"
+      f.get_storer("/").attrs.structure = "Keys : dec-ra/compton_pol or compton_unpol DataFrames or single_ener Serie"
+
+      data_tab = []
       f.write("# Keys : dec | ra | compton_ener_pol | compton_ener_unpol | compton_second_pol | compton_second_unpol | single_ener_pol\n")
       for dec in np.linspace(self.decs[0], self.decs[1], self.decs[2]):
         for ra in make_ra_list(self.ras, dec):
           #  The commented parts are the ones that may not be useful
           geom_name = self.geometry.split(".geo.setup")[0].split("/")[-1]
-          polsname = f"../Data/mu100/sim_{geom_name}/sim/mu100_{dec:.1f}_{ra:.1f}pol.inc1.id1.extracted.tra"
-          unpolsname = f"../Data/mu100/sim_{geom_name}/sim/mu100_{dec:.1f}_{ra:.1f}unpol.inc1.id1.extracted.tra"
-          # print("====== files loaded ======")
-          datapol = readfile(polsname)
-          dataunpol = readfile(unpolsname)
-          compton_second_pol = []
-          compton_second_unpol = []
-          compton_ener_pol = []
-          compton_ener_unpol = []
-          compton_firstpos_pol = []
-          compton_firstpos_unpol = []
-          compton_secpos_pol = []
-          compton_secpos_unpol = []
-          single_ener_pol = []
+          polname = f"../Data/mu100/sim_{geom_name}/sim/mu100_{dec:.1f}_{ra:.1f}pol.inc1.id1.extracted.tra"
+          unpolname = f"../Data/mu100/sim_{geom_name}/sim/mu100_{dec:.1f}_{ra:.1f}unpol.inc1.id1.extracted.tra"
+          if not (os.path.exists(polname) and os.path.exists(unpolname)):
+            raise FileNotFoundError("Polarized or unpolarized file is not found")
 
-          compton_second_pol_err = []
-          compton_ener_pol_err = []
-          compton_firstpos_pol_err = []
-          compton_secpos_pol_err = []
-          compton_second_unpol_err = []
-          compton_ener_unpol_err = []
-          compton_firstpos_unpol_err = []
-          compton_secpos_unpol_err = []
-          for event_pol in datapol:
-            reading_pol = readevt(event_pol, None)
-            if len(reading_pol) == 9:
-              compton_second_pol.append(reading_pol[0])
-              compton_ener_pol.append(reading_pol[1])
-              compton_firstpos_pol.append(reading_pol[3])
-              compton_secpos_pol.append(reading_pol[4])
-              compton_second_pol_err.append(reading_pol[5])
-              compton_ener_pol_err.append(reading_pol[6])
-              compton_firstpos_pol_err.append(reading_pol[7])
-              compton_secpos_pol_err.append(reading_pol[8])
-            elif len(reading_pol) == 3:
-              single_ener_pol.append(reading_pol[0])
-          for event_unpol in dataunpol:
-            reading_unpol = readevt(event_unpol, None)
-            if len(reading_unpol) == 9:
-              compton_second_unpol.append(reading_unpol[0])
-              compton_ener_unpol.append(reading_unpol[1])
-              compton_firstpos_unpol.append(reading_unpol[3])
-              compton_secpos_unpol.append(reading_unpol[4])
-              compton_second_unpol_err.append(reading_unpol[5])
-              compton_ener_unpol_err.append(reading_unpol[6])
-              compton_firstpos_unpol_err.append(reading_unpol[7])
-              compton_secpos_unpol_err.append(reading_unpol[8])
+          dec_err, ra_err = 1.12, 1.01
+          compton_ener_pol, pol, pol_err, arm_pol, single_ener_pol, compton_ener_unpol, unpol, unpol_err, arm_unpol = get_pol_unpol_event_data(polname, unpolname, dec, ra, dec_err, ra_err, self.geometry, self.array_dtype)
 
-          f.write("NewPos\n")
-          f.write(f"{dec}\n")
-          f.write(f"{ra}\n")
-          for ite in range(len(compton_second_pol) - 1):
-            f.write(f"{compton_second_pol[ite]}|")
-          f.write(f"{compton_second_pol[-1]}\n")
-          for ite in range(len(compton_second_unpol) - 1):
-            f.write(f"{compton_second_unpol[ite]}|")
-          f.write(f"{compton_second_unpol[-1]}\n")
+          df_compton_pol = pd.DataFrame({"compton_ener_pol": compton_ener_pol, "pol": pol, "pol_err": pol_err, "arm_pol": arm_pol})
+          df_compton_unpol = pd.DataFrame({"compton_ener_unpol": compton_ener_unpol, "unpol": unpol, "unpol_err": unpol_err, "arm_punol": arm_unpol})
 
-          for ite in range(len(compton_second_pol_err) - 1):
-            f.write(f"{compton_second_pol_err[ite]}|")
-          f.write(f"{compton_second_pol_err[-1]}\n")
-          for ite in range(len(compton_second_unpol_err) - 1):
-            f.write(f"{compton_second_unpol_err[ite]}|")
-          f.write(f"{compton_second_unpol_err[-1]}\n")
+          key = f"{dec}-{ra}"
+          # Saving Compton event related quantities
+          f.put(f"{key}/compton_pol", df_compton_pol)
+          f.put(f"{key}/compton_unpol", df_compton_unpol)
+          # Saving single event related quantities
+          f.put(f"{key}/single_ener", pd.Series(single_ener_pol))
+          # Saving scalar values
+          # Specific to satellite
+          f.get_storer(f"{key}/compton_pol").attrs.dec = dec
+          f.get_storer(f"{key}/compton_pol").attrs.ra = ra
 
-          for ite in range(len(compton_ener_pol) - 1):
-            f.write(f"{compton_ener_pol[ite]}|")
-          f.write(f"{compton_ener_pol[-1]}\n")
-          for ite in range(len(compton_ener_unpol) - 1):
-            f.write(f"{compton_ener_unpol[ite]}|")
-          f.write(f"{compton_ener_unpol[-1]}\n")
+          if self.ergcut is not None:
+            df_compton_pol = df_compton_pol[(df_compton_pol.compton_ener_pol >= self.ergcut[0]) & (df_compton_pol.compton_ener_pol <= self.ergcut[1])]
+            df_compton_unpol = df_compton_unpol[(df_compton_unpol.compton_ener_unpol >= self.ergcut[0]) & (df_compton_unpol.compton_ener_unpol <= self.ergcut[1])]
+            single_ener_pol = single_ener_pol[(single_ener_pol >= self.ergcut[0]) & (single_ener_pol <= self.ergcut[1])]
 
-          for ite in range(len(compton_ener_pol_err) - 1):
-            f.write(f"{compton_ener_pol_err[ite]}|")
-          f.write(f"{compton_ener_pol_err[-1]}\n")
-          for ite in range(len(compton_ener_unpol_err) - 1):
-            f.write(f"{compton_ener_unpol_err[ite]}|")
-          f.write(f"{compton_ener_unpol_err[-1]}\n")
+          if self.armcut is not None:
+            df_compton_pol = df_compton_pol[df_compton_pol.arm_pol <= self.armcut]
+            df_compton_unpol = df_compton_unpol[df_compton_unpol.arm_unpol <= self.armcut]
 
-          for ite in range(len(compton_firstpos_pol) - 1):
-            string = f"{compton_firstpos_pol[ite][0]}_{compton_firstpos_pol[ite][1]}_{compton_firstpos_pol[ite][2]}"
-            f.write(f"{string}|")
-          string = f"{compton_firstpos_pol[-1][0]}_{compton_firstpos_pol[-1][1]}_{compton_firstpos_pol[-1][2]}"
-          f.write(f"{string}\n")
-          for ite in range(len(compton_firstpos_unpol) - 1):
-            string = f"{compton_firstpos_unpol[ite][0]}_{compton_firstpos_unpol[ite][1]}_{compton_firstpos_unpol[ite][2]}"
-            f.write(f"{string}|")
-          string = f"{compton_firstpos_unpol[-1][0]}_{compton_firstpos_unpol[-1][1]}_{compton_firstpos_unpol[-1][2]}"
-          f.write(f"{string}\n")
+          hist_pol = np.histogram(df_compton_pol.pol, self.bins)[0]
+          hist_unpol = np.histogram(df_compton_unpol.unpol, self.bins)[0]
+          hist_pol_err, hist_unpol_err = pol_unpol_hist_err(df_compton_pol.pol, df_compton_unpol.unpol, df_compton_pol.pol_err, df_compton_unpol.unpol_err, self.bins)
 
-          for ite in range(len(compton_firstpos_pol_err) - 1):
-            string = f"{compton_firstpos_pol_err[ite][0]}_{compton_firstpos_pol_err[ite][1]}_{compton_firstpos_pol_err[ite][2]}"
-            f.write(f"{string}|")
-          string = f"{compton_firstpos_pol_err[-1][0]}_{compton_firstpos_pol_err[-1][1]}_{compton_firstpos_pol_err[-1][2]}"
-          f.write(f"{string}\n")
-          for ite in range(len(compton_firstpos_unpol_err) - 1):
-            string = f"{compton_firstpos_unpol_err[ite][0]}_{compton_firstpos_unpol_err[ite][1]}_{compton_firstpos_unpol_err[ite][2]}"
-            f.write(f"{string}|")
-          string = f"{compton_firstpos_unpol_err[-1][0]}_{compton_firstpos_unpol_err[-1][1]}_{compton_firstpos_unpol_err[-1][2]}"
-          f.write(f"{string}\n")
+          var_x = .5 * (self.bins[1:] + self.bins[:-1])
+          binw = self.bins[1:] - self.bins[:-1]
 
-          for ite in range(len(compton_secpos_pol) - 1):
-            string = f"{compton_secpos_pol[ite][0]}_{compton_secpos_pol[ite][1]}_{compton_secpos_pol[ite][2]}"
-            f.write(f"{string}|")
-          string = f"{compton_secpos_pol[-1][0]}_{compton_secpos_pol[-1][1]}_{compton_secpos_pol[-1][2]}"
-          f.write(f"{string}\n")
-          for ite in range(len(compton_secpos_unpol) - 1):
-            string = f"{compton_secpos_unpol[ite][0]}_{compton_secpos_unpol[ite][1]}_{compton_secpos_unpol[ite][2]}"
-            f.write(f"{string}|")
-          string = f"{compton_secpos_unpol[-1][0]}_{compton_secpos_unpol[-1][1]}_{compton_secpos_unpol[-1][2]}"
-          f.write(f"{string}\n")
+          # The polarigrams are normalized with the bin width !
+          hist_pol_norm = hist_pol / binw
+          hist_unpol_norm = hist_unpol / binw
+          fit_mod = None
+          fit_lin = None
+          if 0. in hist_unpol_norm:
+            print(f"Unpolarized data do not allow a fit - {dec}_{ra} : a bin is empty")
+          else:
+            polarigram_error = err_calculation(hist_pol, hist_unpol, binw, hist_pol_err, hist_unpol_err)
+            if 0. in polarigram_error:
+              print(f"Polarized data do not allow a fit - {dec}_{ra} : a bin is empty leading to uncorrect fit")
+            else:
+              histo = hist_pol_norm / hist_unpol_norm * np.mean(hist_unpol_norm)
+              fit_mod = Fit(modulation_func, var_x, histo, yerr=polarigram_error, comment="modulation")
+              # fit_lin = Fit(lambda x, a:a*x/x, var_x, histo, yerr=polarigram_error, comment="constant")
+          pa, mu100 = fit_mod.popt[:2]
+          if mu100 < 0:
+            pa = (pa + 90) % 180
+            mu100 = - mu100
+          else:
+            pa = pa % 180
+          pa_err = np.sqrt(fit_mod.pcov[0][0])
+          mu100_err = np.sqrt(fit_mod.pcov[1][1])
+          fit_p_value = fit_mod.p_value
 
-          for ite in range(len(compton_secpos_pol_err) - 1):
-            string = f"{compton_secpos_pol_err[ite][0]}_{compton_secpos_pol_err[ite][1]}_{compton_secpos_pol_err[ite][2]}"
-            f.write(f"{string}|")
-          string = f"{compton_secpos_pol_err[-1][0]}_{compton_secpos_pol_err[-1][1]}_{compton_secpos_pol_err[-1][2]}"
-          f.write(f"{string}\n")
-          for ite in range(len(compton_secpos_unpol_err) - 1):
-            string = f"{compton_secpos_unpol_err[ite][0]}_{compton_secpos_unpol_err[ite][1]}_{compton_secpos_unpol_err[ite][2]}"
-            f.write(f"{string}|")
-          string = f"{compton_secpos_unpol_err[-1][0]}_{compton_secpos_unpol_err[-1][1]}_{compton_secpos_unpol_err[-1][2]}"
-          f.write(f"{string}\n")
+          seff_compton = len(df_compton_pol) / self.fluence
+          seff_single = len(single_ener_pol) / self.fluence
 
-          for ite in range(len(single_ener_pol) - 1):
-            f.write(f"{single_ener_pol[ite]}|")
-          f.write(f"{single_ener_pol[-1]}\n")
+          data_tab.append([dec, ra, mu100, mu100_err, pa, pa_err, fit_p_value, seff_compton, seff_single])
 
-  def save_condenseddata(self, fullfile, condfile, ergcut, armcut):
+    columns = ["dec", "ra", "mu100", "mu100_err", "pa", "pa_err", "fit_p_value", "seff_compton", "seff_single"]
+    cond_df = pd.DataFrame(data=data_tab, columns=columns)
+
+    with pd.HDFStore(condensed_file, mode="w") as fcond:
+      fcond.get_storer("/").attrs.description = f"# File containing mu100 and Seff data for : \n# Geometry : {self.geometry}\n# Revan file : {self.revanfile}\n# Mimrec file : {self.mimrecfile}\n# Polarized simulation time : {self.poltime}\n# Unpolarized simulation time : {self.unpoltime}\n# dec min-max-number of value : {self.decs[0]}-{self.decs[1]}-{self.decs[2]}\n# ra min-max-number of value (at equator) : {self.ras[0]}-{self.ras[1]}-{self.ras[2]}"
+      fcond.get_storer("/").attrs.structure = "Keys : mu100 and Seff DataFrame"
+      fcond.get_storer("/").attrs.ergcut = f"energy cut : {self.ergcut[0]}-{self.ergcut[1]}"
+      fcond.get_storer("/").attrs.armcut = f"ARM cut : {self.armcut}"
+      fcond.put(f"mu-seff_df", cond_df)
+
+  def save_condensed_data(self, fullfile, condensed_file):
     """
     Function used to save the mu100/seff data into a txt file
     :param fullfile: path of the file where full data is saved
-    :param condfile: path of the file to save condensed data
-    :param ergcut: energy cut to apply
-    :param armcut: ARM cut to apply
+    :param condensed_file: path of the file to save condensed data
     """
     var_x = .5 * (self.bins[1:] + self.bins[:-1])
     binw = self.bins[1:] - self.bins[:-1]
-    with open(fullfile, "r") as fullf:
-      fulldata = fullf.read().split("NewPos\n")
-    with open(condfile, "w") as f:
-      f.write("# File containing mu100 and seff data for : \n")
-      f.write(f"# Geometry : {self.geometry}\n")
-      f.write(f"# Revan file : {self.revanfile}\n")
-      f.write(f"# Mimrec file : {self.mimrecfile}\n")
-      f.write(f"# Pol simulation time : {self.poltime}\n")
-      f.write(f"# Unpol simulation time : {self.unpoltime}\n")
-      f.write(f"# dec min-max-number of value : {self.decs[0]}-{self.decs[1]}-{self.decs[2]}\n")
-      f.write(f"# ra min-max-number of value (at equator) : {self.ras[0]}-{self.ras[1]}-{self.ras[2]}\n")
-      f.write("# Keys : dec | ra | mu100 | mu100_err | pa | pa_err | fit_goodness | seff_compton | seff_single\n")
-      for filedata in fulldata[1:]:
-        lines = filedata.split("\n")
-        # Extraction of position
-        dec = float(lines[0])
-        ra = float(lines[1])
-        # Extraction of compton energies for pol and unpol events
-        compton_second_pol = np.array(lines[2].split("|"), dtype=float)
-        compton_second_unpol = np.array(lines[3].split("|"), dtype=float)
-        compton_second_pol_err = np.array(lines[4].split("|"), dtype=float)
-        compton_second_unpol_err = np.array(lines[5].split("|"), dtype=float)
-        compton_ener_pol = np.array(lines[6].split("|"), dtype=float)
-        compton_ener_unpol = np.array(lines[7].split("|"), dtype=float)
-        compton_ener_pol_err = np.array(lines[8].split("|"), dtype=float)
-        compton_ener_unpol_err = np.array(lines[9].split("|"), dtype=float)
-        # Extraction of compton position for pol and unpol events
-        compton_firstpos_pol = np.array([val.split("_") for val in lines[10].split("|")], dtype=float)
-        compton_firstpos_unpol = np.array([val.split("_") for val in lines[11].split("|")], dtype=float)
-        compton_firstpos_pol_err = np.array([val.split("_") for val in lines[12].split("|")], dtype=float)
-        compton_firstpos_unpol_err = np.array([val.split("_") for val in lines[13].split("|")], dtype=float)
-        compton_secpos_pol = np.array([val.split("_") for val in lines[14].split("|")], dtype=float)
-        compton_secpos_unpol = np.array([val.split("_") for val in lines[15].split("|")], dtype=float)
-        compton_secpos_pol_err = np.array([val.split("_") for val in lines[16].split("|")], dtype=float)
-        compton_secpos_unpol_err = np.array([val.split("_") for val in lines[17].split("|")], dtype=float)
-        # Extraction of energy for single events
-        single_ener_pol = np.array(lines[18].split("|"), dtype=float)
 
-        if ergcut is not None:
-          compton_pol_index = np.where(compton_ener_pol >= ergcut[0], np.where(compton_ener_pol <= ergcut[1], True, False), False)
-          compton_unpol_index = np.where(compton_ener_unpol >= ergcut[0], np.where(compton_ener_unpol <= ergcut[1], True, False), False)
-          single_index = np.where(single_ener_pol >= ergcut[0], np.where(single_ener_pol <= ergcut[1], True, False), False)
+    data_tab = []
+    with pd.HDFStore(fullfile, mode="r") as f:
+      for key in set(k.split("/")[1] for k in f.keys()):
+        dec = f.get_storer(f"{key}/compton_pol").attrs.dec
+        ra = f.get_storer(f"{key}/compton_pol").attrs.ra
+        df_compton_pol = f[f"{key}/compton_pol"]
+        df_compton_unpol = f[f"{key}/compton_unpol"]
+        single_ener_pol = f[f"{key}/single_ener"]
 
-          compton_second_pol = compton_second_pol[compton_pol_index]
-          compton_second_unpol = compton_second_unpol[compton_unpol_index]
-          compton_ener_pol = compton_ener_pol[compton_pol_index]
-          compton_ener_unpol = compton_ener_unpol[compton_unpol_index]
-          compton_firstpos_pol = compton_firstpos_pol[compton_pol_index]
-          compton_firstpos_unpol = compton_firstpos_unpol[compton_unpol_index]
-          compton_secpos_pol = compton_secpos_pol[compton_pol_index]
-          compton_secpos_unpol = compton_secpos_unpol[compton_unpol_index]
-          single_ener_pol = single_ener_pol[single_index]
-          compton_second_pol_err = compton_second_pol_err[compton_pol_index]
-          compton_second_unpol_err = compton_second_unpol_err[compton_unpol_index]
-          compton_ener_pol_err = compton_ener_pol_err[compton_pol_index]
-          compton_ener_unpol_err = compton_ener_unpol_err[compton_unpol_index]
-          compton_firstpos_pol_err = compton_firstpos_pol_err[compton_pol_index]
-          compton_firstpos_unpol_err = compton_firstpos_unpol_err[compton_unpol_index]
-          compton_secpos_pol_err = compton_secpos_pol_err[compton_pol_index]
-          compton_secpos_unpol_err = compton_secpos_unpol_err[compton_unpol_index]
-        scat_vec_pol_err = np.sqrt(compton_secpos_pol_err ** 2 + compton_firstpos_pol_err ** 2)
-        scat_vec_unpol_err = np.sqrt(compton_secpos_unpol_err ** 2 + compton_firstpos_unpol_err ** 2)
+        if self.ergcut is not None:
+          df_compton_pol = df_compton_pol[(df_compton_pol.compton_ener_pol >= self.ergcut[0]) & (df_compton_pol.compton_ener_pol <= self.ergcut[1])]
+          df_compton_unpol = df_compton_unpol[(df_compton_unpol.compton_ener_unpol >= self.ergcut[0]) & (df_compton_unpol.compton_ener_unpol <= self.ergcut[1])]
+          single_ener_pol = single_ener_pol[(single_ener_pol >= self.ergcut[0]) & (single_ener_pol <= self.ergcut[1])]
 
-        dec_err, ra_err = 1.12, 1.01  #  !! peut etre à re evaluer avec des valeurs de grb_wf err
-        pol, polar_from_position_pol, pol_err = angle(compton_secpos_pol - compton_firstpos_pol, dec, ra, f"{dec}_{ra}_pol", 0, 0, scatter_vector_err=scat_vec_pol_err, grb_dec_sf_err=dec_err, grb_ra_sf_err=ra_err)
-        unpol, polar_from_position_unpol, unpol_err = angle(compton_secpos_unpol - compton_firstpos_unpol, dec, ra, f"{dec}_{ra}_unpol", 0, 0, scatter_vector_err=scat_vec_unpol_err, grb_dec_sf_err=dec_err, grb_ra_sf_err=ra_err)
+        if self.armcut is not None:
+          df_compton_pol = df_compton_pol[df_compton_pol.arm_pol <= self.armcut]
+          df_compton_unpol = df_compton_unpol[df_compton_unpol.arm_unpol <= self.armcut]
 
-        polar_from_energy_pol, polar_from_energy_pol_err = calculate_polar_angle(compton_second_pol, compton_ener_pol, ener_sec_err=compton_second_pol_err, ener_tot_err=compton_ener_pol_err)
-        polar_from_energy_unpol, polar_from_energy_unpol_err = calculate_polar_angle(compton_second_unpol, compton_ener_unpol, ener_sec_err=compton_second_unpol_err, ener_tot_err=compton_ener_unpol_err)
-        arm_pol = polar_from_position_pol - polar_from_energy_pol
-        arm_unpol = polar_from_position_unpol - polar_from_energy_unpol
-        accepted_arm_pol = np.where(np.abs(arm_pol) <= armcut, True, False)
-        accepted_arm_unpol = np.where(np.abs(arm_unpol) <= armcut, True, False)
-        pol = pol[accepted_arm_pol]
-        unpol = unpol[accepted_arm_unpol]
-
-        hist_pol = np.histogram(pol, self.bins)[0]
-        hist_unpol = np.histogram(unpol, self.bins)[0]
-        hist_pol_err, hist_unpol_err = pol_unpol_hist_err(pol, unpol, pol_err, unpol_err, self.bins)
+        hist_pol = np.histogram(df_compton_pol.pol, self.bins)[0]
+        hist_unpol = np.histogram(df_compton_unpol.unpol, self.bins)[0]
+        hist_pol_err, hist_unpol_err = pol_unpol_hist_err(df_compton_pol.pol, df_compton_unpol.unpol, df_compton_pol.pol_err, df_compton_unpol.unpol_err, self.bins)
 
         # The polarigrams are normalized with the bin width !
         hist_pol_norm = hist_pol / binw
         hist_unpol_norm = hist_unpol / binw
         fit_mod = None
+        fit_lin = None
         if 0. in hist_unpol_norm:
           print(f"Unpolarized data do not allow a fit - {dec}_{ra} : a bin is empty")
         else:
@@ -330,6 +220,7 @@ class MuSeffContainer(list):
           else:
             histo = hist_pol_norm / hist_unpol_norm * np.mean(hist_unpol_norm)
             fit_mod = Fit(modulation_func, var_x, histo, yerr=polarigram_error, comment="modulation")
+            # fit_lin = Fit(lambda x, a:a*x/x, var_x, histo, yerr=polarigram_error, comment="constant")
         pa, mu100 = fit_mod.popt[:2]
         if mu100 < 0:
           pa = (pa + 90) % 180
@@ -338,21 +229,22 @@ class MuSeffContainer(list):
           pa = pa % 180
         pa_err = np.sqrt(fit_mod.pcov[0][0])
         mu100_err = np.sqrt(fit_mod.pcov[1][1])
-        fit_goodness = fit_mod.q2 / (len(fit_mod.x) - fit_mod.nparam)
+        fit_p_value = fit_mod.p_value
 
-        seff_compton = len(pol) / self.fluence
+        seff_compton = len(df_compton_pol) / self.fluence
         seff_single = len(single_ener_pol) / self.fluence
+        # Writing the condensed file
+        data_tab.append([dec, ra, mu100, mu100_err, pa, pa_err, fit_p_value, seff_compton, seff_single])
 
-        f.write("NewPos\n")
-        f.write(f"{dec}\n")
-        f.write(f"{ra}\n")
-        f.write(f"{mu100}\n")
-        f.write(f"{mu100_err}\n")
-        f.write(f"{pa}\n")
-        f.write(f"{pa_err}\n")
-        f.write(f"{fit_goodness}\n")
-        f.write(f"{seff_compton}\n")
-        f.write(f"{seff_single}\n")
+    columns = ["dec", "ra", "mu100", "mu100_err", "pa", "pa_err", "fit_p_value", "seff_compton", "seff_single"]
+    cond_df = pd.DataFrame(data=data_tab, columns=columns)
+
+    with pd.HDFStore(condensed_file, mode="w") as fcond:
+      fcond.get_storer("/").attrs.description = f"# File containing mu100 and Seff data for : \n# Geometry : {self.geometry}\n# Revan file : {self.revanfile}\n# Mimrec file : {self.mimrecfile}\n# Polarized simulation time : {self.poltime}\n# Unpolarized simulation time : {self.unpoltime}\n# dec min-max-number of value : {self.decs[0]}-{self.decs[1]}-{self.decs[2]}\n# ra min-max-number of value (at equator) : {self.ras[0]}-{self.ras[1]}-{self.ras[2]}"
+      fcond.get_storer("/").attrs.structure = "Keys : mu100 and Seff DataFrame"
+      fcond.get_storer("/").attrs.ergcut = f"energy cut : {self.ergcut[0]}-{self.ergcut[1]}"
+      fcond.get_storer("/").attrs.armcut = f"ARM cut : {self.armcut}"
+      fcond.put(f"mu-seff_df", cond_df)
 
   def read_data(self, file):
     """
@@ -363,127 +255,41 @@ class MuSeffContainer(list):
       files_saved = f.read().split("NewPos\n")
     return [Mu100Data(file_saved) for file_saved in files_saved[1:]]
 
-  def show_fit(self, dec_plot, ra_plot, armcut=180):
+  def show_fit(self, dec_plot, ra_plot):
 
     geom_name = self.geometry.split(".geo.setup")[0].split("/")[-1]
-    polsname = f"../Data/mu100/sim_{geom_name}/sim/mu100_{dec_plot:.1f}_{ra_plot:.1f}pol.inc1.id1.extracted.tra"
-    unpolsname = f"../Data/mu100/sim_{geom_name}/sim/mu100_{dec_plot:.1f}_{ra_plot:.1f}unpol.inc1.id1.extracted.tra"
-    if not(os.path.exists(polsname) and os.path.exists(unpolsname)):
+    polname = f"../Data/mu100/sim_{geom_name}/sim/mu100_{dec_plot:.1f}_{ra_plot:.1f}pol.inc1.id1.extracted.tra"
+    unpolname = f"../Data/mu100/sim_{geom_name}/sim/mu100_{dec_plot:.1f}_{ra_plot:.1f}unpol.inc1.id1.extracted.tra"
+    if not (os.path.exists(polname) and os.path.exists(unpolname)):
       raise FileNotFoundError("Polarized or unpolarized file is not found")
-    # print("====== files loaded ======")
-    datapol = readfile(polsname)
-    dataunpol = readfile(unpolsname)
-    compton_second_pol = []
-    compton_second_unpol = []
-    compton_ener_pol = []
-    compton_ener_unpol = []
-    compton_firstpos_pol = []
-    compton_firstpos_unpol = []
-    compton_secpos_pol = []
-    compton_secpos_unpol = []
-    single_ener_pol = []
 
-    compton_second_pol_err = []
-    compton_ener_pol_err = []
-    compton_firstpos_pol_err = []
-    compton_secpos_pol_err = []
-    compton_second_unpol_err = []
-    compton_ener_unpol_err = []
-    compton_firstpos_unpol_err = []
-    compton_secpos_unpol_err = []
-    for event_pol in datapol:
-      reading_pol = readevt(event_pol, None)
-      if len(reading_pol) == 9:
-        compton_second_pol.append(reading_pol[0])
-        compton_ener_pol.append(reading_pol[1])
-        compton_firstpos_pol.append(reading_pol[3])
-        compton_secpos_pol.append(reading_pol[4])
-        compton_second_pol_err.append(reading_pol[5])
-        compton_ener_pol_err.append(reading_pol[6])
-        compton_firstpos_pol_err.append(reading_pol[7])
-        compton_secpos_pol_err.append(reading_pol[8])
-      elif len(reading_pol) == 3:
-        single_ener_pol.append(reading_pol[0])
-    for event_unpol in dataunpol:
-      reading_unpol = readevt(event_unpol, None)
-      if len(reading_unpol) == 9:
-        compton_second_unpol.append(reading_unpol[0])
-        compton_ener_unpol.append(reading_unpol[1])
-        compton_firstpos_unpol.append(reading_unpol[3])
-        compton_secpos_unpol.append(reading_unpol[4])
-        compton_second_unpol_err.append(reading_unpol[5])
-        compton_ener_unpol_err.append(reading_unpol[6])
-        compton_firstpos_unpol_err.append(reading_unpol[7])
-        compton_secpos_unpol_err.append(reading_unpol[8])
+    dec_err, ra_err = 1.12, 1.01
+    compton_ener_pol, pol, pol_err, arm_pol, single_ener_pol, compton_ener_unpol, unpol, unpol_err, arm_unpol = get_pol_unpol_event_data(polname, unpolname, dec_plot, ra_plot, dec_err, ra_err, self.geometry, self.array_dtype)
 
-    compton_second_pol = np.array(compton_second_pol)
-    compton_second_unpol = np.array(compton_second_unpol)
-    compton_ener_pol = np.array(compton_ener_pol)
-    compton_ener_unpol = np.array(compton_ener_unpol)
-    compton_firstpos_pol = np.array(compton_firstpos_pol)
-    compton_firstpos_unpol = np.array(compton_firstpos_unpol)
-    compton_secpos_pol = np.array(compton_secpos_pol)
-    compton_secpos_unpol = np.array(compton_secpos_unpol)
-    single_ener_pol = np.array(single_ener_pol)
+    df_compton_pol = pd.DataFrame({"compton_ener_pol": compton_ener_pol, "pol": pol, "pol_err": pol_err, "arm_pol": arm_pol})
+    df_compton_unpol = pd.DataFrame({"compton_ener_unpol": compton_ener_unpol, "unpol": unpol, "unpol_err": unpol_err, "arm_punol": arm_unpol})
 
-    compton_second_pol_err = np.array(compton_second_pol_err)
-    compton_ener_pol_err = np.array(compton_ener_pol_err)
-    compton_firstpos_pol_err = np.array(compton_firstpos_pol_err)
-    compton_secpos_pol_err = np.array(compton_secpos_pol_err)
-    compton_second_unpol_err = np.array(compton_second_unpol_err)
-    compton_ener_unpol_err = np.array(compton_ener_unpol_err)
-    compton_firstpos_unpol_err = np.array(compton_firstpos_unpol_err)
-    compton_secpos_unpol_err = np.array(compton_secpos_unpol_err)
+    if self.ergcut is not None:
+      df_compton_pol = df_compton_pol[(df_compton_pol.compton_ener_pol >= self.ergcut[0]) & (df_compton_pol.compton_ener_pol <= self.ergcut[1])]
+      df_compton_unpol = df_compton_unpol[(df_compton_unpol.compton_ener_unpol >= self.ergcut[0]) & (df_compton_unpol.compton_ener_unpol <= self.ergcut[1])]
+      single_ener_pol = single_ener_pol[(single_ener_pol >= self.ergcut[0]) & (single_ener_pol <= self.ergcut[1])]
+
+    if self.armcut is not None:
+      df_compton_pol = df_compton_pol[df_compton_pol.arm_pol <= self.armcut]
+      df_compton_unpol = df_compton_unpol[df_compton_unpol.arm_unpol <= self.armcut]
+
+    hist_pol = np.histogram(df_compton_pol.pol, self.bins)[0]
+    hist_unpol = np.histogram(df_compton_unpol.unpol, self.bins)[0]
+    hist_pol_err, hist_unpol_err = pol_unpol_hist_err(df_compton_pol.pol, df_compton_unpol.unpol, df_compton_pol.pol_err, df_compton_unpol.unpol_err, self.bins)
 
     var_x = .5 * (self.bins[1:] + self.bins[:-1])
     binw = self.bins[1:] - self.bins[:-1]
-
-    if self.ergcut is not None:
-      compton_pol_index = np.where(compton_ener_pol >= self.ergcut[0], np.where(compton_ener_pol <= self.ergcut[1], True, False), False)
-      compton_unpol_index = np.where(compton_ener_unpol >= self.ergcut[0], np.where(compton_ener_unpol <= self.ergcut[1], True, False), False)
-      single_index = np.where(single_ener_pol >= self.ergcut[0], np.where(single_ener_pol <= self.ergcut[1], True, False), False)
-
-      compton_second_pol = compton_second_pol[compton_pol_index]
-      compton_second_unpol = compton_second_unpol[compton_unpol_index]
-      compton_ener_pol = compton_ener_pol[compton_pol_index]
-      compton_ener_unpol = compton_ener_unpol[compton_unpol_index]
-      compton_firstpos_pol = compton_firstpos_pol[compton_pol_index]
-      compton_firstpos_unpol = compton_firstpos_unpol[compton_unpol_index]
-      compton_secpos_pol = compton_secpos_pol[compton_pol_index]
-      compton_secpos_unpol = compton_secpos_unpol[compton_unpol_index]
-      single_ener_pol = single_ener_pol[single_index]
-      compton_second_pol_err = compton_second_pol_err[compton_pol_index]
-      compton_second_unpol_err = compton_second_unpol_err[compton_unpol_index]
-      compton_ener_pol_err = compton_ener_pol_err[compton_pol_index]
-      compton_ener_unpol_err = compton_ener_unpol_err[compton_unpol_index]
-      compton_firstpos_pol_err = compton_firstpos_pol_err[compton_pol_index]
-      compton_firstpos_unpol_err = compton_firstpos_unpol_err[compton_unpol_index]
-      compton_secpos_pol_err = compton_secpos_pol_err[compton_pol_index]
-      compton_secpos_unpol_err = compton_secpos_unpol_err[compton_unpol_index]
-    scat_vec_pol_err = np.sqrt(compton_secpos_pol_err ** 2 + compton_firstpos_pol_err ** 2)
-    scat_vec_unpol_err = np.sqrt(compton_secpos_unpol_err ** 2 + compton_firstpos_unpol_err ** 2)
-
-    dec_err, ra_err = 1.12, 1.01  #  !! peut etre à re evaluer avec des valeurs de grb_wf err
-    pol, polar_from_position_pol, pol_err = angle(compton_secpos_pol - compton_firstpos_pol, dec_plot, ra_plot, f"{dec_plot}_{ra_plot}_pol", 0, 0, scatter_vector_err=scat_vec_pol_err, grb_dec_sf_err=dec_err, grb_ra_sf_err=ra_err)
-    unpol, polar_from_position_unpol, unpol_err = angle(compton_secpos_unpol - compton_firstpos_unpol, dec_plot, ra_plot, f"{dec_plot}_{ra_plot}_unpol", 0, 0, scatter_vector_err=scat_vec_unpol_err, grb_dec_sf_err=dec_err, grb_ra_sf_err=ra_err)
-
-    polar_from_energy_pol, polar_from_energy_pol_err = calculate_polar_angle(compton_second_pol, compton_ener_pol, ener_sec_err=compton_second_pol_err, ener_tot_err=compton_ener_pol_err)
-    polar_from_energy_unpol, polar_from_energy_unpol_err = calculate_polar_angle(compton_second_unpol, compton_ener_unpol, ener_sec_err=compton_second_unpol_err, ener_tot_err=compton_ener_unpol_err)
-    arm_pol = polar_from_position_pol - polar_from_energy_pol
-    arm_unpol = polar_from_position_unpol - polar_from_energy_unpol
-    accepted_arm_pol = np.where(np.abs(arm_pol) <= armcut, True, False)
-    accepted_arm_unpol = np.where(np.abs(arm_unpol) <= armcut, True, False)
-    pol = pol[accepted_arm_pol]
-    unpol = unpol[accepted_arm_unpol]
-
-    hist_pol = np.histogram(pol, self.bins)[0]
-    hist_unpol = np.histogram(unpol, self.bins)[0]
-    hist_pol_err, hist_unpol_err = pol_unpol_hist_err(pol, unpol, pol_err, unpol_err, self.bins)
 
     # The polarigrams are normalized with the bin width !
     hist_pol_norm = hist_pol / binw
     hist_unpol_norm = hist_unpol / binw
     fit_mod = None
+    fit_lin = None
     if 0. in hist_unpol_norm:
       print(f"Unpolarized data do not allow a fit - {dec_plot}_{ra_plot} : a bin is empty")
     else:
@@ -493,6 +299,7 @@ class MuSeffContainer(list):
       else:
         histo = hist_pol_norm / hist_unpol_norm * np.mean(hist_unpol_norm)
         fit_mod = Fit(modulation_func, var_x, histo, yerr=polarigram_error, comment="modulation")
+        # fit_lin = Fit(lambda x, a:a*x/x, var_x, histo, yerr=polarigram_error, comment="constant")
 
     mpl.use('Qt5Agg')
     fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(15, 4), sharey=True)

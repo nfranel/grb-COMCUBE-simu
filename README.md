@@ -3,7 +3,7 @@
 # TODO add information on visualitation.py and 
 
 Python requirements :
-  - numpy, matplotlib, scipy, pandas, argparse, multiprocessing, subprocess, time, os, gzip, inspect, itertools, pyqt, pyside2
+  - numpy, matplotlib, scipy, pandas, pytables, argparse, multiprocessing, subprocess, time, os, gzip, inspect, itertools, pyqt, pyside2
   - Special requirements :
     - astropy, cartopy
   - optional requirements : seaborn
