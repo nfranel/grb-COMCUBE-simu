@@ -66,7 +66,7 @@ class BkgContainer:
     # # Saving the data with a full format
     # list.__init__(self, self.read_data(f"../Data/bkg/sim_{self.fold_name}/{saving}", save_time, ergcut, data_type="full"))
     # Saving the data with a condensed format
-    self.bkgdf = self.read_data(f"../Data/bkg/sim_{self.fold_name}/{cond_saving}", save_time, ergcut, data_type="cond")
+    self.bkgdf = self.read_data(f"../Data/bkg/sim_{self.fold_name}/{cond_saving}")
     print("=======================================")
     print(" Extraction of bkg data finished in : ", time() - init_time, "seconds")
     print("=======================================")
@@ -79,9 +79,6 @@ class BkgContainer:
     :param ergcut: energy cut used for making the condensed data file
     """
     with pd.HDFStore(file, mode="w") as f:
-      f.get_storer("/").attrs.description = f"# File containing background data for : \n# Geometry : {self.geometry}\n# Revan file : {self.revanfile}\n# Mimrec file : {self.mimrecfile}\n# Simulation time : {self.sim_time}\n# Altitude list : {self.alt_range}"
-      f.get_storer("/").attrs.structure = "Keys : bkgalt-bkgdec/compton or single dataframes"
-
       bkg_tab = []
       for alt in self.alt_range:
         for lat in self.lat_range:
@@ -106,14 +103,18 @@ class BkgContainer:
           det_stat_single = det_counter(df_single.single_detector.values).flatten()
           # Writing the condensed file
           bkg_tab.append([altbkg, decbkg, len(df_compton) / self.sim_time, len(df_single) / self.sim_time, det_stat_compton, det_stat_single])
+
+    f.get_storer(f"{key}/compton").attrs.description = f"# File containing background data for : \n# Geometry : {self.geometry}\n# Revan file : {self.revanfile}\n# Mimrec file : {self.mimrecfile}\n# Simulation time : {self.sim_time}\n# Altitude list : {self.alt_range}"
+    f.get_storer(f"{key}/compton").attrs.structure = "Keys : bkgalt-bkgdec/compton or single dataframes"
+
     columns = ["bkg_alt", "bkg_dec", "compton_cr", "single_cr", "com_det_idx", "sin_det_idx"]
     cond_df = pd.DataFrame(data=bkg_tab, columns=columns)
 
     with pd.HDFStore(condensed_file, mode="w") as fcond:
-      fcond.get_storer("/").attrs.description = f"# File containing CONDENSED background data for : \n# Geometry : {self.geometry}\n# Revan file : {self.revanfile}\n# Mimrec file : {self.mimrecfile}\n# Simulation time : {self.sim_time}\n# Altitude list : {self.alt_range}\n"
-      fcond.get_storer("/").attrs.structure = "Keys : bkgalt-bkgdec/compton or single dataframes"
-      fcond.get_storer("/").attrs.ergcut = f"energy cut : {ergcut[0]}-{ergcut[1]}"
       fcond.put(f"bkg_df", cond_df)
+      fcond.get_storer("bkg_df").attrs.description = f"# File containing CONDENSED background data for : \n# Geometry : {self.geometry}\n# Revan file : {self.revanfile}\n# Mimrec file : {self.mimrecfile}\n# Simulation time : {self.sim_time}\n# Altitude list : {self.alt_range}\n"
+      fcond.get_storer("bkg_df").attrs.structure = "Keys : bkgalt-bkgdec/compton or single dataframes"
+      fcond.get_storer("bkg_df").attrs.ergcut = f"energy cut : {ergcut[0]}-{ergcut[1]}"
 
   def save_condensed_data(self, file, condensed_file, ergcut):
     """
@@ -141,10 +142,10 @@ class BkgContainer:
     cond_df = pd.DataFrame(data=bkg_tab, columns=columns)
 
     with pd.HDFStore(condensed_file, mode="w") as fcond:
-      fcond.get_storer("/").attrs.description = f"# File containing CONDENSED background data for : \n# Geometry : {self.geometry}\n# Revan file : {self.revanfile}\n# Mimrec file : {self.mimrecfile}\n# Simulation time : {self.sim_time}\n# Altitude list : {self.alt_range}\n"
-      fcond.get_storer("/").attrs.structure = "Keys : bkg dataframe"
-      fcond.get_storer("/").attrs.ergcut = f"energy cut : {ergcut[0]}-{ergcut[1]}"
       fcond.put(f"bkg_df", cond_df)
+      fcond.get_storer("bkg_df").attrs.description = f"# File containing CONDENSED background data for : \n# Geometry : {self.geometry}\n# Revan file : {self.revanfile}\n# Mimrec file : {self.mimrecfile}\n# Simulation time : {self.sim_time}\n# Altitude list : {self.alt_range}\n"
+      fcond.get_storer("bkg_df").attrs.structure = "Keys : bkg dataframe"
+      fcond.get_storer("bkg_df").attrs.ergcut = f"energy cut : {ergcut[0]}-{ergcut[1]}"
 
   def read_data(self, condensed_file):
     """

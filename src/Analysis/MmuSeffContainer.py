@@ -24,7 +24,7 @@ from src.Analysis.MFit import Fit
 # plt.rcParams.update({'font.size': 20})
 
 
-class MuSeffContainer(list):
+class MuSeffContainer:
   """
   Class containing the information for mu100 files
   """
@@ -76,7 +76,8 @@ class MuSeffContainer(list):
     print("###########################################################################")
     print(" Extraction of mu/Seff data ")
     print("###########################################################################")
-    list.__init__(self, self.read_data(f"../Data/mu100/sim_{geom_name}/{cond_saving}"))
+    # list.__init__(self, self.read_data(f"../Data/mu100/sim_{geom_name}/{cond_saving}"))
+    self.mudf = self.read_data(f"../Data/mu100/sim_{geom_name}/{cond_saving}")
     print("=======================================")
     print(" Extraction of mu/Seff data finished in : ", time() - init_time, "seconds")
     print("=======================================")
@@ -88,11 +89,7 @@ class MuSeffContainer(list):
     :param condensed_file: path of the file to save condensed data
     """
     with pd.HDFStore(file, mode="w") as f:
-      f.get_storer("/").attrs.description = f"# File containing mu100 and Seff data for : \n# Geometry : {self.geometry}\n# Revan file : {self.revanfile}\n# Mimrec file : {self.mimrecfile}\n# Polarized simulation time : {self.poltime}\n# Unpolarized simulation time : {self.unpoltime}\n# dec min-max-number of value : {self.decs[0]}-{self.decs[1]}-{self.decs[2]}\n# ra min-max-number of value (at equator) : {self.ras[0]}-{self.ras[1]}-{self.ras[2]}"
-      f.get_storer("/").attrs.structure = "Keys : dec-ra/compton_pol or compton_unpol DataFrames or single_ener Serie"
-
       data_tab = []
-      f.write("# Keys : dec | ra | compton_ener_pol | compton_ener_unpol | compton_second_pol | compton_second_unpol | single_ener_pol\n")
       for dec in np.linspace(self.decs[0], self.decs[1], self.decs[2]):
         for ra in make_ra_list(self.ras, dec):
           #  The commented parts are the ones that may not be useful
@@ -164,16 +161,18 @@ class MuSeffContainer(list):
           seff_single = len(single_ener_pol) / self.fluence
 
           data_tab.append([dec, ra, mu100, mu100_err, pa, pa_err, fit_p_value, seff_compton, seff_single])
+    f.get_storer(f"{key}/compton_pol").attrs.description = f"# File containing mu100 and Seff data for : \n# Geometry : {self.geometry}\n# Revan file : {self.revanfile}\n# Mimrec file : {self.mimrecfile}\n# Polarized simulation time : {self.poltime}\n# Unpolarized simulation time : {self.unpoltime}\n# dec min-max-number of value : {self.decs[0]}-{self.decs[1]}-{self.decs[2]}\n# ra min-max-number of value (at equator) : {self.ras[0]}-{self.ras[1]}-{self.ras[2]}"
+    f.get_storer(f"{key}/compton_pol").attrs.structure = "Keys : dec-ra/compton_pol or compton_unpol DataFrames or single_ener Serie"
 
     columns = ["dec", "ra", "mu100", "mu100_err", "pa", "pa_err", "fit_p_value", "seff_compton", "seff_single"]
     cond_df = pd.DataFrame(data=data_tab, columns=columns)
 
     with pd.HDFStore(condensed_file, mode="w") as fcond:
-      fcond.get_storer("/").attrs.description = f"# File containing mu100 and Seff data for : \n# Geometry : {self.geometry}\n# Revan file : {self.revanfile}\n# Mimrec file : {self.mimrecfile}\n# Polarized simulation time : {self.poltime}\n# Unpolarized simulation time : {self.unpoltime}\n# dec min-max-number of value : {self.decs[0]}-{self.decs[1]}-{self.decs[2]}\n# ra min-max-number of value (at equator) : {self.ras[0]}-{self.ras[1]}-{self.ras[2]}"
-      fcond.get_storer("/").attrs.structure = "Keys : mu100 and Seff DataFrame"
-      fcond.get_storer("/").attrs.ergcut = f"energy cut : {self.ergcut[0]}-{self.ergcut[1]}"
-      fcond.get_storer("/").attrs.armcut = f"ARM cut : {self.armcut}"
       fcond.put(f"mu-seff_df", cond_df)
+      fcond.get_storer("mu-seff_df").attrs.description = f"# File containing mu100 and Seff data for : \n# Geometry : {self.geometry}\n# Revan file : {self.revanfile}\n# Mimrec file : {self.mimrecfile}\n# Polarized simulation time : {self.poltime}\n# Unpolarized simulation time : {self.unpoltime}\n# dec min-max-number of value : {self.decs[0]}-{self.decs[1]}-{self.decs[2]}\n# ra min-max-number of value (at equator) : {self.ras[0]}-{self.ras[1]}-{self.ras[2]}"
+      fcond.get_storer("mu-seff_df").attrs.structure = "Keys : mu100 and Seff DataFrame"
+      fcond.get_storer("mu-seff_df").attrs.ergcut = f"energy cut : {self.ergcut[0]}-{self.ergcut[1]}"
+      fcond.get_storer("mu-seff_df").attrs.armcut = f"ARM cut : {self.armcut}"
 
   def save_condensed_data(self, fullfile, condensed_file):
     """
@@ -240,11 +239,11 @@ class MuSeffContainer(list):
     cond_df = pd.DataFrame(data=data_tab, columns=columns)
 
     with pd.HDFStore(condensed_file, mode="w") as fcond:
-      fcond.get_storer("/").attrs.description = f"# File containing mu100 and Seff data for : \n# Geometry : {self.geometry}\n# Revan file : {self.revanfile}\n# Mimrec file : {self.mimrecfile}\n# Polarized simulation time : {self.poltime}\n# Unpolarized simulation time : {self.unpoltime}\n# dec min-max-number of value : {self.decs[0]}-{self.decs[1]}-{self.decs[2]}\n# ra min-max-number of value (at equator) : {self.ras[0]}-{self.ras[1]}-{self.ras[2]}"
-      fcond.get_storer("/").attrs.structure = "Keys : mu100 and Seff DataFrame"
-      fcond.get_storer("/").attrs.ergcut = f"energy cut : {self.ergcut[0]}-{self.ergcut[1]}"
-      fcond.get_storer("/").attrs.armcut = f"ARM cut : {self.armcut}"
       fcond.put(f"mu-seff_df", cond_df)
+      fcond.get_storer("mu-seff_df").attrs.description = f"# File containing mu100 and Seff data for : \n# Geometry : {self.geometry}\n# Revan file : {self.revanfile}\n# Mimrec file : {self.mimrecfile}\n# Polarized simulation time : {self.poltime}\n# Unpolarized simulation time : {self.unpoltime}\n# dec min-max-number of value : {self.decs[0]}-{self.decs[1]}-{self.decs[2]}\n# ra min-max-number of value (at equator) : {self.ras[0]}-{self.ras[1]}-{self.ras[2]}"
+      fcond.get_storer("mu-seff_df").attrs.structure = "Keys : mu100 and Seff DataFrame"
+      fcond.get_storer("mu-seff_df").attrs.ergcut = f"energy cut : {self.ergcut[0]}-{self.ergcut[1]}"
+      fcond.get_storer("mu-seff_df").attrs.armcut = f"ARM cut : {self.armcut}"
 
   def read_data(self, file):
     """
@@ -315,40 +314,3 @@ class MuSeffContainer(list):
     ax3.legend()
     plt.tight_layout()
     plt.show()
-
-
-class Mu100Data:
-  """
-  Class containing the data for 1 GRB, for 1 sim, and 1 satellite
-  """
-  def __init__(self, data):
-    """
-    :param data: lines of data in a list extracted from condensed data file
-    """
-    ##############################################################
-    # Attributes filled with file reading
-    lines = data.split("\n")
-    self.dec = float(lines[0])
-    self.ra = float(lines[1])
-    self.mu100 = float(lines[2])
-    self.mu100_err = float(lines[3])
-    self.pa = float(lines[4])
-    self.pa_err = float(lines[5])
-    # Set with the fit or for the fit
-    # =0 : fit perfectly
-    # ~1 : fit reasonably
-    # >1 : not a good fit
-    # >>1 : very poor fit
-    self.fit_goodness = float(lines[6])
-    self.s_eff_compton = float(lines[7])
-    self.s_eff_single = float(lines[8])
-
-  @staticmethod
-  def get_keys():
-    print("======================================================================")
-    print("    Attributes")
-    print(" mu100 for the satellite/constellation                                    .mu100")
-    print(" Polarization angle obtained from the polarigram                          .pa")
-    print(" Polarization angle error from the fit                                    .pa_err")
-    print(" mu100 error from the fit                                                 .mu100_err")
-    print(" Fit goodness                                                             .fit_goodness")
