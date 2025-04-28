@@ -1859,6 +1859,7 @@ def execute_finder(file, events, geometry, cpp_routine="./src/Analysis/find_dete
     for event in events:
       data_file.write(f"{event[0]} {event[1]} {event[2]}\n")
   # subprocess.call(f"{cpp_routine} -g {geometry} -f {file}", shell=True, stdout=open(os.devnull, 'wb'), stderr=open(os.devnull, 'wb'))
+  print(f"{cpp_routine} -g {geometry} -f {file}")
   subprocess.call(f"{cpp_routine} -g {geometry} -f {file}", shell=True)
   with open(f"{file}save.txt", "r") as save_file:
     lines = save_file.read().split("\n")[:-1]

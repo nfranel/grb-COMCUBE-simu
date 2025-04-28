@@ -169,11 +169,11 @@ class MuSeffContainer:
     cond_df = pd.DataFrame(data=data_tab, columns=columns)
 
     with pd.HDFStore(condensed_file, mode="w") as fcond:
-      fcond.put(f"mu-seff_df", cond_df)
-      fcond.get_storer("mu-seff_df").attrs.description = f"# File containing mu100 and Seff data for : \n# Geometry : {self.geometry}\n# Revan file : {self.revanfile}\n# Mimrec file : {self.mimrecfile}\n# Polarized simulation time : {self.poltime}\n# Unpolarized simulation time : {self.unpoltime}\n# dec min-max-number of value : {self.decs[0]}-{self.decs[1]}-{self.decs[2]}\n# ra min-max-number of value (at equator) : {self.ras[0]}-{self.ras[1]}-{self.ras[2]}"
-      fcond.get_storer("mu-seff_df").attrs.structure = "Keys : mu100 and Seff DataFrame"
-      fcond.get_storer("mu-seff_df").attrs.ergcut = f"energy cut : {self.ergcut[0]}-{self.ergcut[1]}"
-      fcond.get_storer("mu-seff_df").attrs.armcut = f"ARM cut : {self.armcut}"
+      fcond.put(f"museff_df", cond_df)
+      fcond.get_storer("museff_df").attrs.description = f"# File containing mu100 and Seff data for : \n# Geometry : {self.geometry}\n# Revan file : {self.revanfile}\n# Mimrec file : {self.mimrecfile}\n# Polarized simulation time : {self.poltime}\n# Unpolarized simulation time : {self.unpoltime}\n# dec min-max-number of value : {self.decs[0]}-{self.decs[1]}-{self.decs[2]}\n# ra min-max-number of value (at equator) : {self.ras[0]}-{self.ras[1]}-{self.ras[2]}"
+      fcond.get_storer("museff_df").attrs.structure = "Keys : mu100 and Seff DataFrame"
+      fcond.get_storer("museff_df").attrs.ergcut = f"energy cut : {self.ergcut[0]}-{self.ergcut[1]}"
+      fcond.get_storer("museff_df").attrs.armcut = f"ARM cut : {self.armcut}"
 
   def save_condensed_data(self, fullfile, condensed_file):
     """
@@ -240,11 +240,11 @@ class MuSeffContainer:
     cond_df = pd.DataFrame(data=data_tab, columns=columns)
 
     with pd.HDFStore(condensed_file, mode="w") as fcond:
-      fcond.put(f"mu-seff_df", cond_df)
-      fcond.get_storer("mu-seff_df").attrs.description = f"# File containing mu100 and Seff data for : \n# Geometry : {self.geometry}\n# Revan file : {self.revanfile}\n# Mimrec file : {self.mimrecfile}\n# Polarized simulation time : {self.poltime}\n# Unpolarized simulation time : {self.unpoltime}\n# dec min-max-number of value : {self.decs[0]}-{self.decs[1]}-{self.decs[2]}\n# ra min-max-number of value (at equator) : {self.ras[0]}-{self.ras[1]}-{self.ras[2]}"
-      fcond.get_storer("mu-seff_df").attrs.structure = "Keys : mu100 and Seff DataFrame"
-      fcond.get_storer("mu-seff_df").attrs.ergcut = f"energy cut : {self.ergcut[0]}-{self.ergcut[1]}"
-      fcond.get_storer("mu-seff_df").attrs.armcut = f"ARM cut : {self.armcut}"
+      fcond.put(f"museff_df", cond_df)
+      fcond.get_storer("museff_df").attrs.description = f"# File containing mu100 and Seff data for : \n# Geometry : {self.geometry}\n# Revan file : {self.revanfile}\n# Mimrec file : {self.mimrecfile}\n# Polarized simulation time : {self.poltime}\n# Unpolarized simulation time : {self.unpoltime}\n# dec min-max-number of value : {self.decs[0]}-{self.decs[1]}-{self.decs[2]}\n# ra min-max-number of value (at equator) : {self.ras[0]}-{self.ras[1]}-{self.ras[2]}"
+      fcond.get_storer("museff_df").attrs.structure = "Keys : mu100 and Seff DataFrame"
+      fcond.get_storer("museff_df").attrs.ergcut = f"energy cut : {self.ergcut[0]}-{self.ergcut[1]}"
+      fcond.get_storer("museff_df").attrs.armcut = f"ARM cut : {self.armcut}"
 
   def read_data(self, condensed_file):
     """
@@ -252,7 +252,7 @@ class MuSeffContainer:
     :param file: path of the file where condensed data is saved
     """
     with pd.HDFStore(condensed_file, mode="r") as fcond:
-      return fcond["mu-seff_df"]
+      return fcond["museff_df"]
 
   def show_fit(self, dec_plot, ra_plot):
 
