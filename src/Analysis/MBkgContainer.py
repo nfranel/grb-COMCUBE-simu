@@ -38,7 +38,7 @@ class BkgContainer:
     else:
       self.fold_name = special_name
     saving = f"bkgsaved_{self.fold_name}_{np.min(self.lat_range):.0f}-{np.max(self.lat_range):.0f}-{len(self.lat_range):.0f}_{np.min(self.alt_range):.0f}-{np.max(self.alt_range):.0f}-{len(self.alt_range):.0f}.h5"
-    cond_saving = f"cond_bkg-saved_{self.fold_name}_{np.min(self.lat_range):.0f}-{np.max(self.lat_range):.0f}-{len(self.lat_range):.0f}_{np.min(self.alt_range):.0f}-{np.max(self.alt_range):.0f}-{len(self.alt_range):.0f}_ergcut-{ergcut[0]}-{ergcut[1]}.txt"
+    cond_saving = f"cond_bkg-saved_{self.fold_name}_{np.min(self.lat_range):.0f}-{np.max(self.lat_range):.0f}-{len(self.lat_range):.0f}_{np.min(self.alt_range):.0f}-{np.max(self.alt_range):.0f}-{len(self.alt_range):.0f}_ergcut-{ergcut[0]}-{ergcut[1]}.h5"
     if cond_saving not in os.listdir(f"../Data/bkg/sim_{self.fold_name}"):
       if saving not in os.listdir(f"../Data/bkg/sim_{self.fold_name}"):
         init_time = time()

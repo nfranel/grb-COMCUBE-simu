@@ -51,7 +51,7 @@ class MuSeffContainer:
     self.fluence = use_scipyquad(band, self.ergcut[0], self.ergcut[1], func_args=tuple(bandparam), x_logscale=True)[0] * self.poltime
     geom_name = geom.split(".geo.setup")[0].split("/")[-1]
 
-    saving = f"mu-seff-saved_{geom_name}_{self.decs[0]:.0f}-{self.decs[1]:.0f}-{self.decs[2]:.0f}_{self.ras[0]:.0f}-{self.ras[1]:.0f}-{self.ras[2]:.0f}.txt"
+    saving = f"mu-seff-saved_{geom_name}_{self.decs[0]:.0f}-{self.decs[1]:.0f}-{self.decs[2]:.0f}_{self.ras[0]:.0f}-{self.ras[1]:.0f}-{self.ras[2]:.0f}.h5"
     cond_saving = f"cond_mu-seff-saved_{geom_name}_{self.decs[0]:.0f}-{self.decs[1]:.0f}-{self.decs[2]:.0f}_{self.ras[0]:.0f}-{self.ras[1]:.0f}-{self.ras[2]:.0f}_ergcut-{ergcut[0]}-{ergcut[1]}_armcut-{armcut}.h5"
     if cond_saving not in os.listdir(f"../Data/mu100/sim_{geom_name}"):
       if saving not in os.listdir(f"../Data/mu100/sim_{geom_name}"):
