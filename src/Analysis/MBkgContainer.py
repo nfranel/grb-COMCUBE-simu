@@ -81,14 +81,14 @@ class BkgContainer:
     """
     with pd.HDFStore(file, mode="w") as f:
       bkg_tab = []
-      for alt in self.alt_range:
-        for lat in self.lat_range:
+      for ite_alt, alt in enumerate(self.alt_range):
+        for ite_lat, lat in enumerate(self.lat_range):
           decbkg, altbkg, compton_second, compton_ener, compton_time, single_ener, single_time, compton_first_detector, compton_sec_detector, single_detector = analyze_bkg_event(f"../Data/bkg/sim_{self.fold_name}/sim/bkg_{alt:.1f}_{lat:.1f}_{self.sim_time:.0f}s.inc1.id1.extracted.tra", lat, alt, self.geometry, self.array_dtype)
 
           df_compton = pd.DataFrame({"compton_ener": compton_ener, "compton_second": compton_second, "compton_time": compton_time,
              "compton_first_detector": compton_first_detector, "compton_sec_detector": compton_sec_detector})
           df_single = pd.DataFrame({"single_ener": single_ener, "single_time": single_time, "single_detector": single_detector})
-          key = f"{altbkg}-{decbkg}"
+          key = f"{ite_alt}_{ite_lat}"
           # Saving Compton event related quantities
           f.put(f"{key}/compton", df_compton)
           # Saving single event related quantities
@@ -104,9 +104,8 @@ class BkgContainer:
           det_stat_single = det_counter(df_single.single_detector.values).flatten()
           # Writing the condensed file
           bkg_tab.append([altbkg, decbkg, len(df_compton) / self.sim_time, len(df_single) / self.sim_time, det_stat_compton, det_stat_single])
-
-    f.get_storer(f"{key}/compton").attrs.description = f"# File containing background data for : \n# Geometry : {self.geometry}\n# Revan file : {self.revanfile}\n# Mimrec file : {self.mimrecfile}\n# Simulation time : {self.sim_time}\n# Altitude list : {self.alt_range}"
-    f.get_storer(f"{key}/compton").attrs.structure = "Keys : bkgalt-bkgdec/compton or single dataframes"
+      f.get_storer(f"{key}/compton").attrs.description = f"# File containing background data for : \n# Geometry : {self.geometry}\n# Revan file : {self.revanfile}\n# Mimrec file : {self.mimrecfile}\n# Simulation time : {self.sim_time}\n# Altitude list : {self.alt_range}"
+      f.get_storer(f"{key}/compton").attrs.structure = "Keys : bkgalt-bkgdec/compton or single dataframes"
 
     columns = ["bkg_alt", "bkg_dec", "compton_cr", "single_cr", "com_det_idx", "sin_det_idx"]
     cond_df = pd.DataFrame(data=bkg_tab, columns=columns)

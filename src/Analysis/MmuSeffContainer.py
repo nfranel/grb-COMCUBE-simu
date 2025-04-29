@@ -91,8 +91,8 @@ class MuSeffContainer:
     """
     with pd.HDFStore(file, mode="w") as f:
       data_tab = []
-      for dec in np.linspace(self.decs[0], self.decs[1], self.decs[2]):
-        for ra in make_ra_list(self.ras, dec):
+      for ite_dec, dec in enumerate(np.linspace(self.decs[0], self.decs[1], self.decs[2])):
+        for ite_ra, ra in enumerate(make_ra_list(self.ras, dec)):
           #  The commented parts are the ones that may not be useful
           geom_name = self.geometry.split(".geo.setup")[0].split("/")[-1]
           polname = f"../Data/mu100/sim_{geom_name}/sim/mu100_{dec:.1f}_{ra:.1f}pol.inc1.id1.extracted.tra"
@@ -106,7 +106,7 @@ class MuSeffContainer:
           df_compton_pol = pd.DataFrame({"compton_ener_pol": compton_ener_pol, "pol": pol, "pol_err": pol_err, "arm_pol": arm_pol})
           df_compton_unpol = pd.DataFrame({"compton_ener_unpol": compton_ener_unpol, "unpol": unpol, "unpol_err": unpol_err, "arm_punol": arm_unpol})
 
-          key = f"{dec}-{ra}"
+          key = f"{ite_dec}_{ite_ra}"
           # Saving Compton event related quantities
           f.put(f"{key}/compton_pol", df_compton_pol)
           f.put(f"{key}/compton_unpol", df_compton_unpol)
@@ -162,9 +162,8 @@ class MuSeffContainer:
           seff_single = len(single_ener_pol) / self.fluence
 
           data_tab.append([dec, ra, mu100, mu100_err, pa, pa_err, fit_p_value, seff_compton, seff_single])
-    f.get_storer(f"{key}/compton_pol").attrs.description = f"# File containing mu100 and Seff data for : \n# Geometry : {self.geometry}\n# Revan file : {self.revanfile}\n# Mimrec file : {self.mimrecfile}\n# Polarized simulation time : {self.poltime}\n# Unpolarized simulation time : {self.unpoltime}\n# dec min-max-number of value : {self.decs[0]}-{self.decs[1]}-{self.decs[2]}\n# ra min-max-number of value (at equator) : {self.ras[0]}-{self.ras[1]}-{self.ras[2]}"
-    f.get_storer(f"{key}/compton_pol").attrs.structure = "Keys : dec-ra/compton_pol or compton_unpol DataFrames or single_ener Serie"
-
+      f.get_storer(f"{key}/compton_pol").attrs.description = f"# File containing mu100 and Seff data for : \n# Geometry : {self.geometry}\n# Revan file : {self.revanfile}\n# Mimrec file : {self.mimrecfile}\n# Polarized simulation time : {self.poltime}\n# Unpolarized simulation time : {self.unpoltime}\n# dec min-max-number of value : {self.decs[0]}-{self.decs[1]}-{self.decs[2]}\n# ra min-max-number of value (at equator) : {self.ras[0]}-{self.ras[1]}-{self.ras[2]}"
+      f.get_storer(f"{key}/compton_pol").attrs.structure = "Keys : dec-ra/compton_pol or compton_unpol DataFrames or single_ener Serie"
     columns = ["dec", "ra", "mu100", "mu100_err", "pa", "pa_err", "fit_p_value", "seff_compton", "seff_single"]
     cond_df = pd.DataFrame(data=data_tab, columns=columns)
 
