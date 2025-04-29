@@ -19,7 +19,7 @@ class BkgContainer:
   """
   Class containing the information for 1 background file
   """
-  def __init__(self, bkgparfile, save_time, ergcut, special_name=None):
+  def __init__(self, bkgparfile, ergcut, special_name=None):
     """
     :param bkgparfile: background parameter file
     :param save_time: True if the interaction times are to be saved
