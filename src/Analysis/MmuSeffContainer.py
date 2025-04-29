@@ -104,7 +104,7 @@ class MuSeffContainer:
           compton_ener_pol, pol, pol_err, arm_pol, single_ener_pol, compton_ener_unpol, unpol, unpol_err, arm_unpol = get_pol_unpol_event_data(polname, unpolname, dec, ra, dec_err, ra_err, self.geometry, self.array_dtype)
 
           df_compton_pol = pd.DataFrame({"compton_ener_pol": compton_ener_pol, "pol": pol, "pol_err": pol_err, "arm_pol": arm_pol})
-          df_compton_unpol = pd.DataFrame({"compton_ener_unpol": compton_ener_unpol, "unpol": unpol, "unpol_err": unpol_err, "arm_punol": arm_unpol})
+          df_compton_unpol = pd.DataFrame({"compton_ener_unpol": compton_ener_unpol, "unpol": unpol, "unpol_err": unpol_err, "arm_unpol": arm_unpol})
 
           key = f"itedec{ite_dec}_itera{ite_ra}"
           # Saving Compton event related quantities
