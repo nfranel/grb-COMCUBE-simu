@@ -88,7 +88,7 @@ class BkgContainer:
           df_compton = pd.DataFrame({"compton_ener": compton_ener, "compton_second": compton_second, "compton_time": compton_time,
              "compton_first_detector": compton_first_detector, "compton_sec_detector": compton_sec_detector})
           df_single = pd.DataFrame({"single_ener": single_ener, "single_time": single_time, "single_detector": single_detector})
-          key = f"{ite_alt}_{ite_lat}"
+          key = f"itealt{ite_alt}_itelat{ite_lat}"
           # Saving Compton event related quantities
           f.put(f"{key}/compton", df_compton)
           # Saving single event related quantities
