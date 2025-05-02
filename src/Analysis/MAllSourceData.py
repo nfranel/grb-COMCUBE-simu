@@ -131,7 +131,7 @@ class AllSourceData:
     # Setting the background files
     printcom("Step 2 - Extracting background data")
     init_time = time()
-    self.bkgdata = BkgContainer(self.bkg_param, self.save_time, self.erg_cut)
+    self.bkgdata = BkgContainer(self.bkg_param, self.erg_cut)
     endtask("Step 2", timevar=init_time)
 
     # Setting the background files
