@@ -1736,7 +1736,7 @@ def affect_bkg(info_sat, burst_time, bkg_list):
   return dec_sat_world_frame, ra_sat_world_frame, info_sat[3], bkg_info[0], bkg_info[1], bkg_info[2]
 
 
-def closest_mufile(grb_dec_sf, grb_ra_sf, mu_list):  # TODO : limits on variables
+def closest_mufile(grb_dec_sf, grb_ra_sf, mu_list):
   """
   Find the mu100 file closest to a certain direction of detection
   Warning : for now, only takes into account the dec of backgrounds, can be updated but the way the error is calculated
