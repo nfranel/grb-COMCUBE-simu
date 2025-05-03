@@ -357,10 +357,10 @@ class MCCatalog:
       print("test")
       if mode == "mc":
         param_list = None
-        par_size = 4000
+        par_size = 2000
         mctype = "long"
         # mctype = "short"
-        fold_name = f"mc{mctype}v8-{par_size}"
+        fold_name = f"mc{mctype}v9-{par_size}"
         savefile = f"../Data/CatData/CatSampling/space_explo/{fold_name}/mc_fit.csv"
       elif mode == "parametrized":
         # (l_rate, l_ind1_z, l_ind2_z, l_zb, l_ind1, l_ind2, l_lb, s_rate, s_ind1_z, s_ind2_z, s_zb, s_ind1, s_ind2, s_lb)
@@ -980,7 +980,7 @@ class MCCatalog:
     ax3s.legend()
     plt.show()
 
-# from catalogMC import *
+# from src.Catalogs.catalogMC import MCCatalog
 # testcat = MCCatalog(mode="mc")
 # testcat = MCCatalog(mode="catalog")
 
