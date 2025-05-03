@@ -1677,45 +1677,41 @@ def eff_area_func(dec_wf, ra_wf, info_sat, mu100_list):  # TODO : limits on vari
 ######################################################################################################################################################
 # Closest finder
 ######################################################################################################################################################
-def closest_bkg_info(sat_dec, sat_ra, sat_alt, bkg_list):  # TODO : limits on variables
+def closest_bkg_info(mag_dec, sat_alt, bkgdata):  # TODO : limits on variables
   """
   Find the closest bkg file for a satellite (in terms of latitude, may be updated for longitude too)
   Returns the count rate of this bkg file
   Warning : for now, only takes into account the dec of backgrounds, can be updated but the way the error is calculated
   may not be optimal as the surface of the sphere (polar coordinates) is not a plan.
-  :param sat_dec: declination of the satellite [deg] [0 - 180]
+  :param mag_dec: declination of the satellite [deg] [0 - 180]
   :param sat_ra: right ascension of the satellite [deg] [0 - 360]
     :param sat_alt: altitude of the satellite [km]
 
-  :param bkg_list: list of all the background files
+  :param bkgdata: list of all the background files
   :returns: compton and single event count rates of the closest background file
   """
-  if len(bkg_list) == 0:
+  if len(bkgdata.bkgdf) == 0:
     return 0.000001
   else:
-    # bkg_selec = []
-    bkg_count = 0
-    dec_error = []
-    ra_error = np.array([0 for bkg in bkg_list])
-    # ra_error = np.array([(bkg.ra - sat_ra) ** 2 for bkg in bkg_selec])
-
-    for bkg in bkg_list:
-      if bkg.alt == sat_alt:
-        bkg_count += 1
-        # bkg_selec.append(bkg)
-        dec_error.append((bkg.dec - sat_dec) ** 2)
-      else:
-        dec_error.append(np.inf)
-    if bkg_count == 0:
+    # bkg_count = 0
+    # dec_error = []
+    # ra_error = np.zeros(len(bkgdata.bkgdf))
+    df_selec_alt = bkgdata.bkgdf[bkgdata.bkgdf.bkg_alt == sat_alt]
+    decs = df_selec_alt.bkg_dec.values
+    if len(decs) == 0:
       raise FileNotFoundError("No background file were loaded for the given altitude.")
-    dec_error = np.array(dec_error)
-    total_error = np.sqrt(dec_error + ra_error)
-    index = np.argmin(total_error)
-    # if index+1 < len(bkg_list) and sat_ra == 0:
-    #   print()
-    #   print("dec, dec find before and after : ", sat_dec, bkg_list[index].dec, bkg_list[index-1].dec, bkg_list[index+1].dec)
-    #   print()
-    return [bkg_list[index].compton_cr, bkg_list[index].single_cr, index]
+    error = decs - mag_dec
+    index = df_selec_alt.index[np.argmin(error)]
+    # for bkg in bkgdata:
+    #   if bkg.alt == sat_alt:
+    #     bkg_count += 1
+    #     dec_error.append((bkg.dec - mag_dec) ** 2)
+    #   else:
+    #     dec_error.append(np.inf)
+    # dec_error = np.array(dec_error)
+    # total_error = np.sqrt(dec_error + ra_error)
+    # index = np.argmin(total_error)
+    return [bkgdata.bkgdf.iloc[index].compton_cr, bkgdata.bkgdf.iloc[index].single_cr, index]
 
 
 def affect_bkg(info_sat, burst_time, bkg_list):

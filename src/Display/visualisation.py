@@ -94,7 +94,7 @@ def bkg_data_map(field, bkgdata, altitude, dec_range=np.linspace(0, 180, 181), r
       # print(f"init : {lat:.12f}, {ra:.12f}              final : {mag_lat:.12f}, {mag_lon:.12f}")
       mag_dec, mag_ra = 90 - mag_lat, mag_lon
       compton_cr, single_cr, bkg_id = closest_bkg_info(mag_dec, mag_ra, altitude, bkgdata)
-      det_count = bkgdata[bkg_id].det_stat_compton + bkgdata[bkg_id].det_stat_single
+      det_count = bkgdata.bkgdf.iloc[bkg_id].com_det_stats + bkgdata.bkgdf.iloc[bkg_id].sin_det_stats
       side_count = det_count[0] + det_count[1] + det_count[5] + det_count[6] + det_count[10] + det_count[11] + det_count[15] + det_count[16]
       dsssd_count = det_count[2] + det_count[3] + det_count[7] + det_count[8] + det_count[12] + det_count[13] + det_count[17] + det_count[18]
       calor_count = det_count[4] + det_count[9] + det_count[14] + det_count[19]
@@ -103,9 +103,9 @@ def bkg_data_map(field, bkgdata, altitude, dec_range=np.linspace(0, 180, 181), r
       field_list[row][col] = bkg_values[field_index]
       # if ra == 0:
       #   print("dec, ra = ", lat, ra)
-      #   print("bkg mag dec : ", bkgdata[bkg_id].dec)
-      #   print("compton_cr : ", bkgdata[bkg_id].compton_cr)
-        # print("single_cr : ", bkgdata[bkg_id].single_cr)
+      #   print("bkg mag dec : ", bkgdata.bkgdf.iloc[bkg_id].dec)
+      #   print("compton_cr : ", bkgdata.bkgdf.iloc[bkg_id].compton_cr)
+        # print("single_cr : ", bkgdata.bkgdf.iloc[bkg_id].single_cr)
         # print("compton_cr : ", compton_cr)
         # print("single_cr : ", single_cr)
         # print("side_cr : ", side_count / bkgdata.sim_time)

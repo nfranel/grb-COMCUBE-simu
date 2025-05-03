@@ -107,7 +107,7 @@ class BkgContainer:
       f.get_storer(f"{key}/compton").attrs.description = f"# File containing background data for : \n# Geometry : {self.geometry}\n# Revan file : {self.revanfile}\n# Mimrec file : {self.mimrecfile}\n# Simulation time : {self.sim_time}\n# Altitude list : {self.alt_range}"
       f.get_storer(f"{key}/compton").attrs.structure = "Keys : bkgalt-bkgdec/compton or single dataframes"
 
-    columns = ["bkg_alt", "bkg_dec", "compton_cr", "single_cr", "com_det_idx", "sin_det_idx"]
+    columns = ["bkg_alt", "bkg_dec", "compton_cr", "single_cr", "com_det_stats", "sin_det_stats"]
     cond_df = pd.DataFrame(data=bkg_tab, columns=columns)
 
     with pd.HDFStore(condensed_file, mode="w") as fcond:
@@ -138,7 +138,7 @@ class BkgContainer:
         # Writing the condensed file
         bkg_tab.append([altbkg, decbkg, len(df_compton) / self.sim_time, len(df_single) / self.sim_time, det_stat_compton, det_stat_single])
 
-    columns = ["bkg_alt", "bkg_dec", "compton_cr", "single_cr", "com_det_idx", "sin_det_idx"]
+    columns = ["bkg_alt", "bkg_dec", "compton_cr", "single_cr", "com_det_stats", "sin_det_stats"]
     cond_df = pd.DataFrame(data=bkg_tab, columns=columns)
 
     with pd.HDFStore(condensed_file, mode="w") as fcond:

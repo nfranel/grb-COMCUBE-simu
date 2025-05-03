@@ -990,9 +990,9 @@ class AllSourceData:
               if sat is not None:
                 sat_id_list.append(ite_sat)
                 if ite_sat == max_sat_idx:
-                  sats_det_stats.append(sat.detector_statistics(self.bkgdata[sat.bkg_index], self.bkgdata.sim_time, self.alldata[idx].source_duration, self.alldata[idx].source_name, show=lc_plot))
+                  sats_det_stats.append(sat.detector_statistics(self.bkgdata.bkgdf.iloc[sat.bkg_index], self.bkgdata.sim_time, self.alldata[idx].source_duration, self.alldata[idx].source_name, show=lc_plot))
                 else:
-                  sats_det_stats.append(sat.detector_statistics(self.bkgdata[sat.bkg_index], self.bkgdata.sim_time, self.alldata[idx].source_duration, self.alldata[idx].source_name, show=False))
+                  sats_det_stats.append(sat.detector_statistics(self.bkgdata.bkgdf.iloc[sat.bkg_index], self.bkgdata.sim_time, self.alldata[idx].source_duration, self.alldata[idx].source_name, show=False))
             sats_det_stats_shaped = np.transpose(np.array(sats_det_stats), (1, 2, 0))
             if self.alldata[idx].source_name == "GRB130427324":
               print(f"Max from brightest GRB - GRB130427324 : {np.max(sats_det_stats_shaped)}")
@@ -1052,7 +1052,7 @@ class AllSourceData:
                   bkg_indexs.append(sat.bkg_index)
 
     for bkg_idx in bkg_indexs:
-      bkg_stats = (self.bkgdata[bkg_idx].det_stat_compton + self.bkgdata[bkg_idx].det_stat_single).reshape(4, 5, 1) / self.bkgdata.sim_time
+      bkg_stats = (self.bkgdata.bkgdf.iloc[bkg_idx].com_det_stats + self.bkgdata.bkgdf.iloc[bkg_idx].sin_det_stats).reshape(4, 5, 1) / self.bkgdata.sim_time
       if combined_sats_det_stats_bkg is None:
         combined_sats_det_stats_bkg = bkg_stats
         print(combined_sats_det_stats_bkg)
