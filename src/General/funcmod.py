@@ -1755,7 +1755,7 @@ def closest_mufile(grb_dec_sf, grb_ra_sf, mu_list):  # TODO : limits on variable
 
     error = np.sqrt((mu_list.mudf.dec.values - grb_dec_sf) ** 2 + (mu_list.mudf.ra.values - grb_ra_sf) ** 2)
     index = np.argmin(error)
-    return mu_list.mudf.mu100[index], mu_list.mudf.mu100_err[index], mu_list.mudf.s_eff_compton[index], mu_list.mudf.s_eff_single[index]
+    return mu_list.mudf.mu100[index], mu_list.mudf.mu100_err[index], mu_list.mudf.seff_compton[index], mu_list.mudf.seff_single[index]
 
 
 ######################################################################################################################################################
