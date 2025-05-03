@@ -1732,7 +1732,7 @@ def affect_bkg(info_sat, burst_time, bkg_list):
   dec_sat_world_frame, ra_sat_world_frame = orbitalparam2decra(info_sat[0], info_sat[1], info_sat[2], nu=true_anomaly)
   ra_sat_world_frame = np.mod(ra_sat_world_frame - earth_ra_offset, 360)
   mag_dec_sat_world_frame, mag_ra_sat_world_frame = geo_to_mag(dec_sat_world_frame, ra_sat_world_frame, info_sat[3])
-  bkg_info = closest_bkg_info(mag_dec_sat_world_frame, mag_ra_sat_world_frame, info_sat[3], bkg_list)
+  bkg_info = closest_bkg_info(mag_dec_sat_world_frame, info_sat[3], bkg_list)
   return dec_sat_world_frame, ra_sat_world_frame, info_sat[3], bkg_info[0], bkg_info[1], bkg_info[2]
 
 
@@ -1746,14 +1746,16 @@ def closest_mufile(grb_dec_sf, grb_ra_sf, mu_list):  # TODO : limits on variable
   :param mu_list:     list of all the mu100 files
   :returns:   mu100, mu100_err, s_eff_compton, s_eff_single
   """
-  if len(mu_list) == 0:
+  if len(mu_list.mudf) == 0:
     return 0.000001, 0.000001, 0.000001, 0.000001
   else:
-    dec_error = np.array([(mu.dec - grb_dec_sf) ** 2 for mu in mu_list])
-    ra_error = np.array([(mu.ra - grb_ra_sf) ** 2 for mu in mu_list])
-    total_error = np.sqrt(dec_error + ra_error)
-    index = np.argmin(total_error)
-    return mu_list[index].mu100, mu_list[index].mu100_err, mu_list[index].s_eff_compton, mu_list[index].s_eff_single
+    # dec_error = np.array([(mu.dec - grb_dec_sf) ** 2 for mu in mu_list])
+    # ra_error = np.array([(mu.ra - grb_ra_sf) ** 2 for mu in mu_list])
+    # total_error = np.sqrt(dec_error + ra_error)
+
+    error = np.sqrt((mu_list.mudf.dec.values - grb_dec_sf) ** 2 + (mu_list.mudf.ra.values - grb_ra_sf) ** 2)
+    index = np.argmin(error)
+    return mu_list.mu100[index], mu_list.mu100_err[index], mu_list.s_eff_compton[index], mu_list.s_eff_single[index]
 
 
 ######################################################################################################################################################

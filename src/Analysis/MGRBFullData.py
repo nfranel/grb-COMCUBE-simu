@@ -356,7 +356,7 @@ class GRBFullData:
         self.const_beneficial_trigger_1s[ite_ts] = 0
 
   def detector_statistics(self, bkg_cont, bkg_duration, source_duration, source_name, show=False):
-    bkg_stats = (bkg_cont.det_stat_compton + bkg_cont.det_stat_single).reshape(4, 5) / bkg_duration
+    bkg_stats = (bkg_cont.com_det_idx + bkg_cont.sin_det_idx).reshape(4, 5) / bkg_duration
 
     hit_times = np.concatenate((self.df_compton.compton_time.values, self.df_compton.compton_time.values, self.df_single.single_time.values))
     det_list = np.concatenate((self.df_compton.compton_first_detector.values, self.df_compton.compton_sec_detector.values, self.df_single.single_detector.values))
