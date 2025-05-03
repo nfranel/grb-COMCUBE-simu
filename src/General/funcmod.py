@@ -1700,7 +1700,8 @@ def closest_bkg_info(mag_dec, sat_alt, bkgdata):  # TODO : limits on variables
     decs = df_selec_alt.bkg_dec.values
     if len(decs) == 0:
       raise FileNotFoundError("No background file were loaded for the given altitude.")
-    error = decs - mag_dec
+    error = np.abs(decs - mag_dec)
+    # print(error)
     index = df_selec_alt.index[np.argmin(error)]
     # for bkg in bkgdata:
     #   if bkg.alt == sat_alt:
