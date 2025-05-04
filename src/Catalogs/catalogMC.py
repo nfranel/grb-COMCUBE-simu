@@ -286,7 +286,7 @@ class MCCatalog:
     self.s_zb_min = 1.7
     self.s_zb_max = 3.3
     # Luminosity
-    self.l_ind1_min = -1.38
+    self.l_ind1_min = -1.35
     self.l_ind1_max = -1.25
     self.l_ind2_min = -2.1
     self.l_ind2_max = -1.7
@@ -358,9 +358,9 @@ class MCCatalog:
       if mode == "mc":
         param_list = None
         par_size = 2000
-        mctype = "long"
-        # mctype = "short"
-        fold_name = f"mc{mctype}v9-{par_size}"
+        # mctype = "long"
+        mctype = "short"
+        fold_name = f"mc{mctype}v1-{par_size}"
         savefile = f"../Data/CatData/CatSampling/space_explo/{fold_name}/mc_fit.csv"
       elif mode == "parametrized":
         # (l_rate, l_ind1_z, l_ind2_z, l_zb, l_ind1, l_ind2, l_lb, s_rate, s_ind1_z, s_ind2_z, s_zb, s_ind1, s_ind2, s_lb)
