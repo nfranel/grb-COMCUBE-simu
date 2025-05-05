@@ -113,7 +113,8 @@ def MC_explo_pairplot(fileused, legend_mode, grbtype):
   # palette = {cat: rainbow_palette[i] for i, cat in enumerate(order_hue)}
 
   df_selec['pierson_chi2_category'] = pierson_chi2_categories
-  df_selec['long_lb_2'] = df_selec['long_lb'] / 1e51
+  if grbtype == "long":
+    df_selec['long_lb_2'] = df_selec['long_lb'] / 1e51
 
   sns.pairplot(df_selec.sort_values(by="pierson_chi2", ascending=False), hue="pierson_chi2_category", vars=select_cols, corner=False, plot_kws={'s': 20}, palette="rainbow_r")
 
@@ -277,11 +278,11 @@ class MCCatalog:
     self.l_zb_min = 2.3
     self.l_zb_max = 3.5
 
-    self.s_rate_min = 0.1
-    self.s_rate_max = 1.1
-    self.s_ind1_z_min = 0.5
+    self.s_rate_min = 0.25
+    self.s_rate_max = 0.9
+    self.s_ind1_z_min = 1.1
     self.s_ind1_z_max = 4.1
-    self.s_ind2_z_min = 0.9
+    self.s_ind2_z_min = 1.8
     self.s_ind2_z_max = 4
     self.s_zb_min = 1.7
     self.s_zb_max = 3.3
@@ -294,7 +295,7 @@ class MCCatalog:
     self.l_lb_max = 1e53
 
     self.s_ind1_min = -1
-    self.s_ind1_max = -0.39
+    self.s_ind1_max = -0.5
     self.s_ind2_min = -3.7
     self.s_ind2_max = -1.7
     self.s_lb_min = 9.1e51
@@ -360,7 +361,7 @@ class MCCatalog:
         par_size = 2000
         # mctype = "long"
         mctype = "short"
-        fold_name = f"mc{mctype}v1-{par_size}"
+        fold_name = f"mc{mctype}v2-{par_size}"
         savefile = f"../Data/CatData/CatSampling/space_explo/{fold_name}/mc_fit.csv"
       elif mode == "parametrized":
         # (l_rate, l_ind1_z, l_ind2_z, l_zb, l_ind1, l_ind2, l_lb, s_rate, s_ind1_z, s_ind2_z, s_zb, s_ind1, s_ind2, s_lb)
