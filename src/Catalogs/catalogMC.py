@@ -558,7 +558,7 @@ class MCCatalog:
         print(f"Long catalog fitting : chi2 = {condition_long[1]}")
         cat_loop_long = False
       else:
-        print(f"Long catalog not fitting  : chi2 = {condition_long[1]} > len(ref) * {n_sig} sigma  -   trying again")
+        print(f"Long catalog not fitting  : chi2 = {condition_long[1]} > len(ref) * {n_sig} sigma² ({len(self.l_pflux_bins) * n_sig**2}) -   trying again")
     print(f"Long finished     [ite {run_iteration}]")
 
     print(f"Begin of shorts")
@@ -587,7 +587,7 @@ class MCCatalog:
         print(f"Short catalog fitting : chi2 = {condition_short[1]}")
         cat_loop_short = False
       else:
-        print(f"Short catalog not fitting  : chi2 = {condition_short[1]} > len(ref) * {n_sig} sigma  -   trying again")
+        print(f"Short catalog not fitting  : chi2 = {condition_short[1]} > len(ref) * {n_sig} sigma² ({len(self.s_pflux_bins) * n_sig**2}) -   trying again")
     print(f"Short finished     [ite {run_iteration}]")
 
     # Saving the catalog
