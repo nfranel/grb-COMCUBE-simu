@@ -279,7 +279,7 @@ class MCCatalog:
     self.l_zb_max = 3.5
 
     self.s_rate_min = 0.25
-    self.s_rate_max = 0.9
+    self.s_rate_max = 0.7
     self.s_ind1_z_min = 1.1
     self.s_ind1_z_max = 4.1
     self.s_ind2_z_min = 1.8
