@@ -640,11 +640,16 @@ def fov_const(parfile, mu100par, num_val=500, erg_cut=(10, 1000), armcut=180, sh
   if show:
     plt.show()
 
-  print(f"The mean number of satellites in sight is :       {np.mean(np.mean(detec_sum, axis=1) * np.sin(np.deg2rad(theta_world))):.4f} satellites")
-  print(f"The mean effective area for Compton events is :  {np.mean(np.mean(detec_sum_compton, axis=1) * np.sin(np.deg2rad(theta_world))):.4f} cm²")
-  print(f"The mean effective area for single events is :   {np.mean(np.mean(detec_sum_single, axis=1) * np.sin(np.deg2rad(theta_world))):.4f} cm²")
+  correction_values = (1 + np.sin(np.deg2rad(theta_world)) * (num_val - 1)) / num_val
+  print(f"The mean number of satellites in sight is :       {np.average(np.mean(detec_sum, axis=1), weights=correction_values):.4f} satellites")
+  print(f"The mean effective area for Compton events is :  {np.average(np.mean(detec_sum_compton, axis=1), weights=correction_values):.4f} cm²")
+  print(f"The mean effective area for single events is :   {np.average(np.mean(detec_sum_single, axis=1), weights=correction_values):.4f} cm²")
 
-  print(f"NOT SIN CORRECTED - The mean number of satellites in sight is :       {np.mean(detec_sum):.4f} satellites")
-  print(f"NOT SIN CORRECTED - The mean effective area for Compton events is :  {np.mean(detec_sum_compton):.4f} cm²")
-  print(f"NOT SIN CORRECTED - The mean effective area for single events is :   {np.mean(detec_sum_single):.4f} cm²")
+  # print(f"The mean number of satellites in sight is :       {np.mean(np.mean(detec_sum, axis=1) * np.sin(np.deg2rad(theta_world))):.4f} satellites")
+  # print(f"The mean effective area for Compton events is :  {np.mean(np.mean(detec_sum_compton, axis=1) * np.sin(np.deg2rad(theta_world))):.4f} cm²")
+  # print(f"The mean effective area for single events is :   {np.mean(np.mean(detec_sum_single, axis=1) * np.sin(np.deg2rad(theta_world))):.4f} cm²")
+  #
+  # print(f"NOT SIN CORRECTED - The mean number of satellites in sight is :       {np.mean(detec_sum):.4f} satellites")
+  # print(f"NOT SIN CORRECTED - The mean effective area for Compton events is :  {np.mean(detec_sum_compton):.4f} cm²")
+  # print(f"NOT SIN CORRECTED - The mean effective area for single events is :   {np.mean(detec_sum_single):.4f} cm²")
 
