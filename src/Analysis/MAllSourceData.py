@@ -702,6 +702,17 @@ class AllSourceData:
     Plots a map of the sensibility over the sky for number of sat in sight, single events and compton events
     :param num_val: number of value to
     """
+    plt.rcParams.update({'font.size': 13})
+    xlab = "Right ascention (°)"
+    ylab = "Declination (°)"
+    title1 = "Constellation sky coverage map"
+    title2 = "Constellation sky sensitivity map for Compton events"
+    title3 = "Constellation sky sensitivity map for single events"
+    bar1 = "Number of satellites covering the area"
+    bar2 = "Effective area for Compton events (cm²)"
+    bar3 = "Effective area for single events (cm²)"
+    chosen_proj, proj_name = "mollweide", "mollweide"
+
     phi_world = np.linspace(0, 360, num_val, endpoint=False)
     # theta will be converted in sat coord with grb_decra_worldf2satf, which takes dec in world coord with 0 being north pole and 180 the south pole !
     theta_world = np.linspace(0, 180, num_val)
@@ -709,19 +720,20 @@ class AllSourceData:
     detection_compton = np.zeros((self.n_sat, num_val, num_val))
     detection_single = np.zeros((self.n_sat, num_val, num_val))
 
-    # for ite in range(self.n_sat):
-    #   detection_pola[ite] = np.array([[eff_area_compton_func(grb_decra_worldf2satf(theta, phi, self.sat_info[ite][0], self.sat_info[ite][1])[0], self.sat_info[ite][2], func_type="cos") for phi in phi_world] for theta in theta_world])
-    #   detection_spectro[ite] = np.array([[eff_area_single_func(grb_decra_worldf2satf(theta, phi, self.sat_info[ite][0], self.sat_info[ite][1])[0], self.sat_info[ite][2], func_type="data") for phi in phi_world] for theta in theta_world])
-
+    nite = num_val ** 2 * len(self.sat_info)
+    ncount = 0
     for ite, info_sat in enumerate(self.sat_info):
       for ite_theta, theta in enumerate(theta_world):
         for ite_phi, phi in enumerate(phi_world):
           detection_compton[ite][ite_theta][ite_phi], detection_single[ite][ite_theta][ite_phi], detection[ite][ite_theta][ite_phi] = eff_area_func(theta, phi, info_sat, self.muSeffdata)
+          print(f"Calculation : {int(ncount / nite * 100)}%", end="\r")
+    print("Calculation over")
+
     detec_sum = np.sum(detection, axis=0)
     detec_sum_compton = np.sum(detection_compton, axis=0)
     detec_sum_single = np.sum(detection_single, axis=0)
 
-    phi_plot, theta_plot = np.meshgrid(phi_world, theta_world)
+    phi_plot, theta_plot = np.meshgrid(np.deg2rad(phi_world) - np.pi, np.pi / 2 - np.deg2rad(theta_world))
     detec_min = int(np.min(detec_sum))
     detec_max = int(np.max(detec_sum))
     detec_min_compton = int(np.min(detec_sum_compton))
@@ -733,101 +745,67 @@ class AllSourceData:
     cmap_single = mpl.cm.Oranges_r
 
     ##################################################################################################################
-    # Map for number of satellite in sight
+    # Map for number of satellites in sight
     ##################################################################################################################
-    levels = range(detec_min, detec_max + 1, max(1, int(detec_max + 1 - detec_min) / 15))
+    levels = range(detec_min, detec_max + 1, max(1, int((detec_max + 1 - detec_min) / 15)))
 
-    # fig1, ax1 = plt.subplots(1, 1, figsize=(10, 6))
-    fig1, ax1 = plt.subplots(subplot_kw={'projection': ccrs.PlateCarree()}, figsize=(10, 6))
-    ax1.set_global()
-    ax1.coastlines()
-    h1 = ax1.pcolormesh(phi_plot, np.pi / 2 - theta_plot, detec_sum, cmap=cmap_det)
-    ax1.axis('scaled')
-    ax1.set(xlabel="Right ascention (rad)", ylabel="Declination (rad)")
+    fig1, ax1 = plt.subplots(subplot_kw={'projection': chosen_proj}, figsize=(15, 8))
+    # ax1.set_global()
+    # ax1.coastlines()
+    h1 = ax1.pcolormesh(phi_plot, theta_plot, detec_sum, cmap=cmap_det)
+    # ax1.axis('scaled')
+    ax1.set(xlabel=xlab, ylabel=ylab, title=title1)
     cbar = fig1.colorbar(h1, ticks=levels)
-    cbar.set_label("Number of satellite in sight", rotation=270, labelpad=20)
+    cbar.set_label(bar1, rotation=270, labelpad=20)
     if save:
-      fig1.savefig(f"{self.result_prefix}_n_sight")
+      fig1.savefig(f"{self.result_prefix}_n_sight_{proj_name}")
     if show:
       plt.show()
-
-    # plt.subplot(projection="mollweide")
-    # h2 = plt.pcolormesh(phi_plot, np.pi / 2 - theta_plot, detec_sum, cmap=cmap_det)
-    # plt.axis('scaled')
-    # plt.xlabel("Right ascention (rad)")
-    # plt.ylabel("Declination (rad)")
-    # cbar = plt.colorbar(ticks=levels)
-    # cbar.set_label("Number of satellite in sight", rotation=270, labelpad=20)
-    # if save:
-    #   plt.savefig(f"{self.result_prefix}_n_sight_proj")
-    # if show:
-    #   plt.show()
 
     ##################################################################################################################
     # Map of constellation's compton effective area
     ##################################################################################################################
-    levels_compton = range(detec_min_compton, detec_max_compton + 1, max(1, int(detec_max_compton + 1 - detec_min_compton) / 15))
+    levels_compton = range(detec_min_compton, detec_max_compton + 1, max(1, int((detec_max_compton + 1 - detec_min_compton) / 15)))
 
     # fig2, ax2 = plt.subplots(1, 1, figsize=(10, 6))
-    fig2, ax2 = plt.subplots(subplot_kw={'projection': ccrs.PlateCarree()}, figsize=(10, 6))
-    ax2.set_global()
-    ax2.coastlines()
-    h3 = ax2.pcolormesh(phi_plot, np.pi / 2 - theta_plot, detec_sum_compton, cmap=cmap_compton)
-    ax2.axis('scaled')
-    ax2.set(xlabel="Right ascention (rad)", ylabel="Declination (rad)")
+    fig2, ax2 = plt.subplots(subplot_kw={'projection': chosen_proj}, figsize=(15, 8))
+    # ax2.set_global()
+    # ax2.coastlines()
+    h3 = ax2.pcolormesh(phi_plot, theta_plot, detec_sum_compton, cmap=cmap_compton)
+    # ax2.axis('scaled')
+    ax2.set(xlabel=xlab, ylabel=ylab, title=title2)
     cbar = fig2.colorbar(h3, ticks=levels_compton)
-    cbar.set_label("Effective area at for compton events (cm²)", rotation=270, labelpad=20)
+    cbar.set_label(bar2, rotation=270, labelpad=20)
     if save:
-      fig2.savefig(f"{self.result_prefix}_compton_seff")
+      fig2.savefig(f"{self.result_prefix}_compton_seff_{proj_name}")
     if show:
       plt.show()
 
-    # plt.subplot(projection="mollweide")
-    # h4 = plt.pcolormesh(phi_plot, np.pi / 2 - theta_plot, detec_sum_compton, cmap=cmap_compton)
-    # plt.axis('scaled')
-    # plt.xlabel("Right ascention (rad)")
-    # plt.ylabel("Declination (rad)")
-    # cbar = plt.colorbar(ticks=levels_compton)
-    # cbar.set_label("Effective area at for compton events (cm²)", rotation=270, labelpad=20)
-    # if save:
-    #   plt.savefig(f"{self.result_prefix}_compton_seff_proj")
-    # if show:
-    #   plt.show()
-
     ##################################################################################################################
-    # Map of constellation's compton effective area
+    # Map of constellation's single effective area
     ##################################################################################################################
-    levels_single = range(detec_min_single, detec_max_single + 1, max(1, int(detec_max_single + 1 - detec_min_single) / 15))
+    levels_single = range(detec_min_single, detec_max_single + 1, max(1, int((detec_max_single + 1 - detec_min_single) / 15)))
 
-    # fig3, ax3 = plt.subplots(1, 1, figsize=(10, 6))
-    fig3, ax3 = plt.subplots(subplot_kw={'projection': ccrs.PlateCarree()}, figsize=(10, 6))
-    ax3.set_global()
-    ax3.coastlines()
-    h5 = ax3.pcolormesh(phi_plot, np.pi / 2 - theta_plot, detec_sum_single, cmap=cmap_single)
-    ax3.axis('scaled')
-    ax3.set(xlabel="Right ascention (rad)", ylabel="Declination (rad)")
+    fig3, ax3 = plt.subplots(subplot_kw={'projection': chosen_proj}, figsize=(15, 8))
+    # ax3.set_global()
+    # ax3.coastlines()
+    h5 = ax3.pcolormesh(phi_plot, theta_plot, detec_sum_single, cmap=cmap_single)
+    # ax3.axis('scaled')
+    ax3.set(xlabel=xlab, ylabel=ylab, title=title3)
     cbar = fig3.colorbar(h5, ticks=levels_single)
-    cbar.set_label("Effective area for single events (cm²)", rotation=270, labelpad=20)
+    cbar.set_label(bar3, rotation=270, labelpad=20)
     if save:
-      fig3.savefig(f"{self.result_prefix}_single_seff")
+      fig3.savefig(f"{self.result_prefix}_single_seff_{proj_name}")
     if show:
       plt.show()
 
-    # plt.subplot(projection="mollweide")
-    # h6 = plt.pcolormesh(phi_plot, np.pi / 2 - theta_plot, detec_sum_single, cmap=cmap_single)
-    # plt.axis('scaled')
-    # plt.xlabel("Right ascention (rad)")
-    # plt.ylabel("Declination (rad)")
-    # cbar = plt.colorbar(ticks=levels_single)
-    # cbar.set_label("Effective area for single events (cm²)", rotation=270, labelpad=20)
-    # if save:
-    #   plt.savefig(f"{self.result_prefix}_single_seff")
-    # if show:
-    #   plt.show()
+    print(f"The mean number of satellites in sight is :       {np.mean(np.mean(detec_sum, axis=1) * np.sin(np.deg2rad(theta_world))):.4f} satellites")
+    print(f"The mean effective area for Compton events is :  {np.mean(np.mean(detec_sum_compton, axis=1) * np.sin(np.deg2rad(theta_world))):.4f} cm²")
+    print(f"The mean effective area for single events is :   {np.mean(np.mean(detec_sum_single, axis=1) * np.sin(np.deg2rad(theta_world))):.4f} cm²")
 
-    print(f"The mean number of satellite in sight is :       {np.mean(detec_sum):.4f} satellites")
-    print(f"The mean effective area for compton events is :  {np.mean(detec_sum_compton):.4f} cm²")
-    print(f"The mean effective area for single events is :   {np.mean(detec_sum_single):.4f} cm²")
+    print(f"NOT SIN CORRECTED - The mean number of satellites in sight is :       {np.mean(detec_sum):.4f} satellites")
+    print(f"NOT SIN CORRECTED - The mean effective area for Compton events is :  {np.mean(detec_sum_compton):.4f} cm²")
+    print(f"NOT SIN CORRECTED - The mean effective area for single events is :   {np.mean(detec_sum_single):.4f} cm²")
 
   def grb_map_plot(self, mode="no_cm"):
     """
