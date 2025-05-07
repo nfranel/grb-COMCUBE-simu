@@ -725,6 +725,7 @@ class AllSourceData:
     for ite, info_sat in enumerate(self.sat_info):
       for ite_theta, theta in enumerate(theta_world):
         for ite_phi, phi in enumerate(phi_world):
+          ncount += 1
           detection_compton[ite][ite_theta][ite_phi], detection_single[ite][ite_theta][ite_phi], detection[ite][ite_theta][ite_phi] = eff_area_func(theta, phi, info_sat, self.muSeffdata)
           print(f"Calculation : {int(ncount / nite * 100)}%", end="\r")
     print("Calculation over")
