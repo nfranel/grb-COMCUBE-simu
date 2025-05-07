@@ -731,6 +731,7 @@ def get_pol_unpol_event_data(pol_data_file, unpol_data_file, dec_sf, ra_sf, dec_
   # return compton_ener_pol, pol, pol_err, arm_pol, compton_first_detector_pol, compton_sec_detector_pol, single_ener_pol, single_detector_pol,     compton_ener_unpol, unpol, unpol_err, arm_unpol, compton_first_detector_unpol, compton_sec_detector_unpol
   return compton_ener_pol, pol, pol_err, arm_pol, single_ener_pol, compton_ener_unpol, unpol, unpol_err, arm_unpol
 
+
 def ra2lon(ra):
   """
   Change a coordinate in ra to its longitude
