@@ -18,7 +18,7 @@ from time import time
 import os
 
 # Developped modules imports
-from src.General.funcmod import printcom, printv, endtask, read_grbpar, horizon_angle, save_grb_data, eff_area_func, make_error_histogram
+from src.General.funcmod import printcom, printv, endtask, read_grbpar, horizon_angle, save_grb_data, eff_area_func, make_error_histogram, compile_finder
 from src.Catalogs.catalog import Catalog, SampleCatalog
 from src.Analysis.MBkgContainer import BkgContainer
 from src.Analysis.MmuSeffContainer import MuSeffContainer
@@ -124,14 +124,14 @@ class AllSourceData:
       print("==================================== Memory check ====================================")
 
     # Compiling the position finder
-    subprocess.call(f"make -f Makefile PRG=find_detector", shell=True)
+    compile_finder()
     print("Compiling of the position finder finished")
     endtask("Step 1")
 
     # Setting the background files
     printcom("Step 2 - Extracting background data")
     init_time = time()
-    self.bkgdata = BkgContainer(self.bkg_param, self.save_time, self.erg_cut)
+    self.bkgdata = BkgContainer(self.bkg_param, self.erg_cut)
     endtask("Step 2", timevar=init_time)
 
     # Setting the background files
@@ -234,8 +234,8 @@ class AllSourceData:
     printcom("Step 6 - preparing filenames for simulation files and extracted simulation files")
     init_time = time()
 
-    if not os.path.exists(f"{self.sim_prefix.split('/sim/')[0]}/extracted-{self.erg_cut[0]}-{self.erg_cut[1]}"):
-      os.mkdir(f"{self.sim_prefix.split('/sim/')[0]}/extracted-{self.erg_cut[0]}-{self.erg_cut[1]}")
+    if not os.path.exists(f"{self.sim_prefix.split('/sim/')[0]}/extracted"):
+      os.mkdir(f"{self.sim_prefix.split('/sim/')[0]}/extracted")
     tobe_extracted, extracted_name, presence_list = self.filenames_creation(grb_names, grb_det_ites, sim_det_ites, sat_det_ites, suffix_ite)
     num_files = int(subprocess.getoutput(f"ls {self.sim_prefix.split('/sim/')[0]}/sim | wc").strip().split("  ")[0])
     if num_files > self.n_sim_simulated:
@@ -269,13 +269,13 @@ class AllSourceData:
     if parallel == 'all':
       print("Parallel extraction of the data with all threads")
       with mp.Pool() as pool:
-        pool.starmap(save_grb_data, zip(tobe_extracted, extracted_name, repeat(self.sat_info), repeat(self.bkgdata), repeat(self.muSeffdata), repeat(self.erg_cut), repeat(self.armcut), repeat(self.geometry)))
+        pool.starmap(save_grb_data, zip(tobe_extracted, extracted_name, repeat(self.sat_info), repeat(self.bkgdata), repeat(self.muSeffdata), repeat(self.geometry)))
     elif type(parallel) is int:
       print(f"Parallel extraction of the data with {parallel} threads")
       with mp.Pool(parallel) as pool:
-        pool.starmap(save_grb_data, zip(tobe_extracted, extracted_name, repeat(self.sat_info), repeat(self.bkgdata), repeat(self.muSeffdata), repeat(self.erg_cut), repeat(self.armcut), repeat(self.geometry)))
+        pool.starmap(save_grb_data, zip(tobe_extracted, extracted_name, repeat(self.sat_info), repeat(self.bkgdata), repeat(self.muSeffdata), repeat(self.geometry)))
     else:
-      [save_grb_data(tobe_extracted[ext_ite], extracted_name[ext_ite], self.sat_info, self.bkgdata, self.muSeffdata, *self.options[:3]) for ext_ite in range(len(tobe_extracted))]
+      [save_grb_data(tobe_extracted[ext_ite], extracted_name[ext_ite], self.sat_info, self.bkgdata, self.muSeffdata, self.geometry) for ext_ite in range(len(tobe_extracted))]
     endtask("Step 7", timevar=init_time)
 
     printcom("Step 8 - Loading log data and simulation statistics")
@@ -311,7 +311,7 @@ class AllSourceData:
     for ite, grbname in enumerate(grb_names):
       temp_simfile = f"{self.sim_prefix}_{grbname}_sat{sat_det_ites[ite]}_{sim_det_ites[ite]:04d}_{suffix_ite[ite]}.inc1.id1.extracted.tra"
       tobe_ext.append(temp_simfile)
-      temp_name = f"{self.sim_prefix.split('/sim/')[0]}/extracted-{self.erg_cut[0]}-{self.erg_cut[1]}/{self.sim_prefix.split('/sim/')[1]}_extracted{grbname}_sat{sat_det_ites[ite]}_{sim_det_ites[ite]:04d}_erg-{self.erg_cut[0]}-{self.erg_cut[1]}_arm-{self.armcut}.txt"
+      temp_name = f"{self.sim_prefix.split('/sim/')[0]}/extracted/{self.sim_prefix.split('/sim/')[1]}_extracted{grbname}_sat{sat_det_ites[ite]}_{sim_det_ites[ite]:04d}.h5"
       ext_name.append(temp_name)
       pres_list[grb_det_ites[ite]][sim_det_ites[ite]][sat_det_ites[ite]] = temp_name
     return tobe_ext, ext_name, pres_list.tolist()
@@ -697,173 +697,22 @@ class AllSourceData:
       ax3.set(xlabel="GRB energy fluence (erg/cm²)", ylabel="Number of not triggered", xscale="log", yscale="linear")
       plt.show()
 
-
-  # def count_triggers(self, const_index=0):
-  #   """
-  #   Function to count and print the number of triggers using different criterions
-  #   """
-  #   total_in_view = 0
-  #   # Setting 1s mean triggers counter
-  #   single_instant_trigger_by_const = 0
-  #   single_instant_trigger_by_sat = 0
-  #   single_instant_trigger_by_comparison = 0
-  #   # Setting 1s peak triggers counter
-  #   single_peak_trigger_by_const = 0
-  #   single_peak_trigger_by_sat = 0
-  #   single_peak_trigger_by_comparison = 0
-  #   # Setting T90 mean triggers counter
-  #   single_t90_trigger_by_const = 0
-  #   single_t90_trigger_by_sat = 0
-  #   single_t90_trigger_by_comparison = 0
-  #
-  #   for source in self.alldata:
-  #     if source is not None:
-  #       for sim in source:
-  #         if sim is not None:
-  #           total_in_view += 1
-  #           #    Setting the trigger count to 0
-  #           # Instantaneous trigger
-  #           sat_instant_triggers = 0
-  #           sat_reduced_instant_triggers = 0
-  #           # Peak trigger
-  #           sat_peak_triggers = 0
-  #           sat_reduced_peak_triggers = 0
-  #           # t90 trigger
-  #           sat_t90_triggers = 0
-  #           sat_reduced_t90_triggers = 0
-  #           # Calculation for the individual sats
-  #           for sat in sim:
-  #             if sat is not None:
-  #               if sat.snr_single >= self.snr_min:
-  #                 sat_instant_triggers += 1
-  #               if sat.snr_single >= self.snr_min - 2:
-  #                 sat_reduced_instant_triggers += 1
-  #               if source.best_fit_p_flux is None:
-  #                 sat_peak_snr = sat.snr_single
-  #               else:
-  #                 sat_peak_snr = calc_snr(rescale_cr_to_GBM_pf(sat.single_cr, source.best_fit_mean_flux, source.best_fit_p_flux), sat.single_b_rate)
-  #               if sat_peak_snr >= self.snr_min:
-  #                 sat_peak_triggers += 1
-  #               if sat_peak_snr >= self.snr_min - 2:
-  #                 sat_reduced_peak_triggers += 1
-  #               if sat.snr_single_t90 >= self.snr_min:
-  #                 sat_t90_triggers += 1
-  #               if sat.snr_single_t90 >= self.snr_min - 2:
-  #                 sat_reduced_t90_triggers += 1
-  #           # Calculation for the whole constellation
-  #           if source.best_fit_p_flux is None:
-  #             const_peak_snr = sim.const_data[const_index].snr_single
-  #           else:
-  #             const_peak_snr = calc_snr(rescale_cr_to_GBM_pf(sim.const_data[const_index].single_cr, source.best_fit_mean_flux, source.best_fit_p_flux), sim.const_data[const_index].single_b_rate)
-  #           # 1s mean triggers
-  #           if sim.const_data[const_index].snr_single >= self.snr_min:
-  #             single_instant_trigger_by_const += 1
-  #           if sat_instant_triggers >= 1:
-  #             single_instant_trigger_by_sat += 1
-  #           if sat_reduced_instant_triggers >= 3:
-  #             single_instant_trigger_by_comparison += 1
-  #           # 1s peak triggers
-  #           if const_peak_snr >= self.snr_min:
-  #             single_peak_trigger_by_const += 1
-  #           if sat_peak_triggers >= 1:
-  #             single_peak_trigger_by_sat += 1
-  #           if sat_reduced_peak_triggers >= 3:
-  #             single_peak_trigger_by_comparison += 1
-  #           # T90 mean triggers
-  #           if sim.const_data[const_index].snr_single_t90 >= self.snr_min:
-  #             single_t90_trigger_by_const += 1
-  #           if sat_t90_triggers >= 1:
-  #             single_t90_trigger_by_sat += 1
-  #           if sat_reduced_t90_triggers >= 3:
-  #             single_t90_trigger_by_comparison += 1
-  #
-  #   print("The number of trigger for single events for the different technics are the following :")
-  #   print(" == Integration time for the trigger : 1s, mean flux == ")
-  #   print(f"   For a {self.snr_min} sigma trigger with the number of hits summed over the constellation :  {single_instant_trigger_by_const:.2f} triggers")
-  #   # print(f"   For a {self.snr_min} sigma trigger on at least one of the satellites :                      {single_instant_trigger_by_sat:.2f} triggers")
-  #   print(f"   For a {self.snr_min-2} sigma trigger in at least 3 satellites of the constellation :        {single_instant_trigger_by_comparison:.2f} triggers")
-  #   # print(" == Integration time for the trigger : T90, mean flux == ")
-  #   # print(f"   For a {self.snr_min} sigma trigger with the number of hits summed over the constellation : {single_t90_trigger_by_const} triggers")
-  #   # print(f"   For a {self.snr_min} sigma trigger on at least one of the satellites : {single_t90_trigger_by_sat} triggers")
-  #   # print(f"   For a {self.snr_min-2} sigma trigger in at least 3 satellites of the constellation : {single_t90_trigger_by_comparison} triggers")
-  #   print("The number of trigger using GBM pflux for an energy range between 10keV and 1MeV are the following :")
-  #   print(" == Integration time for the trigger : 1s, peak flux == ")
-  #   print(f"   For a {self.snr_min} sigma trigger with the number of hits summed over the constellation :  {single_peak_trigger_by_const:.2f} triggers")
-  #   # print(f"   For a {self.snr_min} sigma trigger on at least one of the satellites :                      {single_peak_trigger_by_sat:.2f} triggers")
-  #   print(f"   For a {self.snr_min-2} sigma trigger in at least 3 satellites of the constellation :        {single_peak_trigger_by_comparison:.2f} triggers")
-  #   print("=============================================")
-  #   print(f" Over the {total_in_view} GRBs simulated in the constellation field of view")
-  #
-  #   print("================================================================================================")
-  #   print("== Triggers according to GBM method")
-  #   print("================================================================================================")
-  #   # bin_widths = [0.01, 0.05, 0.1, 0.25, 0.5, 1, 2, 10]
-  #   all_cat = Catalog(self.cat_file, self.sttype)
-  #   total_in_view = 0
-  #   bin_widths = [0.064, 0.256, 1.024]
-  #   sat_trigger_counter = 0
-  #   const_trigger_counter = 0
-  #   for source in self.alldata:
-  #     if source is not None:
-  #       for ite_sim, sim in enumerate(source):
-  #         if sim is not None:
-  #           total_in_view += 1
-  #           # Getting the snrs for all satellites and the constellation
-  #           list_bins = [np.arange(0, source.source_duration + width, width) for width in bin_widths]
-  #           centroid_bins = [(list_bin[1:] + list_bin[:-1]) / 2 for list_bin in list_bins]
-  #           sat_snr_list = []
-  #           sat_trigg = 0
-  #           for sat_ite, sat in enumerate(sim):
-  #             if sat is not None:
-  #               if len(np.concatenate((sat.compton_time, sat.single_time))) == 0:
-  #                 sat_trigg += 0
-  #               else:
-  #                 temp_hist = [np.histogram(np.concatenate((sat.compton_time, sat.single_time)), bins=list_bin)[0] for list_bin in list_bins]
-  #                 arg_max_bin = [np.argmax(val_hist) for val_hist in temp_hist]
-  #                 # for index1, arg_max1 in enumerate(arg_max_bin):
-  #                 #   for index2, arg_max2 in enumerate(arg_max_bin[index1 + 1:]):
-  #                 #     if not compatibility_test(centroid_bins[index1][arg_max1], bin_widths[index1], centroid_bins[index1 + 1 + index2][arg_max2], bin_widths[index1 + 1 + index2]):
-  #                 # print(f"Incompatibility between bins {bin_widths[index1]} and {bin_widths[index2]} for {source.source_name}, sim {ite_sim} and sat {sat_ite}")
-  #                 # print(f"     Centroids of the incompatible bins : {centroid_bins[index1][arg_max1]} and {centroid_bins[index1 + 1 + index2][arg_max2]}")
-  #                 snr_list = [calc_snr(temp_hist[index][arg_max_bin[index]], (sat.single_b_rate + sat.compton_b_rate) * bin_widths[index]) for index in range(len(arg_max_bin))]
-  #                 sat_snr_list.append(snr_list)
-  #                 if max(snr_list) > 3:
-  #                   sat_trigg += 1
-  #           if sim.const_data[const_index] is not None:
-  #             if len(np.concatenate((sim.const_data[const_index].compton_time, sim.const_data[const_index].single_time))) == 0:
-  #               const_snr = [0]
-  #             else:
-  #               temp_hist = [np.histogram(np.concatenate((sim.const_data[const_index].compton_time, sim.const_data[const_index].single_time)), bins=list_bin)[0] for list_bin in list_bins]
-  #               arg_max_bin = [np.argmax(val_hist) for val_hist in temp_hist]
-  #               # for index1, arg_max1 in enumerate(arg_max_bin):
-  #               #   for index2, arg_max2 in enumerate(arg_max_bin[index1 + 1:]):
-  #               #     if not compatibility_test(centroid_bins[index1][arg_max1], bin_widths[index1], centroid_bins[index1 + 1 + index2][arg_max2], bin_widths[index1 + 1 + index2]):
-  #               # print(f"Incompatibility between bins {bin_widths[index1]} and {bin_widths[index2]} for {source.source_name}, sim {ite_sim} and constellation")
-  #               # print(f"     Centroids of the incompatible bins : {centroid_bins[index1][arg_max1]} and {centroid_bins[index1 + 1 + index2][arg_max2]}")
-  #               const_snr = [calc_snr(temp_hist[index][arg_max_bin[index]], (sim.const_data[const_index].single_b_rate + sim.const_data[const_index].compton_b_rate) * bin_widths[index]) for index in range(len(arg_max_bin))]
-  #           else:
-  #             const_snr = [0]
-  #           if sat_trigg >= 4:
-  #             sat_trigger_counter += 1
-  #           if max(const_snr) >= 6:
-  #             const_trigger_counter += 1
-  #           else:
-  #             for ite, name in enumerate(all_cat.name):
-  #               if name == source.source_name:
-  #                 ener_fluence = float(all_cat.fluence[ite])
-  #             print(max(const_snr), source.source_duration, sim.dec_world_frame, ener_fluence)
-  #   print(
-  #     f"   For a 6 sigma trigger with the number of hits summed over the constellation :  {const_trigger_counter:.2f} triggers")
-  #   print(
-  #     f"   For a 3 sigma trigger in at least 4 satellites of the constellation :        {sat_trigger_counter:.2f} triggers")
-  #   print("=============================================")
-  #   print(f" Over the {total_in_view} GRBs simulated in the constellation field of view")
-
   def fov_const(self, num_val=500, show=True, save=False):
     """
     Plots a map of the sensibility over the sky for number of sat in sight, single events and compton events
     :param num_val: number of value to
     """
+    plt.rcParams.update({'font.size': 13})
+    xlab = "Right ascention (°)"
+    ylab = "Declination (°)"
+    title1 = "Constellation sky coverage map"
+    title2 = "Constellation sky sensitivity map for Compton events"
+    title3 = "Constellation sky sensitivity map for single events"
+    bar1 = "Number of satellites covering the area"
+    bar2 = "Effective area for Compton events (cm²)"
+    bar3 = "Effective area for single events (cm²)"
+    chosen_proj, proj_name = "mollweide", "mollweide"
+
     phi_world = np.linspace(0, 360, num_val, endpoint=False)
     # theta will be converted in sat coord with grb_decra_worldf2satf, which takes dec in world coord with 0 being north pole and 180 the south pole !
     theta_world = np.linspace(0, 180, num_val)
@@ -871,19 +720,21 @@ class AllSourceData:
     detection_compton = np.zeros((self.n_sat, num_val, num_val))
     detection_single = np.zeros((self.n_sat, num_val, num_val))
 
-    # for ite in range(self.n_sat):
-    #   detection_pola[ite] = np.array([[eff_area_compton_func(grb_decra_worldf2satf(theta, phi, self.sat_info[ite][0], self.sat_info[ite][1])[0], self.sat_info[ite][2], func_type="cos") for phi in phi_world] for theta in theta_world])
-    #   detection_spectro[ite] = np.array([[eff_area_single_func(grb_decra_worldf2satf(theta, phi, self.sat_info[ite][0], self.sat_info[ite][1])[0], self.sat_info[ite][2], func_type="data") for phi in phi_world] for theta in theta_world])
-
+    nite = num_val ** 2 * len(self.sat_info)
+    ncount = 0
     for ite, info_sat in enumerate(self.sat_info):
       for ite_theta, theta in enumerate(theta_world):
         for ite_phi, phi in enumerate(phi_world):
+          ncount += 1
           detection_compton[ite][ite_theta][ite_phi], detection_single[ite][ite_theta][ite_phi], detection[ite][ite_theta][ite_phi] = eff_area_func(theta, phi, info_sat, self.muSeffdata)
+          print(f"Calculation : {int(ncount / nite * 100)}%", end="\r")
+    print("Calculation over")
+
     detec_sum = np.sum(detection, axis=0)
     detec_sum_compton = np.sum(detection_compton, axis=0)
     detec_sum_single = np.sum(detection_single, axis=0)
 
-    phi_plot, theta_plot = np.meshgrid(phi_world, theta_world)
+    phi_plot, theta_plot = np.meshgrid(np.deg2rad(phi_world) - np.pi, np.pi / 2 - np.deg2rad(theta_world))
     detec_min = int(np.min(detec_sum))
     detec_max = int(np.max(detec_sum))
     detec_min_compton = int(np.min(detec_sum_compton))
@@ -895,101 +746,72 @@ class AllSourceData:
     cmap_single = mpl.cm.Oranges_r
 
     ##################################################################################################################
-    # Map for number of satellite in sight
+    # Map for number of satellites in sight
     ##################################################################################################################
-    levels = range(detec_min, detec_max + 1, max(1, int(detec_max + 1 - detec_min) / 15))
+    levels = range(detec_min, detec_max + 1, max(1, int((detec_max + 1 - detec_min) / 15)))
 
-    # fig1, ax1 = plt.subplots(1, 1, figsize=(10, 6))
-    fig1, ax1 = plt.subplots(subplot_kw={'projection': ccrs.PlateCarree()}, figsize=(10, 6))
-    ax1.set_global()
-    ax1.coastlines()
-    h1 = ax1.pcolormesh(phi_plot, np.pi / 2 - theta_plot, detec_sum, cmap=cmap_det)
-    ax1.axis('scaled')
-    ax1.set(xlabel="Right ascention (rad)", ylabel="Declination (rad)")
+    fig1, ax1 = plt.subplots(subplot_kw={'projection': chosen_proj}, figsize=(15, 8))
+    # ax1.set_global()
+    # ax1.coastlines()
+    h1 = ax1.pcolormesh(phi_plot, theta_plot, detec_sum, cmap=cmap_det)
+    # ax1.axis('scaled')
+    ax1.set(xlabel=xlab, ylabel=ylab, title=title1)
     cbar = fig1.colorbar(h1, ticks=levels)
-    cbar.set_label("Number of satellite in sight", rotation=270, labelpad=20)
+    cbar.set_label(bar1, rotation=270, labelpad=20)
     if save:
-      fig1.savefig(f"{self.result_prefix}_n_sight")
+      fig1.savefig(f"{self.result_prefix}_n_sight_{proj_name}")
     if show:
       plt.show()
-
-    # plt.subplot(projection="mollweide")
-    # h2 = plt.pcolormesh(phi_plot, np.pi / 2 - theta_plot, detec_sum, cmap=cmap_det)
-    # plt.axis('scaled')
-    # plt.xlabel("Right ascention (rad)")
-    # plt.ylabel("Declination (rad)")
-    # cbar = plt.colorbar(ticks=levels)
-    # cbar.set_label("Number of satellite in sight", rotation=270, labelpad=20)
-    # if save:
-    #   plt.savefig(f"{self.result_prefix}_n_sight_proj")
-    # if show:
-    #   plt.show()
 
     ##################################################################################################################
     # Map of constellation's compton effective area
     ##################################################################################################################
-    levels_compton = range(detec_min_compton, detec_max_compton + 1, max(1, int(detec_max_compton + 1 - detec_min_compton) / 15))
+    levels_compton = range(detec_min_compton, detec_max_compton + 1, max(1, int((detec_max_compton + 1 - detec_min_compton) / 15)))
 
     # fig2, ax2 = plt.subplots(1, 1, figsize=(10, 6))
-    fig2, ax2 = plt.subplots(subplot_kw={'projection': ccrs.PlateCarree()}, figsize=(10, 6))
-    ax2.set_global()
-    ax2.coastlines()
-    h3 = ax2.pcolormesh(phi_plot, np.pi / 2 - theta_plot, detec_sum_compton, cmap=cmap_compton)
-    ax2.axis('scaled')
-    ax2.set(xlabel="Right ascention (rad)", ylabel="Declination (rad)")
+    fig2, ax2 = plt.subplots(subplot_kw={'projection': chosen_proj}, figsize=(15, 8))
+    # ax2.set_global()
+    # ax2.coastlines()
+    h3 = ax2.pcolormesh(phi_plot, theta_plot, detec_sum_compton, cmap=cmap_compton)
+    # ax2.axis('scaled')
+    ax2.set(xlabel=xlab, ylabel=ylab, title=title2)
     cbar = fig2.colorbar(h3, ticks=levels_compton)
-    cbar.set_label("Effective area at for compton events (cm²)", rotation=270, labelpad=20)
+    cbar.set_label(bar2, rotation=270, labelpad=20)
     if save:
-      fig2.savefig(f"{self.result_prefix}_compton_seff")
+      fig2.savefig(f"{self.result_prefix}_compton_seff_{proj_name}")
     if show:
       plt.show()
 
-    # plt.subplot(projection="mollweide")
-    # h4 = plt.pcolormesh(phi_plot, np.pi / 2 - theta_plot, detec_sum_compton, cmap=cmap_compton)
-    # plt.axis('scaled')
-    # plt.xlabel("Right ascention (rad)")
-    # plt.ylabel("Declination (rad)")
-    # cbar = plt.colorbar(ticks=levels_compton)
-    # cbar.set_label("Effective area at for compton events (cm²)", rotation=270, labelpad=20)
-    # if save:
-    #   plt.savefig(f"{self.result_prefix}_compton_seff_proj")
-    # if show:
-    #   plt.show()
-
     ##################################################################################################################
-    # Map of constellation's compton effective area
+    # Map of constellation's single effective area
     ##################################################################################################################
-    levels_single = range(detec_min_single, detec_max_single + 1, max(1, int(detec_max_single + 1 - detec_min_single) / 15))
+    levels_single = range(detec_min_single, detec_max_single + 1, max(1, int((detec_max_single + 1 - detec_min_single) / 15)))
 
-    # fig3, ax3 = plt.subplots(1, 1, figsize=(10, 6))
-    fig3, ax3 = plt.subplots(subplot_kw={'projection': ccrs.PlateCarree()}, figsize=(10, 6))
-    ax3.set_global()
-    ax3.coastlines()
-    h5 = ax3.pcolormesh(phi_plot, np.pi / 2 - theta_plot, detec_sum_single, cmap=cmap_single)
-    ax3.axis('scaled')
-    ax3.set(xlabel="Right ascention (rad)", ylabel="Declination (rad)")
+    fig3, ax3 = plt.subplots(subplot_kw={'projection': chosen_proj}, figsize=(15, 8))
+    # ax3.set_global()
+    # ax3.coastlines()
+    h5 = ax3.pcolormesh(phi_plot, theta_plot, detec_sum_single, cmap=cmap_single)
+    # ax3.axis('scaled')
+    ax3.set(xlabel=xlab, ylabel=ylab, title=title3)
     cbar = fig3.colorbar(h5, ticks=levels_single)
-    cbar.set_label("Effective area for single events (cm²)", rotation=270, labelpad=20)
+    cbar.set_label(bar3, rotation=270, labelpad=20)
     if save:
-      fig3.savefig(f"{self.result_prefix}_single_seff")
+      fig3.savefig(f"{self.result_prefix}_single_seff_{proj_name}")
     if show:
       plt.show()
 
-    # plt.subplot(projection="mollweide")
-    # h6 = plt.pcolormesh(phi_plot, np.pi / 2 - theta_plot, detec_sum_single, cmap=cmap_single)
-    # plt.axis('scaled')
-    # plt.xlabel("Right ascention (rad)")
-    # plt.ylabel("Declination (rad)")
-    # cbar = plt.colorbar(ticks=levels_single)
-    # cbar.set_label("Effective area for single events (cm²)", rotation=270, labelpad=20)
-    # if save:
-    #   plt.savefig(f"{self.result_prefix}_single_seff")
-    # if show:
-    #   plt.show()
+    correction_values = (1 + np.sin(np.deg2rad(theta_world)) * (num_val - 1)) / num_val
+    # print(f"The mean number of satellites in sight is :       {np.mean(np.mean(detec_sum, axis=1) * correction_values):.4f} satellites")
+    # print(f"The mean effective area for Compton events is :  {np.mean(np.mean(detec_sum_compton, axis=1) * correction_values):.4f} cm²")
+    # print(f"The mean effective area for single events is :   {np.mean(np.mean(detec_sum_single, axis=1) * correction_values):.4f} cm²")
 
-    print(f"The mean number of satellite in sight is :       {np.mean(detec_sum):.4f} satellites")
-    print(f"The mean effective area for compton events is :  {np.mean(detec_sum_compton):.4f} cm²")
-    print(f"The mean effective area for single events is :   {np.mean(detec_sum_single):.4f} cm²")
+    print(f"The mean number of satellites in sight is :       {np.average(np.mean(detec_sum, axis=1), weights=correction_values):.4f} satellites")
+    print(f"The mean effective area for Compton events is :  {np.average(np.mean(detec_sum_compton, axis=1), weights=correction_values):.4f} cm²")
+    print(f"The mean effective area for single events is :   {np.average(np.mean(detec_sum_single, axis=1), weights=correction_values):.4f} cm²")
+
+    # print(f"NOT SIN CORRECTED - The mean number of satellites in sight is :       {np.mean(detec_sum):.4f} satellites")
+    # print(f"NOT SIN CORRECTED - The mean effective area for Compton events is :  {np.mean(detec_sum_compton):.4f} cm²")
+    # print(f"NOT SIN CORRECTED - The mean effective area for single events is :   {np.mean(detec_sum_single):.4f} cm²")
 
   def grb_map_plot(self, mode="no_cm"):
     """
@@ -1152,9 +974,9 @@ class AllSourceData:
               if sat is not None:
                 sat_id_list.append(ite_sat)
                 if ite_sat == max_sat_idx:
-                  sats_det_stats.append(sat.detector_statistics(self.bkgdata[sat.bkg_index], self.bkgdata.sim_time, self.alldata[idx].source_duration, self.alldata[idx].source_name, show=lc_plot))
+                  sats_det_stats.append(sat.detector_statistics(self.bkgdata.bkgdf.iloc[sat.bkg_index], self.bkgdata.sim_time, self.alldata[idx].source_duration, self.alldata[idx].source_name, show=lc_plot))
                 else:
-                  sats_det_stats.append(sat.detector_statistics(self.bkgdata[sat.bkg_index], self.bkgdata.sim_time, self.alldata[idx].source_duration, self.alldata[idx].source_name, show=False))
+                  sats_det_stats.append(sat.detector_statistics(self.bkgdata.bkgdf.iloc[sat.bkg_index], self.bkgdata.sim_time, self.alldata[idx].source_duration, self.alldata[idx].source_name, show=False))
             sats_det_stats_shaped = np.transpose(np.array(sats_det_stats), (1, 2, 0))
             if self.alldata[idx].source_name == "GRB130427324":
               print(f"Max from brightest GRB - GRB130427324 : {np.max(sats_det_stats_shaped)}")
@@ -1214,7 +1036,7 @@ class AllSourceData:
                   bkg_indexs.append(sat.bkg_index)
 
     for bkg_idx in bkg_indexs:
-      bkg_stats = (self.bkgdata[bkg_idx].det_stat_compton + self.bkgdata[bkg_idx].det_stat_single).reshape(4, 5, 1) / self.bkgdata.sim_time
+      bkg_stats = (self.bkgdata.bkgdf.iloc[bkg_idx].com_det_stats + self.bkgdata.bkgdf.iloc[bkg_idx].sin_det_stats).reshape(4, 5, 1) / self.bkgdata.sim_time
       if combined_sats_det_stats_bkg is None:
         combined_sats_det_stats_bkg = bkg_stats
         print(combined_sats_det_stats_bkg)
@@ -1235,682 +1057,3 @@ class AllSourceData:
       for itedet, ax in enumerate(axes[itequad]):
         ax.hist(combined_sats_det_stats_bkg[itequad][itedet], bins=10, color="green")
     plt.show()
-
-
-  # todo change it
-  # def hits_energy_histogram(self, num_grb, num_sim, energy_type="both", selected_sat="const", n_bins=30,
-  #                           x_scale='log', y_scale='linear'):
-  #   """
-  #   Plots the energy spectrum for a detection by 1 sat or by the constellation
-  #   :param num_grb: index of the GRB
-  #   :param num_sim: index of the simulation (its number)
-  #   :param energy_type: "both", "compton" or "single", to select which event is considered
-  #   :param selected_sat: int or string, which sat is selected, if "const" the constellation is selected
-  #   :param n_bins: number of bins in the histogram
-  #   :param x_scale: scale for x-axis
-  #   :param y_scale: scale for y-axis
-  #   """
-  #   hits_energy = []
-  #   if selected_sat == "const":
-  #     file_string = f"{self.namelist[num_grb]}, simulation {num_sim} and the whole constellation"
-  #   else:
-  #     file_string = f"{self.namelist[num_grb]}, simulation {num_sim} and the satellite {selected_sat}"
-  #   if energy_type == "compton":
-  #     title = f"Energy distribution of compton events for the source {file_string}"
-  #   elif energy_type == "single":
-  #     title = f"Energy distribution of single events for the source {file_string}"
-  #   elif energy_type == "both":
-  #     title = f"Energy distribution of compton and single events for the source {file_string}"
-  #   else:
-  #     print("Choose a correct type of event for enery histograms : both(default), compton, single ")
-  #     return "hits_energy_histogram error"
-  #
-  #   if self.alldata[num_grb] is not None:
-  #     if self.alldata[num_grb][num_sim] is not None:
-  #       if type(selected_sat) is int:
-  #         if self.alldata[num_grb][num_sim][selected_sat] is not None:
-  #           if energy_type == "compton":
-  #             hits_energy = self.alldata[num_grb][num_sim][selected_sat].compton_ener
-  #           elif energy_type == "single":
-  #             hits_energy = self.alldata[num_grb][num_sim][selected_sat].single_ener
-  #           elif energy_type == "both":
-  #             hits_energy = np.concatenate((self.alldata[num_grb][num_sim][selected_sat].compton_ener, self.alldata[num_grb][num_sim][selected_sat].single_ener))
-  #         else:
-  #           print(
-  #             f"No detection for the simulation {num_sim} for the source {self.namelist[num_grb]} on the selected sat : {selected_sat}, no histogram drawn")
-  #       elif selected_sat == "const":
-  #         if energy_type == "compton":
-  #           hits_energy = self.alldata[num_grb][num_sim].const_data.compton_ener
-  #         elif energy_type == "single":
-  #           hits_energy = self.alldata[num_grb][num_sim].const_data.single_ener
-  #         elif energy_type == "both":
-  #           hits_energy = np.concatenate((self.alldata[num_grb][num_sim].const_data.compton_ener,
-  #                                         self.alldata[num_grb][num_sim].const_data.single_ener))
-  #     else:
-  #       print(f"No detection for the simulation {num_sim} for the source {self.namelist[num_grb]}, no histogram drawn")
-  #   else:
-  #     print(f"No detection for this source : {self.namelist[num_grb]}, no histogram drawn")
-  #
-  #   if x_scale == "log":
-  #     if min(hits_energy) < 1:
-  #       inf_limit = int(np.log10(min(hits_energy))) - 1
-  #     else:
-  #       inf_limit = int(np.log10(min(hits_energy)))
-  #     if max(hits_energy) > 1:
-  #       sup_limit = int(np.log10(max(hits_energy))) + 1
-  #     else:
-  #       sup_limit = int(np.log10(max(hits_energy)))
-  #     hist_bins = np.logspace(inf_limit, sup_limit, n_bins)
-  #   else:
-  #     hist_bins = n_bins
-  #   distrib, ax1 = plt.subplots(1, 1, figsize=(8, 6))
-  #   distrib.suptitle(title)
-  #   ax1.hist(hits_energy, bins=hist_bins, cumulative=0, histtype="step")
-  #   ax1.set(xlabel="Energy (keV)", ylabel="Number of photon detected", xscale=x_scale, yscale=y_scale)
-  #   plt.show()
-
-  # todo change it
-  # def arm_histogram(self, num_grb, num_sim, selected_sat="const", n_bins=30, arm_lim=0.8,
-  #                   x_scale='linear', y_scale='linear'):
-  #   """
-  #
-  #   """
-  #   arm_values = []
-  #   if self.alldata[num_grb] is not None:
-  #     if self.alldata[num_grb][num_sim] is not None:
-  #       if type(selected_sat) is int:
-  #         if self.alldata[num_grb][num_sim][selected_sat] is not None:
-  #           arm_values = self.alldata[num_grb][num_sim][selected_sat].arm
-  #         else:
-  #           print(
-  #             f"No detection for the simulation {num_sim} for the source {self.namelist[num_grb]} on the selected sat : {selected_sat}, no histogram drawn")
-  #           return
-  #       elif selected_sat == "const":
-  #         arm_values = self.alldata[num_grb][num_sim].const_data.arm
-  #     else:
-  #       print(f"No detection for the simulation {num_sim} for the source {self.namelist[num_grb]}, no histogram drawn")
-  #       return
-  #   else:
-  #     print(f"No detection for this source : {self.namelist[num_grb]}, no histogram drawn")
-  #     return
-  #
-  #   arm_threshold = np.sort(arm_values)[int(len(arm_values) * arm_lim - 1)]
-  #
-  #   distrib, ax1 = plt.subplots(1, 1, figsize=(8, 6))
-  #   distrib.suptitle("ARM distribution of photons for an event")
-  #   ax1.hist(arm_values, bins=n_bins, cumulative=0, histtype="step")
-  #   ax1.axvline(arm_threshold, color="black", label=f"{arm_lim * 100}% values limit = {arm_threshold}")
-  #   ax1.set(xlabel="Angular Resolution Measurement (°)", ylabel="Number of photon detected", xscale=x_scale,
-  #           yscale=y_scale)
-  #   ax1.legend()
-  #   plt.show()
-
-  # todo change it all
-  # def peak_flux_distri(self, snr_type="compton", selected_sat="const", snr_min=None, n_bins=30, x_scale='log', y_scale="log"):
-  #   """
-  #
-  #   """
-  #   if snr_min is None:
-  #     snr_min = self.snr_min
-  #   hist_pflux = []
-  #   for source in self.alldata:
-  #     if source is not None and source.best_fit_p_flux is not None:
-  #       for sim in source:
-  #         if sim is not None:
-  #           if selected_sat == "const":
-  #             if snr_type == "compton":
-  #               if sim.const_data.snr_compton_t90 >= snr_min:
-  #                 hist_pflux.append(source.best_fit_p_flux)
-  #             elif snr_type == "single":
-  #               if sim.const_data.snr_single_t90 >= snr_min:
-  #                 hist_pflux.append(source.best_fit_p_flux)
-  #           else:
-  #             if snr_type == "compton":
-  #               if sim[selected_sat] is not None:
-  #                 if sim[selected_sat].snr_compton_t90 is not None:
-  #                   if sim[selected_sat].snr_compton_t90 >= snr_min:
-  #                     hist_pflux.append(source.best_fit_p_flux)
-  #             elif snr_type == "single":
-  #               if sim[selected_sat] is not None:
-  #                 if sim[selected_sat].snr_single_t90 is not None:
-  #                   if sim[selected_sat].snr_single_t90 >= snr_min:
-  #                     hist_pflux.append(source.best_fit_p_flux)
-  #
-  #   if x_scale == "log":
-  #     if np.min(hist_pflux) < 1:
-  #       inf_limit = int(np.log10(min(hist_pflux))) - 1
-  #     else:
-  #       inf_limit = int(np.log10(min(hist_pflux)))
-  #     if np.max(hist_pflux) > 1:
-  #       sup_limit = int(np.log10(max(hist_pflux))) + 1
-  #     else:
-  #       sup_limit = int(np.log10(max(hist_pflux)))
-  #     hist_bins = np.logspace(inf_limit, sup_limit, n_bins)
-  #   else:
-  #     hist_bins = n_bins
-  #   distrib, ax1 = plt.subplots(1, 1, figsize=(8, 6))
-  #   distrib.suptitle("Peak flux distribution of detected GRB")
-  #   ax1.hist(hist_pflux, bins=hist_bins, cumulative=False, histtype="step", weights=[self.weights/(4*np.pi)] * len(hist_pflux))
-  #   ax1.set(xlabel="Peak flux (photons/cm2/s)", ylabel="Number of detection per year per steradian", xscale=x_scale, yscale=y_scale)
-  #   # ax1.legend()
-  #   plt.show()
-  #
-  # def det_proba_vs_pflux(self, selected_sat="const", x_scale='log', y_scale='linear'):
-  #   """
-  #   sat contains either the number of the satellite selected or "const"
-  #   """
-  #   p_flux_list = []
-  #   det_prob_fov_list = []
-  #   det_prob_sky_list = []
-  #   for source in self.alldata:
-  #     if source is not None and source.best_fit_p_flux is not None:
-  #       p_flux_list.append(source.best_fit_p_flux)
-  #       if selected_sat == "const":
-  #         det_prob_fov_list.append(source.const_single_proba_detec_fov)
-  #         det_prob_sky_list.append(source.const_single_proba_detec_sky)
-  #       else:
-  #         det_prob_fov_list.append(source.proba_detec_fov[selected_sat])
-  #         det_prob_sky_list.append(source.proba_detec_sky[selected_sat])
-  #
-  #   distrib, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 6))
-  #   distrib.suptitle("Detection probability vs peak flux of detected GRB - GRB in the whole sky (left) and only in the FoV (right)")
-  #   ax1.scatter(p_flux_list, det_prob_sky_list, s=2, label='Detection probability over the whole sky')
-  #   ax2.scatter(p_flux_list, det_prob_fov_list, s=2, label='Detection probability over the field of view')
-  #
-  #   ax1.set(xlabel="Peak flux (photons/cm2/s)", ylabel="Detection probability", xscale=x_scale, yscale=y_scale)
-  #   ax1.legend()
-  #   ax2.set(xlabel="Peak flux (photons/cm2/s)", ylabel="Detection probability", xscale=x_scale, yscale=y_scale)
-  #   ax2.legend()
-  #   plt.show()
-  #
-  # def compton_im_proba_vs_pflux(self, selected_sat="const", x_scale='log', y_scale='linear'):
-  #   """
-  #   sat contains either the number of the satellite selected or "const"
-  #   """
-  #   p_flux_list = []
-  #   comp_im_prob_fov_list = []
-  #   comp_im_prob_sky_list = []
-  #   for source in self.alldata:
-  #     if source is not None and source.best_fit_p_flux is not None:
-  #       p_flux_list.append(source.best_fit_p_flux)
-  #       if selected_sat == "const":
-  #         comp_im_prob_fov_list.append(source.const_proba_compton_image_fov)
-  #         comp_im_prob_sky_list.append(source.const_proba_compton_image_sky)
-  #       else:
-  #         comp_im_prob_fov_list.append(source.proba_compton_image_fov[selected_sat])
-  #         comp_im_prob_sky_list.append(source.proba_compton_image_sky[selected_sat])
-  #   distrib, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 6))
-  #   distrib.suptitle(
-  #     "Compton Image probability vs peak flux of detected GRB - GRB in the whole sky (left) and only in the FoV (right)")
-  #   ax1.scatter(p_flux_list, comp_im_prob_sky_list, s=2, label='Compton image probability over the whole sky')
-  #   ax2.scatter(p_flux_list, comp_im_prob_fov_list, s=2, label='Compton image probability over the field of view')
-  #
-  #   ax1.set(xlabel="Peak flux (photons/cm2/s)", ylabel="Compton image probability", xscale=x_scale, yscale=y_scale)
-  #   ax1.legend()
-  #   ax2.set(xlabel="Peak flux (photons/cm2/s)", ylabel="Compton image probability", xscale=x_scale, yscale=y_scale)
-  #   ax2.legend()
-  #   plt.show()
-  #
-  # def mu100_distri(self, selected_sat="const", n_bins=30, x_scale='linear', y_scale="log"):
-  #   """
-  #
-  #   """
-  #   if selected_sat == "const":
-  #     title = "mu100 distribution of GRBs detected by the whole constellation"
-  #   else:
-  #     title = f"mu100 distribution of GRBs detected by the satellite {selected_sat}"
-  #
-  #   mu_100_list = []
-  #   for source in self.alldata:
-  #     if source is not None:
-  #       for sim in source:
-  #         if sim is not None:
-  #           if selected_sat == "const":
-  #             if sim.const_data.mu100 is not None:
-  #               mu_100_list.append(sim.const_data.mu100)
-  #           else:
-  #             if sim[selected_sat] is not None:
-  #               if sim[selected_sat].mu100 is not None:
-  #                 mu_100_list.append(sim[selected_sat].mu100)
-  #   distrib, ax1 = plt.subplots(1, 1, figsize=(8, 6))
-  #   distrib.suptitle(title)
-  #   ax1.hist(mu_100_list, bins=n_bins, cumulative=0, histtype="step", weights=[self.weights] * len(mu_100_list))
-  #   ax1.set(xlabel="mu100 (dimensionless)", ylabel="Number of detection per year", xscale=x_scale, yscale=y_scale)
-  #   plt.show()
-  #
-  # def mu100_vs_angle(self, selected_sat=0, x_scale='linear', y_scale="linear"):
-  #   """
-  #
-  #   """
-  #   title = f"mu100 vs detection angle of GRBs detected by the satellite {selected_sat}"
-  #   # Faire de façon à ce que tous les satellites détectés soient pris en compte aussi ~ const option
-  #   mu_100_list = []
-  #   angle_list = []
-  #   for source in self.alldata:
-  #     if source is not None:
-  #       for sim in source:
-  #         if sim is not None:
-  #           if sim[selected_sat] is not None:
-  #             if sim[selected_sat].mu100 is not None:
-  #               mu_100_list.append(sim[selected_sat].mu100)
-  #               angle_list.append(sim[selected_sat].dec_sat_frame)
-  #   distrib, ax1 = plt.subplots(1, 1, figsize=(8, 6))
-  #   distrib.suptitle(title)
-  #   ax1.scatter(mu_100_list, angle_list, s=2)
-  #   ax1.set(xlabel="mu100 (dimensionless)", ylabel="Detection angle (°)", xlim=(0, 1), ylim=(115, 0), xscale=x_scale, yscale=y_scale)
-  #   plt.show()
-  #
-  # def pa_distribution(self, selected_sat="const", n_bins=30, x_scale='linear', y_scale="log"):
-  #   """
-  #
-  #   """
-  #   if selected_sat == "const":
-  #     title = "Polarization angle distribution of GRBs detected by the whole constellation"
-  #   else:
-  #     title = f"Polarization angle distribution of GRBs detected by the satellite {selected_sat}"
-  #
-  #   pa_list = []
-  #   for source in self.alldata:
-  #     if source is not None:
-  #       for sim in source:
-  #         if sim is not None:
-  #           if selected_sat == "const":
-  #             if sim.const_data.pa is not None:
-  #               pa_list.append(sim.const_data.pa)
-  #           else:
-  #             if sim[selected_sat] is not None:
-  #               if sim[selected_sat].pa is not None:
-  #                 pa_list.append(sim[selected_sat].pa)
-  #   distrib, ax1 = plt.subplots(1, 1, figsize=(8, 6))
-  #   distrib.suptitle(title)
-  #   ax1.hist(pa_list, bins=n_bins, cumulative=0, histtype="step", weights=[self.weights] * len(pa_list))
-  #   ax1.set(xlabel="Polarization angle (°)", ylabel="Number of detection per year", xscale=x_scale, yscale=y_scale)
-  #   plt.show()
-  #
-  # def mdp_vs_fluence(self, selected_sat="const", mdp_threshold=1, x_scale='log', y_scale='linear'):
-  #   """
-  #
-  #   """
-  #   if selected_sat == "const":
-  #     title = "MDP as a function of fluence of GRBs detected by the whole constellation"
-  #   else:
-  #     title = f"MDP as a function of fluence of GRBs detected by the satellite {selected_sat}"
-  #
-  #   if not self.cat_file == "None":
-  #     mdp_list = []
-  #     fluence_list = []
-  #     mdp_count = 0
-  #     no_detec_fluence = []
-  #     for source_ite, source in enumerate(self.alldata):
-  #       if source is not None:
-  #         for sim in source:
-  #           if sim is not None:
-  #             if selected_sat == "const":
-  #               if sim.const_data.mdp is not None:
-  #                 if sim.const_data.mdp <= mdp_threshold:
-  #                   mdp_list.append(sim.const_data.mdp * 100)
-  #                   fluence_list.append(source.source_fluence)
-  #                 else:
-  #                   no_detec_fluence.append(source.source_fluence)
-  #               mdp_count += 1
-  #             else:
-  #               if sim[selected_sat] is not None:
-  #                 if sim[selected_sat].mdp is not None:
-  #                   if sim[selected_sat].mdp <= mdp_threshold:
-  #                     mdp_list.append(sim[selected_sat].mdp * 100)
-  #                     fluence_list.append(source.source_fluence)
-  #                   else:
-  #                     no_detec_fluence.append(source.source_fluence)
-  #                 mdp_count += 1
-  #
-  #     distrib, ax1 = plt.subplots(1, 1, figsize=(8, 6))
-  #     distrib.suptitle(title)
-  #     for ite_val, val in enumerate(np.unique(no_detec_fluence)):
-  #       if ite_val == 0:
-  #         ax1.axvline(val, ymin=0., ymax=0.01, ms=1, c='black', label="Markers for rejected GRB")
-  #       else:
-  #         ax1.axvline(val, ymin=0., ymax=0.01, ms=1, c='black')
-  #     ax1.scatter(fluence_list, mdp_list, s=3,
-  #                 label=f'Detected GRB polarization \nRatio of detectable polarization : {len(mdp_list) / mdp_count}')
-  #     ax1.set(xlabel="fluence (erg.cm-2)", ylabel="MDP (%)", xscale=x_scale, yscale=y_scale,
-  #             xlim=(10 ** (int(np.log10(np.min(fluence_list))) - 1), 10 ** (int(np.log10(np.max(fluence_list))) + 1)))
-  #     ax1.legend()
-  #     plt.show()
-  #
-  # def mdp_vs_pflux(self, selected_sat="const", mdp_threshold=1, x_scale='log', y_scale='linear'):
-  #   """
-  #
-  #   """
-  #   if selected_sat == "const":
-  #     title = "MDP as a function of flux at peak of GRBs detected by the whole constellation"
-  #   else:
-  #     title = f"MDP as a function of flux at peak of GRBs detected by the satellite {selected_sat}"
-  #
-  #   mdp_list = []
-  #   flux_list = []
-  #   mdp_count = 0
-  #   no_detec_flux = []
-  #   for source_ite, source in enumerate(self.alldata):
-  #     if source is not None and source.best_fit_p_flux is not None:
-  #       for sim in source:
-  #         if sim is not None:
-  #           if selected_sat == "const":
-  #             if sim.const_data.mdp is not None:
-  #               if sim.const_data.mdp <= mdp_threshold:
-  #                 mdp_list.append(sim.const_data.mdp * 100)
-  #                 flux_list.append(source.best_fit_p_flux)
-  #               else:
-  #                 no_detec_flux.append(source.best_fit_p_flux)
-  #             mdp_count += 1
-  #           else:
-  #             if sim[selected_sat] is not None:
-  #               if sim[selected_sat].mdp is not None:
-  #                 if sim[selected_sat].mdp <= mdp_threshold:
-  #                   mdp_list.append(sim[selected_sat].mdp * 100)
-  #                   flux_list.append(source.best_fit_p_flux)
-  #                 else:
-  #                   no_detec_flux.append(source.best_fit_p_flux)
-  #               mdp_count += 1
-  #
-  #   distrib, ax1 = plt.subplots(1, 1, figsize=(8, 6))
-  #   distrib.suptitle(title)
-  #   for ite_val, val in enumerate(np.unique(no_detec_flux)):
-  #     if ite_val == 0:
-  #       ax1.axvline(val, ymin=0., ymax=0.01, ms=1, c='black', label="Markers for rejected GRB")
-  #     else:
-  #       ax1.axvline(val, ymin=0., ymax=0.01, ms=1, c='black')
-  #   ax1.scatter(flux_list, mdp_list, s=3,
-  #               label=f'Detected GRB polarization \nRatio of detectable polarization : {len(mdp_list) / mdp_count}')
-  #   ax1.set(xlabel="Peak flux (photons/cm2/s)", ylabel="MDP (%)", xscale=x_scale, yscale=y_scale,
-  #           xlim=(10 ** (int(np.log10(np.min(flux_list))) - 1), 10 ** (int(np.log10(np.max(flux_list))) + 1)))
-  #   ax1.legend()
-  #   plt.show()
-  #
-  # def mdp_vs_detection_angle(self, selected_sat=0, mdp_threshold=1, x_scale='linear', y_scale='linear'):
-  #   """
-  #
-  #   """
-  #   if selected_sat == "const":
-  #     title = "MDP as a function of detection angle of GRBs detected by the whole constellation"
-  #   else:
-  #     title = f"MDP as a function of detection angle of GRBs detected by the satellite {selected_sat}"
-  #
-  #   mdp_list = []
-  #   angle_list = []
-  #   mdp_count = 0
-  #   no_detec_angle = []
-  #   for source_ite, source in enumerate(self.alldata):
-  #     if source is not None:
-  #       for sim in source:
-  #         if sim is not None:
-  #           if sim[selected_sat] is not None:
-  #             if sim[selected_sat].mdp is not None:
-  #               if sim[selected_sat].mdp <= mdp_threshold:
-  #                 mdp_list.append(sim[selected_sat].mdp * 100)
-  #                 angle_list.append(sim[selected_sat].dec_sat_frame)
-  #               else:
-  #                 no_detec_angle.append(sim[selected_sat].dec_sat_frame)
-  #               mdp_count += 1
-  #
-  #   distrib, ax1 = plt.subplots(1, 1, figsize=(8, 6))
-  #   distrib.suptitle(title)
-  #   for ite_val, val in enumerate(np.unique(no_detec_angle)):
-  #     if ite_val == 0:
-  #       ax1.axvline(val, ymin=0., ymax=0.01, ms=1, c='black', label="Markers for rejected GRB")
-  #     else:
-  #       ax1.axvline(val, ymin=0., ymax=0.01, ms=1, c='black')
-  #   ax1.scatter(angle_list, mdp_list, s=3,
-  #               label=f'Detected GRB polarization \nRatio of detectable polarization : {len(mdp_list) / mdp_count}')
-  #   ax1.set(xlabel="Angle (°)", ylabel="MDP (%)", xscale=x_scale, yscale=y_scale,
-  #           xlim=(0, 180))
-  #   ax1.legend()
-  #   plt.show()
-  #
-  # def snr_vs_fluence(self, snr_type="compton", selected_sat="const", snr_threshold=5, x_scale='log', y_scale='log'):
-  #   """
-  #
-  #   """
-  #   if selected_sat == "const":
-  #     file_string = "the whole constellation"
-  #   else:
-  #     file_string = f"the satellite {selected_sat}"
-  #   if snr_type == "compton":
-  #     title = f"SNR of compton events as a function of fluence of GRBs detected by {file_string}"
-  #   elif snr_type == "single":
-  #     title = f"SNR of single events as a function of fluence of GRBs detected by {file_string}"
-  #   else:
-  #     print("Choose a correct type of snr : compton(default), single")
-  #     return "snr_vs_fluence error"
-  #
-  #   if not self.cat_file == "None":
-  #     snr_list = []
-  #     fluence_list = []
-  #     snr_count = 0
-  #     no_detec_fluence = []
-  #     for source_ite, source in enumerate(self.alldata):
-  #       if source is not None:
-  #         for sim in source:
-  #           if sim is not None:
-  #             if selected_sat == "const":
-  #               if snr_type == "compton":
-  #                 if sim.const_data.snr_compton_t90 >= snr_threshold:
-  #                   snr_list.append(sim.const_data.snr_compton_t90)
-  #                   fluence_list.append(source.source_fluence)
-  #                 else:
-  #                   no_detec_fluence.append(source.source_fluence)
-  #               elif snr_type == "single":
-  #                 if sim.const_data.snr_single_t90 >= snr_threshold:
-  #                   snr_list.append(sim.const_data.snr_single_t90)
-  #                   fluence_list.append(source.source_fluence)
-  #                 else:
-  #                   no_detec_fluence.append(source.source_fluence)
-  #               snr_count += 1
-  #             else:
-  #               if snr_type == "compton":
-  #                 if sim[selected_sat] is not None:
-  #                   if sim[selected_sat].snr_compton_t90 is not None:
-  #                     if sim[selected_sat].snr_compton_t90 >= snr_threshold:
-  #                       snr_list.append(sim[selected_sat].snr_compton_t90)
-  #                       fluence_list.append(source.source_fluence)
-  #                     else:
-  #                       no_detec_fluence.append(source.source_fluence)
-  #                     snr_count += 1
-  #               elif snr_type == "single":
-  #                 if sim[selected_sat] is not None:
-  #                   if sim[selected_sat].snr_single_t90 is not None:
-  #                     if sim[selected_sat].snr_single_t90 >= snr_threshold:
-  #                       snr_list.append(sim[selected_sat].snr_single_t90)
-  #                       fluence_list.append(source.source_fluence)
-  #                     else:
-  #                       no_detec_fluence.append(source.source_fluence)
-  #                     snr_count += 1
-  #
-  #     distrib, ax1 = plt.subplots(1, 1, figsize=(8, 6))
-  #     distrib.suptitle(title)
-  #     for ite_val, val in enumerate(np.unique(no_detec_fluence)):
-  #       if ite_val == 0:
-  #         ax1.axvline(val, ymin=0., ymax=0.01, ms=1, c='black', label="Markers for rejected GRB")
-  #       else:
-  #         ax1.axvline(val, ymin=0., ymax=0.01, ms=1, c='black')
-  #     ax1.scatter(fluence_list, snr_list, s=3,
-  #                 label=f'Detected GRB SNR \nRatio of detectable GRB : {len(snr_list) / snr_count}')
-  #     ax1.set(xlabel="Fluence (erg.cm-2)", ylabel="SNR (dimensionless)", xscale=x_scale, yscale=y_scale,
-  #             xlim=(10 ** (int(np.log10(np.min(fluence_list))) - 1), 10 ** (int(np.log10(np.max(fluence_list))) + 1)))
-  #     ax1.legend()
-  #     plt.show()
-  #
-  # def snr_vs_pflux(self, snr_type="compton", selected_sat="const", snr_threshold=5, x_scale='log', y_scale='log'):
-  #   """
-  #
-  #   """
-  #   if selected_sat == "const":
-  #     file_string = "the whole constellation"
-  #   else:
-  #     file_string = f"the satellite {selected_sat}"
-  #   if snr_type == "compton":
-  #     title = f"SNR of compton events as a function of peak flux of GRBs detected by {file_string}"
-  #   elif snr_type == "single":
-  #     title = f"SNR of single events as a function of peak flux of GRBs detected by {file_string}"
-  #   else:
-  #     print("Choose a correct type of snr : compton(default), single")
-  #     return "snr_vs_fluence error"
-  #
-  #   snr_list = []
-  #   flux_list = []
-  #   snr_count = 0
-  #   no_detec_flux = []
-  #   for source_ite, source in enumerate(self.alldata):
-  #     if source is not None and source.best_fit_p_flux is not None:
-  #       for sim in source:
-  #         if sim is not None:
-  #           if selected_sat == "const":
-  #             if snr_type == "compton":
-  #               if sim.const_data.snr_compton_t90 >= snr_threshold:
-  #                 snr_list.append(sim.const_data.snr_compton_t90)
-  #                 flux_list.append(self.alldata[source_ite].best_fit_p_flux)
-  #               else:
-  #                 no_detec_flux.append(self.alldata[source_ite].best_fit_p_flux)
-  #             elif snr_type == "single":
-  #               if sim.const_data.snr_single_t90 >= snr_threshold:
-  #                 snr_list.append(sim.const_data.snr_single_t90)
-  #                 flux_list.append(self.alldata[source_ite].best_fit_p_flux)
-  #               else:
-  #                 no_detec_flux.append(self.alldata[source_ite].best_fit_p_flux)
-  #             snr_count += 1
-  #           else:
-  #             if snr_type == "compton":
-  #               if sim[selected_sat] is not None:
-  #                 if sim[selected_sat].snr_compton_t90 is not None:
-  #                   if sim[selected_sat].snr_compton_t90 >= snr_threshold:
-  #                     snr_list.append(sim[selected_sat].snr_compton_t90)
-  #                     flux_list.append(self.alldata[source_ite].best_fit_p_flux)
-  #                   else:
-  #                     no_detec_flux.append(self.alldata[source_ite].best_fit_p_flux)
-  #                   snr_count += 1
-  #             elif snr_type == "single":
-  #               if sim[selected_sat] is not None:
-  #                 if sim[selected_sat].snr_single_t90 is not None:
-  #                   if sim[selected_sat].snr_single_t90 >= snr_threshold:
-  #                     snr_list.append(sim[selected_sat].snr_single_t90)
-  #                     flux_list.append(self.alldata[source_ite].best_fit_p_flux)
-  #                   else:
-  #                     no_detec_flux.append(self.alldata[source_ite].best_fit_p_flux)
-  #                   snr_count += 1
-  #
-  #   distrib, ax1 = plt.subplots(1, 1, figsize=(8, 6))
-  #   distrib.suptitle(title)
-  #   for ite_val, val in enumerate(np.unique(no_detec_flux)):
-  #     if ite_val == 0:
-  #       ax1.axvline(val, ymin=0., ymax=0.01, ms=1, c='black', label="Markers for rejected GRB")
-  #     else:
-  #       ax1.axvline(val, ymin=0., ymax=0.01, ms=1, c='black')
-  #   ax1.scatter(flux_list, snr_list, s=3,
-  #               label=f'Detected GRB SNR \nRatio of detectable GRB : {len(snr_list) / snr_count}')
-  #   ax1.set(xlabel="Peak flux (photons/cm2/s)", ylabel="SNR (dimensionless)", xscale=x_scale, yscale=y_scale,
-  #           xlim=(10 ** (int(np.log10(np.min(flux_list))) - 1), 10 ** (int(np.log10(np.max(flux_list))) + 1)))
-  #   ax1.legend()
-  #   plt.show()
-  #
-  # def snr_vs_detection_angle(self, snr_type="compton", selected_sat=0, snr_threshold=5, x_scale='linear', y_scale='log'):
-  #   """
-  #
-  #   """
-  #   if selected_sat == "const":
-  #     file_string = "the whole constellation"
-  #   else:
-  #     file_string = f"the satellite {selected_sat}"
-  #   if snr_type == "compton":
-  #     title = f"SNR of compton events as a function of detection angle of GRBs detected by {file_string}"
-  #   elif snr_type == "single":
-  #     title = f"SNR of single events as a function of detection angle of GRBs detected by {file_string}"
-  #   else:
-  #     print("Choose a correct type of snr : compton(default), single")
-  #     return "snr_vs_fluence error"
-  #
-  #   snr_list = []
-  #   angle_list = []
-  #   snr_count = 0
-  #   no_detec_angle = []
-  #   for source_ite, source in enumerate(self.alldata):
-  #     if source is not None:
-  #       for sim in source:
-  #         if sim is not None:
-  #           if snr_type == "compton":
-  #             if sim[selected_sat] is not None:
-  #               if sim[selected_sat].snr_compton_t90 is not None:
-  #                 if sim[selected_sat].snr_compton_t90 >= snr_threshold:
-  #                   snr_list.append(sim[selected_sat].snr_compton_t90)
-  #                   angle_list.append(sim[selected_sat].dec_sat_frame)
-  #                 else:
-  #                   no_detec_angle.append(sim[selected_sat].dec_sat_frame)
-  #                 snr_count += 1
-  #           elif snr_type == "single":
-  #             if sim[selected_sat] is not None:
-  #               if sim[selected_sat].snr_single_t90 is not None:
-  #                 if sim[selected_sat].snr_single_t90 >= snr_threshold:
-  #                   snr_list.append(sim[selected_sat].snr_single_t90)
-  #                   angle_list.append(sim[selected_sat].dec_sat_frame)
-  #                 else:
-  #                   no_detec_angle.append(sim[selected_sat].dec_sat_frame)
-  #                 snr_count += 1
-  #
-  #   distrib, ax1 = plt.subplots(1, 1, figsize=(8, 6))
-  #   distrib.suptitle(title)
-  #   for ite_val, val in enumerate(np.unique(no_detec_angle)):
-  #     if ite_val == 0:
-  #       ax1.axvline(val, ymin=0., ymax=0.01, ms=1, c='black', label="Markers for rejected GRB")
-  #     else:
-  #       ax1.axvline(val, ymin=0., ymax=0.01, ms=1, c='black')
-  #   ax1.scatter(angle_list, snr_list, s=3,
-  #               label=f'Detected GRB SNR \nRatio of detectable GRB : {len(snr_list) / snr_count}')
-  #   ax1.set(xlabel="Detection angle (°)", ylabel="SNR (dimensionless)", xscale=x_scale, yscale=y_scale,
-  #           xlim=(0, 180))
-  #   ax1.legend()
-  #   plt.show()
-  #
-  # def mdp_vs_snr(self, selected_sat="const", snr_threshold=5, mdp_threshold=1, print_rejected=False,
-  #                x_scale='log', y_scale='linear'):
-  #   """
-  #
-  #   """
-  #   if selected_sat == "const":
-  #     title = "SNR as a function of MDP of GRBs detected by the whole constellation"
-  #   else:
-  #     title = f"SNR as a function of MDP of GRBs detected by the satellite {selected_sat}"
-  #
-  #   mdp_list = []
-  #   snr_list = []
-  #   count = 0
-  #   no_detec = [[], []]
-  #   for source_ite, source in enumerate(self.alldata):
-  #     if source is not None:
-  #       for sim in source:
-  #         if sim is not None:
-  #           if selected_sat == "const":
-  #             if sim.const_data.snr_compton_t90 >= snr_threshold and sim.const_data.mdp <= mdp_threshold:
-  #               mdp_list.append(sim.const_data.mdp * 100)
-  #               snr_list.append(sim.const_data.snr_compton_t90)
-  #             else:
-  #               no_detec[0].append(sim.const_data.mdp * 100)
-  #               no_detec[1].append(sim.const_data.snr_compton_t90)
-  #             count += 1
-  #           else:
-  #             if sim[selected_sat] is not None:
-  #               if sim[selected_sat].snr_compton_t90 is not None:
-  #                 if sim[selected_sat].snr_compton_t90 >= snr_threshold and sim[selected_sat].mdp <= mdp_threshold:
-  #                   mdp_list.append(sim[selected_sat].mdp * 100)
-  #                   snr_list.append(sim[selected_sat].snr_compton_t90)
-  #                 else:
-  #                   no_detec[0].append(sim[selected_sat].mdp * 100)
-  #                   no_detec[1].append(sim[selected_sat].snr_compton_t90)
-  #                 count += 1
-  #
-  #     distrib, ax1 = plt.subplots(1, 1, figsize=(10, 6))
-  #     distrib.suptitle(title)
-  #     if print_rejected:
-  #       ax1.scatter(no_detec[0], no_detec[1], label="Markers for rejected GRB")
-  #     ax1.scatter(mdp_list, snr_list, s=3,
-  #                 label=f'Detected GRB (Both with SNR and MDP) \nRatio of detectable GRB : {len(snr_list) / count}')
-  #     ax1.set(xlabel="Fluence (erg.cm-2)", ylabel="SNR (dimensionless)", xscale=x_scale, yscale=y_scale)
-  #     ax1.legend()
-  #     plt.show()

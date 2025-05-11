@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 import os
 import subprocess
 from time import time
@@ -586,6 +587,151 @@ def readevt(event, ergcut=None):
     raise TypeError(f"An event has an unidentified type")
 
 
+def analyze_localized_event(data_file, grb_dec_sat_frame, grb_ra_sat_frame, source_name, num_sim, num_sat, grb_dec_sf_err, grb_ra_sf_err, geometry, array_dtype):
+  """
+
+  """
+  data_pol = readfile(data_file)
+  compton_second = []
+  compton_ener = []
+  compton_time = []
+  compton_firstpos = []
+  compton_secpos = []
+  single_ener = []
+  single_time = []
+  single_pos = []
+  compton_second_err = []
+  compton_ener_err = []
+  compton_firstpos_err = []
+  compton_secpos_err = []
+  for event in data_pol:
+    reading = readevt(event, None)
+    if len(reading) == 9:
+      compton_second.append(reading[0])
+      compton_ener.append(reading[1])
+      compton_time.append(reading[2])
+      compton_firstpos.append(reading[3])
+      compton_secpos.append(reading[4])
+      compton_second_err.append(reading[5])
+      compton_ener_err.append(reading[6])
+      compton_firstpos_err.append(reading[7])
+      compton_secpos_err.append(reading[8])
+    elif len(reading) == 3:
+      single_ener.append(reading[0])
+      single_time.append(reading[1])
+      single_pos.append(reading[2])
+  # Free the variable
+  del data_pol
+
+  compton_ener = np.array(compton_ener, dtype=array_dtype)
+  compton_second = np.array(compton_second, dtype=array_dtype)
+  single_ener = np.array(single_ener, dtype=array_dtype)
+  compton_firstpos = np.array(compton_firstpos, dtype=array_dtype)
+  compton_secpos = np.array(compton_secpos, dtype=array_dtype)
+  single_pos = np.array(single_pos, dtype=array_dtype)
+  compton_time = np.array(compton_time, dtype=array_dtype)
+  single_time = np.array(single_time, dtype=array_dtype)
+  compton_ener_err = np.array(compton_ener_err, dtype=array_dtype)
+  compton_second_err = np.array(compton_second_err, dtype=array_dtype)
+  compton_firstpos_err = np.array(compton_firstpos_err, dtype=array_dtype)
+  compton_secpos_err = np.array(compton_secpos_err, dtype=array_dtype)
+  scat_vec_err = np.sqrt(compton_secpos_err ** 2 + compton_firstpos_err ** 2)
+
+  #################################################################################################################
+  #                     Filling the fields
+  #################################################################################################################
+  # Calculating the polar angle with energy values and compton azim and polar scattering angles from the kinematics
+  # polar and position angle stored in deg
+  polar_from_energy, polar_from_energy_err = calculate_polar_angle(compton_second, compton_ener, ener_sec_err=compton_second_err, ener_tot_err=compton_ener_err)
+  pol, polar_from_position, pol_err = angle(compton_secpos - compton_firstpos, grb_dec_sat_frame, grb_ra_sat_frame, source_name, num_sim, num_sat, scatter_vector_err=scat_vec_err, grb_dec_sf_err=grb_dec_sf_err,
+                                            grb_ra_sf_err=grb_ra_sf_err)
+
+  # Calculating the arm and extracting the indexes of correct arm events (arm in deg)
+  arm_pol = np.array(polar_from_position - polar_from_energy, dtype=array_dtype)
+  polar_from_energy = np.array(polar_from_energy, dtype=array_dtype)
+  # polar_from_energy_err = np.array(polar_from_energy_err)
+  pol = np.array(pol, dtype=array_dtype)
+  polar_from_position = np.array(polar_from_position, dtype=array_dtype)
+  pol_err = np.array(pol_err, dtype=array_dtype)
+
+  #################################################################################################################
+  #     Finding the detector of interaction for each event
+  #################################################################################################################
+  compton_first_detector, compton_sec_detector, single_detector = find_detector(compton_firstpos, compton_secpos, single_pos, geometry)
+
+  return compton_ener, compton_second, compton_time, pol, pol_err, polar_from_position, polar_from_energy, arm_pol, compton_first_detector, compton_sec_detector, single_ener, single_time, single_detector
+
+
+def analyze_bkg_event(data_file, lat, alt, geometry, array_dtype):
+  """
+
+  """
+  data = readfile(data_file)
+  decbkg = 90 - lat
+  altbkg = alt
+  compton_second = []
+  compton_ener = []
+  compton_time = []
+  compton_firstpos = []
+  compton_secpos = []
+  single_ener = []
+  single_time = []
+  single_pos = []
+  # Errors can also be retrieved
+  # compton_second_err = []
+  # compton_ener_err = []
+  # compton_firstpos_err = []
+  # compton_secpos_err = []
+
+  for event in data:
+    reading = readevt(event, None)
+    if len(reading) == 9:
+      compton_second.append(reading[0])
+      compton_ener.append(reading[1])
+      compton_time.append(reading[2])
+      compton_firstpos.append(reading[3])
+      compton_secpos.append(reading[4])
+      # compton_second_err.append(reading[5])
+      # compton_ener_err.append(reading[6])
+      # compton_firstpos_err.append(reading[7])
+      # compton_secpos_err.append(reading[8])
+    elif len(reading) == 3:
+      single_ener.append(reading[0])
+      single_time.append(reading[1])
+      single_pos.append(reading[2])
+
+  compton_ener = np.array(compton_ener, dtype=array_dtype)
+  compton_second = np.array(compton_second, dtype=array_dtype)
+  single_ener = np.array(single_ener, dtype=array_dtype)
+  compton_firstpos = np.array(compton_firstpos, dtype=array_dtype)
+  compton_secpos = np.array(compton_secpos, dtype=array_dtype)
+  single_pos = np.array(single_pos, dtype=array_dtype)
+  compton_time = np.array(compton_time, dtype=array_dtype)
+  single_time = np.array(single_time, dtype=array_dtype)
+  # compton_ener_err = np.array(compton_ener_err, dtype=self.array_dtype)
+  # compton_second_err = np.array(compton_second_err, dtype=self.array_dtype)
+  # compton_firstpos_err = np.array(compton_firstpos_err, dtype=self.array_dtype)
+  # compton_secpos_err = np.array(compton_secpos_err, dtype=self.array_dtype)
+  # scat_vec_err = np.sqrt(compton_secpos_err ** 2 + compton_firstpos_err ** 2)
+
+
+  # Detector where the interaction happened
+  compton_first_detector, compton_sec_detector, single_detector = find_detector(compton_firstpos, compton_secpos, single_pos, geometry)
+
+  return decbkg, altbkg, compton_second, compton_ener, compton_time, single_ener, single_time, compton_first_detector, compton_sec_detector, single_detector
+
+
+def get_pol_unpol_event_data(pol_data_file, unpol_data_file, dec_sf, ra_sf, dec_sf_err, ra_sf_err, geometry, array_dtype):
+  """
+  Calls the function for the pol and unpol files and returns only the vectors with useful values to save memory
+  This function can be changed to return the detectors of interaction too, to perform event selection. In case we would want to see the impact of a non working part of the instrument
+  """
+  compton_ener_pol, compton_second_pol, compton_time_pol, pol, pol_err, polar_from_position_pol, polar_from_energy_pol, arm_pol, compton_first_detector_pol, compton_sec_detector_pol, single_ener_pol, single_time_pol, single_detector_pol = analyze_localized_event(pol_data_file, dec_sf, ra_sf, f"{dec_sf}_{ra_sf}_pol", 0, 0, dec_sf_err, ra_sf_err, geometry, array_dtype)
+  compton_ener_unpol, compton_second_unpol, compton_time_unpol, unpol, unpol_err, polar_from_position_unpol, polar_from_energy_unpol, arm_unpol, compton_first_detector_unpol, compton_sec_detector_unpol, single_ener_unpol, single_time_unpol, single_detector_unpol = analyze_localized_event(unpol_data_file, dec_sf, ra_sf, f"{dec_sf}_{ra_sf}_pol", 0, 0, dec_sf_err, ra_sf_err, geometry, array_dtype)
+  # return compton_ener_pol, pol, pol_err, arm_pol, compton_first_detector_pol, compton_sec_detector_pol, single_ener_pol, single_detector_pol,     compton_ener_unpol, unpol, unpol_err, arm_unpol, compton_first_detector_unpol, compton_sec_detector_unpol
+  return compton_ener_pol, pol, pol_err, arm_pol, single_ener_pol, compton_ener_unpol, unpol, unpol_err, arm_unpol
+
+
 def ra2lon(ra):
   """
   Change a coordinate in ra to its longitude
@@ -970,7 +1116,7 @@ def save_value(file, value):
       raise TypeError(f"Uncorrect type for value saved : {value}, type {type(value)}")
 
 
-def save_grb_data(data_file, filename, sat_info_list, bkg_data, mu_data, ergcut, armcut, geometry, force=False):
+def save_grb_data(data_file, filename, sat_info_list, bkg_data, mu_data, geometry, force=False):
   # tracemalloc.start()  # Start memory monitoring
   #
   # # get memory statistics
@@ -980,7 +1126,7 @@ def save_grb_data(data_file, filename, sat_info_list, bkg_data, mu_data, ergcut,
   # print(f"Peak use : {peak / 1024:.2f} Ko")
 
   array_dtype = np.float32
-  sim_dir, fname = filename.split(f"/extracted-{ergcut[0]}-{ergcut[1]}/")
+  # sim_dir, fname = filename.split(f"/extracted-{ergcut[0]}-{ergcut[1]}/")
 
   file_exist = os.path.exists(filename)
   if file_exist and not force:
@@ -1031,103 +1177,73 @@ def save_grb_data(data_file, filename, sat_info_list, bkg_data, mu_data, ergcut,
     #        Readding file and saving values
     #################################################################################################################
     # Extracting the data from first file
-    data_pol = readfile(data_file)
-    compton_second = []
-    compton_ener = []
-    compton_time = []
-    compton_firstpos = []
-    compton_secpos = []
-    single_ener = []
-    single_time = []
-    single_pos = []
-    compton_second_err = []
-    compton_ener_err = []
-    compton_firstpos_err = []
-    compton_secpos_err = []
-    for event in data_pol:
-      reading = readevt(event, ergcut)
-      if len(reading) == 9:
-        compton_second.append(reading[0])
-        compton_ener.append(reading[1])
-        compton_time.append(reading[2])
-        compton_firstpos.append(reading[3])
-        compton_secpos.append(reading[4])
-        compton_second_err.append(reading[5])
-        compton_ener_err.append(reading[6])
-        compton_firstpos_err.append(reading[7])
-        compton_secpos_err.append(reading[8])
-      elif len(reading) == 3:
-        single_ener.append(reading[0])
-        single_time.append(reading[1])
-        single_pos.append(reading[2])
-    # Free the variable
-    del data_pol
-
-    compton_ener = np.array(compton_ener, dtype=array_dtype)
-    compton_second = np.array(compton_second, dtype=array_dtype)
-    single_ener = np.array(single_ener, dtype=array_dtype)
-    compton_firstpos = np.array(compton_firstpos, dtype=array_dtype)
-    compton_secpos = np.array(compton_secpos, dtype=array_dtype)
-    single_pos = np.array(single_pos, dtype=array_dtype)
-    compton_time = np.array(compton_time, dtype=array_dtype)
-    single_time = np.array(single_time, dtype=array_dtype)
-    compton_ener_err = np.array(compton_ener_err, dtype=array_dtype)
-    compton_second_err = np.array(compton_second_err, dtype=array_dtype)
-    compton_firstpos_err = np.array(compton_firstpos_err, dtype=array_dtype)
-    compton_secpos_err = np.array(compton_secpos_err, dtype=array_dtype)
-    scat_vec_err = np.sqrt(compton_secpos_err**2 + compton_firstpos_err**2)
-
-    # ok ! grb_decrapol_worldf2satf tested and linked with all the other parts
-    # ok ! calculate_polar_angle    tested     linked
-    # ok ! angle                    tested     linked
-
-    # ok ! Use dec ra errors
-    # tbd if needed ! Use polar_from_energy error
-    # ! Use pol errors
-
-    # ! Erreurs extraites mais pas à enregistrer ? juste traiter et enregistrer les erreurs une fois l'erreur sur les angles obtenue (pol par exemple)
-    # ! Estimer l'importance de l'erreur de polar from direction, pas convaincu que c'est utile
-    # ! Erreurs pas prise en compte pour les backgrounds (energie et position) puisque pas d'intéret dans la détermination de la direction de la source et d'une quelconque polarisation (considéré unpolarized)
-    # ! Recuperer erreur des fichiers avec readevt, erreur seulement sur les ev compton, ev single ne presentent pas d erreur sur l energie et la position donnee
-    # ! erreur avec polar from energy
-    # ! erreur probablement assez complexe avec angle
-    # ! Semble peu utile de faire le tri sur l ARM et l energie en prenant en compte les erreurs, voir l ampleur de l erreur mais probablement trop faible pour vraiment etre interessant
-    # ! surtout que le tri sur l energie se fait lors de la recuperation des valeurs donc encore plus problematique
+    compton_ener, compton_second, compton_time, pol, pol_err, polar_from_position, polar_from_energy, arm_pol, compton_first_detector, compton_sec_detector, single_ener, single_time, single_detector = analyze_localized_event(data_file, grb_dec_sat_frame, grb_ra_sat_frame, source_name, num_sim, num_sat, grb_dec_sf_err, grb_ra_sf_err, geometry, array_dtype)
+    # data_pol = readfile(data_file)
+    # compton_second = []
+    # compton_ener = []
+    # compton_time = []
+    # compton_firstpos = []
+    # compton_secpos = []
+    # single_ener = []
+    # single_time = []
+    # single_pos = []
+    # compton_second_err = []
+    # compton_ener_err = []
+    # compton_firstpos_err = []
+    # compton_secpos_err = []
+    # for event in data_pol:
+    #   reading = readevt(event, None)
+    #   if len(reading) == 9:
+    #     compton_second.append(reading[0])
+    #     compton_ener.append(reading[1])
+    #     compton_time.append(reading[2])
+    #     compton_firstpos.append(reading[3])
+    #     compton_secpos.append(reading[4])
+    #     compton_second_err.append(reading[5])
+    #     compton_ener_err.append(reading[6])
+    #     compton_firstpos_err.append(reading[7])
+    #     compton_secpos_err.append(reading[8])
+    #   elif len(reading) == 3:
+    #     single_ener.append(reading[0])
+    #     single_time.append(reading[1])
+    #     single_pos.append(reading[2])
+    # # Free the variable
+    # del data_pol
     #
-    # ! Ensuite retravailler les mu100
-    # ! La valeur de mu_100_err va changer, mais en plus il faudrait prendre en compte l erreur dans le calcul de la MDP et dans le mu100 de la constellation
-
-    #################################################################################################################
-    #                     Filling the fields
-    #################################################################################################################
-    # Calculating the polar angle with energy values and compton azim and polar scattering angles from the kinematics
-    # polar and position angle stored in deg
-    polar_from_energy, polar_from_energy_err = calculate_polar_angle(compton_second, compton_ener, ener_sec_err=compton_second_err, ener_tot_err=compton_ener_err)
-    pol, polar_from_position, pol_err = angle(compton_secpos - compton_firstpos, grb_dec_sat_frame, grb_ra_sat_frame, source_name, num_sim, num_sat, scatter_vector_err=scat_vec_err, grb_dec_sf_err=grb_dec_sf_err, grb_ra_sf_err=grb_ra_sf_err)
-
-    # Calculating the arm and extracting the indexes of correct arm events (arm in deg)
-    arm_pol = np.array(polar_from_position - polar_from_energy, dtype=array_dtype)
-    accepted_arm_pol = np.where(np.abs(arm_pol) <= armcut, True, False)
-    # Restriction of the values according to arm cut
-    compton_ener = compton_ener[accepted_arm_pol]
-    compton_second = compton_second[accepted_arm_pol]
-    compton_firstpos = compton_firstpos[accepted_arm_pol]
-    compton_secpos = compton_secpos[accepted_arm_pol]
-    compton_time = compton_time[accepted_arm_pol]
-    polar_from_energy = polar_from_energy[accepted_arm_pol]
-    polar_from_position = np.array(polar_from_position[accepted_arm_pol], dtype=array_dtype)
-    pol = np.array(pol[accepted_arm_pol], dtype=array_dtype)
-
-    # # get memory statistics
-    # current, peak = tracemalloc.get_traced_memory()
-    # print("\nAfter file reading / before detector search")
-    # print(f"Current memory use : {current / 1024:.2f} Ko")
-    # print(f"Peak use : {peak / 1024:.2f} Ko")
-
-    #################################################################################################################
-    #     Finding the detector of interaction for each event
-    #################################################################################################################
-    compton_first_detector, compton_sec_detector, single_detector = find_detector(compton_firstpos, compton_secpos, single_pos, geometry)
+    # compton_ener = np.array(compton_ener, dtype=array_dtype)
+    # compton_second = np.array(compton_second, dtype=array_dtype)
+    # single_ener = np.array(single_ener, dtype=array_dtype)
+    # compton_firstpos = np.array(compton_firstpos, dtype=array_dtype)
+    # compton_secpos = np.array(compton_secpos, dtype=array_dtype)
+    # single_pos = np.array(single_pos, dtype=array_dtype)
+    # compton_time = np.array(compton_time, dtype=array_dtype)
+    # single_time = np.array(single_time, dtype=array_dtype)
+    # compton_ener_err = np.array(compton_ener_err, dtype=array_dtype)
+    # compton_second_err = np.array(compton_second_err, dtype=array_dtype)
+    # compton_firstpos_err = np.array(compton_firstpos_err, dtype=array_dtype)
+    # compton_secpos_err = np.array(compton_secpos_err, dtype=array_dtype)
+    # scat_vec_err = np.sqrt(compton_secpos_err**2 + compton_firstpos_err**2)
+    #
+    # #################################################################################################################
+    # #                     Filling the fields
+    # #################################################################################################################
+    # # Calculating the polar angle with energy values and compton azim and polar scattering angles from the kinematics
+    # # polar and position angle stored in deg
+    # polar_from_energy, polar_from_energy_err = calculate_polar_angle(compton_second, compton_ener, ener_sec_err=compton_second_err, ener_tot_err=compton_ener_err)
+    # pol, polar_from_position, pol_err = angle(compton_secpos - compton_firstpos, grb_dec_sat_frame, grb_ra_sat_frame, source_name, num_sim, num_sat, scatter_vector_err=scat_vec_err, grb_dec_sf_err=grb_dec_sf_err, grb_ra_sf_err=grb_ra_sf_err)
+    #
+    # # Calculating the arm and extracting the indexes of correct arm events (arm in deg)
+    # arm_pol = np.array(polar_from_position - polar_from_energy, dtype=array_dtype)
+    # polar_from_energy = np.array(polar_from_energy)
+    # # polar_from_energy_err = np.array(polar_from_energy_err)
+    # pol = np.array(pol)
+    # polar_from_position = np.array(polar_from_position)
+    # # pol_err = np.array(pol_err)
+    #
+    # #################################################################################################################
+    # #     Finding the detector of interaction for each event
+    # #################################################################################################################
+    # compton_first_detector, compton_sec_detector, single_detector = find_detector(compton_firstpos, compton_secpos, single_pos, geometry)
 
     # # get memory statistics
     # current, peak = tracemalloc.get_traced_memory()
@@ -1136,39 +1252,38 @@ def save_grb_data(data_file, filename, sat_info_list, bkg_data, mu_data, ergcut,
     # print(f"Peak use : {peak / 1024:.2f} Ko")
 
     # Saving information
-    with open(filename, "w") as f:
-      f.write(f"Extracted file of simfile : {data_file} with ergcut : {ergcut[0]}-{ergcut[1]} and armcut : {armcut}\n")
-      f.write(f"{dec_world_frame}|{ra_world_frame}|{burst_time}|{source_name}|{num_sim}\n")
+    df_compton = pd.DataFrame({"compton_ener": compton_ener, "compton_second": compton_second, "compton_time": compton_time, "pol": pol, "polar_from_position": polar_from_position, "polar_from_energy": polar_from_energy,
+                               "arm_pol": arm_pol, "compton_first_detector": compton_first_detector, "compton_sec_detector": compton_sec_detector})
+    df_single = pd.DataFrame({"single_ener": single_ener, "single_time": single_time, "single_detector": single_detector})
+    with pd.HDFStore(filename, mode="w") as f:
+      # Saving Compton event related quantities
+      f.put("compton", df_compton)
+      # Saving single event related quantities
+      f.put("single", df_single)
+      # Saving scalar values
       # Specific to satellite
-      save_value(f, b_idx)
-      save_value(f, sat_dec_wf)
-      save_value(f, sat_ra_wf)
-      save_value(f, sat_alt)
-      save_value(f, num_sat)
-      save_value(f, compton_b_rate)
-      save_value(f, single_b_rate)
+      f.get_storer("compton").attrs.b_idx = b_idx
+      f.get_storer("compton").attrs.sat_dec_wf = sat_dec_wf
+      f.get_storer("compton").attrs.sat_ra_wf = sat_ra_wf
+      f.get_storer("compton").attrs.sat_alt = sat_alt
+      f.get_storer("compton").attrs.num_sat = num_sat
+      f.get_storer("compton").attrs.compton_b_rate = compton_b_rate
+      f.get_storer("compton").attrs.single_b_rate = single_b_rate
       # Information from mu files
-      save_value(f, mu100_ref)
-      save_value(f, mu100_err_ref)
-      save_value(f, s_eff_compton_ref)
-      save_value(f, s_eff_single_ref)
+      f.get_storer("compton").attrs.mu100_ref = mu100_ref
+      f.get_storer("compton").attrs.mu100_err_ref = mu100_err_ref
+      f.get_storer("compton").attrs.s_eff_compton_ref = s_eff_compton_ref
+      f.get_storer("compton").attrs.s_eff_single_ref = s_eff_single_ref
       # GRB position and polarisation
-      save_value(f, grb_dec_sat_frame)
-      save_value(f, grb_ra_sat_frame)
-      save_value(f, expected_pa)
-      # Value arrays
-      save_value(f, compton_ener)
-      save_value(f, compton_second)
-      save_value(f, single_ener)
-      save_value(f, compton_time)
-      save_value(f, single_time)
-      save_value(f, pol)
-      save_value(f, polar_from_position)
-      save_value(f, polar_from_energy)
-      save_value(f, arm_pol)
-      save_value(f, compton_first_detector)
-      save_value(f, compton_sec_detector)
-      save_value(f, single_detector)
+      f.get_storer("compton").attrs.grb_dec_sat_frame = grb_dec_sat_frame
+      f.get_storer("compton").attrs.grb_ra_sat_frame = grb_ra_sat_frame
+      f.get_storer("compton").attrs.expected_pa = expected_pa
+      # Simulation information
+      f.get_storer("compton").attrs.dec_world_frame = dec_world_frame
+      f.get_storer("compton").attrs.ra_world_frame = ra_world_frame
+      f.get_storer("compton").attrs.burst_time = burst_time
+      f.get_storer("compton").attrs.source_name = source_name
+      f.get_storer("compton").attrs.num_sim = num_sim
 
   #   # get memory statistics
   #   current, peak = tracemalloc.get_traced_memory()
@@ -1563,45 +1678,42 @@ def eff_area_func(dec_wf, ra_wf, info_sat, mu100_list):  # TODO : limits on vari
 ######################################################################################################################################################
 # Closest finder
 ######################################################################################################################################################
-def closest_bkg_info(sat_dec, sat_ra, sat_alt, bkg_list):  # TODO : limits on variables
+def closest_bkg_info(mag_dec, sat_alt, bkgdata):  # TODO : limits on variables
   """
   Find the closest bkg file for a satellite (in terms of latitude, may be updated for longitude too)
   Returns the count rate of this bkg file
   Warning : for now, only takes into account the dec of backgrounds, can be updated but the way the error is calculated
   may not be optimal as the surface of the sphere (polar coordinates) is not a plan.
-  :param sat_dec: declination of the satellite [deg] [0 - 180]
+  :param mag_dec: declination of the satellite [deg] [0 - 180]
   :param sat_ra: right ascension of the satellite [deg] [0 - 360]
     :param sat_alt: altitude of the satellite [km]
 
-  :param bkg_list: list of all the background files
+  :param bkgdata: list of all the background files
   :returns: compton and single event count rates of the closest background file
   """
-  if len(bkg_list) == 0:
+  if len(bkgdata.bkgdf) == 0:
     return 0.000001
   else:
-    # bkg_selec = []
-    bkg_count = 0
-    dec_error = []
-    ra_error = np.array([0 for bkg in bkg_list])
-    # ra_error = np.array([(bkg.ra - sat_ra) ** 2 for bkg in bkg_selec])
-
-    for bkg in bkg_list:
-      if bkg.alt == sat_alt:
-        bkg_count += 1
-        # bkg_selec.append(bkg)
-        dec_error.append((bkg.dec - sat_dec) ** 2)
-      else:
-        dec_error.append(np.inf)
-    if bkg_count == 0:
+    # bkg_count = 0
+    # dec_error = []
+    # ra_error = np.zeros(len(bkgdata.bkgdf))
+    df_selec_alt = bkgdata.bkgdf[bkgdata.bkgdf.bkg_alt == sat_alt]
+    decs = df_selec_alt.bkg_dec.values
+    if len(decs) == 0:
       raise FileNotFoundError("No background file were loaded for the given altitude.")
-    dec_error = np.array(dec_error)
-    total_error = np.sqrt(dec_error + ra_error)
-    index = np.argmin(total_error)
-    # if index+1 < len(bkg_list) and sat_ra == 0:
-    #   print()
-    #   print("dec, dec find before and after : ", sat_dec, bkg_list[index].dec, bkg_list[index-1].dec, bkg_list[index+1].dec)
-    #   print()
-    return [bkg_list[index].compton_cr, bkg_list[index].single_cr, index]
+    error = np.abs(decs - mag_dec)
+    # print(error)
+    index = df_selec_alt.index[np.argmin(error)]
+    # for bkg in bkgdata:
+    #   if bkg.alt == sat_alt:
+    #     bkg_count += 1
+    #     dec_error.append((bkg.dec - mag_dec) ** 2)
+    #   else:
+    #     dec_error.append(np.inf)
+    # dec_error = np.array(dec_error)
+    # total_error = np.sqrt(dec_error + ra_error)
+    # index = np.argmin(total_error)
+    return [bkgdata.bkgdf.iloc[index].compton_cr, bkgdata.bkgdf.iloc[index].single_cr, index]
 
 
 def affect_bkg(info_sat, burst_time, bkg_list):
@@ -1621,11 +1733,11 @@ def affect_bkg(info_sat, burst_time, bkg_list):
   dec_sat_world_frame, ra_sat_world_frame = orbitalparam2decra(info_sat[0], info_sat[1], info_sat[2], nu=true_anomaly)
   ra_sat_world_frame = np.mod(ra_sat_world_frame - earth_ra_offset, 360)
   mag_dec_sat_world_frame, mag_ra_sat_world_frame = geo_to_mag(dec_sat_world_frame, ra_sat_world_frame, info_sat[3])
-  bkg_info = closest_bkg_info(mag_dec_sat_world_frame, mag_ra_sat_world_frame, info_sat[3], bkg_list)
+  bkg_info = closest_bkg_info(mag_dec_sat_world_frame, info_sat[3], bkg_list)
   return dec_sat_world_frame, ra_sat_world_frame, info_sat[3], bkg_info[0], bkg_info[1], bkg_info[2]
 
 
-def closest_mufile(grb_dec_sf, grb_ra_sf, mu_list):  # TODO : limits on variables
+def closest_mufile(grb_dec_sf, grb_ra_sf, mu_list):
   """
   Find the mu100 file closest to a certain direction of detection
   Warning : for now, only takes into account the dec of backgrounds, can be updated but the way the error is calculated
@@ -1635,14 +1747,16 @@ def closest_mufile(grb_dec_sf, grb_ra_sf, mu_list):  # TODO : limits on variable
   :param mu_list:     list of all the mu100 files
   :returns:   mu100, mu100_err, s_eff_compton, s_eff_single
   """
-  if len(mu_list) == 0:
+  if len(mu_list.mudf) == 0:
     return 0.000001, 0.000001, 0.000001, 0.000001
   else:
-    dec_error = np.array([(mu.dec - grb_dec_sf) ** 2 for mu in mu_list])
-    ra_error = np.array([(mu.ra - grb_ra_sf) ** 2 for mu in mu_list])
-    total_error = np.sqrt(dec_error + ra_error)
-    index = np.argmin(total_error)
-    return mu_list[index].mu100, mu_list[index].mu100_err, mu_list[index].s_eff_compton, mu_list[index].s_eff_single
+    # dec_error = np.array([(mu.dec - grb_dec_sf) ** 2 for mu in mu_list])
+    # ra_error = np.array([(mu.ra - grb_ra_sf) ** 2 for mu in mu_list])
+    # total_error = np.sqrt(dec_error + ra_error)
+
+    error = np.sqrt((mu_list.mudf.dec.values - grb_dec_sf) ** 2 + (mu_list.mudf.ra.values - grb_ra_sf) ** 2)
+    index = np.argmin(error)
+    return mu_list.mudf.mu100[index], mu_list.mudf.mu100_err[index], mu_list.mudf.seff_compton[index], mu_list.mudf.seff_single[index]
 
 
 ######################################################################################################################################################
@@ -1691,6 +1805,46 @@ def format_detector(det_str):
   return det_id
 
 
+def compile_finder():
+  """
+
+  """
+  os.chdir("./src/Analysis")
+  subprocess.call(f"make -f Makefile PRG=find_detector", shell=True)
+  os.chdir("../..")
+
+
+def find_detector(pos_first_compton, pos_sec_compton, pos_single, geometry):
+  """
+  Execute the position finder for different arrays pos_first_compton, pos_sec_compton, pos_single
+  :param pos_first_compton: array containing the position of the first compton interaction
+  :param pos_sec_compton: array containing the position of the second compton interaction
+  :param pos_single: array containing the position of the single event interaction
+  :param geometry: geometry to use
+  :returns: 3 arrays containing a list [Instrument unit of the interaction, detector where interaction happened]
+  """
+  pid = os.getpid()
+  file_fc = f"./src/Analysis/temp_pos_fc_{pid}"
+  file_sc = f"./src/Analysis/temp_pos_sc_{pid}"
+  file_s = f"./src/Analysis/temp_pos_s_{pid}"
+  if len(pos_first_compton) >= 1:
+    det_first_compton = execute_finder(file_fc, pos_first_compton, geometry)
+    subprocess.call(f"rm {file_fc}*", shell=True)
+  else:
+    det_first_compton = np.array([])
+  if len(pos_sec_compton) >= 1:
+    det_sec_compton = execute_finder(file_sc, pos_sec_compton, geometry)
+    subprocess.call(f"rm {file_sc}*", shell=True)
+  else:
+    det_sec_compton = np.array([])
+  if len(pos_single) >= 1:
+    det_single = execute_finder(file_s, pos_single, geometry)
+    subprocess.call(f"rm {file_s}*", shell=True)
+  else:
+    det_single = np.array([])
+  return det_first_compton, det_sec_compton, det_single
+
+
 def execute_finder(file, events, geometry, cpp_routine="find_detector"):
   """
   Executes the "find_detector" c++ routine that find the detector of interaction of different position of interaction
@@ -1709,37 +1863,6 @@ def execute_finder(file, events, geometry, cpp_routine="find_detector"):
     lines = save_file.read().split("\n")[:-1]
     positions = list(map(format_detector, lines))
   return np.array(positions, dtype=np.int8)
-
-
-def find_detector(pos_first_compton, pos_sec_compton, pos_single, geometry):
-  """
-  Execute the position finder for different arrays pos_first_compton, pos_sec_compton, pos_single
-  :param pos_first_compton: array containing the position of the first compton interaction
-  :param pos_sec_compton: array containing the position of the second compton interaction
-  :param pos_single: array containing the position of the single event interaction
-  :param geometry: geometry to use
-  :returns: 3 arrays containing a list [Instrument unit of the interaction, detector where interaction happened]
-  """
-  pid = os.getpid()
-  file_fc = f"temp_pos_fc_{pid}"
-  file_sc = f"temp_pos_sc_{pid}"
-  file_s = f"temp_pos_s_{pid}"
-  if len(pos_first_compton) >= 1:
-    det_first_compton = execute_finder(file_fc, pos_first_compton, geometry)
-    subprocess.call(f"rm {file_fc}*", shell=True)
-  else:
-    det_first_compton = np.array([])
-  if len(pos_sec_compton) >= 1:
-    det_sec_compton = execute_finder(file_sc, pos_sec_compton, geometry)
-    subprocess.call(f"rm {file_sc}*", shell=True)
-  else:
-    det_sec_compton = np.array([])
-  if len(pos_single) >= 1:
-    det_single = execute_finder(file_s, pos_single, geometry)
-    subprocess.call(f"rm {file_s}*", shell=True)
-  else:
-    det_single = np.array([])
-  return det_first_compton, det_sec_compton, det_single
 
 
 ######################################################################################################################################################

@@ -6,6 +6,8 @@
 # Package imports
 # import subprocess
 import numpy as np
+import pandas as pd
+
 # Developped modules imports
 # from src.General.funcmod import
 from src.Analysis.MGRBFullData import GRBFullData
@@ -37,16 +39,7 @@ class AllSatData(list):
     # Setting grb world frame dec, ra and burst time
     self.read_grb_siminfo(all_sat_data)
 
-    # Creating the list containing the GRB data if the simulation happened
-    # for grb_ext_file in all_sat_data:
-    #   if grb_ext_file is not None:
-    #     temp_list.append(GRBFullData(grb_ext_file, sim_duration, *info_source, *options[-2:]))
-    #     self.n_sat_receiving += 1
-    #   else:
-    #     temp_list.append(None)
-    # list.__init__(self, temp_list)
-
-    list.__init__(self, [GRBFullData(grb_ext_file, sim_duration, *info_source, *options[-2:]) if grb_ext_file is not None else None for grb_ext_file in all_sat_data])
+    list.__init__(self, [GRBFullData(grb_ext_file, sim_duration, *info_source, options) if grb_ext_file is not None else None for grb_ext_file in all_sat_data])
     self.n_sat_receiving = len(self) - self.count(None)
 
     # Initializing the const_data key, that will be containing the constellation data container
@@ -55,11 +48,14 @@ class AllSatData(list):
   def read_grb_siminfo(self, filelist):
     for filename in filelist:
       if filename is not None:
-        with open(filename, "r") as f:
-          line = f.read().split("\n")[1].split("|")
-        self.dec_world_frame = float(line[0])
-        self.ra_world_frame = float(line[1])
-        self.grb_burst_time = float(line[2])
+        with pd.HDFStore(filename, mode="r") as f:
+          self.dec_world_frame = f.get_storer("compton").attrs.dec_world_frame
+          self.ra_world_frame = f.get_storer("compton").attrs.ra_world_frame
+          self.grb_burst_time = f.get_storer("compton").attrs.burst_time
+        #   line = f.read().split("\n")[1].split("|")
+        # self.dec_world_frame = float(line[0])
+        # self.ra_world_frame = float(line[1])
+        # self.grb_burst_time = float(line[2])
         return
 
   def analyze(self, source_duration, source_fluence, sats_analysis=True):
@@ -108,7 +104,7 @@ class AllSatData(list):
     else:
       number_const = 1
     for const_ite in range(number_const):
-      self.const_data.append(GRBFullData(None, None, None, None, None, None))
+      self.const_data.append(GRBFullData(None, None, None, None, [None, None, None, None, None]))
       if off_sats[const_ite] is None:
         self.const_data[const_ite].num_offsat = 0
       elif type(off_sats[const_ite]) is list:
@@ -137,16 +133,14 @@ class AllSatData(list):
             #############################################################################################################
             # Filtering the satellites for some items
             #############################################################################################################
-            if item in ["compton_b_rate", "mu100_ref", "mu100_err_ref", "s_eff_compton_ref", "compton_ener",
-                        "compton_second", "compton_time", "pol", "polar_from_position", "polar_from_energy", "arm_pol",
-                        "s_eff_compton", "s_eff_compton_err", "compton", "compton_cr", "compton_first_detector", "compton_sec_detector"]:
+            if item in ["compton_b_rate", "mu100_ref", "mu100_err_ref", "s_eff_compton_ref", "s_eff_compton",
+                        "s_eff_compton_err", "compton", "compton_cr", "df_compton"]:
               selected_sats = []
               for index_sat in considered_sats:
                 if self[index_sat].const_beneficial_compton:
                   selected_sats.append(index_sat)
               selected_sats = np.array(selected_sats)
-            elif item in ["single_b_rate", "s_eff_single_ref", "single_ener", "single_time", "s_eff_single", "s_eff_single_err",
-                          "single", "single_cr", "single_detector"]:
+            elif item in ["single_b_rate", "s_eff_single_ref", "s_eff_single", "s_eff_single_err", "single", "single_cr", "df_single"]:
               selected_sats = []
               for index_sat in considered_sats:
                 if self[index_sat].const_beneficial_single:
@@ -189,16 +183,17 @@ class AllSatData(list):
                 temp_val += getattr(self[num_sat], item)**2
               setattr(self.const_data[ite_const], item, np.sqrt(temp_val))
             #############################################################################################################
-            # 1D concatenation
+            # Dataframe combination
             #############################################################################################################
             # Values stored in a 1D array that have to be concatenated (except unpol that needs another verification)
-            elif item in ["compton_ener", "compton_second", "single_ener", "compton_time", "single_time",
-                          "pol", "polar_from_position", "polar_from_energy", "arm_pol", "compton_first_detector",
-                          "compton_sec_detector", "single_detector"]:
-              temp_array = np.array([])
+            elif item in ["df_compton", "df_single"]:
+              temp_df_list = []
               for num_sat in selected_sats:
-                temp_array = np.concatenate((temp_array, getattr(self[num_sat], item)))
-              setattr(self.const_data[ite_const], item, temp_array)
+                temp_df_list.append(getattr(self[num_sat], item))
+              if len(temp_df_list) == 0:
+                setattr(self.const_data[ite_const], item, getattr(self[selected_sats[0]], item))
+              else:
+                setattr(self.const_data[ite_const], item, pd.concat(temp_df_list, ignore_index=True))
             #############################################################################################################
             # Weighted mean
             #############################################################################################################
@@ -350,15 +345,18 @@ class AllSatData(list):
                 temp_val += getattr(self[num_sat], item) ** 2
               setattr(self.const_data[ite_const], item, np.sqrt(temp_val))
             #############################################################################################################
-            # 1D concatenation
+            # compton and single times using the dataframes
             #############################################################################################################
-            # Values stored in a 1D array that have to be concatenated (except unpol that needs another verification)
-            elif item in ["compton_time", "single_time"]:
+            elif item in ["compton_time"]:
               temp_array = np.array([])
               for num_sat in selected_sats:
-                temp_array = np.concatenate((temp_array, getattr(self[num_sat], item)))
-              setattr(self.const_data[ite_const], item, temp_array)
-
+                temp_array = np.concatenate((temp_array, getattr(self[num_sat], "df_compton").compton_time.values))
+              setattr(self.const_data[ite_const], "compton_time", temp_array)
+            elif item in ["single_time"]:
+              temp_array = np.array([])
+              for num_sat in selected_sats:
+                temp_array = np.concatenate((temp_array, getattr(self[num_sat], "df_single").single_time.values))
+              setattr(self.const_data[ite_const], "single_time", temp_array)
             #############################################################################################################
             # Weighted mean
             #############################################################################################################

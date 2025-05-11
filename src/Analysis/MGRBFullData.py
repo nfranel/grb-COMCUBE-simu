@@ -7,6 +7,7 @@
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 import numpy as np
+import pandas as pd
 import traceback
 
 # Developped modules imports
@@ -24,7 +25,7 @@ class GRBFullData:
   Class containing the data for 1 GRB, for 1 sim, and 1 satellite
   """
 
-  def __init__(self, datafile, sim_duration, source_duration, source_fluence, corr, polarigram_bins):
+  def __init__(self, datafile, sim_duration, source_duration, source_fluence, options):
     """
     :param datafile: file to read
     :param sat_info: orbital information about the satellite detecting the source
@@ -38,6 +39,7 @@ class GRBFullData:
     :param corr: True if the polarigrams should be corrected (useful when adding them together for the constellation)
     :param polarigram_bins: bins for the polarigram
     """
+    ergcut, armcut, corr, polarigram_bins = options[0], options[1], options[3], options[4]
     ###################################################################################################################
     #  Attributes declaration    +    way they are treated with constellation
     ###################################################################################################################
@@ -63,24 +65,11 @@ class GRBFullData:
     self.grb_dec_sat_frame = None          # Not changed             #
     self.grb_ra_sat_frame = None           # Not changed             #
     self.expected_pa = None                # Not changed             #
-    self.compton_ener = []                 # 1D concatenation        # Compton
-    self.compton_second = []               # 1D concatenation        # Compton
-    self.single_ener = []                  # 1D concatenation        # Single
-    self.compton_time = []                 # 1D concatenation        # Compton
-    self.single_time = []                  # 1D concatenation        # Single
-    self.pol = None                        # 1D concatenation        # Compton
-    # self.pol_err = None   !update makeconst                      # 1D concatenation        # Compton
-    self.polar_from_position = None        # 1D concatenation        # Compton
-    # This polar angle is the one considered as compton scatter angle by mimrec
-    self.polar_from_energy = None          # 1D concatenation        # Compton
-    # self.polar_from_energy_err = None    !update makeconst           # 1D concatenation        # Compton
-    self.arm_pol = None                    # 1D concatenation        # Compton
-    self.azim_angle_corrected = False      # Set to true             #
+    self.df_compton = None
+    self.df_single = None
     ###################################################################################################################
-    # interaction position attributes
-    self.compton_first_detector = []       # 1D concatenation        # Compton
-    self.compton_sec_detector = []         # 1D concatenation        # Compton
-    self.single_detector = []              # 1D concatenation        # Single
+    # Correction applied
+    self.azim_angle_corrected = False      # Set to true             #
     ###################################################################################################################
     # Attributes filled after the reading
     # Set using extracted data
@@ -123,16 +112,16 @@ class GRBFullData:
       #                     Filling the fields by reading the extracted sim files
       #################################################################################################################
       try:
-        self.read_saved_grb(datafile)
+        self.read_saved_grb(datafile, ergcut, armcut)
       except:
         print(traceback.format_exc())
         print(f"Error happened with file : {datafile}")
       #################################################################################################################
       #        Counting events
       #################################################################################################################
-      self.single = len(self.single_ener)
+      self.single = len(self.df_single)
       self.single_cr = self.single / sim_duration
-      self.compton = len(self.compton_ener)
+      self.compton = len(self.df_compton)
       self.compton_cr = self.compton / sim_duration
 
       #################################################################################################################
@@ -141,7 +130,7 @@ class GRBFullData:
       # Correcting the angle correction for azimuthal angle according to cosima's polarization definition
       # And setting the attribute stating if the correction is applied or not
       # Putting the correction before the filtering may cause some issues
-      self.bins = set_bins(polarigram_bins, self.pol)
+      self.bins = set_bins(polarigram_bins, self.df_compton.pol.values)
       if corr:
         self.corr()
 
@@ -157,52 +146,35 @@ class GRBFullData:
     else:
       raise TypeError("Impossible to create the data container : the data must be None or a string")
 
-  def read_saved_grb(self, filename):
-    with open(filename, "r") as f:
-      # lines = f.read().split("\n")[2:]
-      # Nothing do with the first 2 lines
-      next(f)
-      next(f)
+  def read_saved_grb(self, filename, ergcut=None, armcut=None):
+    with pd.HDFStore(filename, mode="r") as f:
+      self.df_compton = f["compton"]
+      self.df_single = f["single"]
+
+      if ergcut is not None:
+        self.df_compton = self.df_compton[(self.df_compton.compton_ener >= ergcut[0]) & (self.df_compton.compton_ener <= ergcut[1])]
+        self.df_single = self.df_single[(self.df_single.single_ener >= ergcut[0]) & (self.df_single.single_ener <= ergcut[1])]
+
+      if armcut is not None:
+        self.df_compton = self.df_compton[self.df_compton.arm_pol <= armcut]
 
       # Specific to satellite
-      self.bkg_index = int(next(f))
-      self.sat_dec_wf = float(next(f))
-      self.sat_ra_wf = float(next(f))
-      self.sat_alt = float(next(f))
-      self.num_sat = int(next(f))
-      self.compton_b_rate = float(next(f))
-      self.single_b_rate = float(next(f))
+      self.bkg_index = f.get_storer("compton").attrs.b_idx
+      self.sat_dec_wf = f.get_storer("compton").attrs.sat_dec_wf
+      self.sat_ra_wf = f.get_storer("compton").attrs.sat_ra_wf
+      self.sat_alt = f.get_storer("compton").attrs.sat_alt
+      self.num_sat = f.get_storer("compton").attrs.num_sat
+      self.compton_b_rate = f.get_storer("compton").attrs.compton_b_rate
+      self.single_b_rate = f.get_storer("compton").attrs.single_b_rate
       # Information from mu files
-      self.mu100_ref = float(next(f))
-      self.mu100_err_ref = float(next(f))
-      self.s_eff_compton_ref = float(next(f))
-      self.s_eff_single_ref = float(next(f))
+      self.mu100_ref = f.get_storer("compton").attrs.mu100_ref
+      self.mu100_err_ref = f.get_storer("compton").attrs.mu100_err_ref
+      self.s_eff_compton_ref = f.get_storer("compton").attrs.s_eff_compton_ref
+      self.s_eff_single_ref = f.get_storer("compton").attrs.s_eff_single_ref
       # GRB position and polarisation
-      self.grb_dec_sat_frame = float(next(f))
-      self.grb_ra_sat_frame = float(next(f))
-      self.expected_pa = float(next(f))
-      # Value arrays
-      self.compton_ener = np.fromstring(next(f), sep='|', dtype=self.array_dtype)
-      self.compton_second = np.fromstring(next(f), sep='|', dtype=self.array_dtype)
-      self.single_ener = np.fromstring(next(f), sep='|', dtype=self.array_dtype)
-      self.compton_time = np.fromstring(next(f), sep='|', dtype=self.array_dtype)
-      self.single_time = np.fromstring(next(f), sep='|', dtype=self.array_dtype)
-      self.pol = np.fromstring(next(f), sep='|', dtype=self.array_dtype)
-      self.polar_from_position = np.fromstring(next(f), sep='|', dtype=self.array_dtype)
-      self.polar_from_energy = np.fromstring(next(f), sep='|', dtype=self.array_dtype)
-      self.arm_pol = np.fromstring(next(f), sep='|', dtype=self.array_dtype)
-      self.compton_first_detector = np.fromstring(next(f), sep='|', dtype=np.int8)
-      self.compton_sec_detector = np.fromstring(next(f), sep='|', dtype=np.int8)
-      self.single_detector = np.fromstring(next(f), sep='|', dtype=np.int8)
-
-    if len(self.compton_first_detector) == 1 and self.compton_first_detector[0] == "":
-      self.compton_first_detector = np.array([])
-    if len(self.compton_sec_detector) == 1 and self.compton_sec_detector[0] == "":
-      self.compton_sec_detector = np.array([])
-    if len(self.single_detector) == 1 and self.single_detector[0] == "":
-      self.single_detector = np.array([])
-    if len(self.single_detector) != len(self.single_time):
-      print("============ERROR=============")
+      self.grb_dec_sat_frame = f.get_storer("compton").attrs.grb_dec_sat_frame
+      self.grb_ra_sat_frame = f.get_storer("compton").attrs.grb_ra_sat_frame
+      self.expected_pa = f.get_storer("compton").attrs.expected_pa
 
   def cor(self):
     """
@@ -219,7 +191,7 @@ class GRBFullData:
     Calculi are made in-place
     :param width: float, width of the polarigram in deg, default=360, SHOULD BE 360
     """
-    self.pol = self.pol % width + self.bins[0]
+    self.df_compton.pol = self.df_compton.pol % width + self.bins[0]
 
   def corr(self):
     """
@@ -229,7 +201,7 @@ class GRBFullData:
       print(" Impossible to correct the azimuthal compton scattering angles, the correction has already been made")
     else:
       cor = self.cor()
-      self.pol += cor
+      self.df_compton.pol += cor
       self.behave()
       self.azim_angle_corrected = True
 
@@ -239,7 +211,7 @@ class GRBFullData:
     """
     if self.azim_angle_corrected:
       cor = self.cor()
-      self.pol -= cor
+      self.df_compton.pol -= cor
       self.behave()
       self.azim_angle_corrected = False
     else:
@@ -292,21 +264,21 @@ class GRBFullData:
     for int_time in integration_times:
       bins = np.arange(0, source_duration + int_time, int_time)
 
-      hit_hist = np.histogram(np.concatenate((self.compton_time, self.compton_time, self.single_time)), bins=bins)[0]
+      hit_hist = np.histogram(np.concatenate((self.df_compton.compton_time.values, self.df_compton.compton_time.values, self.df_single.single_time.values)), bins=bins)[0]
       hit_argmax = np.argmax(hit_hist)
       hit_max_hist = hit_hist[hit_argmax]
       snr_ret1 = calc_snr(hit_max_hist, (2 * self.compton_b_rate + self.single_b_rate) * int_time)
       self.hits_snrs.append(snr_ret1[0])
       self.hits_snrs_err.append(snr_ret1[1])
 
-      compton_hist = np.histogram(self.compton_time, bins=bins)[0]
+      compton_hist = np.histogram(self.df_compton.compton_time.values, bins=bins)[0]
       com_argmax = np.argmax(compton_hist)
       com_max_hist = compton_hist[com_argmax]
       snr_ret2 = calc_snr(com_max_hist, self.compton_b_rate * int_time)
       self.compton_snrs.append(snr_ret2[0])
       self.compton_snrs_err.append(snr_ret2[1])
 
-      single_hist = np.histogram(self.single_time, bins=bins)[0]
+      single_hist = np.histogram(self.df_single.single_time.values, bins=bins)[0]
       sin_argmax = np.argmax(single_hist)
       sin_max_hist = single_hist[sin_argmax]
       snr_ret3 = calc_snr(sin_max_hist, self.single_b_rate * int_time)
@@ -326,7 +298,7 @@ class GRBFullData:
     hits_snrs_lc = []
     for ite_int, int_time in enumerate(integration_times):
       bins = np.arange(0, source_duration + int_time, int_time)
-      hit_hist = np.histogram(np.concatenate((self.compton_time, self.compton_time, self.single_time)), bins=bins)[0]
+      hit_hist = np.histogram(np.concatenate((self.df_compton.compton_time.values, self.df_compton.compton_time.values, self.df_single.single_time.values)), bins=bins)[0]
       hits_snrs_lc.append(np.where(calc_snr(hit_hist, (2 * self.compton_b_rate + self.single_b_rate) * int_time)[0] >= thresh_list_nsat[ite_int], 1, 0))
     return hits_snrs_lc
 
@@ -384,10 +356,10 @@ class GRBFullData:
         self.const_beneficial_trigger_1s[ite_ts] = 0
 
   def detector_statistics(self, bkg_cont, bkg_duration, source_duration, source_name, show=False):
-    bkg_stats = (bkg_cont.det_stat_compton + bkg_cont.det_stat_single).reshape(4, 5) / bkg_duration
+    bkg_stats = (bkg_cont.com_det_idx + bkg_cont.sin_det_idx).reshape(4, 5) / bkg_duration
 
-    hit_times = np.concatenate((self.compton_time, self.compton_time, self.single_time))
-    det_list = np.concatenate((self.compton_first_detector, self.compton_sec_detector, self.single_detector))
+    hit_times = np.concatenate((self.df_compton.compton_time.values, self.df_compton.compton_time.values, self.df_single.single_time.values))
+    det_list = np.concatenate((self.df_compton.compton_first_detector.values, self.df_compton.compton_sec_detector.values, self.df_single.single_detector.values))
     bin_edges = np.arange(0, source_duration + 1, 1)
     bin_index = np.digitize(hit_times, bin_edges) - 1
     hit_hist = np.histogram(hit_times, bins=bin_edges)[0]

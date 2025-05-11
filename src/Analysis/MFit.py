@@ -6,6 +6,7 @@
 # Package imports
 import numpy as np
 from scipy.optimize import curve_fit
+from scipy.stats import chi2
 from inspect import signature
 
 # Developped modules imports
@@ -44,6 +45,7 @@ class Fit:
     yf = f(x, *self.popt)
     self.q2 = np.sum((y - yf) ** 2)
     self.nparam = len(signature(f).parameters) - 1
+    self.p_value = chi2.sf(self.q2, len(self.x) - self.nparam)
 
   def disp(self):
     """
@@ -52,16 +54,16 @@ class Fit:
     if self.comment == "modulation":
       print("\nPolarization analysis:")
       pa = (self.popt[0] + (90 if self.popt[1] < 0 else 0)) % 180
-      print("\tModulation        :  {}+-{}".format(abs(self.popt[1]), np.sqrt(self.pcov[1][1])))
-      print("\tPolarization angle: ({}+-{}) deg".format(pa, np.sqrt(self.pcov[0][0])))
-      print("\tSource flux       :  {}+-{}".format(self.popt[2], np.sqrt(self.pcov[2][2])))
-      print("\tFit goodness      : {}\n".format(self.q2 / (len(self.x) - self.nparam)))
+      print(f"\tModulation         :  {abs(self.popt[1])}+-{np.sqrt(self.pcov[1][1])}")
+      print(f"\tPolarization angle : ({pa}+-{np.sqrt(self.pcov[0][0])}) deg")
+      print(f"\tSource flux        :  {self.popt[2]}+-{np.sqrt(self.pcov[2][2])}")
+      print(f"\tFit goodness       : {self.p_value}\n")
     elif self.comment == "constant":
-      print("\nConstant fit:")
-      print("\tFit goodness      : {}\n".format(self.q2 / (len(self.x) - self.nparam)))
+      print(f"\nConstant fit:")
+      print(f"\tFit goodness       : {self.p_value}\n")
     else:
-      print("\n{}: Unknown fit type - displaying raw results".format(self.comment))
+      print(f"\n{self.comment}: Unknown fit type - displaying raw results")
       print(self.popt)
       print(np.sqrt(np.diag(self.pcov)))
       print(self.pcov)
-      print("Q^2 / ndof: {}\n".format(self.q2 / (len(self.x) - self.nparam)))
+      print(f"Q^2 / ndof: {self.p_value}\n")

@@ -113,7 +113,8 @@ def MC_explo_pairplot(fileused, legend_mode, grbtype):
   # palette = {cat: rainbow_palette[i] for i, cat in enumerate(order_hue)}
 
   df_selec['pierson_chi2_category'] = pierson_chi2_categories
-  df_selec['long_lb_2'] = df_selec['long_lb'] / 1e51
+  if grbtype == "long":
+    df_selec['long_lb_2'] = df_selec['long_lb'] / 1e51
 
   sns.pairplot(df_selec.sort_values(by="pierson_chi2", ascending=False), hue="pierson_chi2_category", vars=select_cols, corner=False, plot_kws={'s': 20}, palette="rainbow_r")
 
@@ -269,7 +270,7 @@ class MCCatalog:
     # Narrower parameter space after studying the results of Monte Carlo
     # Redshift
     self.l_rate_min = 0.4
-    self.l_rate_max = 0.8
+    self.l_rate_max = 0.7
     self.l_ind1_z_min = 2.5
     self.l_ind1_z_max = 3.1
     self.l_ind2_z_min = -2.4
@@ -277,24 +278,24 @@ class MCCatalog:
     self.l_zb_min = 2.3
     self.l_zb_max = 3.5
 
-    self.s_rate_min = 0.1
-    self.s_rate_max = 1.1
-    self.s_ind1_z_min = 0.5
+    self.s_rate_min = 0.25
+    self.s_rate_max = 0.7
+    self.s_ind1_z_min = 1.1
     self.s_ind1_z_max = 4.1
-    self.s_ind2_z_min = 0.9
+    self.s_ind2_z_min = 1.8
     self.s_ind2_z_max = 4
     self.s_zb_min = 1.7
     self.s_zb_max = 3.3
     # Luminosity
-    self.l_ind1_min = -1.38
+    self.l_ind1_min = -1.35
     self.l_ind1_max = -1.25
     self.l_ind2_min = -2.1
     self.l_ind2_max = -1.7
-    self.l_lb_min = 5e51
-    self.l_lb_max = 1.5e53
+    self.l_lb_min = 1.5e52
+    self.l_lb_max = 1e53
 
     self.s_ind1_min = -1
-    self.s_ind1_max = -0.39
+    self.s_ind1_max = -0.5
     self.s_ind2_min = -3.7
     self.s_ind2_max = -1.7
     self.s_lb_min = 9.1e51
@@ -357,10 +358,10 @@ class MCCatalog:
       print("test")
       if mode == "mc":
         param_list = None
-        par_size = 4000
-        mctype = "long"
-        # mctype = "short"
-        fold_name = f"mc{mctype}v8-{par_size}"
+        par_size = 2000
+        # mctype = "long"
+        mctype = "short"
+        fold_name = f"mc{mctype}v2-{par_size}"
         savefile = f"../Data/CatData/CatSampling/space_explo/{fold_name}/mc_fit.csv"
       elif mode == "parametrized":
         # (l_rate, l_ind1_z, l_ind2_z, l_zb, l_ind1, l_ind2, l_lb, s_rate, s_ind1_z, s_ind2_z, s_zb, s_ind1, s_ind2, s_lb)
@@ -557,7 +558,7 @@ class MCCatalog:
         print(f"Long catalog fitting : chi2 = {condition_long[1]}")
         cat_loop_long = False
       else:
-        print(f"Long catalog not fitting  : chi2 = {condition_long[1]} > len(ref) * {n_sig} sigma  -   trying again")
+        print(f"Long catalog not fitting  : chi2 = {condition_long[1]} > len(ref) * {n_sig} sigma² ({len(self.l_pflux_bins) * n_sig**2}) -   trying again")
     print(f"Long finished     [ite {run_iteration}]")
 
     print(f"Begin of shorts")
@@ -586,7 +587,7 @@ class MCCatalog:
         print(f"Short catalog fitting : chi2 = {condition_short[1]}")
         cat_loop_short = False
       else:
-        print(f"Short catalog not fitting  : chi2 = {condition_short[1]} > len(ref) * {n_sig} sigma  -   trying again")
+        print(f"Short catalog not fitting  : chi2 = {condition_short[1]} > len(ref) * {n_sig} sigma² ({len(self.s_pflux_bins) * n_sig**2}) -   trying again")
     print(f"Short finished     [ite {run_iteration}]")
 
     # Saving the catalog
@@ -801,6 +802,9 @@ class MCCatalog:
       plt.savefig(f"{savefile.split('.csv')[0]}_compact_{iteration}_{int(histos[6])}")
     plt.close(fig2)
 
+    if savefile is not None:
+      hist_df = pd.DataFrame({"l_m_flux_temp":histos[0], "l_p_flux_temp":histos[1], "l_flnc_temp":histos[2], "s_m_flux_temp":histos[3], "s_p_flux_temp":histos[4], "s_flnc_temp":histos[5]})
+      hist_df.to_hdf(f"{savefile.split('.csv')[0]}_{iteration}_{int(histos[6])}.h5", key="catalog", mode="w")
 
   def get_short(self, ite_num, short_rate, ind1_z_s, ind2_z_s, zb_s, ind1_s, ind2_s, lb_s):
     """
@@ -980,7 +984,7 @@ class MCCatalog:
     ax3s.legend()
     plt.show()
 
-# from catalogMC import *
+# from src.Catalogs.catalogMC import MCCatalog
 # testcat = MCCatalog(mode="mc")
 # testcat = MCCatalog(mode="catalog")
 
