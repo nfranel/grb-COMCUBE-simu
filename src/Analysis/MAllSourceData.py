@@ -520,7 +520,7 @@ class AllSourceData:
     """
     Give the mdp results for several MDP threshold to study its influence on the performances
     """
-    # Search for an mdp limit :
+    # Search for a mdp limit :
     if savefile is None:
       for threshold_mdp in mdp_thresh_list:
         self.set_beneficial(threshold_mdp)
