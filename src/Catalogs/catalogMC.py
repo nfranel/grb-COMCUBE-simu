@@ -329,9 +329,10 @@ class MCCatalog:
     # Parameters to change
     # ==============================================================================================================================================================
     thread_num = 60
+    self.mode = mode
 
     print("Starting")
-    if mode == "catalog":
+    if self.mode == "catalog":
       param_list = None
       par_size = 1
       fold_name = f"cat_to_validate"
@@ -356,14 +357,14 @@ class MCCatalog:
       self.result_df.to_csv(f"{savefolder}catalogs_fit.csv", index=False)
     else:
       print("test")
-      if mode == "mc":
+      if self.mode == "mc":
         param_list = None
         par_size = 2000
         # mctype = "long"
         mctype = "short"
         fold_name = f"mc{mctype}v2-{par_size}"
         savefile = f"../Data/CatData/CatSampling/space_explo/{fold_name}/mc_fit.csv"
-      elif mode == "parametrized":
+      elif self.mode == "parametrized":
         # (l_rate, l_ind1_z, l_ind2_z, l_zb, l_ind1, l_ind2, l_lb, s_rate, s_ind1_z, s_ind2_z, s_zb, s_ind1, s_ind2, s_lb)
         # param_list = build_params([0.2, 0.3, 0.4, 0.5], [1.2, 1.4, 1.6, 1.8, 2, 2.2, 2.4, 2.6], [-1.1, -0.9, -0.8, -0.7, -0.6, -0.5, -0.4], [2, 2.6, 3.1, 3.6, 4.1, 5], -0.65, -3, 1.12e+52, 0.25, 2.8, 3.5, 2.3, -0.53, -3.4, 2.8e52)
         param_list = [[0.796361, 2.242970, -1.507276, 2.294414, -0.715277, -4.629343, 1.131491e52, 0.577574, 3.107413, 1.179197, 2.318962, -0.602085, -2.148571, 1.899889e52]]
@@ -672,6 +673,8 @@ class MCCatalog:
     else:
       title = f"{comment}\nPierson chi2 of pflx : {histos[6]}"
 
+    plt.rcParams.update({'font.size': 13})
+
     yscale = "log"
     fig1, ((ax1l, ax2l, ax3l), (ax1l2, ax2l2, ax3l2), (ax1s, ax2s, ax3s), (ax1s2, ax2s2, ax3s2)) = plt.subplots(nrows=4, ncols=3, figsize=(20, 12))
     fig1.suptitle(title)
@@ -802,8 +805,8 @@ class MCCatalog:
       plt.savefig(f"{savefile.split('.csv')[0]}_compact_{iteration}_{int(histos[6])}")
     plt.close(fig2)
 
-    if savefile is not None:
-      hist_df = pd.DataFrame({"l_m_flux_temp":histos[0], "l_p_flux_temp":histos[1], "l_flnc_temp":histos[2], "s_m_flux_temp":histos[3], "s_p_flux_temp":histos[4], "s_flnc_temp":histos[5]})
+    if savefile is not None and self.mode == "catalog":
+      hist_df = pd.DataFrame({"l_m_flux_temp": histos[0], "l_p_flux_temp": histos[1], "l_flnc_temp": histos[2], "s_m_flux_temp": histos[3], "s_p_flux_temp": histos[4], "s_flnc_temp": histos[5]})
       hist_df.to_hdf(f"{savefile.split('.csv')[0]}_{iteration}_{int(histos[6])}.h5", key="catalog", mode="w")
 
   def get_short(self, ite_num, short_rate, ind1_z_s, ind2_z_s, zb_s, ind1_s, ind2_s, lb_s):
