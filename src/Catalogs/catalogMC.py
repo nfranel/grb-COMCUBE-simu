@@ -673,6 +673,8 @@ class MCCatalog:
     else:
       title = f"{comment}\nPierson chi2 of pflx : {histos[6]}"
 
+    plt.rcParams.update({'font.size': 13})
+
     yscale = "log"
     fig1, ((ax1l, ax2l, ax3l), (ax1l2, ax2l2, ax3l2), (ax1s, ax2s, ax3s), (ax1s2, ax2s2, ax3s2)) = plt.subplots(nrows=4, ncols=3, figsize=(20, 12))
     fig1.suptitle(title)
