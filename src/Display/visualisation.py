@@ -151,9 +151,9 @@ def mu100_data_map( mu100data, theta_sat=np.linspace(0, 114, 115), phi_sat=np.li
   for i, theta in enumerate(theta_sat):
     for j, phi in enumerate(phi_sat):
       mu_ret = closest_mufile(theta, phi, mu100data)
-      mu100list[i, j] = mu_ret[0]
-      seff_com_list[i, j] = mu_ret[2]
-      seff_sin_list[i, j] = mu_ret[3]
+      mu100list[i, j] = mu_ret[1]
+      seff_com_list[i, j] = mu_ret[3]
+      seff_sin_list[i, j] = mu_ret[4]
   # smoothing the values
   smooth_mu100list = np.zeros((nrows, ncols))
   v2smooth_mu100list = np.zeros((nrows, ncols))

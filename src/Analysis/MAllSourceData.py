@@ -132,12 +132,14 @@ class AllSourceData:
     printcom("Step 2 - Extracting background data")
     init_time = time()
     self.bkgdata = BkgContainer(self.bkg_param, self.erg_cut)
+    self.bkgdata.bkgdf.sort_values(by=["bkg_alt", "bkg_dec"], ascending=[True, True], inplace=True)
     endtask("Step 2", timevar=init_time)
 
     # Setting the background files
     printcom("Step 3 - Extracting mu100 and Seff data")
     init_time = time()
     self.muSeffdata = MuSeffContainer(self.muSeff_param, self.erg_cut, self.armcut)
+    self.muSeffdata.mudf.sort_values(by=["dec", "ra"], ascending=[True, True], inplace=True)
     endtask("Step 3", timevar=init_time)
 
     # Memory check for the class
@@ -278,19 +280,19 @@ class AllSourceData:
       [save_grb_data(tobe_extracted[ext_ite], extracted_name[ext_ite], self.sat_info, self.bkgdata, self.muSeffdata, self.geometry) for ext_ite in range(len(tobe_extracted))]
     endtask("Step 7", timevar=init_time)
 
-    printcom("Step 8 - Loading log data and simulation statistics")
+    printcom("Step 8 - Loading GRB extracted data")
     init_time = time()
     # Reading the information from the extracted simulation files
     if parallel == 'all':
       print("Parallel extraction of the data with all threads")
       with mp.Pool() as pool:
-        self.alldata = pool.starmap(AllSimData, zip(presence_list, range(self.n_source), repeat(cat_data), repeat(self.sat_info), repeat(self.sim_duration), repeat(self.options)))
+        self.alldata = pool.starmap(AllSimData, zip(presence_list, range(self.n_source), repeat(cat_data), repeat(self.sat_info), repeat(self.sim_duration), repeat(self.bkgdata), repeat(self.muSeffdata), repeat(self.options)))
     elif type(parallel) is int:
       print(f"Parallel extraction of the data with {parallel} threads")
       with mp.Pool(parallel) as pool:
-        self.alldata = pool.starmap(AllSimData, zip(presence_list, range(self.n_source), repeat(cat_data), repeat(self.sat_info), repeat(self.sim_duration), repeat(self.options)))
+        self.alldata = pool.starmap(AllSimData, zip(presence_list, range(self.n_source), repeat(cat_data), repeat(self.sat_info), repeat(self.sim_duration), repeat(self.bkgdata), repeat(self.muSeffdata), repeat(self.options)))
     else:
-      self.alldata = [AllSimData(presence_list[source_ite], source_ite, cat_data, self.sat_info, self.sim_duration, self.options) for source_ite in range(self.n_source)]
+      self.alldata = [AllSimData(presence_list[source_ite], source_ite, cat_data, self.sat_info, self.sim_duration, self.bkgdata, self.muSeffdata, self.options) for source_ite in range(self.n_source)]
     endtask("Step 8", timevar=init_time)
 
     if memory_check:
