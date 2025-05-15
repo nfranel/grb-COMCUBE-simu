@@ -236,7 +236,7 @@ class AllSatData(list):
             #############################################################################################################
             # Appened
             #############################################################################################################
-            elif item in ["num_sat", "const_beneficial_compton", "const_beneficial_single", "bkg_index"]:
+            elif item in ["num_sat", "const_beneficial_compton", "const_beneficial_single", "bkg_index", "sat_mag_dec"]:
               temp_list = []
               for num_sat in selected_sats:
                 temp_list.append(getattr(self[num_sat], item))
@@ -399,7 +399,7 @@ class AllSatData(list):
             #############################################################################################################
             # Appened
             #############################################################################################################
-            elif item in ["num_sat", "const_beneficial_compton", "const_beneficial_single", "bkg_index"]:
+            elif item in ["num_sat", "const_beneficial_compton", "const_beneficial_single", "bkg_index", "sat_mag_dec"]:
               temp_list = []
               for num_sat in selected_sats:
                 temp_list.append(getattr(self[num_sat], item))

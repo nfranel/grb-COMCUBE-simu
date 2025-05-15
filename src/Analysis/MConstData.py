@@ -24,6 +24,7 @@ class ConstData:
     ###################################################################################################################
     # Attributes for the sat
     self.bkg_index = None                       # Appened
+    self.sat_mag_dec = None                  # Appened
     self.compton_b_rate = 0                     # Summed                  # Compton
     self.single_b_rate = 0                      # Summed                  # Single
     # self.sat_dec_wf = None                      # Not changed             #
