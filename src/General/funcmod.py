@@ -1165,7 +1165,7 @@ def save_grb_data(data_file, filename, sat_info_list, bkg_data, mu_data, geometr
     expected_pa, grb_dec_sat_frame, grb_ra_sat_frame, grb_dec_sf_err, grb_ra_sf_err = grb_decrapol_worldf2satf(dec_world_frame, ra_world_frame, sat_dec_wf, sat_ra_wf, dec_grb_wf_err=dec_wf_error,
                                                                                                                ra_grb_wf_err=ra_wf_error, dec_sat_wf_err=dec_sat_wf_error, ra_sat_wf_err=ra_sat_wf_error)[:5]
 
-    mu100_ref, mu100_err_ref, s_eff_compton_ref, s_eff_single_ref = closest_mufile(grb_dec_sat_frame, grb_ra_sat_frame, mu_data)
+    mu_index, mu100_ref, mu100_err_ref, s_eff_compton_ref, s_eff_single_ref = closest_mufile(grb_dec_sat_frame, grb_ra_sat_frame, mu_data)
 
     # # get memory statistics
     # current, peak = tracemalloc.get_traced_memory()
@@ -1268,13 +1268,14 @@ def save_grb_data(data_file, filename, sat_info_list, bkg_data, mu_data, geometr
       f.get_storer("compton").attrs.sat_ra_wf = sat_ra_wf
       f.get_storer("compton").attrs.sat_alt = sat_alt
       f.get_storer("compton").attrs.num_sat = num_sat
-      f.get_storer("compton").attrs.compton_b_rate = compton_b_rate
-      f.get_storer("compton").attrs.single_b_rate = single_b_rate
+      # f.get_storer("compton").attrs.compton_b_rate = compton_b_rate
+      # f.get_storer("compton").attrs.single_b_rate = single_b_rate
       # Information from mu files
-      f.get_storer("compton").attrs.mu100_ref = mu100_ref
-      f.get_storer("compton").attrs.mu100_err_ref = mu100_err_ref
-      f.get_storer("compton").attrs.s_eff_compton_ref = s_eff_compton_ref
-      f.get_storer("compton").attrs.s_eff_single_ref = s_eff_single_ref
+      f.get_storer("compton").attrs.mu_index = mu_index
+      # f.get_storer("compton").attrs.mu100_ref = mu100_ref
+      # f.get_storer("compton").attrs.mu100_err_ref = mu100_err_ref
+      # f.get_storer("compton").attrs.s_eff_compton_ref = s_eff_compton_ref
+      # f.get_storer("compton").attrs.s_eff_single_ref = s_eff_single_ref
       # GRB position and polarisation
       f.get_storer("compton").attrs.grb_dec_sat_frame = grb_dec_sat_frame
       f.get_storer("compton").attrs.grb_ra_sat_frame = grb_ra_sat_frame
@@ -1757,7 +1758,7 @@ def closest_mufile(grb_dec_sf, grb_ra_sf, mu_list):
 
     error = np.sqrt((mu_list.mudf.dec.values - grb_dec_sf) ** 2 + (mu_list.mudf.ra.values - grb_ra_sf) ** 2)
     index = np.argmin(error)
-    return mu_list.mudf.mu100[index], mu_list.mudf.mu100_err[index], mu_list.mudf.seff_compton[index], mu_list.mudf.seff_single[index]
+    return index, mu_list.mudf.mu100[index], mu_list.mudf.mu100_err[index], mu_list.mudf.seff_compton[index], mu_list.mudf.seff_single[index]
 
 
 ######################################################################################################################################################

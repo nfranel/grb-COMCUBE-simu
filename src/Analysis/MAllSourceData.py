@@ -278,19 +278,19 @@ class AllSourceData:
       [save_grb_data(tobe_extracted[ext_ite], extracted_name[ext_ite], self.sat_info, self.bkgdata, self.muSeffdata, self.geometry) for ext_ite in range(len(tobe_extracted))]
     endtask("Step 7", timevar=init_time)
 
-    printcom("Step 8 - Loading log data and simulation statistics")
+    printcom("Step 8 - Loading GRB extracted data")
     init_time = time()
     # Reading the information from the extracted simulation files
     if parallel == 'all':
       print("Parallel extraction of the data with all threads")
       with mp.Pool() as pool:
-        self.alldata = pool.starmap(AllSimData, zip(presence_list, range(self.n_source), repeat(cat_data), repeat(self.sat_info), repeat(self.sim_duration), repeat(self.options)))
+        self.alldata = pool.starmap(AllSimData, zip(presence_list, range(self.n_source), repeat(cat_data), repeat(self.sat_info), repeat(self.sim_duration), repeat(self.bkgdata), repeat(self.muSeffdata), repeat(self.options)))
     elif type(parallel) is int:
       print(f"Parallel extraction of the data with {parallel} threads")
       with mp.Pool(parallel) as pool:
-        self.alldata = pool.starmap(AllSimData, zip(presence_list, range(self.n_source), repeat(cat_data), repeat(self.sat_info), repeat(self.sim_duration), repeat(self.options)))
+        self.alldata = pool.starmap(AllSimData, zip(presence_list, range(self.n_source), repeat(cat_data), repeat(self.sat_info), repeat(self.sim_duration), repeat(self.bkgdata), repeat(self.muSeffdata), repeat(self.options)))
     else:
-      self.alldata = [AllSimData(presence_list[source_ite], source_ite, cat_data, self.sat_info, self.sim_duration, self.options) for source_ite in range(self.n_source)]
+      self.alldata = [AllSimData(presence_list[source_ite], source_ite, cat_data, self.sat_info, self.sim_duration, self.bkgdata, self.muSeffdata, self.options) for source_ite in range(self.n_source)]
     endtask("Step 8", timevar=init_time)
 
     if memory_check:

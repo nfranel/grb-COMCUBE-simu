@@ -25,7 +25,7 @@ class GRBFullData:
   Class containing the data for 1 GRB, for 1 sim, and 1 satellite
   """
 
-  def __init__(self, datafile, sim_duration, source_duration, source_fluence, options):
+  def __init__(self, datafile, sim_duration, source_duration, source_fluence, bkgdata, mudata, options):
     """
     :param datafile: file to read
     :param sat_info: orbital information about the satellite detecting the source
@@ -56,6 +56,7 @@ class GRBFullData:
     self.num_sat = None                    # Appened                 #
     ###################################################################################################################
     # Attributes from the mu100 files
+    self.mu_index = None                    # Appened                 #
     self.mu100_ref = None                  # Weighted mean           # Compton
     self.mu100_err_ref = None              # Weighted mean           # Compton
     self.s_eff_compton_ref = 0             # Summed                  # Compton
@@ -112,7 +113,7 @@ class GRBFullData:
       #                     Filling the fields by reading the extracted sim files
       #################################################################################################################
       try:
-        self.read_saved_grb(datafile, ergcut, armcut)
+        self.read_saved_grb(datafile, bkgdata, mudata, ergcut, armcut)
       except:
         print(traceback.format_exc())
         print(f"Error happened with file : {datafile}")
@@ -146,7 +147,7 @@ class GRBFullData:
     else:
       raise TypeError("Impossible to create the data container : the data must be None or a string")
 
-  def read_saved_grb(self, filename, ergcut=None, armcut=None):
+  def read_saved_grb(self, filename, bkgdata, mudata, ergcut=None, armcut=None):
     with pd.HDFStore(filename, mode="r") as f:
       self.df_compton = f["compton"]
       self.df_single = f["single"]
@@ -165,17 +166,26 @@ class GRBFullData:
       self.sat_ra_wf = f.get_storer("compton").attrs.sat_ra_wf
       self.sat_alt = f.get_storer("compton").attrs.sat_alt
       self.num_sat = f.get_storer("compton").attrs.num_sat
-      self.compton_b_rate = f.get_storer("compton").attrs.compton_b_rate
-      self.single_b_rate = f.get_storer("compton").attrs.single_b_rate
+      # self.compton_b_rate = f.get_storer("compton").attrs.compton_b_rate
+      # self.single_b_rate = f.get_storer("compton").attrs.single_b_rate
       # Information from mu files
-      self.mu100_ref = f.get_storer("compton").attrs.mu100_ref
-      self.mu100_err_ref = f.get_storer("compton").attrs.mu100_err_ref
-      self.s_eff_compton_ref = f.get_storer("compton").attrs.s_eff_compton_ref
-      self.s_eff_single_ref = f.get_storer("compton").attrs.s_eff_single_ref
+      self.mu_index = f.get_storer("compton").attrs.mu_index
+      # self.mu100_ref = f.get_storer("compton").attrs.mu100_ref
+      # self.mu100_err_ref = f.get_storer("compton").attrs.mu100_err_ref
+      # self.s_eff_compton_ref = f.get_storer("compton").attrs.s_eff_compton_ref
+      # self.s_eff_single_ref = f.get_storer("compton").attrs.s_eff_single_ref
       # GRB position and polarisation
       self.grb_dec_sat_frame = f.get_storer("compton").attrs.grb_dec_sat_frame
       self.grb_ra_sat_frame = f.get_storer("compton").attrs.grb_ra_sat_frame
       self.expected_pa = f.get_storer("compton").attrs.expected_pa
+
+      self.compton_b_rate = bkgdata.bkgdf.iloc[self.bkg_index].compton_cr
+      self.single_b_rate = bkgdata.bkgdf.iloc[self.bkg_index].single_cr
+
+      self.mu100_ref = mudata.mudf.iloc[self.mu_index].mu100
+      self.mu100_err_ref = mudata.mudf.iloc[self.mu_index].mu100_err
+      self.s_eff_compton_ref = mudata.mudf.iloc[self.mu_index].seff_compton
+      self.s_eff_single_ref = mudata.mudf.iloc[self.mu_index].seff_single
 
   def cor(self):
     """

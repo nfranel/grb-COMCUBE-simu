@@ -18,7 +18,7 @@ class AllSatData(list):
   """
   Class containing all the data for 1 simulation of 1 GRB (or other source) for a full set of trafiles
   """
-  def __init__(self, all_sat_data, sat_info, sim_duration, info_source, options):
+  def __init__(self, all_sat_data, sat_info, sim_duration, info_source, bkgdata, mudata, options):
     """
     :param source_prefix: prefix used for simulations + source name
     :param num_sim: number of the simulation
@@ -39,7 +39,7 @@ class AllSatData(list):
     # Setting grb world frame dec, ra and burst time
     self.read_grb_siminfo(all_sat_data)
 
-    list.__init__(self, [GRBFullData(grb_ext_file, sim_duration, *info_source, options) if grb_ext_file is not None else None for grb_ext_file in all_sat_data])
+    list.__init__(self, [GRBFullData(grb_ext_file, sim_duration, *info_source, bkgdata, mudata, options) if grb_ext_file is not None else None for grb_ext_file in all_sat_data])
     self.n_sat_receiving = len(self) - self.count(None)
 
     # Initializing the const_data key, that will be containing the constellation data container
@@ -104,7 +104,7 @@ class AllSatData(list):
     else:
       number_const = 1
     for const_ite in range(number_const):
-      self.const_data.append(GRBFullData(None, None, None, None, [None, None, None, None, None]))
+      self.const_data.append(GRBFullData(None, None, None, None, None, None, [None, None, None, None, None]))
       if off_sats[const_ite] is None:
         self.const_data[const_ite].num_offsat = 0
       elif type(off_sats[const_ite]) is list:
@@ -236,7 +236,7 @@ class AllSatData(list):
             #############################################################################################################
             # Appened
             #############################################################################################################
-            elif item in ["num_sat", "const_beneficial_compton", "const_beneficial_single", "bkg_index", "sat_mag_dec"]:
+            elif item in ["num_sat", "const_beneficial_compton", "const_beneficial_single", "bkg_index", "sat_mag_dec", "mu_index"]:
               temp_list = []
               for num_sat in selected_sats:
                 temp_list.append(getattr(self[num_sat], item))
@@ -399,7 +399,7 @@ class AllSatData(list):
             #############################################################################################################
             # Appened
             #############################################################################################################
-            elif item in ["num_sat", "const_beneficial_compton", "const_beneficial_single", "bkg_index", "sat_mag_dec"]:
+            elif item in ["num_sat", "const_beneficial_compton", "const_beneficial_single", "bkg_index", "sat_mag_dec", "mu_index"]:
               temp_list = []
               for num_sat in selected_sats:
                 temp_list.append(getattr(self[num_sat], item))

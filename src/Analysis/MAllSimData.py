@@ -14,7 +14,7 @@ class AllSimData(list):
   """
   Class containing all the data for 1 GRB (or other source) for a full set of trafiles
   """
-  def __init__(self, all_sim_data, source_ite, cat_data, sat_info, param_sim_duration, options):
+  def __init__(self, all_sim_data, source_ite, cat_data, sat_info, param_sim_duration, bkgdata, mudata, options):
     """
     :param sim_prefix: prefix used for simulations
     :param source_ite: iteration of the source simulated
@@ -79,7 +79,7 @@ class AllSimData(list):
       output_message += f"\n  Total of {not_none} files loaded for simulation {sim_ite}"
       if not_none != 0:
         self.n_sim_det += 1
-      temp_list.append(AllSatData(all_sat_data, sat_info, sim_duration, [self.source_duration, self.source_fluence], options))
+      temp_list.append(AllSatData(all_sat_data, sat_info, sim_duration, [self.source_duration, self.source_fluence], bkgdata, mudata, options))
     print(output_message)
 
     list.__init__(self, temp_list)
