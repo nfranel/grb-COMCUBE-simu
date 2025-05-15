@@ -29,7 +29,6 @@ class GRBFullData:
     """
     :param datafile: file to read
     :param sat_info: orbital information about the satellite detecting the source
-    :param burst_time: time at which the detection was made
     :param sim_duration: duration of the simulation
     :param bkg_data: list of background data to affect the correct count rates to this simulation
     :param mu_data: list of mu100 data to affect the correct mu100 and effective area to this simulation
@@ -47,6 +46,7 @@ class GRBFullData:
     ###################################################################################################################
     # Attributes for the sat
     self.bkg_index = None                  # Appened
+    self.sat_mag_dec = None                  # Appened
     self.compton_b_rate = 0                # Summed                  # Compton
     self.single_b_rate = 0                 # Summed                  # Single
     self.sat_dec_wf = None                 # Not changed             #
@@ -160,6 +160,7 @@ class GRBFullData:
 
       # Specific to satellite
       self.bkg_index = f.get_storer("compton").attrs.b_idx
+      self.sat_mag_dec = f.get_storer("compton").attrs.sat_mag_dec
       self.sat_dec_wf = f.get_storer("compton").attrs.sat_dec_wf
       self.sat_ra_wf = f.get_storer("compton").attrs.sat_ra_wf
       self.sat_alt = f.get_storer("compton").attrs.sat_alt

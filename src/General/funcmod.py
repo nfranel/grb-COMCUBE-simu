@@ -1151,7 +1151,7 @@ def save_grb_data(data_file, filename, sat_info_list, bkg_data, mu_data, geometr
       # print("\nBefore affecting")
       # print(f"Current memory use : {current / 1024:.2f} Ko")
       # print(f"Peak use : {peak / 1024:.2f} Ko")
-      sat_dec_wf, sat_ra_wf, sat_alt, compton_b_rate, single_b_rate, b_idx = affect_bkg(sat_info, burst_time, bkg_data)
+      sat_dec_wf, sat_ra_wf, sat_mag_dec, sat_alt, compton_b_rate, single_b_rate, b_idx = affect_bkg(sat_info, burst_time, bkg_data)
       # # get memory statistics
       # current, peak = tracemalloc.get_traced_memory()
       # print("\nAfter affecting")
@@ -1263,6 +1263,7 @@ def save_grb_data(data_file, filename, sat_info_list, bkg_data, mu_data, geometr
       # Saving scalar values
       # Specific to satellite
       f.get_storer("compton").attrs.b_idx = b_idx
+      f.get_storer("compton").attrs.sat_mag_dec = sat_mag_dec
       f.get_storer("compton").attrs.sat_dec_wf = sat_dec_wf
       f.get_storer("compton").attrs.sat_ra_wf = sat_ra_wf
       f.get_storer("compton").attrs.sat_alt = sat_alt
@@ -1734,7 +1735,7 @@ def affect_bkg(info_sat, burst_time, bkg_list):
   ra_sat_world_frame = np.mod(ra_sat_world_frame - earth_ra_offset, 360)
   mag_dec_sat_world_frame, mag_ra_sat_world_frame = geo_to_mag(dec_sat_world_frame, ra_sat_world_frame, info_sat[3])
   bkg_info = closest_bkg_info(mag_dec_sat_world_frame, info_sat[3], bkg_list)
-  return dec_sat_world_frame, ra_sat_world_frame, info_sat[3], bkg_info[0], bkg_info[1], bkg_info[2]
+  return dec_sat_world_frame, ra_sat_world_frame, mag_dec_sat_world_frame, info_sat[3], bkg_info[0], bkg_info[1], bkg_info[2]
 
 
 def closest_mufile(grb_dec_sf, grb_ra_sf, mu_list):
