@@ -132,12 +132,14 @@ class AllSourceData:
     printcom("Step 2 - Extracting background data")
     init_time = time()
     self.bkgdata = BkgContainer(self.bkg_param, self.erg_cut)
+    self.bkgdata.bkgdf.sort_values(by=["bkg_alt", "bkg_dec"], ascending=[True, True], inplace=True)
     endtask("Step 2", timevar=init_time)
 
     # Setting the background files
     printcom("Step 3 - Extracting mu100 and Seff data")
     init_time = time()
     self.muSeffdata = MuSeffContainer(self.muSeff_param, self.erg_cut, self.armcut)
+    self.muSeffdata.mudf.sort_values(by=["dec", "ra"], ascending=[True, True], inplace=True)
     endtask("Step 3", timevar=init_time)
 
     # Memory check for the class
