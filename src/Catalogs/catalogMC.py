@@ -806,8 +806,10 @@ class MCCatalog:
     plt.close(fig2)
 
     if savefile is not None and self.mode == "catalog":
-      hist_df = pd.DataFrame({"l_m_flux_temp": histos[0], "l_p_flux_temp": histos[1], "l_flnc_temp": histos[2], "s_m_flux_temp": histos[3], "s_p_flux_temp": histos[4], "s_flnc_temp": histos[5]})
-      hist_df.to_hdf(f"{savefile.split('.csv')[0]}_{iteration}_{int(histos[6])}.h5", key="catalog", mode="w")
+      hist_df_long = pd.DataFrame({"l_m_flux_temp": histos[0], "l_p_flux_temp": histos[1], "l_flnc_temp": histos[2]})
+      hist_df_short = pd.DataFrame({"s_m_flux_temp": histos[3], "s_p_flux_temp": histos[4], "s_flnc_temp": histos[5]})
+      hist_df_long.to_hdf(f"{savefile.split('.csv')[0]}_{iteration}_{int(histos[6])}long.h5", key="catalog", mode="w")
+      hist_df_short.to_hdf(f"{savefile.split('.csv')[0]}_{iteration}_{int(histos[6])}short.h5", key="catalog", mode="w")
 
   def get_short(self, ite_num, short_rate, ind1_z_s, ind2_z_s, zb_s, ind1_s, ind2_s, lb_s):
     """
