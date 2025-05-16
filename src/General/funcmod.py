@@ -1758,9 +1758,9 @@ def closest_mufile(grb_dec_sf, grb_ra_sf, mu_list):
 
     error = np.sqrt((mu_list.mudf.dec.values - grb_dec_sf) ** 2 + (mu_list.mudf.ra.values - grb_ra_sf) ** 2)
     index = np.argmin(error)
-    print("grb : ", grb_dec_sf, grb_ra_sf)
-    print("found : ", mu_list.mudf.dec.values[index], mu_list.mudf.ra.values[index])
-    print("found v2 : ", mu_list.mudf.iloc[index].dec, mu_list.mudf.iloc[index].ra)
+    # print("grb : ", grb_dec_sf, grb_ra_sf)
+    # print("found : ", mu_list.mudf.dec.values[index], mu_list.mudf.ra.values[index])
+    # print("found v2 : ", mu_list.mudf.iloc[index].dec, mu_list.mudf.iloc[index].ra)
     return index, mu_list.mudf.mu100[index], mu_list.mudf.mu100_err[index], mu_list.mudf.seff_compton[index], mu_list.mudf.seff_single[index]
 
 
