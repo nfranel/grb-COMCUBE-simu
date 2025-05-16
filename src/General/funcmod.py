@@ -1525,21 +1525,21 @@ def calc_flux_gbm(catalog, index, ergcut, cat_is_df=False):
     used_df = catalog
   else:
     used_df = catalog.df
-  model = used_df.flnc_best_fitting_model[index]
+  model = used_df.flnc_best_fitting_model.values[index]
   if model == "flnc_band":
     func = band
-    func_args = (used_df.flnc_band_ampl[index], used_df.flnc_band_alpha[index], used_df.flnc_band_beta[index], used_df.flnc_band_epeak[index])
+    func_args = (used_df.flnc_band_ampl.values[index], used_df.flnc_band_alpha.values[index], used_df.flnc_band_beta.values[index], used_df.flnc_band_epeak.values[index])
   elif model == "flnc_comp":
     func = comp
-    func_args = (used_df.flnc_comp_ampl[index], used_df.flnc_comp_index[index], used_df.flnc_comp_epeak[index], used_df.flnc_comp_pivot[index])
+    func_args = (used_df.flnc_comp_ampl.values[index], used_df.flnc_comp_index.values[index], used_df.flnc_comp_epeak.values[index], used_df.flnc_comp_pivot.values[index])
   elif model == "flnc_sbpl":
     func = sbpl
-    func_args = (used_df.flnc_sbpl_ampl[index], used_df.flnc_sbpl_indx1[index], used_df.flnc_sbpl_indx2[index], used_df.flnc_sbpl_brken[index], used_df.flnc_sbpl_brksc[index], used_df.flnc_sbpl_pivot[index])
+    func_args = (used_df.flnc_sbpl_ampl.values[index], used_df.flnc_sbpl_indx1.values[index], used_df.flnc_sbpl_indx2.values[index], used_df.flnc_sbpl_brken.values[index], used_df.flnc_sbpl_brksc.values[index], used_df.flnc_sbpl_pivot.values[index])
   elif model == "flnc_plaw":
     func = plaw
-    func_args = (used_df.flnc_plaw_ampl[index], used_df.flnc_plaw_index[index], used_df.flnc_plaw_pivot[index])
+    func_args = (used_df.flnc_plaw_ampl.values[index], used_df.flnc_plaw_index.values[index], used_df.flnc_plaw_pivot.values[index])
   else:
-    print("Could not find best fit model for {} (indicated {}). Aborting this GRB.".format(used_df.name[index], model))
+    print("Could not find best fit model for {} (indicated {}). Aborting this GRB.".format(used_df.name.values[index], model))
     return
   return use_scipyquad(func, ergcut[0], ergcut[1], func_args=func_args, x_logscale=True)[0]
 
@@ -1553,7 +1553,7 @@ def calc_flux_sample(catalog, index, ergcut):
   :returns: the number of photons per cm² for a given energy range, averaged over the duration of the sim : ncount/cm²/s
   """
   num_val = 100001
-  pflux = norm_band_spec_calc(catalog.df.alpha[index], catalog.df.beta[index], catalog.df.z_obs[index], catalog.df.dl[index], catalog.df.ep_rest[index], catalog.df.liso[index],
+  pflux = norm_band_spec_calc(catalog.df.alpha.values[index], catalog.df.beta.values[index], catalog.df.z_obs.values[index], catalog.df.dl.values[index], catalog.df.ep_rest.values[index], catalog.df.liso.values[index],
                                               np.logspace(np.log10(ergcut[0]), np.log10(ergcut[1]), num_val))[2]
   return pflux
 
@@ -1565,10 +1565,10 @@ def make_sample_lc(smp_cat, cat_ite, gbmt90):
   """
   
   """
-  corr = smp_cat.df.t90[cat_ite] / gbmt90
-  times, counts = extract_lc(f"../Data/sources/GBM_Light_Curves/{smp_cat.df.lc[cat_ite]}")
+  corr = smp_cat.df.t90.values[cat_ite] / gbmt90
+  times, counts = extract_lc(f"../Data/sources/GBM_Light_Curves/{smp_cat.df.lc.values[cat_ite]}")
   corrtimes = times * corr
-  fullname = f"../Data/sources/Sample_Light_Curves/LightCurve_{smp_cat.df.name[cat_ite]}"
+  fullname = f"../Data/sources/Sample_Light_Curves/LightCurve_{smp_cat.df.name.values[cat_ite]}"
   with open(fullname, "w") as f:
     f.write("# Light curve file, first column is time, second is count rate\n")
     f.write("\n")
@@ -1715,7 +1715,7 @@ def closest_bkg_info(mag_dec, sat_alt, bkgdata):  # TODO : limits on variables
     # dec_error = np.array(dec_error)
     # total_error = np.sqrt(dec_error + ra_error)
     # index = np.argmin(total_error)
-    return [bkgdata.bkgdf.iloc[index].compton_cr, bkgdata.bkgdf.iloc[index].single_cr, index]
+    return [bkgdata.bkgdf.compton_cr.values[index], bkgdata.bkgdf.single_cr.values[index], index]
 
 
 def affect_bkg(info_sat, burst_time, bkg_list):
@@ -1761,7 +1761,7 @@ def closest_mufile(grb_dec_sf, grb_ra_sf, mu_list):
     # print("grb : ", grb_dec_sf, grb_ra_sf)
     # print("found : ", mu_list.mudf.dec.values[index], mu_list.mudf.ra.values[index])
     # print("found v2 : ", mu_list.mudf.iloc[index].dec, mu_list.mudf.iloc[index].ra)
-    return index, mu_list.mudf.mu100[index], mu_list.mudf.mu100_err[index], mu_list.mudf.seff_compton[index], mu_list.mudf.seff_single[index]
+    return index, mu_list.mudf.mu100.values[index], mu_list.mudf.mu100_err.values[index], mu_list.mudf.seff_compton.values[index], mu_list.mudf.seff_single.values[index]
 
 
 ######################################################################################################################################################

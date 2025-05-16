@@ -68,6 +68,10 @@ class BkgContainer:
     # list.__init__(self, self.read_data(f"../Data/bkg/sim_{self.fold_name}/{saving}", save_time, ergcut, data_type="full"))
     # Saving the data with a condensed format
     self.bkgdf = self.read_data(f"../Data/bkg/sim_{self.fold_name}/{cond_saving}")
+    print(self.bkgdf.index)
+    self.bkgdf.sort_values(by=["bkg_alt", "bkg_dec"], ascending=[True, True], inplace=True)
+    print(self.bkgdf.index)
+
     print("=======================================")
     print(" Extraction of bkg data finished in : ", time() - init_time, "seconds")
     print("=======================================")

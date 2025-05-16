@@ -396,23 +396,23 @@ def create_lc(cat, ite_grb, bin_size="auto", ener_range=(10, 1000), show=False, 
   """
 
   """
-  GRBname = cat.df.name[ite_grb]
-  t90 = float(cat.df.t90[ite_grb])
-  start_t90 = float(cat.df.t90_start[ite_grb])
+  GRBname = cat.df.name.values[ite_grb]
+  t90 = float(cat.df.t90.values[ite_grb])
+  start_t90 = float(cat.df.t90_start.values[ite_grb])
   end_t90 = start_t90 + t90
-  time_integ_lower_energy = float(cat.df.duration_energy_low[ite_grb])
-  time_integ_higher_energy = float(cat.df.duration_energy_high[ite_grb])
-  bk_time_low_start = float(cat.df.back_interval_low_start[ite_grb])
-  bk_time_low_stop = float(cat.df.back_interval_low_stop[ite_grb])
-  bk_time_high_start = float(cat.df.back_interval_high_start[ite_grb])
-  bk_time_high_stop = float(cat.df.back_interval_high_stop[ite_grb])
-  lc_detector_mask = cat.df.bcat_detector_mask[ite_grb]
-  spec_detector_mask = cat.df.scat_detector_mask[ite_grb]
-  flu_integ_start_time = float(cat.df.flnc_spectrum_start[ite_grb])
-  flu_integ_stop_time = float(cat.df.flnc_spectrum_stop[ite_grb])
+  time_integ_lower_energy = float(cat.df.duration_energy_low.values[ite_grb])
+  time_integ_higher_energy = float(cat.df.duration_energy_high.values[ite_grb])
+  bk_time_low_start = float(cat.df.back_interval_low_start.values[ite_grb])
+  bk_time_low_stop = float(cat.df.back_interval_low_stop.values[ite_grb])
+  bk_time_high_start = float(cat.df.back_interval_high_start.values[ite_grb])
+  bk_time_high_stop = float(cat.df.back_interval_high_stop.values[ite_grb])
+  lc_detector_mask = cat.df.bcat_detector_mask.values[ite_grb]
+  spec_detector_mask = cat.df.scat_detector_mask.values[ite_grb]
+  flu_integ_start_time = float(cat.df.flnc_spectrum_start.values[ite_grb])
+  flu_integ_stop_time = float(cat.df.flnc_spectrum_stop.values[ite_grb])
   # print("verif :", GRBname, t90, start_t90, end_t90, time_integ_lower_energy, time_integ_higher_energy, bk_time_low_start,
   #       bk_time_low_stop, bk_time_high_start, bk_time_high_stop, lc_detector_mask, spec_detector_mask, flu_integ_start_time, flu_integ_stop_time)
-  p_to_m_flux = cat.df.mean_flux[ite_grb] / cat.df.peak_flux[ite_grb]
+  p_to_m_flux = cat.df.mean_flux.values[ite_grb] / cat.df.peak_flux.values[ite_grb]
   if bin_size == "auto":
     # a and b in 10**(a * log(T90) + b) obtained by fitting these values with lx the T90 and ly the desired bins
     # lx = [0.02, 0.04, 0.1, 0.2, 0.4, 1, 10, 100]

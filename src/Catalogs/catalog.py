@@ -155,12 +155,12 @@ class Catalog:
     pht_mflx_list = []
     pht_pflx_list = []
     for ite in range(len(self.df)):
-      model = self.df.flnc_best_fitting_model[ite]
-      pht_mflx = float(self.df[f"{model}_phtflux"][ite])
+      model = self.df.flnc_best_fitting_model.values[ite]
+      pht_mflx = float(self.df[f"{model}_phtflux"].values[ite])
 
-      pfluxmodel = self.df.pflx_best_fitting_model[ite]
+      pfluxmodel = self.df.pflx_best_fitting_model.values[ite]
       if type(pfluxmodel) == str:
-        pht_pflx = float(self.df[f"{pfluxmodel}_phtflux"][ite])
+        pht_pflx = float(self.df[f"{pfluxmodel}_phtflux"].values[ite])
       else:
         if np.isnan(pfluxmodel):
           pht_pflx = np.nan
@@ -392,11 +392,11 @@ class Catalog:
     all_df = self.df.loc[np.logical_not(np.isnan(self.df.flnc_band_epeak))]
     long_df = all_df.loc[all_df.t90 > 2]
     short_df = all_df.loc[all_df.t90 <= 2]
-    for ite_gbm, gbm_ep in enumerate(self.df.flnc_band_epeak):
+    for ite_gbm, gbm_ep in enumerate(self.df.flnc_band_epeak.values):
       if not np.isnan(gbm_ep):
         ph_flux = calc_flux_gbm(self, ite_gbm, (10, 1000))
         gbm_ph_flux.append(ph_flux)
-        if self.df.t90[ite_gbm] > 2:
+        if self.df.t90.values[ite_gbm] > 2:
           long_gbm_ph_flux.append(ph_flux)
         else:
           short_gbm_ph_flux.append(ph_flux)
