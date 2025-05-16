@@ -101,10 +101,10 @@ def MC_explo_pairplot(fileused, legend_mode, grbtype):
       select_cols = ["short_rate", "short_ind1_z", "short_ind2_z", "short_zb", "short_ind1_lum", "short_ind2_lum", "short_lb"]
     df_selec = get_df(extract_cols, csvfile=fileused)
     if grbtype == "long":
-      df_selec['nlong'] = [int(10 * use_scipyquad(red_rate_long, 0, 10, func_args=(df_selec.long_rate[ite], df_selec.long_ind1_z[ite], df_selec.long_ind2_z[ite], df_selec.long_zb[ite]), x_logscale=False)[0]) for ite in range(len(df_selec))]
+      df_selec['nlong'] = [int(10 * use_scipyquad(red_rate_long, 0, 10, func_args=(df_selec.long_rate.values[ite], df_selec.long_ind1_z.values[ite], df_selec.long_ind2_z.values[ite], df_selec.long_zb.values[ite]), x_logscale=False)[0]) for ite in range(len(df_selec))]
       select_cols = ["nlong", "long_rate", "long_ind1_z", "long_ind2_z", "long_zb", "long_ind1_lum", "long_ind2_lum", "long_lb_2"]
     elif grbtype == "short":
-      df_selec['nshort'] = [int(10 * use_scipyquad(red_rate_short, 0, 10, func_args=(df_selec.short_rate[ite], df_selec.short_ind1_z[ite], df_selec.short_ind2_z[ite], df_selec.short_zb[ite]), x_logscale=False)[0]) for ite in range(len(df_selec))]
+      df_selec['nshort'] = [int(10 * use_scipyquad(red_rate_short, 0, 10, func_args=(df_selec.short_rate.values[ite], df_selec.short_ind1_z.values[ite], df_selec.short_ind2_z.values[ite], df_selec.short_zb.values[ite]), x_logscale=False)[0]) for ite in range(len(df_selec))]
       select_cols = ["nshort", "short_rate", "short_ind1_z", "short_ind2_z", "short_zb", "short_ind1_lum", "short_ind2_lum", "short_lb"]
 
   pierson_chi2_categories, order_hue = categorize_pierson_chi2(df_selec['pierson_chi2'].values, mode=legend_mode, grbtype=grbtype)
@@ -154,26 +154,26 @@ class MCCatalog:
     self.gbm_l_flnc = []
     self.gbm_l_mp_ratio = []
     for ite_l in range(len(self.df_long)):
-      model = self.df_long.flnc_best_fitting_model[ite_l]
-      p_model = self.df_long.pflx_best_fitting_model[ite_l]
+      model = self.df_long.flnc_best_fitting_model.values[ite_l]
+      p_model = self.df_long.pflx_best_fitting_model.values[ite_l]
       if type(p_model) is str:
-        self.gbm_l_pflux.append(self.df_long[f"{p_model}_phtflux"][ite_l])
-        self.gbm_l_mp_ratio.append(self.df_long[f"{p_model}_phtflux"][ite_l] / self.df_long[f"{model}_phtflux"][ite_l])
-      self.gbm_l_mflux.append(self.df_long[f"{model}_phtflux"][ite_l])
-      self.gbm_l_flnc.append(calc_flux_gbm(self.df_long, ite_l, self.ergcut, cat_is_df=True) * self.df_long.t90[ite_l])
+        self.gbm_l_pflux.append(self.df_long[f"{p_model}_phtflux"].values[ite_l])
+        self.gbm_l_mp_ratio.append(self.df_long[f"{p_model}_phtflux"].values[ite_l] / self.df_long[f"{model}_phtflux"].values[ite_l])
+      self.gbm_l_mflux.append(self.df_long[f"{model}_phtflux"].values[ite_l])
+      self.gbm_l_flnc.append(calc_flux_gbm(self.df_long, ite_l, self.ergcut, cat_is_df=True) * self.df_long.t90.values[ite_l])
 
     self.gbm_s_mflux = []
     self.gbm_s_pflux = []
     self.gbm_s_flnc = []
     self.gbm_s_mp_ratio = []
     for ite_s in range(len(self.df_short)):
-      model = self.df_short.flnc_best_fitting_model[ite_s]
-      p_model = self.df_short.pflx_best_fitting_model[ite_s]
+      model = self.df_short.flnc_best_fitting_model.values[ite_s]
+      p_model = self.df_short.pflx_best_fitting_model.values[ite_s]
       if type(p_model) is str:
-        self.gbm_s_pflux.append(self.df_short[f"{p_model}_phtflux"][ite_s])
-        self.gbm_s_mp_ratio.append(self.df_short[f"{p_model}_phtflux"][ite_s] / self.df_short[f"{model}_phtflux"][ite_s])
-      self.gbm_s_mflux.append(self.df_short[f"{model}_phtflux"][ite_s])
-      self.gbm_s_flnc.append(calc_flux_gbm(self.df_short, ite_s, self.ergcut, cat_is_df=True) * self.df_short.t90[ite_s])
+        self.gbm_s_pflux.append(self.df_short[f"{p_model}_phtflux"].values[ite_s])
+        self.gbm_s_mp_ratio.append(self.df_short[f"{p_model}_phtflux"].values[ite_s] / self.df_short[f"{model}_phtflux"].values[ite_s])
+      self.gbm_s_mflux.append(self.df_short[f"{model}_phtflux"].values[ite_s])
+      self.gbm_s_flnc.append(calc_flux_gbm(self.df_short, ite_s, self.ergcut, cat_is_df=True) * self.df_short.t90.values[ite_s])
 
     ######### CHECK IF WE KEEP A VARIABLE FOR THE TIME OF THE CATALOG, BUT GBM IS 10 YEARS OF DATA SO WE SHOULD BROBABLY STICK TO THAT TIME
 
@@ -912,7 +912,7 @@ class MCCatalog:
       gbm_index = gbm_indexes[0]
     else:
       gbm_index = gbm_indexes[np.random.randint(len(gbm_indexes))]
-    return f"LightCurve_{self.gbm_cat.df.name[gbm_index]}.dat", self.gbm_cat.df.mean_flux[gbm_index], self.gbm_cat.df.peak_flux[gbm_index], self.gbm_cat.df.t90[gbm_index]
+    return f"LightCurve_{self.gbm_cat.df.name.values[gbm_index]}.dat", self.gbm_cat.df.mean_flux.values[gbm_index], self.gbm_cat.df.peak_flux.values[gbm_index], self.gbm_cat.df.t90.values[gbm_index]
 
   def gbm_reference_distri(self, print_bins=True):
     """

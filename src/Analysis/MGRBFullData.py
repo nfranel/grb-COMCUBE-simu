@@ -179,13 +179,13 @@ class GRBFullData:
       self.grb_ra_sat_frame = f.get_storer("compton").attrs.grb_ra_sat_frame
       self.expected_pa = f.get_storer("compton").attrs.expected_pa
 
-      self.compton_b_rate = bkgdata.bkgdf.iloc[self.bkg_index].compton_cr
-      self.single_b_rate = bkgdata.bkgdf.iloc[self.bkg_index].single_cr
+      self.compton_b_rate = bkgdata.bkgdf.compton_cr.values[self.bkg_index]
+      self.single_b_rate = bkgdata.bkgdf.single_cr.values[self.bkg_index]
 
-      self.mu100_ref = mudata.mudf.iloc[self.mu_index].mu100
-      self.mu100_err_ref = mudata.mudf.iloc[self.mu_index].mu100_err
-      self.s_eff_compton_ref = mudata.mudf.iloc[self.mu_index].seff_compton
-      self.s_eff_single_ref = mudata.mudf.iloc[self.mu_index].seff_single
+      self.mu100_ref = mudata.mudf.mu100.values[self.mu_index]
+      self.mu100_err_ref = mudata.mudf.mu100_err.values[self.mu_index]
+      self.s_eff_compton_ref = mudata.mudf.seff_compton.values[self.mu_index]
+      self.s_eff_single_ref = mudata.mudf.seff_single.values[self.mu_index]
 
   def cor(self):
     """

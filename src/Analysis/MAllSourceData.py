@@ -132,14 +132,12 @@ class AllSourceData:
     printcom("Step 2 - Extracting background data")
     init_time = time()
     self.bkgdata = BkgContainer(self.bkg_param, self.erg_cut)
-    self.bkgdata.bkgdf.sort_values(by=["bkg_alt", "bkg_dec"], ascending=[True, True], inplace=True)
     endtask("Step 2", timevar=init_time)
 
     # Setting the background files
     printcom("Step 3 - Extracting mu100 and Seff data")
     init_time = time()
     self.muSeffdata = MuSeffContainer(self.muSeff_param, self.erg_cut, self.armcut)
-    self.muSeffdata.mudf.sort_values(by=["dec", "ra"], ascending=[True, True], inplace=True)
     endtask("Step 3", timevar=init_time)
 
     # Memory check for the class
@@ -1038,7 +1036,7 @@ class AllSourceData:
                   bkg_indexs.append(sat.bkg_index)
 
     for bkg_idx in bkg_indexs:
-      bkg_stats = (self.bkgdata.bkgdf.iloc[bkg_idx].com_det_stats + self.bkgdata.bkgdf.iloc[bkg_idx].sin_det_stats).reshape(4, 5, 1) / self.bkgdata.sim_time
+      bkg_stats = (self.bkgdata.bkgdf.com_det_stats.values[bkg_idx] + self.bkgdata.bkgdf.sin_det_stats.values[bkg_idx]).reshape(4, 5, 1) / self.bkgdata.sim_time
       if combined_sats_det_stats_bkg is None:
         combined_sats_det_stats_bkg = bkg_stats
         print(combined_sats_det_stats_bkg)
