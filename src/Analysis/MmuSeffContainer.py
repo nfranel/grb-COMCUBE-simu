@@ -79,9 +79,9 @@ class MuSeffContainer:
     print("###########################################################################")
     # list.__init__(self, self.read_data(f"../Data/mu100/sim_{geom_name}/{cond_saving}"))
     self.mudf = self.read_data(f"../Data/mu100/sim_{geom_name}/{cond_saving}")
-    print(self.mudf.index)
+    # print(self.mudf.index)
     self.mudf.sort_values(by=["dec", "ra"], ascending=[True, True], inplace=True)
-    print(self.mudf.index)
+    # print(self.mudf.index)
 
     print("=======================================")
     print(" Extraction of mu/Seff data finished in : ", time() - init_time, "seconds")
