@@ -132,9 +132,9 @@ class AllSourceData:
     printcom("Step 2 - Extracting background data")
     init_time = time()
     self.bkgdata = BkgContainer(self.bkg_param, self.erg_cut)
-    print(self.bkgdata.bkg_df.index)
+    print(self.bkgdata.bkgdf.index)
     self.bkgdata.bkgdf.sort_values(by=["bkg_alt", "bkg_dec"], ascending=[True, True], inplace=True)
-    print(self.bkgdata.bkg_df.index)
+    print(self.bkgdata.bkgdf.index)
     endtask("Step 2", timevar=init_time)
 
     # Setting the background files
