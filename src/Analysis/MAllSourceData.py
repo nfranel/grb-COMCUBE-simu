@@ -166,7 +166,7 @@ class AllSourceData:
         cat_data = SampleCatalog(self.cat_file, self.sttype)
       else:
         raise ValueError("Wrong simulation mode in .par file")
-      self.namelist = cat_data.df.name
+      self.namelist = cat_data.df.name.values
       self.n_source = len(self.namelist)
 
       # Setting some informations used for obtaining the GRB count rates

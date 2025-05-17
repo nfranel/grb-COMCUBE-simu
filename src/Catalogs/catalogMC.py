@@ -905,7 +905,7 @@ class MCCatalog:
     """
     Find the lightcurve file with a duration which is the closest to the sampled t90 time
     """
-    abs_diff = np.abs(np.array(self.gbm_cat.df.t90, dtype=float) - searched_time)
+    abs_diff = np.abs(np.array(self.gbm_cat.df.t90.values, dtype=float) - searched_time)
     gbm_indexes = np.where(abs_diff == np.min(abs_diff))[0]
     # print(gbm_indexes)
     if len(gbm_indexes) == 0:
