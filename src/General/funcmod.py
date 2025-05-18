@@ -1708,7 +1708,7 @@ def closest_bkg_info(mag_dec, sat_alt, bkgdata):  # TODO : limits on variables
     min_arg = np.argmin(error)
     row_num = bkgdata.bkgdf.index.get_loc(df_selec_alt.index[min_arg])
     error_verif = np.abs(bkgdata.bkgdf.bkg_dec.values[row_num] - mag_dec)
-    print("row, compton_cr, compton_single, compton_dec, mag_dec, compton_alt : ", row_num, bkgdata.bkgdf.compton_cr.values[row_num], bkgdata.bkgdf.single_cr.values[row_num], bkgdata.bkgdf.bkg_dec.values[row_num], mag_dec, bkgdata.bkgdf.bkg_alt.values[row_num])
+    # print("row, compton_cr, compton_single, compton_dec, mag_dec, compton_alt : ", row_num, bkgdata.bkgdf.compton_cr.values[row_num], bkgdata.bkgdf.single_cr.values[row_num], bkgdata.bkgdf.bkg_dec.values[row_num], mag_dec, bkgdata.bkgdf.bkg_alt.values[row_num])
     if error[min_arg] != error_verif:
       raise IndexError("Problem with finding the closest background file")
     return [bkgdata.bkgdf.compton_cr.values[row_num], bkgdata.bkgdf.single_cr.values[row_num], row_num]
@@ -1756,8 +1756,8 @@ def closest_mufile(grb_dec_sf, grb_ra_sf, mu_list):
     index = np.argmin(error)
     error_verif = np.sqrt((mu_list.mudf.dec.values[index] - grb_dec_sf) ** 2 + (mu_list.mudf.ra.values[index] - grb_ra_sf) ** 2)
 
-    # if error[index] != error_verif:
-    #   print(f"{error[index]} vs {error_verif}")
+    if error[index] != error_verif:
+      print(f"{error[index]} vs {error_verif}")
     #   raise IndexError(f"Problem with finding the closest mu100 file : {error[index]} vs {error_verif}")
 
     return index, mu_list.mudf.mu100.values[index], mu_list.mudf.mu100_err.values[index], mu_list.mudf.seff_compton.values[index], mu_list.mudf.seff_single.values[index]

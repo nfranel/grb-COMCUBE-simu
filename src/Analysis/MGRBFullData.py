@@ -182,8 +182,6 @@ class GRBFullData:
       # print("comp des valeurs bkg: ", bkgdata.bkgdf.bkg_dec.values[self.bkg_index], self.sat_mag_dec)
       self.compton_b_rate = bkgdata.bkgdf.compton_cr.values[self.bkg_index]
       self.single_b_rate = bkgdata.bkgdf.single_cr.values[self.bkg_index]
-      if self.num_sat == 0:
-        print(" dehors : row, compton_cr, compton_single, compton_dec, mag_dec, compton_alt : ", self.bkg_index, bkgdata.bkgdf.compton_cr.values[self.bkg_index], bkgdata.bkgdf.single_cr.values[self.bkg_index], bkgdata.bkgdf.bkg_dec.values[self.bkg_index], self.sat_mag_dec, bkgdata.bkgdf.bkg_alt.values[self.bkg_index])
 
       # print("comp des valeurs mu : ", mudata.mudf.bkg_dec.values[self.bkg_index], self.sat_mag_dec)
       self.mu100_ref = mudata.mudf.mu100.values[self.mu_index]
