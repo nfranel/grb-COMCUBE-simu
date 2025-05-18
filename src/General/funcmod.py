@@ -1708,6 +1708,7 @@ def closest_bkg_info(mag_dec, sat_alt, bkgdata):  # TODO : limits on variables
     min_arg = np.argmin(error)
     row_num = bkgdata.bkgdf.index.get_loc(df_selec_alt.index[min_arg])
     error_verif = np.abs(bkgdata.bkgdf.bkg_dec.values[row_num] - mag_dec)
+    print("row, compton_cr, compton_single, compton_dec, mag_dec, compton_alt : ", row_num, bkgdata.bkgdf.compton_cr.values[row_num], bkgdata.bkgdf.single_cr.values[row_num], bkgdata.bkgdf.bkg_dec.values[row_num], mag_dec, bkgdata.bkgdf.bkg_alt.values[row_num])
     if error[min_arg] != error_verif:
       raise IndexError("Problem with finding the closest background file")
     return [bkgdata.bkgdf.compton_cr.values[row_num], bkgdata.bkgdf.single_cr.values[row_num], row_num]
