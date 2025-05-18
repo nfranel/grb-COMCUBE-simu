@@ -1757,6 +1757,7 @@ def closest_mufile(grb_dec_sf, grb_ra_sf, mu_list):
     error_verif = np.sqrt((mu_list.mudf.dec.values[index] - grb_dec_sf) ** 2 + (mu_list.mudf.ra.values[index] - grb_ra_sf) ** 2)
 
     if error[index] != error_verif:
+      print(f"{error[index]} vs {error_verif}")
       raise IndexError("Problem with finding the closest mu100 file")
 
     return index, mu_list.mudf.mu100.values[index], mu_list.mudf.mu100_err.values[index], mu_list.mudf.seff_compton.values[index], mu_list.mudf.seff_single.values[index]
