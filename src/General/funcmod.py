@@ -1705,17 +1705,13 @@ def closest_bkg_info(mag_dec, sat_alt, bkgdata):  # TODO : limits on variables
       raise FileNotFoundError("No background file were loaded for the given altitude.")
     error = np.abs(decs - mag_dec)
     # print(error)
-    index = df_selec_alt.index[np.argmin(error)]
-    # for bkg in bkgdata:
-    #   if bkg.alt == sat_alt:
-    #     bkg_count += 1
-    #     dec_error.append((bkg.dec - mag_dec) ** 2)
-    #   else:
-    #     dec_error.append(np.inf)
-    # dec_error = np.array(dec_error)
-    # total_error = np.sqrt(dec_error + ra_error)
-    # index = np.argmin(total_error)
-    return [bkgdata.bkgdf.compton_cr.values[index], bkgdata.bkgdf.single_cr.values[index], index]
+    min_arg = np.argmin(error)
+    row_num = bkgdata.bkgdf.index.get_loc(df_selec_alt.index[min_arg])
+    error_verif = np.abs(bkgdata.bkgdf.bkg_dec.values[row_num] - mag_dec)
+    # print("row, compton_cr, compton_single, compton_dec, mag_dec, compton_alt : ", row_num, bkgdata.bkgdf.compton_cr.values[row_num], bkgdata.bkgdf.single_cr.values[row_num], bkgdata.bkgdf.bkg_dec.values[row_num], mag_dec, bkgdata.bkgdf.bkg_alt.values[row_num])
+    if error[min_arg] != error_verif:
+      raise IndexError("Problem with finding the closest background file")
+    return [bkgdata.bkgdf.compton_cr.values[row_num], bkgdata.bkgdf.single_cr.values[row_num], row_num]
 
 
 def affect_bkg(info_sat, burst_time, bkg_list):
@@ -1758,9 +1754,11 @@ def closest_mufile(grb_dec_sf, grb_ra_sf, mu_list):
 
     error = np.sqrt((mu_list.mudf.dec.values - grb_dec_sf) ** 2 + (mu_list.mudf.ra.values - grb_ra_sf) ** 2)
     index = np.argmin(error)
-    # print("grb : ", grb_dec_sf, grb_ra_sf)
-    # print("found : ", mu_list.mudf.dec.values[index], mu_list.mudf.ra.values[index])
-    # print("found v2 : ", mu_list.mudf.iloc[index].dec, mu_list.mudf.iloc[index].ra)
+    error_verif = np.sqrt((mu_list.mudf.dec.values[index] - grb_dec_sf) ** 2 + (mu_list.mudf.ra.values[index] - grb_ra_sf) ** 2)
+
+    if round(error[index], 10) != round(error_verif, 10):
+      raise IndexError(f"Problem with finding the closest mu100 file : {error[index]} vs {error_verif}")
+
     return index, mu_list.mudf.mu100.values[index], mu_list.mudf.mu100_err.values[index], mu_list.mudf.seff_compton.values[index], mu_list.mudf.seff_single.values[index]
 
 

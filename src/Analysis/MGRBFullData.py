@@ -179,9 +179,11 @@ class GRBFullData:
       self.grb_ra_sat_frame = f.get_storer("compton").attrs.grb_ra_sat_frame
       self.expected_pa = f.get_storer("compton").attrs.expected_pa
 
+      # print("comp des valeurs bkg: ", bkgdata.bkgdf.bkg_dec.values[self.bkg_index], self.sat_mag_dec)
       self.compton_b_rate = bkgdata.bkgdf.compton_cr.values[self.bkg_index]
       self.single_b_rate = bkgdata.bkgdf.single_cr.values[self.bkg_index]
 
+      # print("comp des valeurs mu : ", mudata.mudf.bkg_dec.values[self.bkg_index], self.sat_mag_dec)
       self.mu100_ref = mudata.mudf.mu100.values[self.mu_index]
       self.mu100_err_ref = mudata.mudf.mu100_err.values[self.mu_index]
       self.s_eff_compton_ref = mudata.mudf.seff_compton.values[self.mu_index]
