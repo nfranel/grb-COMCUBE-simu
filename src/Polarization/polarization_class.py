@@ -5,9 +5,14 @@ import matplotlib.pyplot as plt
 import time
 import multiprocessing as mp
 from itertools import repeat
+from scipy.optimize import curve_fit
+from scipy.stats import rice
+from scipy.integrate import trapezoid
+
+from IPython.core.pylabtools import figsize
 
 # Developped modules imports
-from src.General.funcmod import arg_convert, var_ite_setting, values_number
+from src.General.funcmod import arg_convert, var_ite_setting, values_number, SO_PF_distri, SR_PF_distri, CD_PF_distri, PJ_PF_distri, acc_reject, gauss
 from src.Polarization.models import integral_calculation_SO, integral_calculation_SR, integral_calculation_CD, integral_calculation_PJ
 
 import matplotlib as mpl
@@ -232,86 +237,197 @@ class PolVSAngleRatio:
 # # for model in ["SO", "SR"]:
 #     test_distri = PolVSAngleRatio(model=model, gamma_range=100, red_z_range=1, theta_j_range=list(np.sqrt([0.1, 1, 10, 100]) / 100),
 #                                      theta_nu_range="toma_curve", nu_0_range=3.5, alpha_range=-0.8, beta_range=-2.2,
-#                                      nu_min=None, nu_max=None, integ_steps=200, confidence=1.96, parallel=40)
+#                                      nu_min=None, nu_max=None, integ_steps=150, confidence=1.96, parallel=10)
 #     test_distri.toma_display()
 # print(f"TIME TAKEN FOR 4 MODELS : {time.time() - simtime} s")
 
 
-# print("======================================================================================")
-# distri_nu = "distri_pearce"
+print("======================================================================================")
+distri_nu = "distri_pearce"
+
+xlist_pearce = [np.array([0.006646525679758308, 0.113595166163142, 0.12507552870090635, 0.13716012084592144, 0.1486404833836858,
+                          0.1607250755287009, 0.172809667673716, 0.18429003021148035, 0.19637462235649547, 0.20785498489425983,
+                          0.22054380664652568, 0.23202416918429003, 0.24410876132930515, 0.25619335347432026, 0.2676737160120846,
+                          0.2797583081570997, 0.29123867069486403, 0.30332326283987915, 0.3148036253776435, 0.3268882175226586,
+                          0.338368580060423, 0.3504531722054381, 0.36253776435045315, 0.37462235649546827, 0.3861027190332326,
+                          0.39818731117824774, 0.4096676737160121, 0.4217522658610272, 0.43323262839879156, 0.4453172205438066,
+                          0.45740181268882174, 0.4688821752265861, 0.4809667673716012, 0.49244712990936557]),
+                np.array([0.0072507552870090634, 0.01812688821752266, 0.030211480362537763, 0.04229607250755287, 0.054380664652567974,
+                          0.06646525679758308, 0.07794561933534744, 0.09003021148036254, 0.10151057401812688, 0.113595166163142,
+                          0.12507552870090635, 0.13716012084592144, 0.14924471299093656, 0.1607250755287009, 0.17341389728096676,
+                          0.18429003021148035, 0.19637462235649547, 0.2084592145015106, 0.22054380664652568, 0.23202416918429003,
+                          0.24410876132930515, 0.2555891238670695, 0.2676737160120846, 0.2791540785498489, 0.29123867069486403,
+                          0.3027190332326284, 0.3148036253776435]),
+                np.array([0.007854984894259818, 0.01812688821752266, 0.030211480362537763, 0.04229607250755287, 0.054380664652567974,
+                          0.06646525679758308, 0.07794561933534744, 0.08942598187311178, 0.10151057401812688, 0.113595166163142,
+                          0.12507552870090635, 0.13716012084592144, 0.14924471299093656, 0.1607250755287009, 0.17220543806646527,
+                          0.18489425981873112, 0.1957703927492447, 0.20785498489425983, 0.22054380664652568, 0.23202416918429003,
+                          0.24350453172205438, 0.25619335347432026, 0.2676737160120846, 0.2797583081570997, 0.29063444108761327,
+                          0.30332326283987915, 0.31540785498489426, 0.3268882175226586, 0.338368580060423, 0.3504531722054381,
+                          0.36253776435045315, 0.3740181268882175, 0.3867069486404834, 0.39818731117824774, 0.4096676737160121,
+                          0.4217522658610272, 0.43323262839879156, 0.4453172205438066, 0.456797583081571, 0.4688821752265861,
+                          0.4809667673716012, 0.49244712990936557, 0.5045317220543807, 0.5166163141993958, 0.5287009063444109,
+                          0.5401812688821752]),
+                np.array([0.0072507552870090634, 0.018731117824773415, 0.03081570996978852, 0.04229607250755287, 0.05377643504531722,
+                          0.06646525679758308, 0.07794561933534744, 0.09003021148036254, 0.10211480362537764, 0.113595166163142,
+                          0.12567975830815709, 0.13716012084592144, 0.14924471299093656, 0.1607250755287009, 0.172809667673716,
+                          0.18489425981873112, 0.19637462235649547, 0.2084592145015106, 0.2199395770392749, 0.2326283987915408,
+                          0.24410876132930515, 0.25619335347432026, 0.2676737160120846, 0.2797583081570997, 0.29123867069486403,
+                          0.3039274924471299, 0.31540785498489426, 0.3268882175226586, 0.338368580060423, 0.34984894259818733,
+                          0.3631419939577039, 0.37462235649546827, 0.3867069486404834, 0.39818731117824774])]
+
+ylist_pearce = [np.array([0.019230769230769232, 0, 0, 0, 0, 0, 0, 0, 0, 0.038461538461538464, 0.019230769230769232, 0.038461538461538464,
+                          0.038461538461538464, 0.019230769230769232, 0.31730769230769235, 0.1875, 0.4278846153846154, 0.16826923076923078,
+                          0.125, 0.038461538461538464, 0.08653846153846154, 0.125, 0.0625, 0.08653846153846154, 0.038461538461538464,
+                          0.10576923076923078, 0.1875, 0.08173076923076923, 0.10576923076923078, 0.2932692307692308, 0.42307692307692313,
+                          1, 0.46634615384615385, 0.25480769230769235, 0.23076923076923078, 0.16826923076923078, 0.23076923076923078,
+                          0.0625, 0.08173076923076923, 0.08173076923076923, 0.038461538461538464, 0.019230769230769232, 0, 0, 0, 0, 0, 0,
+                          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]),
+                np.array([1., 0.1764705882352941, 0.1568627450980392, 0.09313725490196079, 0.029411764705882353, 0.0392156862745098,
+                          0.058823529411764705, 0.058823529411764705, 0.06372549019607843, 0.029411764705882353, 0.06862745098039216,
+                          0.029411764705882353, 0.029411764705882353, 0.049019607843137254, 0.029411764705882353, 0.1323529411764706,
+                          0.09803921568627451, 0.049019607843137254, 0.0392156862745098, 0.0392156862745098, 0.058823529411764705,
+                          0.0392156862745098, 0.049019607843137254, 0.049019607843137254,  0.0392156862745098, 0.0392156862745098,
+                          0.014705882352941176, 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+                          0., 0., 0., 0., 0., 0., 0., 0., 0.]),
+                np.array([1., 0.1553398058252427, 0.09223300970873785, 0.1553398058252427, 0.06310679611650485, 0.08252427184466019,
+                          0.029126213592233007, 0.019417475728155338, 0.009708737864077669, 0.02427184466019417, 0.02427184466019417,
+                          0.029126213592233007, 0.029126213592233007, 0.038834951456310676, 0.029126213592233007, 0.04854368932038834,
+                          0.019417475728155338, 0.009708737864077669, 0.009708737864077669, 0.038834951456310676, 0.029126213592233007,
+                          0.02427184466019417, 0.029126213592233007, 0.009708737864077669, 0.009708737864077669, 0.029126213592233007,
+                          0.029126213592233007, 0.019417475728155338, 0.07766990291262135, 0.04854368932038834, 0.06796116504854369,
+                          0.058252427184466014, 0.029126213592233007, 0.019417475728155338, 0.038834951456310676, 0.019417475728155338,
+                          0.04854368932038834, 0.02427184466019417, 0.029126213592233007, 0.019417475728155338, 0.029126213592233007,
+                          0.019417475728155338, 0.04854368932038834, 0.029126213592233007, 0.019417475728155338, 0.009708737864077669,
+                          0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.]),
+                np.array([1., 0.1, 0.135, 0.155, 0.135, 0.065, 0.1, 0.065, 0.085, 0.105, 0.17, 0.15, 0.045, 0.085, 0.045, 0.1, 0.08, 0.12,
+                          0.085, 0.015, 0.12, 0.1, 0.03, 0.05, 0.1, 0.03, 0.03, 0.105, 0.155, 0.115, 0.185, 0.135, 0.155, 0.44, 0., 0., 0.,
+                          0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.])]
+
+list_distri = []
+n_distri = 10
+int_steps = 100
+for distname in ["SO", "SR", "CD", "PJ"]:
+# for distname in ["SO"]:
+    simtime = time.time()
+    list_distri.append(PolVSAngleRatio(model=distname, gamma_range=100, red_z_range=1, theta_j_range=("distri", n_distri),
+                                  theta_nu_range=(distri_nu, n_distri), nu_0_range=350 / 100, alpha_range=-0.8, beta_range=-2.2,
+                                  nu_min=None, nu_max=None, jet_model="top-hat", flux_rejection=True, integ_steps=int_steps,
+                                  confidence=1.96, parallel=10))
+    print(f"TIME TAKEN FOR {distname} : {time.time() - simtime} s")
+
+
+bins = np.linspace(0, 0.7, 60)
+x_pearce = (bins[1:] + bins[:-1]) / 2
+
+labels = ["Distribution of PF for SO model", "Distribution of PF for SR model",
+          "Distribution of PF for CD model", "Distribution of PF for PJ model"]
+
+colors = ['blue', 'red', 'green', 'orange']
+fig_comp, axes = plt.subplots(len(list_distri), 1, figsize=(20, 10), sharex="all")
+fig_comp.suptitle(f"Distribution of Polarization fraction\nInt step : {int_steps}, number of pf estimated : {n_distri**2}")
+if len(list_distri) == 1:
+    axes = [axes]
+for ax_idx in range(len(axes)):
+    axes[ax_idx].hist(list_distri[ax_idx].data_df.pf.values, bins=bins, label=labels[ax_idx],
+                      weights=[1 / len(list_distri[ax_idx].data_df)] * len(list_distri[ax_idx].data_df), color=colors[ax_idx])
+    axes[ax_idx].scatter(x_pearce, ylist_pearce[ax_idx] / np.sum(ylist_pearce[ax_idx]), label="Values from Pearce")
+    axes[ax_idx].legend()
+
+axes[-1].set(xlabel='Polarization fraction', xlim=(0, 0.75), xticks=np.arange(0, 0.7, 0.15))
+plt.show()
+
+bins = np.array(list(range(0, 101, 2)))
+centroids = (bins[1:] + bins[:-1]) / 2
+
+PFlim = 0.3
+sums = np.ones((4, len(bins) - 1))
+sums_err = np.ones((4, len(bins) - 1))
+sums_min = np.ones((4, len(bins) - 1))
+sums_max = np.ones((4, len(bins) - 1))
+
+for distri_ite in range(4):
+  pfmesured = []
+  p_smaller = []
+  for itepf in range(len(list_distri[distri_ite].data_df)):
+    # val_err = 3*list_distri[distri_ite].data_df.error_pf.values[itepf]
+    val_err = 0.1
+    rv = rice(b=list_distri[distri_ite].data_df.pf.values[itepf]/val_err, scale=val_err)
+    pfmesured.append(rv.rvs())
+    p_smaller.append(rv.cdf(PFlim))
+  pfmesured = np.array(pfmesured)
+  p_smaller = np.array(p_smaller)
+  bernoulli_val = p_smaller * np.abs(1 - p_smaller)
+  # print(pfmesured)
+  # print(p_smaller)
+  # print(list_distri[distri_ite].data_df.pf.values)
+  # print(pfmesured)
+  # print(p_smaller)
+  # print()
+  # list_distri[distri_ite].data_df["pf_min"] = list_distri[distri_ite].data_df.pf.values - error
+  # list_distri[distri_ite].data_df["pf_max"] = list_distri[distri_ite].data_df.pf.values + error
+  for ite_col in range(len(sums[0])):
+    pfmesured_temp = pfmesured[:bins[ite_col]]
+    sums[distri_ite][ite_col] = np.count_nonzero(list_distri[distri_ite].data_df.pf.values[:bins[ite_col]] > PFlim)
+    sums_err[distri_ite][ite_col] = np.sum(bernoulli_val[np.where(pfmesured_temp > 0.3)])
+    # sums_err[distri_ite][ite_col] = np.sum(bernoulli_val[:bins[ite_col]])
+    # sums_min[distri_ite][ite_col] = np.count_nonzero(pfmesured[:bins[ite_col]] > PFlim)
+    # sums_max[distri_ite][ite_col] = np.count_nonzero(pfmesured[:bins[ite_col]] > PFlim)
+    # sums_min[distri_ite][ite_col] = np.count_nonzero(list_distri[distri_ite].data_df.pf_min.values[:bins[ite_col]] > PFlim)
+    # sums_max[distri_ite][ite_col] = np.count_nonzero(list_distri[distri_ite].data_df.pf_max.values[:bins[ite_col]] > PFlim)
+
+labels = ["SO model", "SR model",
+          "CD model", "PJ model"]
+colors = ['blue', 'red', 'green', 'orange']
+
+pf_mean = np.zeros((4, len(bins) - 1))
+pf_err = np.zeros((4, len(bins) - 1))
+
+figpearce, ax = plt.subplots(1, 1, figsize=(10, 6))
+for ite in range(len(sums)):
+  # for ite_col in range(len(sums[ite][0])):
+  #   pf_sims = sums[ite][:, ite_col]
+  #   ydat, fitbins = np.histogram(pf_sims, bins=np.linspace(0, 100, 20))
+  #   xdat = (fitbins[1:] + fitbins[:-1]) / 2
+  #   popt_a, pcov_a = curve_fit(gauss, xdata=xdat, ydata=ydat, bounds=((0, 0, 0), (np.inf, 1, 1)))
+  #   print(popt_a)
+  #   pf0, sig = popt_a[1], popt_a[2]
+  #   # error = rice.rvs(pf0/sig, scale=sig)
+  #   # print(error)
+  #   # pf_mean[ite][ite_col] = pf0
+  #   # pf_err[ite][ite_col] = error
+  #   # fit une gaussienne la dessus ?
+  #   # Ensuite récupérer mu et sigma, prendre 3 sigma et ça nous fait la valeur avec l'erreur associée
+  ax.plot(centroids, sums[ite], label=labels[ite], color=colors[ite])
+  ax.fill_between(centroids, sums[ite] - sums_err[ite], sums[ite] + sums_err[ite], color=colors[ite], alpha=0.4)
+
+ax.set(xlabel='Number of GRB detected with MDP < 30%', ylabel='Number of GRB detected with PF > 30%', xlim=(0, 80), ylim=(0, 60), xticks=np.arange(0, 101, 20), yticks=np.arange(0, 100, 20))
+ax.set_xlim(0, 80)
+ax.set_ylim(0, 60)
+ax.legend()
+plt.show()
+
+########################################################################################
+# Trying to reproduce pearce figure
+########################################################################################
+# # Verification of the acceptance rejection method
+# pf_SO = []
+# pf_SR = []
+# pf_CD = []
+# pf_PJ = []
+# nvals = 1000
+# for vals in range(nvals):
+#   pf_SO.append(acc_reject(SO_PF_distri, [], 0, 1))
+#   pf_SR.append(acc_reject(SR_PF_distri, [], 0, 1))
+#   pf_CD.append(acc_reject(CD_PF_distri, [], 0, 1))
+#   pf_PJ.append(acc_reject(PJ_PF_distri, [], 0, 1))
 #
-# xlist_pearce = [np.array([0.006646525679758308, 0.113595166163142, 0.12507552870090635, 0.13716012084592144, 0.1486404833836858,
-#                           0.1607250755287009, 0.172809667673716, 0.18429003021148035, 0.19637462235649547, 0.20785498489425983,
-#                           0.22054380664652568, 0.23202416918429003, 0.24410876132930515, 0.25619335347432026, 0.2676737160120846,
-#                           0.2797583081570997, 0.29123867069486403, 0.30332326283987915, 0.3148036253776435, 0.3268882175226586,
-#                           0.338368580060423, 0.3504531722054381, 0.36253776435045315, 0.37462235649546827, 0.3861027190332326,
-#                           0.39818731117824774, 0.4096676737160121, 0.4217522658610272, 0.43323262839879156, 0.4453172205438066,
-#                           0.45740181268882174, 0.4688821752265861, 0.4809667673716012, 0.49244712990936557]),
-#                 np.array([0.0072507552870090634, 0.01812688821752266, 0.030211480362537763, 0.04229607250755287, 0.054380664652567974,
-#                           0.06646525679758308, 0.07794561933534744, 0.09003021148036254, 0.10151057401812688, 0.113595166163142,
-#                           0.12507552870090635, 0.13716012084592144, 0.14924471299093656, 0.1607250755287009, 0.17341389728096676,
-#                           0.18429003021148035, 0.19637462235649547, 0.2084592145015106, 0.22054380664652568, 0.23202416918429003,
-#                           0.24410876132930515, 0.2555891238670695, 0.2676737160120846, 0.2791540785498489, 0.29123867069486403,
-#                           0.3027190332326284, 0.3148036253776435]),
-#                 np.array([0.007854984894259818, 0.01812688821752266, 0.030211480362537763, 0.04229607250755287, 0.054380664652567974,
-#                           0.06646525679758308, 0.07794561933534744, 0.08942598187311178, 0.10151057401812688, 0.113595166163142,
-#                           0.12507552870090635, 0.13716012084592144, 0.14924471299093656, 0.1607250755287009, 0.17220543806646527,
-#                           0.18489425981873112, 0.1957703927492447, 0.20785498489425983, 0.22054380664652568, 0.23202416918429003,
-#                           0.24350453172205438, 0.25619335347432026, 0.2676737160120846, 0.2797583081570997, 0.29063444108761327,
-#                           0.30332326283987915, 0.31540785498489426, 0.3268882175226586, 0.338368580060423, 0.3504531722054381,
-#                           0.36253776435045315, 0.3740181268882175, 0.3867069486404834, 0.39818731117824774, 0.4096676737160121,
-#                           0.4217522658610272, 0.43323262839879156, 0.4453172205438066, 0.456797583081571, 0.4688821752265861,
-#                           0.4809667673716012, 0.49244712990936557, 0.5045317220543807, 0.5166163141993958, 0.5287009063444109,
-#                           0.5401812688821752]),
-#                 np.array([0.0072507552870090634, 0.018731117824773415, 0.03081570996978852, 0.04229607250755287, 0.05377643504531722,
-#                           0.06646525679758308, 0.07794561933534744, 0.09003021148036254, 0.10211480362537764, 0.113595166163142,
-#                           0.12567975830815709, 0.13716012084592144, 0.14924471299093656, 0.1607250755287009, 0.172809667673716,
-#                           0.18489425981873112, 0.19637462235649547, 0.2084592145015106, 0.2199395770392749, 0.2326283987915408,
-#                           0.24410876132930515, 0.25619335347432026, 0.2676737160120846, 0.2797583081570997, 0.29123867069486403,
-#                           0.3039274924471299, 0.31540785498489426, 0.3268882175226586, 0.338368580060423, 0.34984894259818733,
-#                           0.3631419939577039, 0.37462235649546827, 0.3867069486404834, 0.39818731117824774])]
+# pf_SO = np.array(pf_SO)
+# pf_SR = np.array(pf_SR)
+# pf_CD = np.array(pf_CD)
+# pf_PJ = np.array(pf_PJ)
 #
-# ylist_pearce = [np.array([0.019230769230769232, 0, 0, 0, 0, 0, 0, 0, 0, 0.038461538461538464, 0.019230769230769232, 0.038461538461538464,
-#                           0.038461538461538464, 0.019230769230769232, 0.31730769230769235, 0.1875, 0.4278846153846154, 0.16826923076923078,
-#                           0.125, 0.038461538461538464, 0.08653846153846154, 0.125, 0.0625, 0.08653846153846154, 0.038461538461538464,
-#                           0.10576923076923078, 0.1875, 0.08173076923076923, 0.10576923076923078, 0.2932692307692308, 0.42307692307692313,
-#                           1, 0.46634615384615385, 0.25480769230769235, 0.23076923076923078, 0.16826923076923078, 0.23076923076923078,
-#                           0.0625, 0.08173076923076923, 0.08173076923076923, 0.038461538461538464, 0.019230769230769232, 0, 0, 0, 0, 0, 0,
-#                           0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]),
-#                 np.array([1., 0.1764705882352941, 0.1568627450980392, 0.09313725490196079, 0.029411764705882353, 0.0392156862745098,
-#                           0.058823529411764705, 0.058823529411764705, 0.06372549019607843, 0.029411764705882353, 0.06862745098039216,
-#                           0.029411764705882353, 0.029411764705882353, 0.049019607843137254, 0.029411764705882353, 0.1323529411764706,
-#                           0.09803921568627451, 0.049019607843137254, 0.0392156862745098, 0.0392156862745098, 0.058823529411764705,
-#                           0.0392156862745098, 0.049019607843137254, 0.049019607843137254,  0.0392156862745098, 0.0392156862745098,
-#                           0.014705882352941176, 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
-#                           0., 0., 0., 0., 0., 0., 0., 0., 0.]),
-#                 np.array([1., 0.1553398058252427, 0.09223300970873785, 0.1553398058252427, 0.06310679611650485, 0.08252427184466019,
-#                           0.029126213592233007, 0.019417475728155338, 0.009708737864077669, 0.02427184466019417, 0.02427184466019417,
-#                           0.029126213592233007, 0.029126213592233007, 0.038834951456310676, 0.029126213592233007, 0.04854368932038834,
-#                           0.019417475728155338, 0.009708737864077669, 0.009708737864077669, 0.038834951456310676, 0.029126213592233007,
-#                           0.02427184466019417, 0.029126213592233007, 0.009708737864077669, 0.009708737864077669, 0.029126213592233007,
-#                           0.029126213592233007, 0.019417475728155338, 0.07766990291262135, 0.04854368932038834, 0.06796116504854369,
-#                           0.058252427184466014, 0.029126213592233007, 0.019417475728155338, 0.038834951456310676, 0.019417475728155338,
-#                           0.04854368932038834, 0.02427184466019417, 0.029126213592233007, 0.019417475728155338, 0.029126213592233007,
-#                           0.019417475728155338, 0.04854368932038834, 0.029126213592233007, 0.019417475728155338, 0.009708737864077669,
-#                           0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.]),
-#                 np.array([1., 0.1, 0.135, 0.155, 0.135, 0.065, 0.1, 0.065, 0.085, 0.105, 0.17, 0.15, 0.045, 0.085, 0.045, 0.1, 0.08, 0.12,
-#                           0.085, 0.015, 0.12, 0.1, 0.03, 0.05, 0.1, 0.03, 0.03, 0.105, 0.155, 0.115, 0.185, 0.135, 0.155, 0.44, 0., 0., 0.,
-#                           0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.])]
-#
-# list_distri = []
-# n_distri = 100
-# int_steps = 100
-# for distname in ["SO", "SR", "CD", "PJ"]:
-# # for distname in ["SO"]:
-#     simtime = time.time()
-#     list_distri.append(PolVSAngleRatio(model=distname, gamma_range=100, red_z_range=1, theta_j_range=("distri", n_distri),
-#                                   theta_nu_range=(distri_nu, n_distri), nu_0_range=350 / 100, alpha_range=-0.8, beta_range=-2.2,
-#                                   nu_min=None, nu_max=None, jet_model="top-hat", flux_rejection=True, integ_steps=int_steps,
-#                                   confidence=1.96, parallel=10))
-#     print(f"TIME TAKEN FOR {distname} : {time.time() - simtime} s")
-#
-#
+# pf_picked = [pf_SO, pf_SR, pf_CD, pf_PJ]
 # bins = np.linspace(0, 0.7, 60)
 # x_pearce = (bins[1:] + bins[:-1]) / 2
 #
@@ -319,18 +435,83 @@ class PolVSAngleRatio:
 #           "Distribution of PF for CD model", "Distribution of PF for PJ model"]
 #
 # colors = ['blue', 'red', 'green', 'orange']
-# fig_comp, axes = plt.subplots(len(list_distri), 1, figsize=(20, 10), sharex="all")
-# fig_comp.suptitle(f"Distribution of Polarization fraction\nInt step : {int_steps}, number of pf estimated : {n_distri**2}")
-# if len(list_distri) == 1:
+# fig_comp, axes = plt.subplots(len(pf_picked), 1, figsize=(20, 10), sharex="all")
+# fig_comp.suptitle(f"Distribution of Polarization fraction\nObtained from distributions, number of pf estimated : {nvals}")
+# if len(pf_picked) == 1:
 #     axes = [axes]
 # for ax_idx in range(len(axes)):
-#     axes[ax_idx].hist(list_distri[ax_idx].data_df.pf.values, bins=bins, label=labels[ax_idx],
-#                       weights=[1 / len(list_distri[ax_idx].data_df)] * len(list_distri[ax_idx].data_df), color=colors[ax_idx])
-#     axes[ax_idx].scatter(x_pearce, ylist_pearce[ax_idx] / np.sum(ylist_pearce[ax_idx]), label="Values from Pearce")
+#     axes[ax_idx].hist(pf_picked[ax_idx], bins=bins, label=labels[ax_idx],
+#                       weights=[1 / len(pf_picked[ax_idx])] * len(pf_picked[ax_idx]), color=colors[ax_idx])
 #     axes[ax_idx].legend()
 #
 # axes[-1].set(xlabel='Polarization fraction', xlim=(0, 0.75), xticks=np.arange(0, 0.7, 0.15))
 # plt.show()
+#
+#
+# bins = np.array(list(range(0, 101, 2)))
+# centroids = (bins[1:] + bins[:-1]) / 2
+#
+# SO_sum = np.ones((100, len(bins) - 1))
+# SR_sum = np.ones((100, len(bins) - 1))
+# CD_sum = np.ones((100, len(bins) - 1))
+# PJ_sum = np.ones((100, len(bins) - 1))
+# PFlim = 0.3
+# for ite_row in range(len(SO_sum)):
+#   pf_SO = []
+#   pf_SR = []
+#   pf_CD = []
+#   pf_PJ = []
+#   nvals = 100
+#   for vals in range(nvals):
+#     pf_SO.append(acc_reject(SO_PF_distri, [], 0, 1))
+#     pf_SR.append(acc_reject(SR_PF_distri, [], 0, 1))
+#     pf_CD.append(acc_reject(CD_PF_distri, [], 0, 1))
+#     pf_PJ.append(acc_reject(PJ_PF_distri, [], 0, 1))
+#
+#   pf_SO = np.array(pf_SO)
+#   pf_SR = np.array(pf_SR)
+#   pf_CD = np.array(pf_CD)
+#   pf_PJ = np.array(pf_PJ)
+#
+#   for ite_col in range(len(SO_sum[0])):
+#     SO_sum[ite_row][ite_col] = np.count_nonzero(pf_SO[:bins[ite_col]] > PFlim)
+#     SR_sum[ite_row][ite_col] = np.count_nonzero(pf_SR[:bins[ite_col]] > PFlim)
+#     CD_sum[ite_row][ite_col] = np.count_nonzero(pf_CD[:bins[ite_col]] > PFlim)
+#     PJ_sum[ite_row][ite_col] = np.count_nonzero(pf_PJ[:bins[ite_col]] > PFlim)
+#
+# sums = [SO_sum, SR_sum, CD_sum, PJ_sum]
+# labels = ["SO model", "SR model",
+#           "CD model", "PJ model"]
+# colors = ['blue', 'red', 'green', 'orange']
+#
+# pf_mean = np.zeros((4, len(bins) - 1))
+# pf_err = np.zeros((4, len(bins) - 1))
+#
+# figpearce, ax = plt.subplots(1, 1, figsize=(10, 6))
+# for ite in range(len(sums)):
+#   for ite_col in range(len(sums[ite][0])):
+#     pf_sims = sums[ite][:, ite_col]
+#     ydat, fitbins = np.histogram(pf_sims, bins=np.linspace(0, 100, 20))
+#     xdat = (fitbins[1:] + fitbins[:-1]) / 2
+#     popt_a, pcov_a = curve_fit(gauss, xdata=xdat, ydata=ydat, bounds=((0, 0, 0), (np.inf, 1, 1)))
+#     print(popt_a)
+#     pf0, sig = popt_a[1], popt_a[2]
+#     # error = rice.rvs(pf0/sig, scale=sig)
+#     # print(error)
+#     # pf_mean[ite][ite_col] = pf0
+#     # pf_err[ite][ite_col] = error
+#     # fit une gaussienne la dessus ?
+#     # Ensuite récupérer mu et sigma, prendre 3 sigma et ça nous fait la valeur avec l'erreur associée
+#   ax.plot(centroids, sums[ite][0], label=labels[ite], color=colors[ite])
+#   ax.fill_between(centroids, sums[ite][0]-3*sig, sums[ite][0]+3*sig, color=colors[ite], alpha=0.4)
+#
+# ax.legend()
+# ax.set(xlabel='Number of GRB detected with MDP < 30%', ylabel='Number of GRB detected with PF > 30%', xlim=(0, 1), xticks=np.arange(0, 101, 20), yticks=np.arange(0, 100, 20))
+# plt.show()
+
+
+
+
 
 
 

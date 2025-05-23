@@ -22,7 +22,7 @@ from src.Analysis.MmuSeffContainer import MuSeffContainer
 ############################################################
 # Usefull functions :
 ############################################################
-def bkg_data_map(field, bkgdata, altitude, dec_range=np.linspace(0, 180, 181), ra_range=np.linspace(0, 360, 361), language="en", proj="carre"):
+def bkg_data_map(field, bkgdata, altitude, dec_range=np.linspace(0, 180, 181), ra_range=np.linspace(0, 360, 361), language="en", ergcut=(10, 1000), proj="carre", save=False):
   """
   TODO testing for the detectors !!!
   :param field: Field ploted on the map :
@@ -88,6 +88,7 @@ def bkg_data_map(field, bkgdata, altitude, dec_range=np.linspace(0, 180, 181), r
 
   for row, dec in enumerate(dec_range):
     for col, ra in enumerate(ra_range):
+      print(f"bkg_map construction for {field} at {altitude} km : {round((len(ra_range) * row + col) * 100 / (len(dec_range) * len(ra_range)), 0)} %", end="\r")
       lat = 90 - dec
       # Geodetic to apex, scalar input
       mag_lat, mag_lon = apex15.convert(lat, ra, 'geo', 'apex', height=altitude)
@@ -112,7 +113,8 @@ def bkg_data_map(field, bkgdata, altitude, dec_range=np.linspace(0, 180, 181), r
         # print("dssd_cr : ", dsssd_count / bkgdata.sim_time)
         # print("ucd_cr : ", calor_count / bkgdata.sim_time)
         # print("hits_cr : ", total_hits / bkgdata.sim_time)
-
+  fontsize = 13
+  plt.rcParams.update({'font.size': fontsize})
   if proj == "carre":
     fig, ax = plt.subplots(subplot_kw={'projection': ccrs.PlateCarree()}, figsize=(10, 6))
   elif proj == "mollweide":
@@ -127,17 +129,23 @@ def bkg_data_map(field, bkgdata, altitude, dec_range=np.linspace(0, 180, 181), r
   if language == "en":
     plt.suptitle(f"Background map for {item_legend} at {altitude} km")
     ax.set(xlabel="Longitude (deg)", ylabel="Latitude (deg)")
-    cbar.set_label(f"Background {item_legend}", rotation=270, labelpad=20, fontsize=12)
+    cbar.set_label(f"Background {item_legend}", rotation=270, labelpad=20, fontsize=fontsize)
   elif language == "fr":
     plt.suptitle(f"{item_legend} dû au bruit de fond à {altitude}km")
     ax.set(xlabel="Longitude (deg)", ylabel="Latitude (deg)")
-    cbar.set_label(f"{item_legend}", rotation=270, labelpad=20, fontsize=12)
+    cbar.set_label(f"{item_legend}", rotation=270, labelpad=20, fontsize=fontsize)
   else:
     raise ValueError("Wrong value given for the language : only en (english) and fr (french) set")
-  plt.show()
+  plt.tight_layout()
+  if save:
+    plt.savefig(f"bkg_map-{field}-alt_{altitude}-{ergcut[0]}_{ergcut[1]}-{proj}")
+    plt.close(fig)
+  else:
+    plt.show()
+  print(f"bkg_map construction done for {field} at {altitude} km, results save : {save}")
 
 
-def mu100_data_map( mu100data, theta_sat=np.linspace(0, 114, 115), phi_sat=np.linspace(0, 360, 181)):
+def mu100_data_map(mu100data, theta_sat=np.linspace(0, 114, 115), phi_sat=np.linspace(0, 360, 181)):
   """
 
   """
@@ -401,7 +409,6 @@ def magnetic_latitude_convert(altitude, lat_range=np.linspace(90, -90, 361), lon
   plt.show()
 
 
-
 def calc_duty(inc, ohm, omega, alt, show=False, show_sat=False):
   """
   Calculates the duty cycle caused by the radiation belts
@@ -517,43 +524,30 @@ def show_non_op_area(alt, zonetype="all"):
   ax.coastlines()
   plt.show()
 
-# TODO : TEST THIS
-def fov_const(parfile, mu100par, num_val=500, erg_cut=(10, 1000), armcut=180, show=True, save=False, bigfont=True, language="en"):
+
+def fov_const(parfile, museffdata, num_val=500, erg_cut=(10, 1000), show=True, save=False):
   """
   Plots a map of the sensibility over the sky for number of sat in sight, single events and compton events
   :param num_val: number of value to
   """
-  if bigfont:
-    plt.rcParams.update({'font.size': 13})
-  else:
-    plt.rcParams.update({'font.size': 10})
-  if language == "en":
-    xlab = "Right ascention (°)"
-    ylab = "Declination (°)"
-    title1 = "Constellation sky coverage map"
-    title2 = "Constellation sky sensitivity map for Compton events"
-    title3 = "Constellation sky sensitivity map for single events"
-    bar1 = "Number of satellites covering the area"
-    bar2 = "Effective area for Compton events (cm²)"
-    bar3 = "Effective area for single events (cm²)"
-  elif language == "fr":
-    xlab = "Ascension droite (°)"
-    ylab = "Déclinaison (°)"
-    title1 = "Carte de couverture du ciel"
-    title2 = "Carte de sensibilité aux évènements Compton"
-    title3 = "Carte de sensibilité aux évènements simple"
-    bar1 = "Nombre de satellite couvrant la zone"
-    bar2 = "Surface efficace pour les évènements Compton (cm²)"
-    bar3 = "Surface efficace pour les évènements simple (cm²)"
-  else:
-    raise ValueError("Wrong value given for the language : only en (english) and fr (french) set")
-  chosen_proj, proj_name = "mollweide", "mollweide"
-  # chosen_proj, proj_name = "carre", "carre"
+  plt.rcParams.update({'font.size': 15})
+  xlab = "Right ascention (°)"
+  ylab = "Declination (°)"
+  title1 = "Constellation sky coverage map"
+  title2 = "Constellation sky sensitivity map for Compton events"
+  title3 = "Constellation sky sensitivity map for single events"
+  bar1 = "Number of satellites covering the area"
+  bar2 = "Effective area for Compton events (cm²)"
+  bar3 = "Effective area for single events (cm²)"
+  # chosen_proj = "carre"
+  chosen_proj = "mollweide"
+
+  suffix = parfile.split("/")[-1].split("polGBM.par")[0]
 
   sat_info = read_grbpar(parfile)[-1]
   n_sat = len(sat_info)
-  result_prefix = parfile.split("/polGBM.par")[0].split("/")[-1]
-  museffdata = MuSeffContainer(mu100par, erg_cut, armcut)
+  # museffdata = MuSeffContainer(mu100par, erg_cut, armcut)
+
   phi_world = np.linspace(0, 360, num_val, endpoint=False)
   # theta will be converted in sat coord with grb_decra_worldf2satf, which takes dec in world coord with 0 being north pole and 180 the south pole !
   theta_world = np.linspace(0, 180, num_val)
@@ -561,20 +555,34 @@ def fov_const(parfile, mu100par, num_val=500, erg_cut=(10, 1000), armcut=180, sh
   detection_compton = np.zeros((n_sat, num_val, num_val))
   detection_single = np.zeros((n_sat, num_val, num_val))
 
-  nite = num_val**2 * n_sat
+  # cancel_theta = np.zeros((num_val, num_val))
+  # cancel_phi = np.zeros((num_val, num_val))
+  # ok_theta = np.zeros((num_val, num_val))
+  # ok_phi = np.zeros((num_val, num_val))
+
+  nite = num_val ** 2 * len(sat_info)
   ncount = 0
   for ite, info_sat in enumerate(sat_info):
     for ite_theta, theta in enumerate(theta_world):
       for ite_phi, phi in enumerate(phi_world):
+        #
+        # if ite == 0:
+        #   if verif_rad_belts(theta, phi, info_sat[3], zonetype="all"):
+        #     cancel_theta[ite_theta][ite_phi] = (90 - theta)
+        #     cancel_phi[ite_theta][ite_phi] = (phi if phi <= 180 else phi % 180 - 180)
+        #   else:
+        #     ok_theta[ite_theta][ite_phi] = (90 - theta)
+        #     ok_phi[ite_theta][ite_phi] = (phi if phi <= 180 else phi % 180 - 180)
         ncount += 1
         detection_compton[ite][ite_theta][ite_phi], detection_single[ite][ite_theta][ite_phi], detection[ite][ite_theta][ite_phi] = eff_area_func(theta, phi, info_sat, museffdata)
-        print(f"Calculation : {int(ncount/nite*100)}%", end="\r")
+        print(f"Calculation : {int(ncount / nite * 100)}%", end="\r")
   print("Calculation over")
+
   detec_sum = np.sum(detection, axis=0)
   detec_sum_compton = np.sum(detection_compton, axis=0)
   detec_sum_single = np.sum(detection_single, axis=0)
 
-  phi_plot, theta_plot = np.meshgrid(np.deg2rad(phi_world) - np.pi, np.pi/2 - np.deg2rad(theta_world))
+  phi_plot, theta_plot = np.meshgrid(np.where(phi_world <= 180, phi_world, phi_world % 180 - 180), 90 - theta_world)
   detec_min = int(np.min(detec_sum))
   detec_max = int(np.max(detec_sum))
   detec_min_compton = int(np.min(detec_sum_compton))
@@ -590,16 +598,26 @@ def fov_const(parfile, mu100par, num_val=500, erg_cut=(10, 1000), armcut=180, sh
   ##################################################################################################################
   levels = range(detec_min, detec_max + 1, max(1, int((detec_max + 1 - detec_min) / 15)))
 
-  fig1, ax1 = plt.subplots(subplot_kw={'projection': chosen_proj}, figsize=(15, 8))
-  # ax1.set_global()
-  # ax1.coastlines()
-  h1 = ax1.pcolormesh(phi_plot, theta_plot, detec_sum, cmap=cmap_det)
+  if chosen_proj == "carre":
+    fig1, ax1 = plt.subplots(subplot_kw={'projection': ccrs.PlateCarree()}, figsize=(15, 8))
+  elif chosen_proj == "mollweide":
+    fig1, ax1 = plt.subplots(subplot_kw={'projection': ccrs.Mollweide()}, figsize=(15, 8))
+  else:
+    raise ValueError("Use a correct value for proj 'carre' or 'mollweide'")
+  ax1.set_global()
+  ax1.coastlines()
+  h1 = ax1.pcolormesh(phi_plot, theta_plot, detec_sum, cmap=cmap_det, transform=ccrs.PlateCarree())
   # ax1.axis('scaled')
   ax1.set(xlabel=xlab, ylabel=ylab, title=title1)
+  # ax1.scatter(cancel_phi, cancel_theta, s=1, color="red", transform=ccrs.PlateCarree())
+  # ax1.scatter(ok_phi, ok_theta, s=1, color="green", transform=ccrs.PlateCarree())
+
   cbar = fig1.colorbar(h1, ticks=levels)
   cbar.set_label(bar1, rotation=270, labelpad=20)
+  plt.tight_layout()
   if save:
-    fig1.savefig(f"{result_prefix}_n_sight_{proj_name}")
+    fig1.savefig(f"{suffix}in_sight_erg{erg_cut[0]}-{erg_cut[1]}")
+    plt.close(fig1)
   if show:
     plt.show()
 
@@ -608,17 +626,23 @@ def fov_const(parfile, mu100par, num_val=500, erg_cut=(10, 1000), armcut=180, sh
   ##################################################################################################################
   levels_compton = range(detec_min_compton, detec_max_compton + 1, max(1, int((detec_max_compton + 1 - detec_min_compton) / 15)))
 
-  # fig2, ax2 = plt.subplots(1, 1, figsize=(10, 6))
-  fig2, ax2 = plt.subplots(subplot_kw={'projection': chosen_proj}, figsize=(15, 8))
+  if chosen_proj == "carre":
+    fig2, ax2 = plt.subplots(subplot_kw={'projection': ccrs.PlateCarree()}, figsize=(15, 8))
+  elif chosen_proj == "mollweide":
+    fig2, ax2 = plt.subplots(subplot_kw={'projection': ccrs.Mollweide()}, figsize=(15, 8))
+  else:
+    raise ValueError("Use a correct value for proj 'carre' or 'mollweide'")
   # ax2.set_global()
   # ax2.coastlines()
-  h3 = ax2.pcolormesh(phi_plot, theta_plot, detec_sum_compton, cmap=cmap_compton)
+  h3 = ax2.pcolormesh(phi_plot, theta_plot, detec_sum_compton, cmap=cmap_compton, transform=ccrs.PlateCarree())
   # ax2.axis('scaled')
   ax2.set(xlabel=xlab, ylabel=ylab, title=title2)
   cbar = fig2.colorbar(h3, ticks=levels_compton)
   cbar.set_label(bar2, rotation=270, labelpad=20)
+  plt.tight_layout()
   if save:
-    fig2.savefig(f"{result_prefix}_compton_seff_{proj_name}")
+    fig2.savefig(f"{suffix}compton_seff_erg{erg_cut[0]}-{erg_cut[1]}")
+    plt.close(fig2)
   if show:
     plt.show()
 
@@ -627,29 +651,165 @@ def fov_const(parfile, mu100par, num_val=500, erg_cut=(10, 1000), armcut=180, sh
   ##################################################################################################################
   levels_single = range(detec_min_single, detec_max_single + 1, max(1, int((detec_max_single + 1 - detec_min_single) / 15)))
 
-  fig3, ax3 = plt.subplots(subplot_kw={'projection': chosen_proj}, figsize=(15, 8))
+  if chosen_proj == "carre":
+    fig3, ax3 = plt.subplots(subplot_kw={'projection': ccrs.PlateCarree()}, figsize=(15, 8))
+  elif chosen_proj == "mollweide":
+    fig3, ax3 = plt.subplots(subplot_kw={'projection': ccrs.Mollweide()}, figsize=(15, 8))
+  else:
+    raise ValueError("Use a correct value for proj 'carre' or 'mollweide'")
   # ax3.set_global()
   # ax3.coastlines()
-  h5 = ax3.pcolormesh(phi_plot, theta_plot, detec_sum_single, cmap=cmap_single)
+  h5 = ax3.pcolormesh(phi_plot, theta_plot, detec_sum_single, cmap=cmap_single, transform=ccrs.PlateCarree())
   # ax3.axis('scaled')
   ax3.set(xlabel=xlab, ylabel=ylab, title=title3)
   cbar = fig3.colorbar(h5, ticks=levels_single)
   cbar.set_label(bar3, rotation=270, labelpad=20)
+  plt.tight_layout()
   if save:
-    fig3.savefig(f"{result_prefix}_single_seff_{proj_name}")
+    fig3.savefig(f"{suffix}single_seff_erg{erg_cut[0]}-{erg_cut[1]}")
+    plt.close(fig3)
   if show:
     plt.show()
 
   correction_values = (1 + np.sin(np.deg2rad(theta_world)) * (num_val - 1)) / num_val
+
   print(f"The mean number of satellites in sight is :       {np.average(np.mean(detec_sum, axis=1), weights=correction_values):.4f} satellites")
   print(f"The mean effective area for Compton events is :  {np.average(np.mean(detec_sum_compton, axis=1), weights=correction_values):.4f} cm²")
   print(f"The mean effective area for single events is :   {np.average(np.mean(detec_sum_single, axis=1), weights=correction_values):.4f} cm²")
 
-  # print(f"The mean number of satellites in sight is :       {np.mean(np.mean(detec_sum, axis=1) * np.sin(np.deg2rad(theta_world))):.4f} satellites")
-  # print(f"The mean effective area for Compton events is :  {np.mean(np.mean(detec_sum_compton, axis=1) * np.sin(np.deg2rad(theta_world))):.4f} cm²")
-  # print(f"The mean effective area for single events is :   {np.mean(np.mean(detec_sum_single, axis=1) * np.sin(np.deg2rad(theta_world))):.4f} cm²")
-  #
-  # print(f"NOT SIN CORRECTED - The mean number of satellites in sight is :       {np.mean(detec_sum):.4f} satellites")
-  # print(f"NOT SIN CORRECTED - The mean effective area for Compton events is :  {np.mean(detec_sum_compton):.4f} cm²")
-  # print(f"NOT SIN CORRECTED - The mean effective area for single events is :   {np.mean(detec_sum_single):.4f} cm²")
+
+# def fov_const(parfile, mu100par, num_val=500, erg_cut=(10, 1000), armcut=180, show=True, save=False, bigfont=True, language="en"):
+#   """
+#   Plots a map of the sensibility over the sky for number of sat in sight, single events and compton events
+#   :param num_val: number of value to
+#   """
+#   if bigfont:
+#     plt.rcParams.update({'font.size': 15})
+#   else:
+#     plt.rcParams.update({'font.size': 10})
+#   if language == "en":
+#     xlab = "Right ascention (°)"
+#     ylab = "Declination (°)"
+#     title1 = "Constellation sky coverage map"
+#     title2 = "Constellation sky sensitivity map for Compton events"
+#     title3 = "Constellation sky sensitivity map for single events"
+#     bar1 = "Number of satellites covering the area"
+#     bar2 = "Effective area for Compton events (cm²)"
+#     bar3 = "Effective area for single events (cm²)"
+#   elif language == "fr":
+#     xlab = "Ascension droite (°)"
+#     ylab = "Déclinaison (°)"
+#     title1 = "Carte de couverture du ciel"
+#     title2 = "Carte de sensibilité aux évènements Compton"
+#     title3 = "Carte de sensibilité aux évènements simple"
+#     bar1 = "Nombre de satellite couvrant la zone"
+#     bar2 = "Surface efficace pour les évènements Compton (cm²)"
+#     bar3 = "Surface efficace pour les évènements simple (cm²)"
+#   else:
+#     raise ValueError("Wrong value given for the language : only en (english) and fr (french) set")
+#   chosen_proj, proj_name = "mollweide", "mollweide"
+#   # chosen_proj, proj_name = "carre", "carre"
+#
+#   sat_info = read_grbpar(parfile)[-1]
+#   n_sat = len(sat_info)
+#   result_prefix = parfile.split("/polGBM.par")[0].split("/")[-1]
+#   museffdata = MuSeffContainer(mu100par, erg_cut, armcut)
+#   phi_world = np.linspace(0, 360, num_val, endpoint=False)
+#   # theta will be converted in sat coord with grb_decra_worldf2satf, which takes dec in world coord with 0 being north pole and 180 the south pole !
+#   theta_world = np.linspace(0, 180, num_val)
+#   detection = np.zeros((n_sat, num_val, num_val))
+#   detection_compton = np.zeros((n_sat, num_val, num_val))
+#   detection_single = np.zeros((n_sat, num_val, num_val))
+#
+#   nite = num_val**2 * n_sat
+#   ncount = 0
+#   for ite, info_sat in enumerate(sat_info):
+#     for ite_theta, theta in enumerate(theta_world):
+#       for ite_phi, phi in enumerate(phi_world):
+#         ncount += 1
+#         detection_compton[ite][ite_theta][ite_phi], detection_single[ite][ite_theta][ite_phi], detection[ite][ite_theta][ite_phi] = eff_area_func(theta, phi, info_sat, museffdata)
+#         print(f"Calculation : {int(ncount/nite*100)}%", end="\r")
+#   print("Calculation over")
+#   detec_sum = np.sum(detection, axis=0)
+#   detec_sum_compton = np.sum(detection_compton, axis=0)
+#   detec_sum_single = np.sum(detection_single, axis=0)
+#
+#   phi_plot, theta_plot = np.meshgrid(np.deg2rad(phi_world) - np.pi, np.pi/2 - np.deg2rad(theta_world))
+#   detec_min = int(np.min(detec_sum))
+#   detec_max = int(np.max(detec_sum))
+#   detec_min_compton = int(np.min(detec_sum_compton))
+#   detec_max_compton = int(np.max(detec_sum_compton))
+#   detec_min_single = int(np.min(detec_sum_single))
+#   detec_max_single = int(np.max(detec_sum_single))
+#   cmap_det = mpl.cm.Blues_r
+#   cmap_compton = mpl.cm.Greens_r
+#   cmap_single = mpl.cm.Oranges_r
+#
+#   ##################################################################################################################
+#   # Map for number of satellites in sight
+#   ##################################################################################################################
+#   levels = range(detec_min, detec_max + 1, max(1, int((detec_max + 1 - detec_min) / 15)))
+#
+#   fig1, ax1 = plt.subplots(subplot_kw={'projection': chosen_proj}, figsize=(15, 8))
+#   # ax1.set_global()
+#   # ax1.coastlines()
+#   h1 = ax1.pcolormesh(phi_plot, theta_plot, detec_sum, cmap=cmap_det)
+#   # ax1.axis('scaled')
+#   ax1.set(xlabel=xlab, ylabel=ylab, title=title1)
+#   cbar = fig1.colorbar(h1, ticks=levels)
+#   cbar.set_label(bar1, rotation=270, labelpad=20)
+#   if save:
+#     fig1.savefig(f"{result_prefix}_n_sight_{proj_name}")
+#   if show:
+#     plt.show()
+#
+#   ##################################################################################################################
+#   # Map of constellation's compton effective area
+#   ##################################################################################################################
+#   levels_compton = range(detec_min_compton, detec_max_compton + 1, max(1, int((detec_max_compton + 1 - detec_min_compton) / 15)))
+#
+#   # fig2, ax2 = plt.subplots(1, 1, figsize=(10, 6))
+#   fig2, ax2 = plt.subplots(subplot_kw={'projection': chosen_proj}, figsize=(15, 8))
+#   # ax2.set_global()
+#   # ax2.coastlines()
+#   h3 = ax2.pcolormesh(phi_plot, theta_plot, detec_sum_compton, cmap=cmap_compton)
+#   # ax2.axis('scaled')
+#   ax2.set(xlabel=xlab, ylabel=ylab, title=title2)
+#   cbar = fig2.colorbar(h3, ticks=levels_compton)
+#   cbar.set_label(bar2, rotation=270, labelpad=20)
+#   if save:
+#     fig2.savefig(f"{result_prefix}_compton_seff_{proj_name}")
+#   if show:
+#     plt.show()
+#
+#   ##################################################################################################################
+#   # Map of constellation's single effective area
+#   ##################################################################################################################
+#   levels_single = range(detec_min_single, detec_max_single + 1, max(1, int((detec_max_single + 1 - detec_min_single) / 15)))
+#
+#   fig3, ax3 = plt.subplots(subplot_kw={'projection': chosen_proj}, figsize=(15, 8))
+#   # ax3.set_global()
+#   # ax3.coastlines()
+#   h5 = ax3.pcolormesh(phi_plot, theta_plot, detec_sum_single, cmap=cmap_single)
+#   # ax3.axis('scaled')
+#   ax3.set(xlabel=xlab, ylabel=ylab, title=title3)
+#   cbar = fig3.colorbar(h5, ticks=levels_single)
+#   cbar.set_label(bar3, rotation=270, labelpad=20)
+#   if save:
+#     fig3.savefig(f"{result_prefix}_single_seff_{proj_name}")
+#   if show:
+#     plt.show()
+#
+#   correction_values = (1 + np.sin(np.deg2rad(theta_world)) * (num_val - 1)) / num_val
+#   print(f"The mean number of satellites in sight is :       {np.average(np.mean(detec_sum, axis=1), weights=correction_values):.4f} satellites")
+#   print(f"The mean effective area for Compton events is :  {np.average(np.mean(detec_sum_compton, axis=1), weights=correction_values):.4f} cm²")
+#   print(f"The mean effective area for single events is :   {np.average(np.mean(detec_sum_single, axis=1), weights=correction_values):.4f} cm²")
+#
+#   # print(f"The mean number of satellites in sight is :       {np.mean(np.mean(detec_sum, axis=1) * np.sin(np.deg2rad(theta_world))):.4f} satellites")
+#   # print(f"The mean effective area for Compton events is :  {np.mean(np.mean(detec_sum_compton, axis=1) * np.sin(np.deg2rad(theta_world))):.4f} cm²")
+#   # print(f"The mean effective area for single events is :   {np.mean(np.mean(detec_sum_single, axis=1) * np.sin(np.deg2rad(theta_world))):.4f} cm²")
+#   #
+#   # print(f"NOT SIN CORRECTED - The mean number of satellites in sight is :       {np.mean(detec_sum):.4f} satellites")
+#   # print(f"NOT SIN CORRECTED - The mean effective area for Compton events is :  {np.mean(detec_sum_compton):.4f} cm²")
+#   # print(f"NOT SIN CORRECTED - The mean effective area for single events is :   {np.mean(detec_sum_single):.4f} cm²")
 
