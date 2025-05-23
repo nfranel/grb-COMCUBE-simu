@@ -702,7 +702,8 @@ class AllSourceData:
     Plots a map of the sensibility over the sky for number of sat in sight, single events and compton events
     :param num_val: number of value to
     """
-    plt.rcParams.update({'font.size': 13})
+    plt.rcParams.update({'font.size': 15})
+    plt.tight_layout()
     xlab = "Right ascention (°)"
     ylab = "Declination (°)"
     title1 = "Constellation sky coverage map"
@@ -711,7 +712,7 @@ class AllSourceData:
     bar1 = "Number of satellites covering the area"
     bar2 = "Effective area for Compton events (cm²)"
     bar3 = "Effective area for single events (cm²)"
-    chosen_proj, proj_name = "mollweide", "mollweide"
+    chosen_proj = "mollweide"
 
     phi_world = np.linspace(0, 360, num_val, endpoint=False)
     # theta will be converted in sat coord with grb_decra_worldf2satf, which takes dec in world coord with 0 being north pole and 180 the south pole !
@@ -759,7 +760,7 @@ class AllSourceData:
     cbar = fig1.colorbar(h1, ticks=levels)
     cbar.set_label(bar1, rotation=270, labelpad=20)
     if save:
-      fig1.savefig(f"{self.result_prefix}_n_sight_{proj_name}")
+      fig1.savefig(f"{self.result_prefix}_in_sight_erg{self.erg_cut[0]}-{self.erg_cut[1]}")
     if show:
       plt.show()
 
@@ -778,7 +779,7 @@ class AllSourceData:
     cbar = fig2.colorbar(h3, ticks=levels_compton)
     cbar.set_label(bar2, rotation=270, labelpad=20)
     if save:
-      fig2.savefig(f"{self.result_prefix}_compton_seff_{proj_name}")
+      fig2.savefig(f"{self.result_prefix}_compton_seff_erg{self.erg_cut[0]}-{self.erg_cut[1]}")
     if show:
       plt.show()
 
@@ -796,7 +797,7 @@ class AllSourceData:
     cbar = fig3.colorbar(h5, ticks=levels_single)
     cbar.set_label(bar3, rotation=270, labelpad=20)
     if save:
-      fig3.savefig(f"{self.result_prefix}_single_seff_{proj_name}")
+      fig3.savefig(f"{self.result_prefix}_single_seff_erg{self.erg_cut[0]}-{self.erg_cut[1]}")
     if show:
       plt.show()
 
