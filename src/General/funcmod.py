@@ -132,8 +132,8 @@ def earth_rotation_offset(time_val):
 def true_anomaly_calc(time_val, period):
   """
   Calculates the true anomaly between 0 and 360° for a time "time_val" and an orbit of period "period"
-  :param time_val : time at which the true anomaly is calculated
-  :param period : period of the orbit
+  :param time_val : time at which the true anomaly is calculated in seconds
+  :param period : period of the orbit in seconds
   Return the true anomaly [deg]
   """
   return np.mod(360 * time_val / period, 360)
@@ -1627,7 +1627,7 @@ def calc_mdp(S, B, mu100, nsigma=4.29, mu100_err=None):
   return mdp, mdp_err
 
 
-def eff_area_func(dec_wf, ra_wf, info_sat, mu100_list):  # TODO : limits on variables
+def eff_area_func(dec_wf, ra_wf, info_sat, mu100_list, burst_time=0):  # TODO : limits on variables
   """
   Returns a value of the effective area for single event, compton event or 1 if the satellite is in sight for a direction dec_wt, ra_wf
   The value is obtained from mu100 files
@@ -1643,7 +1643,7 @@ def eff_area_func(dec_wf, ra_wf, info_sat, mu100_list):  # TODO : limits on vari
   # extracting satellite information
   sat_alt = info_sat[3]
   # Turning the orbital parameters into dec and ra in world frame, burst_time taken = 0 for convenience
-  dec_sat_wf, ra_sat_wf = sat_info_2_decra(info_sat, burst_time=0)
+  dec_sat_wf, ra_sat_wf = sat_info_2_decra(info_sat, burst_time=burst_time)
 
   if not verif_rad_belts(dec_sat_wf, ra_sat_wf, sat_alt):
     dec_sf, ra_sf = grb_decra_worldf2satf(dec_wf, ra_wf, dec_sat_wf, ra_sat_wf)

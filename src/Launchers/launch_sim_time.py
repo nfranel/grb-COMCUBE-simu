@@ -70,7 +70,7 @@ def gen_commands(args):
     if not (args.spectrafilepath.endswith("/")) and os.name == "posix":
       args.spectrafilepath += "/"
     if args.simmode == "sampled":
-      lc_name = cat.df.lc.values[i]
+      lc_name = f"LightCurve_{cat.df.name.values[i]}.dat"
       pht_mflx = cat.df.mean_flux.values[i]
       pht_pflx = cat.df.peak_flux.values[i]
       n_year = float(args.grbfile.split("years")[0].split("_")[-1])
