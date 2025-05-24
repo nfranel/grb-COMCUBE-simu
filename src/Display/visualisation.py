@@ -604,8 +604,8 @@ def fov_const(parfile, museffdata, num_val=500, erg_cut=(10, 1000), show=True, s
     fig1, ax1 = plt.subplots(subplot_kw={'projection': ccrs.Mollweide()}, figsize=(15, 8))
   else:
     raise ValueError("Use a correct value for proj 'carre' or 'mollweide'")
-  ax1.set_global()
-  ax1.coastlines()
+  # ax1.set_global()
+  # ax1.coastlines()
   h1 = ax1.pcolormesh(phi_plot, theta_plot, detec_sum, cmap=cmap_det, transform=ccrs.PlateCarree())
   # ax1.axis('scaled')
   ax1.set(xlabel=xlab, ylabel=ylab, title=title1)
@@ -676,6 +676,58 @@ def fov_const(parfile, museffdata, num_val=500, erg_cut=(10, 1000), show=True, s
   print(f"The mean number of satellites in sight is :       {np.average(np.mean(detec_sum, axis=1), weights=correction_values):.4f} satellites")
   print(f"The mean effective area for Compton events is :  {np.average(np.mean(detec_sum_compton, axis=1), weights=correction_values):.4f} cm²")
   print(f"The mean effective area for single events is :   {np.average(np.mean(detec_sum_single, axis=1), weights=correction_values):.4f} cm²")
+
+
+def get_mean_seff_values(parfile, museffdata, num_val=100, erg_cut=(10, 1000)):
+  """
+  Plots a map of the sensibility over the sky for number of sat in sight, single events and compton events
+  :param num_val: number of value to
+  """
+  plt.rcParams.update({'font.size': 15})
+  suffix = parfile.split("/")[-1].split("polGBM.par")[0]
+
+  sat_info = read_grbpar(parfile)[-1]
+  n_sat = len(sat_info)
+  # museffdata = MuSeffContainer(mu100par, erg_cut, armcut)
+
+  phi_world = np.linspace(0, 360, num_val, endpoint=False)
+  # theta will be converted in sat coord with grb_decra_worldf2satf, which takes dec in world coord with 0 being north pole and 180 the south pole !
+  theta_world = np.linspace(0, 180, num_val)
+
+  burst_times = np.linspace(0, orbital_period_calc(sat_info[0][3]), 100, endpoint=False)
+  mean_coverage = []
+  mean_seff_compton = []
+  mean_seff_single = []
+  nite = num_val ** 2 * len(sat_info) * 100
+  ncount = 0
+  for burst_time in burst_times:
+    detection = np.zeros((n_sat, num_val, num_val))
+    detection_compton = np.zeros((n_sat, num_val, num_val))
+    detection_single = np.zeros((n_sat, num_val, num_val))
+
+    for ite, info_sat in enumerate(sat_info):
+      for ite_theta, theta in enumerate(theta_world):
+        for ite_phi, phi in enumerate(phi_world):
+          ncount += 1
+          detection_compton[ite][ite_theta][ite_phi], detection_single[ite][ite_theta][ite_phi], detection[ite][ite_theta][ite_phi] = eff_area_func(theta, phi, info_sat, museffdata, burst_time=burst_time)
+          print(f"Calculation : {int(ncount / nite * 100)}%", end="\r")
+    print("Calculation over")
+
+    detec_sum = np.sum(detection, axis=0)
+    detec_sum_compton = np.sum(detection_compton, axis=0)
+    detec_sum_single = np.sum(detection_single, axis=0)
+
+    correction_values = (1 + np.sin(np.deg2rad(theta_world)) * (num_val - 1)) / num_val
+
+    mean_coverage.append(np.average(np.mean(detec_sum, axis=1), weights=correction_values))
+    mean_seff_compton.append(np.average(np.mean(detec_sum_compton, axis=1), weights=correction_values))
+    mean_seff_single.append(np.average(np.mean(detec_sum_single, axis=1), weights=correction_values))
+
+  print(f"mean detection sensitivity values for {parfile} and ergcut {erg_cut[0]}-{erg_cut[1]}")
+  print(f"The mean number of satellites in sight is :       {np.mean(mean_coverage):.4f} satellites")
+  print(f"The mean effective area for Compton events is :  {np.mean(mean_seff_compton):.4f} cm²")
+  print(f"The mean effective area for single events is :   {np.mean(mean_seff_single):.4f} cm²")
+
 
 
 # def fov_const(parfile, mu100par, num_val=500, erg_cut=(10, 1000), armcut=180, show=True, save=False, bigfont=True, language="en"):
