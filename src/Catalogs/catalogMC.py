@@ -10,7 +10,7 @@ from itertools import repeat
 from time import time
 
 from src.Catalogs.catalog import Catalog
-from src.General.funcmod import calc_flux_gbm, use_scipyquad, equi_distri, red_rate_long, red_rate_short, acc_reject, transfo_broken_plaw, pick_normal_alpha_beta, norm_band_spec_calc, amati_long, amati_short, yonetoku_reverse_long, yonetoku_reverse_short
+from src.General.funcmod import calc_flux_gbm, use_scipyquad, equi_distri, red_rate_long, red_rate_short, acc_reject, transfo_broken_plaw, pick_normal_alpha_beta, norm_band_spec_calc, amati_long, amati_short, yonetoku_reverse_long, yonetoku_reverse_short, pflux_to_mflux_calculator
 from astropy.cosmology import FlatLambdaCDM
 
 # mpl.use("Qt5Agg")
@@ -831,8 +831,10 @@ class MCCatalog:
       t90_obs_temp = 10 ** np.random.normal(-0.2373, 0.4058)
 
     lc_temp, gbm_mflux, gbm_pflux = self.closest_lc(t90_obs_temp)[:3]
-    pflux_to_mflux = gbm_mflux / gbm_pflux
-    # pflux_to_mflux = pflux_to_mflux_calculator(lc_temp, gbm_t90)
+    if np.isnan(gbm_pflux):
+      pflux_to_mflux = pflux_to_mflux_calculator(lc_temp)
+    else:
+      pflux_to_mflux = gbm_mflux / gbm_pflux
 
     dl_obs_temp = self.cosmo.luminosity_distance(z_obs_temp).value / 1000  # Gpc
     ep_rest_temp = yonetoku_reverse_short(lpeak_rest_temp)
@@ -878,8 +880,10 @@ class MCCatalog:
     # timelist.append(time() - init_time)
 
     lc_temp, gbm_mflux, gbm_pflux = self.closest_lc(t90_obs_temp)[:3]
-    pflux_to_mflux = gbm_mflux / gbm_pflux
-    # pflux_to_mflux = pflux_to_mflux_calculator(lc_temp, gbm_t90)
+    if np.isnan(gbm_pflux):
+      pflux_to_mflux = pflux_to_mflux_calculator(lc_temp)
+    else:
+      pflux_to_mflux = gbm_mflux / gbm_pflux
 
     dl_obs_temp = self.cosmo.luminosity_distance(z_obs_temp).value / 1000  # Gpc
     ep_rest_temp = yonetoku_reverse_long(lpeak_rest_temp)

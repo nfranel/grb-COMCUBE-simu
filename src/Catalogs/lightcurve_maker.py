@@ -11,7 +11,7 @@ from gbm.finder import TriggerFtp
 import numpy as np
 import subprocess
 import os
-from catalog import Catalog
+from src.Catalogs.catalog import Catalog
 
 def bin_selector(lc, tstart, tstop, minedges, maxedges):
   """
@@ -197,6 +197,7 @@ def make_tte_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_mas
         ax.step(lc_select.centroids, counts_corr, where="post", label="Corrected LC")
         ax.set(xlabel="Time (s)", ylabel="Number of counts")
         ax.legend()
+        plt.tight_layout()
         plt.show()
 
       ###################################################################################################################
@@ -216,6 +217,7 @@ def make_tte_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_mas
         ax_full.axvline(start_t90, color="black", label="T90 start and stop")
         ax_full.axvline(end_t90, color="black")
         ax_full.legend()
+        plt.tight_layout()
         plt.show()
 
       fig, ax = plt.subplots(figsize=(10, 6))
@@ -223,6 +225,7 @@ def make_tte_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_mas
       ax.set(xlabel="Time(s)", ylabel="Count rate (count/s)", title=f"Light curve {name} with tte")
       ax.axvline(start_t90, color="black")
       ax.axvline(end_t90, color="black")
+      plt.tight_layout()
       if show:
         plt.show()
       else:
@@ -357,6 +360,7 @@ def make_cspec_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_m
     ax.step(used_centroids, counts_corr, where="post", label="Corrected LC")
     ax.set(xlabel="Time (s)", ylabel="Number of counts")
     ax.legend()
+    plt.tight_layout()
     plt.show()
 
   #####################################################################################################################
@@ -370,6 +374,7 @@ def make_cspec_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_m
     ax_full.axvline(start_t90, color="black", label="T90 start and stop")
     ax_full.axvline(end_t90, color="black")
     ax_full.legend()
+    plt.tight_layout()
     plt.show()
 
   fig, ax = plt.subplots(figsize=(10, 6))
@@ -377,6 +382,7 @@ def make_cspec_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_m
   ax.set(xlabel="Time(s)", ylabel="Count rate (count/s)", title=f"Light curve {name} with cspec")
   ax.axvline(start_t90, color="black")
   ax.axvline(end_t90, color="black")
+  plt.tight_layout()
   if show:
     plt.show()
   else:
@@ -444,8 +450,8 @@ gbm_cat = Catalog("../Data/CatData/allGBM.txt", [4, '\n', 5, '|', 4000], "../Dat
 
 # # for grb_ite in [17, 890, 1057, 1350]:
 # # for grb_ite in [17]:
-for grb_ite in range(len(gbm_cat)):
-  create_lc(gbm_cat, grb_ite, bin_size="auto", ener_range=(10, 1000), show=False, directory="../Data/sources/", saving=True)
+# for grb_ite in range(len(gbm_cat)):
+#   create_lc(gbm_cat, grb_ite, bin_size="auto", ener_range=(10, 1000), show=False, directory="../Data/sources/", saving=True)
 # for grb_ite in [200]:#, 17, 41, 890, 1057, 1350]:
 #   create_lc(gbm_cat, grb_ite, bin_size="auto", ener_range=(10, 1000), show=True, directory="../Data/sources/", saving=True)
 
@@ -453,4 +459,4 @@ for grb_ite in range(len(gbm_cat)):
 # mpl.use("Qt5Agg")
 # for grb_ite in [960, 972, 589, 949]:
 #   create_lc(gbm_cat, grb_ite, bin_size="auto", ener_range=(10, 1000), show=True, directory="../Data/sources/", saving=True)
-# create_lc(gbm_cat, 972, bin_size="auto", ener_range=(10, 1000), show=True, directory="../Data/sources/", saving=False)
+create_lc(gbm_cat, 972, bin_size="auto", ener_range=(10, 1000), show=True, directory="../Data/sources/", saving=False)

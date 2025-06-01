@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import time
 import multiprocessing as mp
 from itertools import repeat
+from scipy.special import erf
 from scipy.optimize import curve_fit
 from scipy.stats import rice
 from scipy.integrate import trapezoid
@@ -304,113 +305,92 @@ ylist_pearce = [np.array([0.019230769230769232, 0, 0, 0, 0, 0, 0, 0, 0, 0.038461
                           0.085, 0.015, 0.12, 0.1, 0.03, 0.05, 0.1, 0.03, 0.03, 0.105, 0.155, 0.115, 0.185, 0.135, 0.155, 0.44, 0., 0., 0.,
                           0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.])]
 
-list_distri = []
-n_distri = 10
-int_steps = 100
-for distname in ["SO", "SR", "CD", "PJ"]:
-# for distname in ["SO"]:
-    simtime = time.time()
-    list_distri.append(PolVSAngleRatio(model=distname, gamma_range=100, red_z_range=1, theta_j_range=("distri", n_distri),
-                                  theta_nu_range=(distri_nu, n_distri), nu_0_range=350 / 100, alpha_range=-0.8, beta_range=-2.2,
-                                  nu_min=None, nu_max=None, jet_model="top-hat", flux_rejection=True, integ_steps=int_steps,
-                                  confidence=1.96, parallel=10))
-    print(f"TIME TAKEN FOR {distname} : {time.time() - simtime} s")
+# list_distri = []
+# n_distri = 10
+# int_steps = 100
+# for distname in ["SO", "SR", "CD", "PJ"]:
+# # for distname in ["SO"]:
+#     simtime = time.time()
+#     list_distri.append(PolVSAngleRatio(model=distname, gamma_range=100, red_z_range=1, theta_j_range=("distri", n_distri),
+#                                   theta_nu_range=(distri_nu, n_distri), nu_0_range=350 / 100, alpha_range=-0.8, beta_range=-2.2,
+#                                   nu_min=None, nu_max=None, jet_model="top-hat", flux_rejection=True, integ_steps=int_steps,
+#                                   confidence=1.96, parallel=10))
+#     print(f"TIME TAKEN FOR {distname} : {time.time() - simtime} s")
 
 
-bins = np.linspace(0, 0.7, 60)
-x_pearce = (bins[1:] + bins[:-1]) / 2
-
-labels = ["Distribution of PF for SO model", "Distribution of PF for SR model",
-          "Distribution of PF for CD model", "Distribution of PF for PJ model"]
-
-colors = ['blue', 'red', 'green', 'orange']
-fig_comp, axes = plt.subplots(len(list_distri), 1, figsize=(20, 10), sharex="all")
-fig_comp.suptitle(f"Distribution of Polarization fraction\nInt step : {int_steps}, number of pf estimated : {n_distri**2}")
-if len(list_distri) == 1:
-    axes = [axes]
-for ax_idx in range(len(axes)):
-    axes[ax_idx].hist(list_distri[ax_idx].data_df.pf.values, bins=bins, label=labels[ax_idx],
-                      weights=[1 / len(list_distri[ax_idx].data_df)] * len(list_distri[ax_idx].data_df), color=colors[ax_idx])
-    axes[ax_idx].scatter(x_pearce, ylist_pearce[ax_idx] / np.sum(ylist_pearce[ax_idx]), label="Values from Pearce")
-    axes[ax_idx].legend()
-
-axes[-1].set(xlabel='Polarization fraction', xlim=(0, 0.75), xticks=np.arange(0, 0.7, 0.15))
-plt.show()
-
-bins = np.array(list(range(0, 101, 2)))
-centroids = (bins[1:] + bins[:-1]) / 2
-
-PFlim = 0.3
-sums = np.ones((4, len(bins) - 1))
-sums_err = np.ones((4, len(bins) - 1))
-sums_min = np.ones((4, len(bins) - 1))
-sums_max = np.ones((4, len(bins) - 1))
-
-for distri_ite in range(4):
-  pfmesured = []
-  p_smaller = []
-  for itepf in range(len(list_distri[distri_ite].data_df)):
-    # val_err = 3*list_distri[distri_ite].data_df.error_pf.values[itepf]
-    val_err = 0.1
-    rv = rice(b=list_distri[distri_ite].data_df.pf.values[itepf]/val_err, scale=val_err)
-    pfmesured.append(rv.rvs())
-    p_smaller.append(rv.cdf(PFlim))
-  pfmesured = np.array(pfmesured)
-  p_smaller = np.array(p_smaller)
-  bernoulli_val = p_smaller * np.abs(1 - p_smaller)
-  # print(pfmesured)
-  # print(p_smaller)
-  # print(list_distri[distri_ite].data_df.pf.values)
-  # print(pfmesured)
-  # print(p_smaller)
-  # print()
-  # list_distri[distri_ite].data_df["pf_min"] = list_distri[distri_ite].data_df.pf.values - error
-  # list_distri[distri_ite].data_df["pf_max"] = list_distri[distri_ite].data_df.pf.values + error
-  for ite_col in range(len(sums[0])):
-    pfmesured_temp = pfmesured[:bins[ite_col]]
-    sums[distri_ite][ite_col] = np.count_nonzero(list_distri[distri_ite].data_df.pf.values[:bins[ite_col]] > PFlim)
-    sums_err[distri_ite][ite_col] = np.sum(bernoulli_val[np.where(pfmesured_temp > 0.3)])
-    # sums_err[distri_ite][ite_col] = np.sum(bernoulli_val[:bins[ite_col]])
-    # sums_min[distri_ite][ite_col] = np.count_nonzero(pfmesured[:bins[ite_col]] > PFlim)
-    # sums_max[distri_ite][ite_col] = np.count_nonzero(pfmesured[:bins[ite_col]] > PFlim)
-    # sums_min[distri_ite][ite_col] = np.count_nonzero(list_distri[distri_ite].data_df.pf_min.values[:bins[ite_col]] > PFlim)
-    # sums_max[distri_ite][ite_col] = np.count_nonzero(list_distri[distri_ite].data_df.pf_max.values[:bins[ite_col]] > PFlim)
-
-labels = ["SO model", "SR model",
-          "CD model", "PJ model"]
-colors = ['blue', 'red', 'green', 'orange']
-
-pf_mean = np.zeros((4, len(bins) - 1))
-pf_err = np.zeros((4, len(bins) - 1))
-
-figpearce, ax = plt.subplots(1, 1, figsize=(10, 6))
-for ite in range(len(sums)):
-  # for ite_col in range(len(sums[ite][0])):
-  #   pf_sims = sums[ite][:, ite_col]
-  #   ydat, fitbins = np.histogram(pf_sims, bins=np.linspace(0, 100, 20))
-  #   xdat = (fitbins[1:] + fitbins[:-1]) / 2
-  #   popt_a, pcov_a = curve_fit(gauss, xdata=xdat, ydata=ydat, bounds=((0, 0, 0), (np.inf, 1, 1)))
-  #   print(popt_a)
-  #   pf0, sig = popt_a[1], popt_a[2]
-  #   # error = rice.rvs(pf0/sig, scale=sig)
-  #   # print(error)
-  #   # pf_mean[ite][ite_col] = pf0
-  #   # pf_err[ite][ite_col] = error
-  #   # fit une gaussienne la dessus ?
-  #   # Ensuite récupérer mu et sigma, prendre 3 sigma et ça nous fait la valeur avec l'erreur associée
-  ax.plot(centroids, sums[ite], label=labels[ite], color=colors[ite])
-  ax.fill_between(centroids, sums[ite] - sums_err[ite], sums[ite] + sums_err[ite], color=colors[ite], alpha=0.4)
-
-ax.set(xlabel='Number of GRB detected with MDP < 30%', ylabel='Number of GRB detected with PF > 30%', xlim=(0, 80), ylim=(0, 60), xticks=np.arange(0, 101, 20), yticks=np.arange(0, 100, 20))
-ax.set_xlim(0, 80)
-ax.set_ylim(0, 60)
-ax.legend()
-plt.show()
 
 ########################################################################################
 # Trying to reproduce pearce figure
+# USING RICE DISTRIBUTION FOR ERROR
 ########################################################################################
-# # Verification of the acceptance rejection method
+# bins = np.linspace(0, 0.7, 60)
+# x_pearce = (bins[1:] + bins[:-1]) / 2
+#
+# labels = ["Distribution of PF for SO model", "Distribution of PF for SR model",
+#           "Distribution of PF for CD model", "Distribution of PF for PJ model"]
+#
+# colors = ['blue', 'red', 'green', 'orange']
+# fig_comp, axes = plt.subplots(len(list_distri), 1, figsize=(20, 10), sharex="all")
+# fig_comp.suptitle(f"Distribution of Polarization fraction\nInt step : {int_steps}, number of pf estimated : {n_distri**2}")
+# if len(list_distri) == 1:
+#     axes = [axes]
+# for ax_idx in range(len(axes)):
+#     axes[ax_idx].hist(list_distri[ax_idx].data_df.pf.values, bins=bins, label=labels[ax_idx],
+#                       weights=[1 / len(list_distri[ax_idx].data_df)] * len(list_distri[ax_idx].data_df), color=colors[ax_idx])
+#     axes[ax_idx].scatter(x_pearce, ylist_pearce[ax_idx] / np.sum(ylist_pearce[ax_idx]), label="Values from Pearce")
+#     axes[ax_idx].legend()
+#
+# axes[-1].set(xlabel='Polarization fraction', xlim=(0, 0.75), xticks=np.arange(0, 0.7, 0.15))
+# plt.show()
+#
+# bins = np.array(list(range(0, 101, 2)))
+# centroids = (bins[1:] + bins[:-1]) / 2
+#
+# PFlim = 0.3
+# sums = np.ones((4, len(bins) - 1))
+# sums_err = np.ones((4, len(bins) - 1))
+# sums_min = np.ones((4, len(bins) - 1))
+# sums_max = np.ones((4, len(bins) - 1))
+#
+# for distri_ite in range(4):
+#   pfmesured = []
+#   p_smaller = []
+#   for itepf in range(len(list_distri[distri_ite].data_df)):
+#     # val_err = 3*list_distri[distri_ite].data_df.error_pf.values[itepf]
+#     val_err = 0.1
+#     rv = rice(b=list_distri[distri_ite].data_df.pf.values[itepf]/val_err, scale=val_err)
+#     pfmesured.append(rv.rvs())
+#     p_smaller.append(rv.cdf(PFlim))
+#   pfmesured = np.array(pfmesured)
+#   p_smaller = np.array(p_smaller)
+#   bernoulli_val = p_smaller * np.abs(1 - p_smaller)
+#   for ite_col in range(len(sums[0])):
+#     pfmesured_temp = pfmesured[:bins[ite_col]]
+#     sums[distri_ite][ite_col] = np.count_nonzero(list_distri[distri_ite].data_df.pf.values[:bins[ite_col]] > PFlim)
+#     sums_err[distri_ite][ite_col] = np.sum(bernoulli_val[np.where(pfmesured_temp > 0.3)])
+#
+# labels = ["SO model", "SR model",
+#           "CD model", "PJ model"]
+# colors = ['blue', 'red', 'green', 'orange']
+#
+# pf_mean = np.zeros((4, len(bins) - 1))
+# pf_err = np.zeros((4, len(bins) - 1))
+#
+# figpearce, ax = plt.subplots(1, 1, figsize=(10, 6))
+# for ite in range(len(sums)):
+#   ax.plot(centroids, sums[ite], label=labels[ite], color=colors[ite])
+#   ax.fill_between(centroids, sums[ite] - sums_err[ite], sums[ite] + sums_err[ite], color=colors[ite], alpha=0.4)
+#
+# ax.set(xlabel='Number of GRB detected with MDP < 30%', ylabel='Number of GRB detected with PF > 30%', xlim=(0, 80), ylim=(0, 60), xticks=np.arange(0, 101, 20), yticks=np.arange(0, 100, 20))
+# ax.set_xlim(0, 80)
+# ax.set_ylim(0, 60)
+# ax.legend()
+# plt.show()
+
+
+########################################################################################
+# Verification of the acceptance rejection method with the models' distributions
+########################################################################################
 # pf_SO = []
 # pf_SR = []
 # pf_CD = []
@@ -446,23 +426,31 @@ plt.show()
 #
 # axes[-1].set(xlabel='Polarization fraction', xlim=(0, 0.75), xticks=np.arange(0, 0.7, 0.15))
 # plt.show()
-#
-#
+
+
+########################################################################################
+# Trying to reproduce pearce figure
+# This kind of figure is considering only the variation of the models, with no error considered because of the detection (as done in Pearce 2019 with a rice distribution)
+# We obtain the error by fitting with a gaussian distribution
+########################################################################################
 # bins = np.array(list(range(0, 101, 2)))
+# num_fig_bins = len(bins)
 # centroids = (bins[1:] + bins[:-1]) / 2
+# nvals_fit = 100
 #
-# SO_sum = np.ones((100, len(bins) - 1))
-# SR_sum = np.ones((100, len(bins) - 1))
-# CD_sum = np.ones((100, len(bins) - 1))
-# PJ_sum = np.ones((100, len(bins) - 1))
+# SO_sum = np.ones((nvals_fit, num_fig_bins - 1))
+# SR_sum = np.ones((nvals_fit, num_fig_bins - 1))
+# CD_sum = np.ones((nvals_fit, num_fig_bins - 1))
+# PJ_sum = np.ones((nvals_fit, num_fig_bins - 1))
 # PFlim = 0.3
 # for ite_row in range(len(SO_sum)):
+#   print(f"Simulating : {ite_row / len(SO_sum) * 100:.0f} %", end="\r")
 #   pf_SO = []
 #   pf_SR = []
 #   pf_CD = []
 #   pf_PJ = []
-#   nvals = 100
-#   for vals in range(nvals):
+#   nGRB_taken = 100
+#   for vals in range(nGRB_taken):
 #     pf_SO.append(acc_reject(SO_PF_distri, [], 0, 1))
 #     pf_SR.append(acc_reject(SR_PF_distri, [], 0, 1))
 #     pf_CD.append(acc_reject(CD_PF_distri, [], 0, 1))
@@ -484,22 +472,22 @@ plt.show()
 #           "CD model", "PJ model"]
 # colors = ['blue', 'red', 'green', 'orange']
 #
-# pf_mean = np.zeros((4, len(bins) - 1))
-# pf_err = np.zeros((4, len(bins) - 1))
+# pf_mean = np.zeros((4, num_fig_bins - 1))
+# pf_err = np.zeros((4, num_fig_bins - 1))
 #
 # figpearce, ax = plt.subplots(1, 1, figsize=(10, 6))
 # for ite in range(len(sums)):
 #   for ite_col in range(len(sums[ite][0])):
 #     pf_sims = sums[ite][:, ite_col]
-#     ydat, fitbins = np.histogram(pf_sims, bins=np.linspace(0, 100, 20))
+#     ydat, fitbins = np.histogram(pf_sims, bins=np.linspace(0, 100, 101))
 #     xdat = (fitbins[1:] + fitbins[:-1]) / 2
-#     popt_a, pcov_a = curve_fit(gauss, xdata=xdat, ydata=ydat, bounds=((0, 0, 0), (np.inf, 1, 1)))
+#     popt_a, pcov_a = curve_fit(gauss, xdata=xdat, ydata=ydat, bounds=((0, 0, 0), (100, 100, 100)))
 #     print(popt_a)
 #     pf0, sig = popt_a[1], popt_a[2]
 #     # error = rice.rvs(pf0/sig, scale=sig)
 #     # print(error)
-#     # pf_mean[ite][ite_col] = pf0
-#     # pf_err[ite][ite_col] = error
+#     pf_mean[ite][ite_col] = pf0
+#     pf_err[ite][ite_col] = sig
 #     # fit une gaussienne la dessus ?
 #     # Ensuite récupérer mu et sigma, prendre 3 sigma et ça nous fait la valeur avec l'erreur associée
 #   ax.plot(centroids, sums[ite][0], label=labels[ite], color=colors[ite])
@@ -508,6 +496,125 @@ plt.show()
 # ax.legend()
 # ax.set(xlabel='Number of GRB detected with MDP < 30%', ylabel='Number of GRB detected with PF > 30%', xlim=(0, 1), xticks=np.arange(0, 101, 20), yticks=np.arange(0, 100, 20))
 # plt.show()
+
+
+########################################################################################
+# Trying to reproduce pearce figure
+# This kind of figure is considering only the variation of the models, with no error considered because of the detection (as done in Pearce 2019 with a rice distribution)
+# We obtain the error by taking the quantiles at 1, 2, and 3 sigmas
+########################################################################################
+bins = np.array(list(range(0, 101, 2)))
+num_fig_bins = len(bins)
+centroids = (bins[1:] + bins[:-1]) / 2
+nvals_fit = 1000
+nsigma = 1
+
+model_sum = np.ones((4, nvals_fit, num_fig_bins - 1))
+# SO_sum = np.ones((nvals_fit, num_fig_bins - 1))
+# SR_sum = np.ones((nvals_fit, num_fig_bins - 1))
+# CD_sum = np.ones((nvals_fit, num_fig_bins - 1))
+# PJ_sum = np.ones((nvals_fit, num_fig_bins - 1))
+PFlim = 0.35
+for ite_row in range(nvals_fit):
+  print(f"Simulating : {ite_row / nvals_fit * 100:.0f} %", end="\r")
+  pf_SO = []
+  pf_SR = []
+  pf_CD = []
+  pf_PJ = []
+  nGRB_taken = 100
+  for vals in range(nGRB_taken):
+    pf_SO.append(acc_reject(SO_PF_distri, [], 0, 1))
+    pf_SR.append(acc_reject(SR_PF_distri, [], 0, 1))
+    pf_CD.append(acc_reject(CD_PF_distri, [], 0, 1))
+    pf_PJ.append(acc_reject(PJ_PF_distri, [], 0, 1))
+
+  pf_SO = np.array(pf_SO)
+  pf_SR = np.array(pf_SR)
+  pf_CD = np.array(pf_CD)
+  pf_PJ = np.array(pf_PJ)
+
+  for ite_col in range(num_fig_bins - 1):
+    model_sum[0][ite_row][ite_col] = np.count_nonzero(pf_SO[:bins[ite_col]] > PFlim)
+    model_sum[1][ite_row][ite_col] = np.count_nonzero(pf_SR[:bins[ite_col]] > PFlim)
+    model_sum[2][ite_row][ite_col] = np.count_nonzero(pf_CD[:bins[ite_col]] > PFlim)
+    model_sum[3][ite_row][ite_col] = np.count_nonzero(pf_PJ[:bins[ite_col]] > PFlim)
+
+# sums = [SO_sum, SR_sum, CD_sum, PJ_sum]
+# sums has the structure sums[number of model][number of the simulation][different bins for the given simulation]
+# The goal is to perform statistics on a given bin for a lot of simulations so work on sums[ite][:, bin_ite]
+labels = ["SO model", "SR model",
+          "CD model", "PJ model"]
+colors = ['blue', 'red', 'green', 'orange']
+
+xlabel = f"Number of GRB detected with MDP < {PFlim * 100:.0f}%"
+ylabel = f"Number of GRB detected with PF > {PFlim * 100:.0f}%"
+
+# nsigma = 1
+pf_mean = np.zeros((4, num_fig_bins - 1))
+pf_min = np.zeros((4, num_fig_bins - 1))
+pf_max = np.zeros((4, num_fig_bins - 1))
+expec_outside = 1 - erf(1/np.sqrt(2))
+min_quant = expec_outside / 2
+max_quant = 1 - min_quant
+
+figpearce1, ax = plt.subplots(1, 1, figsize=(10, 6))
+for ite in range(len(model_sum)):
+  for ite_col in range(len(model_sum[ite][0])):
+    pf_sims = model_sum[ite][:, ite_col]
+    pf_mean[ite][ite_col] = np.mean(pf_sims)
+    pf_min[ite][ite_col] = np.quantile(pf_sims, min_quant)
+    pf_max[ite][ite_col] = np.quantile(pf_sims, max_quant)
+  ax.plot(centroids, pf_mean[ite], label=labels[ite], color=colors[ite])
+  ax.fill_between(centroids, pf_min[ite], pf_max[ite], color=colors[ite], alpha=0.4)
+
+ax.legend()
+ax.set(xlabel=xlabel, ylabel=ylabel, xlim=(0, 1), xticks=np.arange(0, 101, 20), yticks=np.arange(0, 100, 20))
+plt.suptitle(f"Model separation at 1 $\sigma$")
+plt.show()
+
+# nsigma = 2
+pf_mean = np.zeros((4, num_fig_bins - 1))
+pf_min = np.zeros((4, num_fig_bins - 1))
+pf_max = np.zeros((4, num_fig_bins - 1))
+expec_outside = 1 - erf(2/np.sqrt(2))
+min_quant = expec_outside / 2
+max_quant = 1 - min_quant
+figpearce2, ax = plt.subplots(1, 1, figsize=(10, 6))
+for ite in range(len(model_sum)):
+  for ite_col in range(len(model_sum[ite][0])):
+    pf_sims = model_sum[ite][:, ite_col]
+    pf_mean[ite][ite_col] = np.mean(pf_sims)
+    pf_min[ite][ite_col] = np.quantile(pf_sims, min_quant)
+    pf_max[ite][ite_col] = np.quantile(pf_sims, max_quant)
+  ax.plot(centroids, pf_mean[ite], label=labels[ite], color=colors[ite])
+  ax.fill_between(centroids, pf_min[ite], pf_max[ite], color=colors[ite], alpha=0.4)
+
+ax.legend()
+ax.set(xlabel=xlabel, ylabel=ylabel, xlim=(0, 1), xticks=np.arange(0, 101, 20), yticks=np.arange(0, 100, 20))
+plt.suptitle(f"Model separation at 2 $\sigma$")
+plt.show()
+
+# nsigma = 3
+pf_mean = np.zeros((4, num_fig_bins - 1))
+pf_min = np.zeros((4, num_fig_bins - 1))
+pf_max = np.zeros((4, num_fig_bins - 1))
+expec_outside = 1 - erf(3/np.sqrt(2))
+min_quant = expec_outside / 2
+max_quant = 1 - min_quant
+figpearce3, ax = plt.subplots(1, 1, figsize=(10, 6))
+for ite in range(len(model_sum)):
+  for ite_col in range(len(model_sum[ite][0])):
+    pf_sims = model_sum[ite][:, ite_col]
+    pf_mean[ite][ite_col] = np.mean(pf_sims)
+    pf_min[ite][ite_col] = np.quantile(pf_sims, min_quant)
+    pf_max[ite][ite_col] = np.quantile(pf_sims, max_quant)
+  ax.plot(centroids, pf_mean[ite], label=labels[ite], color=colors[ite])
+  ax.fill_between(centroids, pf_min[ite], pf_max[ite], color=colors[ite], alpha=0.4)
+
+ax.legend()
+ax.set(xlabel=xlabel, ylabel=ylabel, xlim=(0, 1), xticks=np.arange(0, 101, 20), yticks=np.arange(0, 100, 20))
+plt.suptitle(f"Model separation at 3 $\sigma$")
+plt.show()
 
 
 
