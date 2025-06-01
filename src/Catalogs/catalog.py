@@ -4,6 +4,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 import matplotlib.colors as colors
 import matplotlib as mpl
+import cartopy.crs as ccrs
 from scipy.optimize import curve_fit
 
 from src.General.funcmod import comp, band, plaw, sbpl, calc_flux_gbm, gauss
@@ -28,8 +29,12 @@ def treat_item(item_ev, item):
     if striped_item_ev == "":
       return np.nan
     else:
-      if item == "ra" or item == "dec":
+      if item == "dec":
+        # Changing the dec format from °, min, sec to decimal degree
         return np.sum(np.array(striped_item_ev.split(" ")).astype(float) / [1, 60, 3600])
+      elif item == "ra":
+        # Changing the ra format from hour, min, sec to decimal degree (multiplying by 15 to change from time to degree as 360° = 24h)
+        return np.sum(np.array(striped_item_ev.split(" ")).astype(float) / [1, 60, 3600]) * 15
       else:
         return striped_item_ev
 
@@ -177,21 +182,36 @@ class Catalog:
     Display the catalog GRBs position in the sky
     :param mode: no_cm or t90, use t90 to give a color to the points based on the GRB duration
     """
+    mpl.use("Qt5Agg")
+
     # Extracting dec and ra from catalog and transforms decimal degrees into degrees into the right frame
     thetap = self.df.dec.values
     phip = np.mod(np.array(self.df.ra.values) + 180, 360) - 180
-
-    plt.subplot(111, projection="aitoff")
-    plt.xlabel("RA (°)")
-    plt.ylabel("DEC (°)")
-    plt.grid(True)
-    plt.title("Map of GRB")
+    fig, ax = plt.subplots(subplot_kw={'projection': ccrs.Mollweide()}, figsize=(10, 6))
     if mode == "no_cm":
-      plt.scatter(phip, thetap, s=12, marker="*")
+      ax.scatter(phip, thetap, s=12, marker="*", transform=ccrs.PlateCarree())
     elif mode == "t90":
-      sc = plt.scatter(phip, thetap, s=12, marker="*", c=self.df.t90.values, norm=colors.LogNorm())
+      sc = ax.scatter(phip, thetap, s=12, marker="*", c=self.df.t90.values, norm=colors.LogNorm(), transform=ccrs.PlateCarree())
       cbar = plt.colorbar(sc)
       cbar.set_label("GRB Duration - T90 (s)", rotation=270, labelpad=20)
+    ax.set(xlabel="RA (°)", ylabel="DEC (°)")
+
+    xgrid, ygrid = np.arange(-135, 136, 45), np.arange(-30, 90, 30)
+    ax.gridlines(draw_labels=False, xlocs=xgrid, ylocs=ygrid)
+    ax.text(180, 90, ' 90°\n', transform=ccrs.PlateCarree(), ha="center", va='center')
+    ax.text(180, 60, ' 60°', transform=ccrs.PlateCarree(), ha="left", va='baseline')
+    ax.text(180, 30, ' 30°', transform=ccrs.PlateCarree(), ha="left", va='baseline')
+    ax.text(180, 0, ' 0°', transform=ccrs.PlateCarree(), ha="left", va='baseline')
+    ax.text(0, 0, '0°', transform=ccrs.PlateCarree(), ha="center", va='baseline')
+    ax.text(45, 0, '45°', transform=ccrs.PlateCarree(), ha="center", va='baseline')
+    ax.text(90, 0, '90°', transform=ccrs.PlateCarree(), ha="center", va='baseline')
+    ax.text(135, 0, '135°', transform=ccrs.PlateCarree(), ha="center", va='baseline')
+    ax.text(-45, 0, '-45°', transform=ccrs.PlateCarree(), ha="center", va='baseline')
+    ax.text(-90, 0, '-90°', transform=ccrs.PlateCarree(), ha="center", va='baseline')
+    ax.text(-135, 0, '-135°', transform=ccrs.PlateCarree(), ha="center", va='baseline')
+
+    ax.set_global()
+    plt.tight_layout()
     plt.show()
 
   def spectral_information(self, nbins=50):
@@ -386,63 +406,80 @@ class Catalog:
     plt.show()
 
   def grb_distribution(self):
-    gbm_ph_flux = []
-    long_gbm_ph_flux = []
-    short_gbm_ph_flux = []
-    all_df = self.df.loc[np.logical_not(np.isnan(self.df.flnc_band_epeak))]
-    long_df = all_df.loc[all_df.t90 > 2]
-    short_df = all_df.loc[all_df.t90 <= 2]
-    for ite_gbm, gbm_ep in enumerate(self.df.flnc_band_epeak.values):
-      if not np.isnan(gbm_ep):
-        ph_flux = calc_flux_gbm(self, ite_gbm, (10, 1000))
-        gbm_ph_flux.append(ph_flux)
-        if self.df.t90.values[ite_gbm] > 2:
-          long_gbm_ph_flux.append(ph_flux)
-        else:
-          short_gbm_ph_flux.append(ph_flux)
-    gbm_ph_flux = np.array(gbm_ph_flux)
-    long_gbm_ph_flux = np.array(long_gbm_ph_flux)
-    short_gbm_ph_flux = np.array(short_gbm_ph_flux)
+    mpl.use("Qt5Agg")
+    plt.rcParams.update({'font.size': 15})
 
-    dist_fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(27, 12))
+    # gbm_ph_flux = []
+    # long_gbm_ph_flux = []
+    # short_gbm_ph_flux = []
+    all_df = self.df.loc[np.logical_not(np.isnan(self.df.flnc_band_epeak))]
+    # long_df = all_df.loc[all_df.t90 > 2]
+    # short_df = all_df.loc[all_df.t90 <= 2]
+    # for ite_gbm, gbm_ep in enumerate(self.df.flnc_band_epeak.values):
+    #   if not np.isnan(gbm_ep):
+    #     ph_flux = calc_flux_gbm(self, ite_gbm, (10, 1000))
+    #     gbm_ph_flux.append(ph_flux)
+    #     if self.df.t90.values[ite_gbm] > 2:
+    #       long_gbm_ph_flux.append(ph_flux)
+    #     else:
+    #       short_gbm_ph_flux.append(ph_flux)
+    # gbm_ph_flux = np.array(gbm_ph_flux)
+    # long_gbm_ph_flux = np.array(long_gbm_ph_flux)
+    # short_gbm_ph_flux = np.array(short_gbm_ph_flux)
+
+    gbm_ph_flux = self.df.mean_flux.values
+    long_gbm_ph_flux = self.df[self.df.t90 > 2].mean_flux.values
+    short_gbm_ph_flux = self.df[self.df.t90 <= 2].mean_flux.values
+
+    gbm_flnc = self.df.mean_flux.values * self.df.t90.values
+    long_gbm_flnc = self.df[self.df.t90 > 2].mean_flux.values * self.df[self.df.t90 > 2].t90.values
+    short_gbm_flnc = self.df[self.df.t90 <= 2].mean_flux.values * self.df[self.df.t90 <= 2].t90.values
+
+    df_pflx = self.df[~np.isnan(self.df.peak_flux)]
+    gbm_ph_pflux = df_pflx.peak_flux.values
+    long_gbm_ph_pflux = df_pflx[df_pflx.t90 > 2].peak_flux.values
+    short_gbm_ph_pflux = df_pflx[df_pflx.t90 <= 2].peak_flux.values
+
+    dist_fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(20, 12))
     nbin = 60
     gbmcorrec = 1 / 0.587 / 10
     lenall = len(all_df)
-    lenlong = len(long_df)
-    lenshort = len(short_df)
+    lenlong = len(all_df.loc[all_df.t90 > 2])
+    lenshort = len(all_df.loc[all_df.t90 <= 2])
 
     epmin, epmax = np.min(all_df.flnc_band_epeak.values), np.max(all_df.flnc_band_epeak.values)
     bins1 = np.logspace(np.log10(epmin), np.log10(epmax), nbin)
     ax1.hist(all_df.flnc_band_epeak.values, bins=bins1, histtype="step", color="blue", label=f"GBM, {lenall} GRB", weights=[gbmcorrec] * lenall)
-    ax1.hist(long_df.flnc_band_epeak.values, bins=bins1, histtype="step", color="red", label=f"GBM long, {lenlong} GRB", weights=[gbmcorrec] * lenlong)
-    ax1.hist(short_df.flnc_band_epeak.values, bins=bins1, histtype="step", color="green", label=f"GBM short, {lenshort} GRB", weights=[gbmcorrec] * lenshort)
-    ax1.set(title="Ep distributions", xlabel="Peak energy (keV)", ylabel="Number of GRB", xscale="log", yscale="log")
+    ax1.hist(all_df.loc[all_df.t90 > 2].flnc_band_epeak.values, bins=bins1, histtype="step", color="red", label=f"GBM long, {lenlong} GRB", weights=[gbmcorrec] * lenlong)
+    ax1.hist(all_df.loc[all_df.t90 <= 2].flnc_band_epeak.values, bins=bins1, histtype="step", color="green", label=f"GBM short, {lenshort} GRB", weights=[gbmcorrec] * lenshort)
+    ax1.set(title="Ep distributions", xlabel="Peak energy (keV)", ylabel="Number of GRB per year", xscale="log", yscale="log")
     ax1.legend()
 
-    ph_fluence_min, ph_fluence_max = np.min(gbm_ph_flux * all_df.t90.values), np.max(gbm_ph_flux * all_df.t90.values)
+    ph_fluence_min, ph_fluence_max = np.min(gbm_flnc), np.max(gbm_flnc)
     bins2 = np.logspace(np.log10(ph_fluence_min), np.log10(ph_fluence_max), nbin)
-    ax2.hist(gbm_ph_flux * all_df.t90.values, bins=bins2, histtype="step", color="blue", label=f"GBM, {lenall} GRB", weights=[gbmcorrec] * lenall)
-    ax2.hist(long_gbm_ph_flux * long_df.t90.values, bins=bins2, histtype="step", color="red", label=f"GBM long, {lenlong} GRB", weights=[gbmcorrec] * lenlong)
-    ax2.hist(short_gbm_ph_flux * short_df.t90.values, bins=bins2, histtype="step", color="green", label=f"GBM short, {lenshort} GRB", weights=[gbmcorrec] * lenshort)
-    ax2.set(title="Fluence distributions", xlabel="Photon fluence (photon/cm²)", ylabel="Number of GRB", xscale="log", yscale="log")
+    ax2.hist(gbm_flnc, bins=bins2, histtype="step", color="blue", label=f"GBM, {lenall} GRB", weights=[gbmcorrec] * len(gbm_flnc))
+    ax2.hist(long_gbm_flnc, bins=bins2, histtype="step", color="red", label=f"GBM long, {lenlong} GRB", weights=[gbmcorrec] * len(long_gbm_flnc))
+    ax2.hist(short_gbm_flnc, bins=bins2, histtype="step", color="green", label=f"GBM short, {lenshort} GRB", weights=[gbmcorrec] * len(short_gbm_flnc))
+    ax2.set(title="Fluence distributions", xlabel="Photon fluence (photon/cm²)", ylabel="Number of GRB per year", xscale="log", yscale="log")
     ax2.legend()
 
     ph_flux_min, ph_flux_max = np.min(gbm_ph_flux), np.max(gbm_ph_flux)
     bins3 = np.logspace(np.log10(ph_flux_min), np.log10(ph_flux_max), nbin)
-    ax3.hist(gbm_ph_flux, bins=bins3, histtype="step", color="blue", label=f"GBM, {lenall} GRB", weights=[gbmcorrec] * lenall)
-    ax3.hist(long_gbm_ph_flux, bins=bins3, histtype="step", color="red", label=f"GBM long, {lenlong} GRB", weights=[gbmcorrec] * lenlong)
-    ax3.hist(short_gbm_ph_flux, bins=bins3, histtype="step", color="green", label=f"GBM short, {lenshort} GRB", weights=[gbmcorrec] * lenshort)
-    ax3.set(title="Mean flux distributions", xlabel="Photon flux (photon/cm²/s)", ylabel="Number of GRB", xscale="log", yscale="log")
+    ax3.hist(gbm_ph_flux, bins=bins3, histtype="step", color="blue", label=f"GBM, {lenall} GRB", weights=[gbmcorrec] * len(gbm_ph_flux))
+    ax3.hist(long_gbm_ph_flux, bins=bins3, histtype="step", color="red", label=f"GBM long, {lenlong} GRB", weights=[gbmcorrec] * len(long_gbm_ph_flux))
+    ax3.hist(short_gbm_ph_flux, bins=bins3, histtype="step", color="green", label=f"GBM short, {lenshort} GRB", weights=[gbmcorrec] * len(short_gbm_ph_flux))
+    ax3.set(title="Mean flux distributions", xlabel="Mean photon flux (photon/cm²/s)", ylabel="Number of GRB per year", xscale="log", yscale="log")
     ax3.legend()
 
-    t90_min, t90_max = np.min(all_df.t90.values), np.max(all_df.t90.values)
-    bins4 = np.logspace(np.log10(t90_min), np.log10(t90_max), nbin)
-    ax4.hist(all_df.t90.values, bins=bins4, histtype="step", color="blue", label=f"GBM, {lenall} GRB", weights=[gbmcorrec] * lenall)
-    ax4.hist(long_df.t90.values, bins=bins4, histtype="step", color="red", label=f"GBM long, {lenlong} GRB", weights=[gbmcorrec] * lenlong)
-    ax4.hist(short_df.t90.values, bins=bins4, histtype="step", color="green", label=f"GBM short, {lenshort} GRB", weights=[gbmcorrec] * lenshort)
-    ax4.set(title="T90 distributions", xlabel="T90 (s)", ylabel="Number of GRB", xscale="log", yscale="log")
+    ph_pflux_min, ph_pflux_max = np.min(gbm_ph_pflux), np.max(gbm_ph_pflux)
+    bins4 = np.logspace(np.log10(ph_pflux_min), np.log10(ph_pflux_max), nbin)
+    ax4.hist(gbm_ph_pflux, bins=bins4, histtype="step", color="blue", label=f"GBM, {lenall} GRB", weights=[gbmcorrec] * len(gbm_ph_pflux))
+    ax4.hist(long_gbm_ph_pflux, bins=bins4, histtype="step", color="red", label=f"GBM long, {lenlong} GRB", weights=[gbmcorrec] * len(long_gbm_ph_pflux))
+    ax4.hist(short_gbm_ph_pflux, bins=bins4, histtype="step", color="green", label=f"GBM short, {lenshort} GRB", weights=[gbmcorrec] * len(short_gbm_ph_pflux))
+    ax4.set(title="Peak flux distributions", xlabel="Peak photon flux (photon/cm²/s)", ylabel="Number of GRB per year", xscale="log", yscale="log")
     ax4.legend()
 
+    plt.tight_layout()
     plt.show()
 
   def T90_hardness_graphs(self, show_fit_stats=False):
@@ -475,6 +512,8 @@ class Catalog:
     energies = np.logspace(-3, 3, 1000)
     energies_log = np.log10(energies)
 
+    plt.rcParams.update({'font.size': 15})
+
     fig_t90, ax = plt.subplots(1, 1, figsize=(10, 6))
     ax.hist(temp_df.t90.values, bins=bins, label="T90 distribution")
     ax.plot(energies, gauss(energies_log, *popt_short), label="T90 distribution of short GRBs")
@@ -499,19 +538,25 @@ class Catalog:
         tlong = 10 ** np.random.normal(long_loc, long_scale)
       llong.append(tlong)
     ltimes = lshort + llong
-    ax.hist(ltimes, bins=bins, histtype="step", label=f"T90 drawn distribution \nshort fit : $\mu$ = {short_loc} $\pm$ {pcov_short[1][1]:.4f}, $\sigma$ = {short_scale} $\pm$ {pcov_short[2][2]:.4f}\nlong fit : $\mu$ = {long_loc} $\pm$ {pcov_long[1][1]:.4f}, $\sigma$ = {long_scale} $\pm$ {pcov_long[2][2]:.4f}")
+
+    if show_fit_stats:
+      ax.hist(ltimes, bins=bins, histtype="step", label=f"T90 drawn distribution \nshort fit : $\mu$ = {short_loc} $\pm$ {pcov_short[1][1]:.4f}, $\sigma$ = {short_scale} $\pm$ {pcov_short[2][2]:.4f}\nlong fit : $\mu$ = {long_loc} $\pm$ {pcov_long[1][1]:.4f}, $\sigma$ = {long_scale} $\pm$ {pcov_long[2][2]:.4f}")
 
     ax.legend(loc="upper left")
+    plt.tight_layout()
     plt.show()
 
     fig_hr, ax_hr = plt.subplots(1, 1, figsize=(10, 6))
     sns.scatterplot(data=temp_df, x="log_t90", y="log_HR", ax=ax_hr, s=10)
     sns.kdeplot(data=temp_df, x="log_t90", y="log_HR", ax=ax_hr, thresh=.1)
+    plt.tight_layout()
 
   def spectral_index_graphs(self):
     """
 
     """
+    mpl.use("Qt5Agg")
+    plt.rcParams.update({'font.size': 15})
 
     cat_type_list = ["short", "long", "all"]
 
@@ -567,6 +612,8 @@ class Catalog:
       ax1.hist(full_alpha, bins=binsa, histtype="step", label="BAND + COMP + SBPL", color="black")
       ax1.set(xlabel=r"$\alpha$", ylabel="Number of values")
       ax1.legend(loc="upper left")
+
+      plt.tight_layout()
       plt.show()
 
       dis_a, ax2 = plt.subplots(1, 1, figsize=(10, 6))
@@ -578,6 +625,7 @@ class Catalog:
       ax2.set(xlabel=r"$\beta$", ylabel="Number of values")
       ax2.legend()
 
+      plt.tight_layout()
       plt.show()
 
 

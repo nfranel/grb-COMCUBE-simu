@@ -68,7 +68,7 @@ class LogData:
       self.sat_rawf.append(float(data[11]))
       self.grb_decwf.append(float(data[12]))
       self.grb_rawf.append(float(data[13]))
-      if data[3] == 'Ignored(off)' or data[3] == 'Ignored(faint)':
+      if data[4] == 'Ignored(off)' or data[4] == 'Ignored(faint)':
         self.grb_decsf.append(data[14])
         self.grb_rasf.append(data[15])
       else:

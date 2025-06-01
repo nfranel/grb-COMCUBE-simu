@@ -351,12 +351,12 @@ def grb_decrapol_worldf2satf(dec_grb_wf, ra_grb_wf, dec_sat_wf, ra_sat_wf, dec_g
                              (dertheta2(dec_grb_wf, ra_grb_wf, dec_sat_wf, ra_sat_wf) * ra_grb_wf_err)**2 +
                              (dertheta3(dec_grb_wf, ra_grb_wf, dec_sat_wf, ra_sat_wf) * dec_sat_wf_err)**2 +
                              (dertheta4(dec_grb_wf, ra_grb_wf, dec_sat_wf, ra_sat_wf) * ra_sat_wf_err)**2) / np.sqrt(1 - val_utheta**2))
-
-    ra_grb_sf_err = np.where(val_vphi == 0, np.nan, (np.sqrt(((derphi_u1(dec_grb_wf, ra_grb_wf, dec_sat_wf, ra_sat_wf) * val_vphi - derphi_v1(dec_grb_wf, ra_grb_wf, ra_sat_wf) * val_uphi) * dec_grb_wf_err)**2 +
-                            ((derphi_u2(dec_grb_wf, ra_grb_wf, dec_sat_wf, ra_sat_wf) * val_vphi - derphi_v2(dec_grb_wf, ra_grb_wf, ra_sat_wf) * val_uphi) * ra_grb_wf_err)**2 +
-                            (derphi_u3(dec_grb_wf, ra_grb_wf, dec_sat_wf, ra_sat_wf) * val_vphi * dec_sat_wf_err)**2 +
-                            ((derphi_u4(dec_grb_wf, ra_grb_wf, dec_sat_wf, ra_sat_wf) * val_vphi - derphi_v4(dec_grb_wf, ra_grb_wf, ra_sat_wf) * val_uphi) * ra_sat_wf_err)**2) /
-                     (val_vphi**2 * (1 + (val_uphi/val_vphi)**2))))
+    val_vphi = np.where(val_vphi == 0, np.nan, val_vphi)
+    ra_grb_sf_err = (np.sqrt(((derphi_u1(dec_grb_wf, ra_grb_wf, dec_sat_wf, ra_sat_wf) * val_vphi - derphi_v1(dec_grb_wf, ra_grb_wf, ra_sat_wf) * val_uphi) * dec_grb_wf_err)**2 +
+                             ((derphi_u2(dec_grb_wf, ra_grb_wf, dec_sat_wf, ra_sat_wf) * val_vphi - derphi_v2(dec_grb_wf, ra_grb_wf, ra_sat_wf) * val_uphi) * ra_grb_wf_err)**2 +
+                             (derphi_u3(dec_grb_wf, ra_grb_wf, dec_sat_wf, ra_sat_wf) * val_vphi * dec_sat_wf_err)**2 +
+                             ((derphi_u4(dec_grb_wf, ra_grb_wf, dec_sat_wf, ra_sat_wf) * val_vphi - derphi_v4(dec_grb_wf, ra_grb_wf, ra_sat_wf) * val_uphi) * ra_sat_wf_err)**2) /
+                     (val_vphi**2 * (1 + (val_uphi/val_vphi)**2)))
 
     # print(f"grb_dec_err : {np.rad2deg(dec_grb_sf_err):.4f} grb_ra_err : {np.rad2deg(ra_grb_sf_err):.4f}")
   else:
@@ -1124,7 +1124,6 @@ def save_grb_data(data_file, filename, sat_info_list, bkg_data, mu_data, geometr
   # print("\nInit")
   # print(f"Current memory use : {current / 1024:.2f} Ko")
   # print(f"Peak use : {peak / 1024:.2f} Ko")
-
   array_dtype = np.float32
   # sim_dir, fname = filename.split(f"/extracted-{ergcut[0]}-{ergcut[1]}/")
 
@@ -1136,7 +1135,6 @@ def save_grb_data(data_file, filename, sat_info_list, bkg_data, mu_data, geometr
       print("Extracted file exists, re-writing is forced", end="\r")
     else:
       print("Extracted files does not exist : Extraction in progress", end="\r")
-
     #################################################################################################################
     #        Extracting position information from data_file name and the sat_info, plus the background and mu100 information
     #################################################################################################################
@@ -1157,9 +1155,9 @@ def save_grb_data(data_file, filename, sat_info_list, bkg_data, mu_data, geometr
       # print("\nAfter affecting")
       # print(f"Current memory use : {current / 1024:.2f} Ko")
       # print(f"Peak use : {peak / 1024:.2f} Ko")
-
     else:
       raise ValueError("Satellite information given is None. Please give satellite information for the analyse to work.")
+
     # Error on estimating the satellite pointing direction (takes into account the pointing itself and the effect of the satellite not being exactly in the right position - very minor effect)
     dec_sat_wf_error, ra_sat_wf_error = 0.5, 0.5
     expected_pa, grb_dec_sat_frame, grb_ra_sat_frame, grb_dec_sf_err, grb_ra_sf_err = grb_decrapol_worldf2satf(dec_world_frame, ra_world_frame, sat_dec_wf, sat_ra_wf, dec_grb_wf_err=dec_wf_error,
@@ -1293,7 +1291,6 @@ def save_grb_data(data_file, filename, sat_info_list, bkg_data, mu_data, geometr
   #   print(f"Current memory use : {current / 1024:.2f} Ko")
   #   print(f"Peak use : {peak / 1024:.2f} Ko")
   #   tracemalloc.stop()
-  # stop
 
 
 ######################################################################################################################################################
@@ -1456,48 +1453,52 @@ def readfile(fname):
 ######################################################################################################################################################
 # flux functions
 ######################################################################################################################################################
-def pflux_to_mflux_calculator(lc_name, t90):
+def pflux_to_mflux_calculator(lc_name):
   """
   Returns the conversion value from pflux to mflux.
   It's based on a 1-second pflux as the Lpeak in the Yonetoku correlation is based on a 1-second timescale.
   """
   times, counts = extract_lc(f"../Data/sources/GBM_Light_Curves/{lc_name}")
-  delta_time = times[1:]-times[:-1]
-
-  if t90 <= 2:
-    peak_duration = 0.064
-  else:
-    peak_duration = 1.024
-
-  new_bins = np.arange(0, t90 + peak_duration, peak_duration)
-
-  rebinned_lc = binned_statistic(times, counts, statistic="sum", bins=new_bins)[0]
-  print("counts", len(counts))
-  print("rebin", len(rebinned_lc))
-  print("nbin edges", len(new_bins))
-  print("new mc", np.sum(rebinned_lc) / t90)
-  reduced_count = counts[:-1]
-  # Mean number of count/second
-  mean_count = np.sum(reduced_count) / t90
-  print("mc", mean_count)
-  if times[-1] <= 1:
-    # Case where the T90 <1s, mflux and pflux over 1s are then the same
-    pflux_to_mflux = 1
-  elif np.min(delta_time) >= 1:
-    # No need to rebin, we just re-normalize the counts with the duration of the bin that is >1s
-    reduced_count = reduced_count / delta_time
-    pflux_to_mflux = mean_count / np.max(reduced_count)
-  else:
-    # Rebining needed, we define the number of rebins necessary and rebin
-    rebining = int(1 / delta_time[0]) + 1
-    newcount = []
-    bin_ite = 0
-    while bin_ite + rebining < len(reduced_count):
-      newcount.append(np.sum(reduced_count[bin_ite:bin_ite+rebining]))
-      bin_ite += rebining
-    newcount.append(np.sum(reduced_count[bin_ite:]))
-    pflux_to_mflux = mean_count / np.max(newcount)
+  pflux_to_mflux = np.mean(counts) / np.max(counts)
   return pflux_to_mflux
+
+  # delta_time = times[1:]-times[:-1]
+  #
+  # if t90 <= 2:
+  #   peak_duration = 0.064
+  # else:
+  #   peak_duration = 1.024
+
+  # new_bins = np.arange(0, t90 + peak_duration, peak_duration)
+  #
+  # rebinned_lc = binned_statistic(times, counts, statistic="sum", bins=new_bins)[0]
+  # print()
+  # print("counts", len(counts))
+  # print("rebin", len(rebinned_lc))
+  # print("nbin edges", len(new_bins))
+  # print("new mc", np.sum(rebinned_lc) / t90)
+  # reduced_count = counts[:-1]
+  # Mean number of count/second
+  # mean_count = np.sum(reduced_count) / t90
+  # print("mc", mean_count)
+  # if times[-1] <= 1:
+  #   # Case where the T90 <1s, mflux and pflux over 1s are then the same
+  #   pflux_to_mflux = 1
+  # elif np.min(delta_time) >= 1:
+  #   # No need to rebin, we just re-normalize the counts with the duration of the bin that is >1s
+  #   reduced_count = reduced_count / delta_time
+  #   pflux_to_mflux = mean_count / np.max(reduced_count)
+  # else:
+  #   # Rebining needed, we define the number of rebins necessary and rebin
+  #   rebining = int(1 / delta_time[0]) + 1
+  #   newcount = []
+  #   bin_ite = 0
+  #   while bin_ite + rebining < len(reduced_count):
+  #     newcount.append(np.sum(reduced_count[bin_ite:bin_ite+rebining]))
+  #     bin_ite += rebining
+  #   newcount.append(np.sum(reduced_count[bin_ite:]))
+  #   pflux_to_mflux = mean_count / np.max(newcount)
+  # return pflux_to_mflux
 
 
 def rescale_cr_to_GBM_pf(cr, GBM_mean_flux, GBM_peak_flux):
