@@ -316,7 +316,7 @@ def run_sims(commands):
   """
   Run each command in commands through multiprocessing module
   """
-  with mp.Pool() as pool:
+  with mp.Pool(60) as pool:
     pool.map(cosirevan, commands)
 
 
