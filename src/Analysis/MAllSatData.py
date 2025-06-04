@@ -283,7 +283,7 @@ class AllSatData(list):
       if off_sats[const_ite] is None:
         self.const_data.append(ConstData(0))
       elif type(off_sats[const_ite]) is list:
-        self.const_data.append(len(off_sats[const_ite]))
+        self.const_data.append(ConstData(len(off_sats[const_ite])))
       else:
         raise TypeError("Error while making the constellations : the off_sats variable must be None or a list of index")
       in_sight_temp = in_sight_sat

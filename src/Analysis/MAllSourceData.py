@@ -420,7 +420,6 @@ class AllSourceData:
         while len(temp_offsat) != num_down:
           rand_sat = np.random.randint(self.n_sat)
           if rand_sat not in temp_offsat:
-            print("Removing 1 sat")
             temp_offsat.append(rand_sat)
         off_sats.append(temp_offsat)
     ###################################################################################################################
