@@ -40,15 +40,16 @@ def make_spectra(params):
   :param params: parameters from the parameter file
   """
   spectrapath, alt, lat = params[6], params[0], params[1]
+  bkg_code = "./src/Background"
   if f"source-dat--alt_{alt:.1f}--lat_{lat:.1f}" not in os.listdir(spectrapath):
     os.mkdir(f"{spectrapath}/source-dat--alt_{alt:.1f}--lat_{lat:.1f}")
-  os.chdir("../Data/bkg")
+  os.chdir(bkg_code)
   subprocess.call(f"python CreateBackgroundSpectrumMEGAlib.py -i {lat} -a {alt}", shell=True)
   # source_spectra = subprocess.getoutput(f"ls *_Spec_{alt:.1f}km_{lat:.1f}deg.dat").split("\n")
   source_spectra = glob.glob(f"*_Spec_{alt:.1f}km_{lat:.1f}deg.dat")
-  os.chdir("..")
+  os.chdir("../../")
   for spectrum in source_spectra:
-    subprocess.call(f"mv ../Data/bkg/{spectrum} {spectrapath}/source-dat--alt_{alt:.1f}--lat_{lat:.1f}", shell=True)
+    subprocess.call(f"mv {bkg_code}/{spectrum} {spectrapath}/source-dat--alt_{alt:.1f}--lat_{lat:.1f}", shell=True)
 
 
 def read_flux_from_spectrum(file):

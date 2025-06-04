@@ -2429,17 +2429,24 @@ def var_ite_setting(iteration, gamma_func, red_z_func, theta_j_func, theta_nu_fu
   limit_flux = 3.5e-7  # erg/cm2/s
   calculated_flux = 0
   while calculated_flux < limit_flux:
+    ############################################################################################################
+    # Gamma
+    ############################################################################################################
     if gamma_func == "distri":
       print("No distri added for gamma yet, value 100 is taken")
       gamma_loop_func = 100
     else:
       gamma_loop_func = gamma_func
-
+    ############################################################################################################
+    # Redshift
+    ############################################################################################################
     if red_z_func == "distri":
       red_z_loop_func = acc_reject(distrib_z, [], 0, 10)
     else:
       red_z_loop_func = red_z_func
-
+    ############################################################################################################
+    # theta_j
+    ############################################################################################################
     if theta_j_func == "distri":
       # Correction term from Yonetoku, to make the opening half angle independent of the redshift
       # Used to obtain the distrib at any redshift using the distrib at redshift z=1
@@ -2450,7 +2457,9 @@ def var_ite_setting(iteration, gamma_func, red_z_func, theta_j_func, theta_nu_fu
       theta_j_loop_func = acc_reject(distrib_theta_j, [], 0.001, 0.2)
     else:
       theta_j_loop_func = theta_j_func
-
+    ############################################################################################################
+    # theta_nu
+    ############################################################################################################
     if theta_nu_func == "distri_pearce":
       theta_nu_loop_func = generator_theta_nu(theta_j_loop_func, gamma_loop_func)
     elif theta_nu_func == "distri_toma":
@@ -2458,17 +2467,23 @@ def var_ite_setting(iteration, gamma_func, red_z_func, theta_j_func, theta_nu_fu
     else:
       theta_nu_loop_func = theta_nu_func
       # theta_nu_loop_func = theta_nu_func * theta_j_loop_func
-
+    ############################################################################################################
+    # nu_0
+    ############################################################################################################
     if nu_0_func == "distri":
       nu_0_loop_func = generator_nu_0(theta_j_loop_func, gamma_loop_func)
     else:
       nu_0_loop_func = nu_0_func
-
+    ############################################################################################################
+    # alpha
+    ############################################################################################################
     if alpha_func == "distri":
       alpha_loop_func = acc_reject(distrib_alpha, [], -1.6, 0.06)
     else:
       alpha_loop_func = alpha_func
-
+    ############################################################################################################
+    # beta
+    ############################################################################################################
     if beta_func == "distri":
       beta_loop_func = acc_reject(distrib_beta, [], -3.32, -1.6)
     else:
