@@ -144,6 +144,25 @@ def make_parameters(alts, lats, geomfile, source_model, rcffile, mimfile, spectr
   return parameters_container
 
 
+def run(command, error_file, expected_file):
+  """
+  Runs a command
+  :param command: str, shell command to run
+  :param error_file: str, name of the error logfile
+  """
+  proc = subprocess.run(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+  folder = f"{expected_file.split('/sim/')[0]}/sim/"
+  simname = expected_file.split("/sim/")[-1]
+  if proc.stderr != "":
+    with open(error_file, "a") as errfile:
+      errormess = "\n=========================================================================================================\n" + f"ERROROUTPUT : {simname}\n" + proc.stderr + "\n"
+      errfile.write(errormess)
+  if not (simname in os.listdir(folder)):
+    with open(error_file, "a") as errfile:
+      errormess = "\n=========================================================================================================\n" + f"NOFILE output : {simname}\n" + proc.stdout + "\n"
+      errfile.write(errormess)
+
+
 def run_bkg(params):
   """
   Runs the cosima, revan and mimrec programs and either move to rawsim or remove the .sim.gz and .tra.gz files
@@ -152,25 +171,28 @@ def run_bkg(params):
   # Making a temporary source file using a source_model
   sourcefile, simname = make_tmp_source(params[0], params[1], params[2], params[3], params[6], params[7])
   # Making a generic name for files
-  simfile, trafile = f"{simname}.inc1.id1.sim.gz", f"{simname}.inc1.id1.tra.gz"
-  mv_simname = f"{simname.split('/sim/')[0]}/rawsim/{simname.split('/sim/')[-1]}"
-  mv_simfile, mv_trafile = f"{mv_simname}.inc1.id1.sim.gz", f"{mv_simname}.inc1.id1.tra.gz"
+  simfile, trafile, extrfile = f"{simname}.inc1.id1.sim.gz", f"{simname}.inc1.id1.tra.gz", f"{simname}.inc1.id1.extracted.tra"
+  # mv_simname = f"{simname.split('/sim/')[0]}/rawsim/{simname.split('/sim/')[-1]}"
+  # mv_simfile, mv_trafile = f"{mv_simname}.inc1.id1.sim.gz", f"{mv_simname}.inc1.id1.tra.gz"
 
   #   Running the different simulations
   print(f"Running bkg simulation : {simname}")
   # Running cosima
   # subprocess.call(f"cosima -z {sourcefile}; rm -f {sourcefile}", shell=True, stdout=open(os.devnull, 'wb'), stderr=open(os.devnull, 'wb'))
-  subprocess.call(f"cosima -z {sourcefile}; rm -f {sourcefile}", shell=True, stdout=open(os.devnull, 'wb'))
+  # subprocess.call(f"cosima -z {sourcefile}; rm -f {sourcefile}", shell=True, stdout=open(os.devnull, 'wb'))
+  run(f"cosima -z {sourcefile}; rm -f {sourcefile}", f"{simname.split('/sim/')[0]}/cosima_errlog.txt", simfile)
 
   # Running revan
   # subprocess.call(f"revan -g {params[2]} -c {params[3]} -f {simfile} -n -a; rm -f {simfile}", shell=True, stdout=open(os.devnull, 'wb'), stderr=open(os.devnull, 'wb'))
-  subprocess.call(f"revan -g {params[2]} -c {params[4]} -f {simfile} -n -a", shell=True, stdout=open(os.devnull, 'wb'))
+  # subprocess.call(f"revan -g {params[2]} -c {params[4]} -f {simfile} -n -a", shell=True, stdout=open(os.devnull, 'wb'))
+  run(f"revan -g {params[2]} -c {params[4]} -f {simfile} -n -a", f"{simname.split('/sim/')[0]}/revan_errlog.txt", trafile)
   # Moving the cosima file in rawsim or removing it
   # subprocess.call(f"mv {simfile} {mv_simfile}", shell=True)
   subprocess.call(f"rm -f {simfile}", shell=True)
 
   # Running mimrec
-  subprocess.call(f"mimrec -g {params[2]} -c {params[5]} -f {trafile} -x -n", shell=True, stdout=open(os.devnull, 'wb'))
+  # subprocess.call(f"mimrec -g {params[2]} -c {params[5]} -f {trafile} -x -n", shell=True, stdout=open(os.devnull, 'wb'))
+  run(f"mimrec -g {params[2]} -c {params[5]} -f {trafile} -x -n", f"{simname.split('/sim/')[0]}/mimrec_errlog.txt", extrfile)
   # Moving the revan analyzed file in rawsim or removing it
   # subprocess.call(f"mv {trafile} {mv_trafile}", shell=True)
   subprocess.call(f"rm -f {trafile}", shell=True)
