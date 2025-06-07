@@ -110,7 +110,7 @@ def make_tmp_source(alt, lat, geom, source_model, spectrapath, simduration):
           print("Name of source is not valid. Should be one of the ones for which a spectrum was calculated.")
       elif line.startswith(f"{source}.Beam"):
         if particle in ["AtmosphericNeutrons", "AlbedoPhotons"]:
-          f.write(f"{source}.Beam FarFieldFileZenithDependent ../Data/bkg/AlbedoPhotonBeam.dat")
+          f.write(f"{source}.Beam FarFieldFileZenithDependent ./src/Background/AlbedoPhotonBeam.dat")
         else:
           f.write(line)
       elif line.startswith(f"{source}.Spectrum"):
