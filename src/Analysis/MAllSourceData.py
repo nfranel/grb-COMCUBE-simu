@@ -307,15 +307,19 @@ class AllSourceData:
   def filenames_creation(self, grb_names, grb_det_ites, sim_det_ites, sat_det_ites, suffix_ite):
     tobe_ext = []
     ext_name = []
-    # pres_list = np.empty((self.n_source, self.n_sim, self.n_sat), dtype=object)
-    pres_list = np.empty((len(grb_names), self.n_sim, self.n_sat), dtype=object)
+    pres_list = np.empty((self.n_source, self.n_sim, self.n_sat), dtype=object)
+    # pres_list = np.empty((len(grb_names), self.n_sim, self.n_sat), dtype=object)
     for ite, grbname in enumerate(grb_names):
       temp_simfile = f"{self.sim_prefix}_{grbname}_sat{sat_det_ites[ite]}_{sim_det_ites[ite]:04d}_{suffix_ite[ite]}.inc1.id1.extracted.tra"
       tobe_ext.append(temp_simfile)
       temp_name = f"{self.sim_prefix.split('/sim/')[0]}/extracted/{self.sim_prefix.split('/sim/')[1]}_extracted{grbname}_sat{sat_det_ites[ite]}_{sim_det_ites[ite]:04d}.h5"
       ext_name.append(temp_name)
-      pres_list[ite][sim_det_ites[ite]][sat_det_ites[ite]] = temp_name
-    return tobe_ext, ext_name, pres_list.tolist()
+      pres_list[grb_det_ites[ite]][sim_det_ites[ite]][sat_det_ites[ite]] = temp_name
+    pres_list = pres_list.tolist()
+    for ite in range(len(pres_list)):
+      if np.all([val is None for val in np.array(pres_list[ite]).flatten()]):
+        _ = pres_list.pop(ite)
+    return tobe_ext, ext_name, pres_list
 
   # TODO finish the comments and rework the methods !
   def extract_sources(self, prefix, duration=None):
