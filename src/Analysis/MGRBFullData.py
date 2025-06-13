@@ -299,7 +299,9 @@ class GRBFullData:
       self.single_snrs_err.append(snr_ret3[1])
 
   def hits_snrs_over_lc(self, source_duration, nsat=3):
-    if nsat == 2:
+    if nsat == 1:
+      thresh_list_nsat = [8.2, 7.5, 6.9, 6.6, 6.3, 6, 5.8, 5.6, 5.5]
+    elif nsat == 2:
       thresh_list_nsat = [5.7, 5.3, 5, 4.8, 4.6, 4.4, 4.3, 4.2, 4.1]
     elif nsat == 3:
       thresh_list_nsat = [4.7, 4.3, 4.2, 4, 3.8, 3.7, 3.6, 3.5, 3.4]
