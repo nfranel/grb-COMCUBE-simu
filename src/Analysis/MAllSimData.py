@@ -30,6 +30,7 @@ class AllSimData(list):
     self.n_sim_det = 0
     if cat_data.cat_type == "GBM":
       self.source_name = cat_data.df.name.values[source_ite]
+      self.redshift = None
       self.source_duration = cat_data.df.t90.values[source_ite]
       # Retrieving pflux and mean flux : the photon flux at the peak flux (or mean photon flux) of the burst [photons/cm2/s]
       self.best_fit_model = cat_data.df.flnc_best_fitting_model.values[source_ite]
@@ -55,6 +56,7 @@ class AllSimData(list):
       self.source_energy_fluence = cat_data.df.fluence.values[source_ite]
     elif cat_data.cat_type == "sampled":
       self.source_name = cat_data.df.name.values[source_ite]
+      self.redshift = cat_data.df.z_obs.values[source_ite]
       self.source_duration = float(cat_data.df.t90.values[source_ite])
       self.best_fit_model = "band"
       self.best_fit_mean_flux = float(cat_data.df.mean_flux.values[source_ite])
