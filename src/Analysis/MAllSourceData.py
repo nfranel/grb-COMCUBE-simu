@@ -614,7 +614,11 @@ class AllSourceData:
     no_trig_duration = []
     no_trig_dec = []
     no_trig_e_fluence = []
-    for source in self.alldata:
+    trigg_1s_ite = []
+    trigg_2s_ite = []
+    trigg_3s_ite = []
+    trigg_4s_ite = []
+    for source_ite, source in enumerate(self.alldata):
       if source is not None:
         for ite_sim, sim in enumerate(source):
           if sim is not None:
@@ -648,18 +652,24 @@ class AllSourceData:
                       list_snrs_lc_4s[int_time_ite] += temp_snrs_lc_4s[int_time_ite]
               if True in (np.concatenate(list_snrs_lc_2s) >= 3):
                 const_trigger_counter_2s += 1
+                trigg_2s_ite.append(source_ite)
               if True in (np.concatenate(list_snrs_lc_3s) >= 3):
                 const_trigger_counter_3s += 1
+                trigg_3s_ite.append(source_ite)
               if True in (np.concatenate(list_snrs_lc_4s) >= 3):
                 const_trigger_counter_4s += 1
+                trigg_4s_ite.append(source_ite)
               if True in (sim.const_data[const_index].const_beneficial_trigger_1s >= 1):
                 const_trigger_counter_1s += 1
+                trigg_1s_ite.append(source_ite)
             else:
               if sim.const_data[const_index] is not None:
                 if True in (sim.const_data[const_index].const_beneficial_trigger_4s >= 4):
                   const_trigger_counter_4s += 1
+                  trigg_4s_ite.append(source_ite)
                 if True in (sim.const_data[const_index].const_beneficial_trigger_3s >= 3):
                   const_trigger_counter_3s += 1
+                  trigg_3s_ite.append(source_ite)
                 else:
                   no_trig_name.append(source.source_name)
                   no_trig_duration.append(source.source_duration)
@@ -669,8 +679,10 @@ class AllSourceData:
                   #   print("Not triggered : ", source.source_name, source.source_duration, sim.dec_world_frame, source.source_energy_fluence)
                 if True in (sim.const_data[const_index].const_beneficial_trigger_2s >= 2):
                   const_trigger_counter_2s += 1
+                  trigg_2s_ite.append(source_ite)
                 if True in (sim.const_data[const_index].const_beneficial_trigger_1s >= 1):
                   const_trigger_counter_1s += 1
+                  trigg_1s_ite.append(source_ite)
 
     print(f"   Trigger for at least 4 satellites :        {const_trigger_counter_4s:.2f} triggers")
     print(f"   Trigger for at least 3 satellites :        {const_trigger_counter_3s:.2f} triggers")
@@ -695,6 +707,7 @@ class AllSourceData:
       ax3.hist(no_trig_e_fluence, bins=np.logspace(int(np.log10(np.min(no_trig_e_fluence))), int(np.log10(np.max(no_trig_e_fluence)) + 1), 20), histtype="step")
       ax3.set(xlabel="GRB energy fluence (erg/cm²)", ylabel="Number of not triggered", xscale="log", yscale="linear")
       plt.show()
+    return trigg_1s_ite, trigg_2s_ite, trigg_3s_ite, trigg_4s_ite
 
   def fov_const(self, num_val=500, show=True, save=False):
     """

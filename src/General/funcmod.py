@@ -2420,7 +2420,7 @@ def values_number(gamma_range_func, red_z_range_func, theta_j_range_func, theta_
   return values_num
 
 
-def var_ite_setting(iteration, gamma_func, red_z_func, theta_j_func, theta_nu_func, nu_0_func, alpha_func, beta_func, jet_model, flux_rejection):
+def var_ite_setting(iteration, gamma_func, red_z_func, theta_j_func, theta_nu_func, nu_0_func, alpha_func, beta_func, opening_factor, jet_model, flux_rejection):
   """
   Function to obtain a set of parameters according to simulation settings and distributions
   """
@@ -2461,7 +2461,7 @@ def var_ite_setting(iteration, gamma_func, red_z_func, theta_j_func, theta_nu_fu
     # theta_nu
     ############################################################################################################
     if theta_nu_func == "distri_pearce":
-      theta_nu_loop_func = generator_theta_nu(theta_j_loop_func, gamma_loop_func)
+      theta_nu_loop_func = generator_theta_nu(theta_j_loop_func, gamma_loop_func, opening_factor)
     elif theta_nu_func == "distri_toma":
       theta_nu_loop_func = acc_reject(distrib_theta_nu_toma, [], 0, 0.22)
     else:
@@ -2514,10 +2514,14 @@ def jet_shape(theta_nu, theta_j, gamma, jet_structure, lum_flux_init):
   Formula from Pearce, but a - is mission in the article
   """
   if jet_structure == "top-hat":
-    if theta_nu <= theta_j:
+    if theta_nu <= theta_j + 1/gamma:
       return lum_flux_init
     else:
-      return lum_flux_init * np.exp(-gamma ** 2 * (theta_nu - theta_j) ** 2 / 2)
+      return 0
+  elif jet_structure == "structured":
+    return lum_flux_init * np.exp(-gamma ** 2 * (theta_nu - theta_j) ** 2 / 2)
+  else:
+    raise ValueError
 
 
 ######################################################################################################################################################
@@ -2643,12 +2647,11 @@ def distrib_z(red):
   return rate
 
 
-def generator_theta_nu(theta_j, gamma):
+def generator_theta_nu(theta_j, gamma, opening_factor):
   """
   Generate a value for theta_nu using the transformation method
   Values follows a distribution with a sin shape between theta_nu = 0 and theta_j + X/gamma value of X isn't clear
   """
-  opening_factor = 5
   return np.arccos(np.cos(theta_j + opening_factor / gamma) + np.random.random() * (1 - np.cos(theta_j + opening_factor / gamma)))
 
 
