@@ -1628,6 +1628,74 @@ def calc_mdp(S, B, mu100, nsigma=4.29, mu100_err=None):
   return mdp, mdp_err
 
 
+def calc_trigger(source_data, source_ite, const_index, lc_aligned):
+  """
+
+  """
+  trigg_1s, trigg_2s, trigg_3s, trigg_4s, no_trig_name, no_trig_duration, no_trig_dec, no_trig_e_fluence = np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan
+  if source_data is not None:
+    ite_sim, sim = 0, source_data[0]
+    if sim is not None:
+      if lc_aligned:
+        list_snrs_lc_2s = []
+        list_snrs_lc_3s = []
+        list_snrs_lc_4s = []
+        for sat in sim:
+          if sat is not None:
+            # 2 sat trigger
+            if len(list_snrs_lc_2s) == 0:
+              list_snrs_lc_2s = sat.hits_snrs_over_lc(source_data.source_duration, nsat=2)
+            else:
+              temp_snrs_lc_2s = sat.hits_snrs_over_lc(source_data.source_duration, nsat=2)
+              for int_time_ite in range(len(list_snrs_lc_2s)):
+                list_snrs_lc_2s[int_time_ite] += temp_snrs_lc_2s[int_time_ite]
+            # 3 sat trigger
+            if len(list_snrs_lc_3s) == 0:
+              list_snrs_lc_3s = sat.hits_snrs_over_lc(source_data.source_duration, nsat=3)
+            else:
+              temp_snrs_lc_3s = sat.hits_snrs_over_lc(source_data.source_duration, nsat=3)
+              for int_time_ite in range(len(list_snrs_lc_3s)):
+                list_snrs_lc_3s[int_time_ite] += temp_snrs_lc_3s[int_time_ite]
+            # 4 sat trigger
+            if len(list_snrs_lc_4s) == 0:
+              list_snrs_lc_4s = sat.hits_snrs_over_lc(source_data.source_duration, nsat=4)
+            else:
+              temp_snrs_lc_4s = sat.hits_snrs_over_lc(source_data.source_duration, nsat=4)
+              for int_time_ite in range(len(list_snrs_lc_4s)):
+                list_snrs_lc_4s[int_time_ite] += temp_snrs_lc_4s[int_time_ite]
+        if True in (np.concatenate(list_snrs_lc_2s) >= 2):
+          trigg_2s = source_ite
+        if True in (np.concatenate(list_snrs_lc_3s) >= 3):
+          trigg_3s = source_ite
+        else:
+          no_trig_name = source_data.source_name
+          no_trig_duration = source_data.source_duration
+          no_trig_dec = sim.dec_world_frame
+          no_trig_e_fluence = source_data.source_energy_fluence
+        if True in (np.concatenate(list_snrs_lc_4s) >= 4):
+          trigg_4s = source_ite
+        if True in (sim.const_data[const_index].const_beneficial_trigger_1s >= 1):
+          trigg_1s = source_ite
+      else:
+        if sim.const_data[const_index] is not None:
+          if True in (sim.const_data[const_index].const_beneficial_trigger_4s >= 4):
+            trigg_4s = source_ite
+          if True in (sim.const_data[const_index].const_beneficial_trigger_3s >= 3):
+            trigg_3s = source_ite
+          else:
+            no_trig_name = source_data.source_name
+            no_trig_duration = source_data.source_duration
+            no_trig_dec = sim.dec_world_frame
+            no_trig_e_fluence = source_data.source_energy_fluence
+          if True in (sim.const_data[const_index].const_beneficial_trigger_2s >= 2):
+            trigg_2s = source_ite
+          if True in (sim.const_data[const_index].const_beneficial_trigger_1s >= 1):
+            trigg_1s = source_ite
+    return np.array([trigg_1s, trigg_2s, trigg_3s, trigg_4s, no_trig_name, no_trig_duration, no_trig_dec, no_trig_e_fluence], dtype=object)
+  else:
+    return np.array([trigg_1s, trigg_2s, trigg_3s, trigg_4s, no_trig_name, no_trig_duration, no_trig_dec, no_trig_e_fluence], dtype=object)
+
+
 def eff_area_func(dec_wf, ra_wf, info_sat, mu100_list, burst_time=0):  # TODO : limits on variables
   """
   Returns a value of the effective area for single event, compton event or 1 if the satellite is in sight for a direction dec_wt, ra_wf
@@ -2420,7 +2488,7 @@ def values_number(gamma_range_func, red_z_range_func, theta_j_range_func, theta_
   return values_num
 
 
-def var_ite_setting(iteration, gamma_func, red_z_func, theta_j_func, theta_nu_func, nu_0_func, alpha_func, beta_func, jet_model, flux_rejection):
+def var_ite_setting(iteration, gamma_func, red_z_func, theta_j_func, theta_nu_func, nu_0_func, alpha_func, beta_func, opening_factor, jet_model, flux_rejection):
   """
   Function to obtain a set of parameters according to simulation settings and distributions
   """
@@ -2461,7 +2529,7 @@ def var_ite_setting(iteration, gamma_func, red_z_func, theta_j_func, theta_nu_fu
     # theta_nu
     ############################################################################################################
     if theta_nu_func == "distri_pearce":
-      theta_nu_loop_func = generator_theta_nu(theta_j_loop_func, gamma_loop_func)
+      theta_nu_loop_func = generator_theta_nu(theta_j_loop_func, gamma_loop_func, opening_factor)
     elif theta_nu_func == "distri_toma":
       theta_nu_loop_func = acc_reject(distrib_theta_nu_toma, [], 0, 0.22)
     else:
@@ -2514,10 +2582,14 @@ def jet_shape(theta_nu, theta_j, gamma, jet_structure, lum_flux_init):
   Formula from Pearce, but a - is mission in the article
   """
   if jet_structure == "top-hat":
-    if theta_nu <= theta_j:
+    if theta_nu <= theta_j + 1/gamma:
       return lum_flux_init
     else:
-      return lum_flux_init * np.exp(-gamma ** 2 * (theta_nu - theta_j) ** 2 / 2)
+      return 0
+  elif jet_structure == "structured":
+    return lum_flux_init * np.exp(-gamma ** 2 * (theta_nu - theta_j) ** 2 / 2)
+  else:
+    raise ValueError
 
 
 ######################################################################################################################################################
@@ -2643,12 +2715,11 @@ def distrib_z(red):
   return rate
 
 
-def generator_theta_nu(theta_j, gamma):
+def generator_theta_nu(theta_j, gamma, opening_factor):
   """
   Generate a value for theta_nu using the transformation method
   Values follows a distribution with a sin shape between theta_nu = 0 and theta_j + X/gamma value of X isn't clear
   """
-  opening_factor = 5
   return np.arccos(np.cos(theta_j + opening_factor / gamma) + np.random.random() * (1 - np.cos(theta_j + opening_factor / gamma)))
 
 

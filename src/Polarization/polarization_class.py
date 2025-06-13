@@ -86,7 +86,10 @@ class PolVSAngleRatio:
         init_time = time.time()
         arg_list = []
         ite_count = 0
-
+        if self.model == "PJ":
+          opening_factor = 3
+        else:
+          opening_factor = 1
         # In that case we use a list for theta j and a 3-tuple for theta nu
         for gamma, ite_gamma in arg_convert(self.gamma_range):
             for red_z, ite_red_z in arg_convert(self.red_z_range):
@@ -99,8 +102,7 @@ class PolVSAngleRatio:
                         for nu_0, ite_nu_0 in arg_convert(self.nu_0_range):
                             for alpha, ite_alpha in arg_convert(self.alpha_range):
                                 for beta, ite_beta in arg_convert(self.beta_range):
-                                    arg_list.append(var_ite_setting(ite_count, gamma, red_z, theta_j, theta_nu, nu_0, alpha, beta,
-                                                                    self.jet_model, self.flux_rejection))
+                                    arg_list.append(var_ite_setting(ite_count, gamma, red_z, theta_j, theta_nu, nu_0, alpha, beta, opening_factor, self.jet_model, self.flux_rejection))
                                     ite_count += 1
         arg_list = np.array(arg_list)
         print(f"Creation finished after {time.time()-init_time} seconds")
@@ -112,17 +114,15 @@ class PolVSAngleRatio:
         Models are defined in the "models.py" module
         """
         if self.model == "SO":
-            # print(self.nu_min, self.nu_max, gamma, red_z, theta_j, theta_nu, nu_0, alpha, beta, self.integ_steps, self.confidence)
-            return integral_calculation_SO(self.nu_min, self.nu_max, gamma, red_z, theta_j, theta_nu, nu_0, alpha, beta,
-                                           integ_steps=self.integ_steps, confidence=self.confidence)[:2]
+            return integral_calculation_SO(self.nu_min, self.nu_max, gamma, red_z, theta_j, theta_nu, nu_0, alpha, beta, integ_steps=self.integ_steps, confidence=self.confidence)[:2]
         elif self.model == "SR":
-            return integral_calculation_SR(self.nu_min, self.nu_max, gamma, red_z, theta_j, theta_nu, nu_0, alpha, beta,
-                                           integ_steps=self.integ_steps, confidence=self.confidence)
+            return integral_calculation_SR(self.nu_min, self.nu_max, gamma, red_z, theta_j, theta_nu, nu_0, alpha, beta, integ_steps=self.integ_steps, confidence=self.confidence)
         elif self.model == "CD":
-            return integral_calculation_CD(self.nu_min, self.nu_max, gamma, red_z, theta_j, theta_nu, nu_0, alpha, beta,
-                                           integ_steps=self.integ_steps, confidence=self.confidence)
+            return integral_calculation_CD(self.nu_min, self.nu_max, gamma, red_z, theta_j, theta_nu, nu_0, alpha, beta, integ_steps=self.integ_steps, confidence=self.confidence)
         elif self.model == "PJ":
             return integral_calculation_PJ(gamma, theta_j, theta_nu)
+        else:
+          raise ValueError
 
     def pf_calculation(self, param_list, timer_info=None):
         """
@@ -244,7 +244,6 @@ class PolVSAngleRatio:
 
 
 print("======================================================================================")
-distri_nu = "distri_pearce"
 
 xlist_pearce = [np.array([0.006646525679758308, 0.113595166163142, 0.12507552870090635, 0.13716012084592144, 0.1486404833836858,
                           0.1607250755287009, 0.172809667673716, 0.18429003021148035, 0.19637462235649547, 0.20785498489425983,
@@ -305,19 +304,80 @@ ylist_pearce = [np.array([0.019230769230769232, 0, 0, 0, 0, 0, 0, 0, 0, 0.038461
                           0.085, 0.015, 0.12, 0.1, 0.03, 0.05, 0.1, 0.03, 0.03, 0.105, 0.155, 0.115, 0.185, 0.135, 0.155, 0.44, 0., 0., 0.,
                           0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.])]
 
-# list_distri = []
-# n_distri = 10
+############################################################################################################################################################################
+# Function to create distributions
+############################################################################################################################################################################
+def pol_distribution_maker(gamma_range, red_z_range, theta_j_range, theta_nu_range, nu_0_range, alpha_range, beta_range, int_step, n_distri, savecom=None):
+  list_distri = []
+  dir = "../Data/Polar"
+  mpl.use("Qt5Agg")
+  for distname in ["SO", "SR", "CD", "PJ"]:
+    # for distname in ["SO"]:
+    simtime = time.time()
+    list_distri.append(PolVSAngleRatio(model=distname, gamma_range=gamma_range, red_z_range=red_z_range, theta_j_range=(theta_j_range, n_distri),
+                                       theta_nu_range=(theta_nu_range, n_distri), nu_0_range=nu_0_range, alpha_range=alpha_range, beta_range=beta_range,
+                                       nu_min=None, nu_max=None, jet_model="top-hat", flux_rejection=True, integ_steps=int_step,
+                                       confidence=1.96, parallel=10))
+    print(f"TIME TAKEN FOR {distname} : {time.time() - simtime} s")
+
+  bins = np.linspace(0, 0.7, 60)
+  x_pearce = (bins[1:] + bins[:-1]) / 2
+
+  labels = ["Distribution of PF for SO model", "Distribution of PF for SR model",
+            "Distribution of PF for CD model", "Distribution of PF for PJ model"]
+  colors = ['blue', 'red', 'green', 'orange']
+  fig_comp, axes = plt.subplots(len(list_distri), 1, figsize=(20, 10), sharex="all")
+  fig_comp.suptitle(f"Distribution of Polarization fraction\nInt step : {int_steps}, number of pf estimated : {n_distri ** 2}")
+  if len(list_distri) == 1:
+    axes = [axes]
+  for ax_idx in range(len(axes)):
+    axes[ax_idx].hist(list_distri[ax_idx].data_df.pf.values, bins=bins, label=labels[ax_idx],
+                      weights=[1 / len(list_distri[ax_idx].data_df)] * len(list_distri[ax_idx].data_df), color=colors[ax_idx])
+    axes[ax_idx].scatter(x_pearce, ylist_pearce[ax_idx] / np.sum(ylist_pearce[ax_idx]), label="Values from Pearce")
+    axes[ax_idx].legend()
+
+  axes[-1].set(xlabel='Polarization fraction', xlim=(0, 0.75), xticks=np.arange(0, 0.7, 0.15))
+  plt.show()
+
+  bins = np.linspace(0, 1, 101)
+  labels = ["Distribution of PF for SO model", "Distribution of PF for SR model",
+            "Distribution of PF for CD model", "Distribution of PF for PJ model"]
+  colors = ['blue', 'red', 'green', 'orange']
+
+  fig_pol, axes = plt.subplots(len(list_distri), 1, figsize=(20, 10), sharex="all")
+  if len(list_distri) == 1:
+    axes = [axes]
+  for ax_idx in range(len(axes)):
+    axes[ax_idx].hist(list_distri[ax_idx].data_df.pf.values, bins=bins, label=labels[ax_idx],
+                      weights=[1 / len(list_distri[ax_idx].data_df)] * len(list_distri[ax_idx].data_df), color=colors[ax_idx])
+    axes[ax_idx].legend()
+
+  axes[-1].set(xlabel='Polarization fraction', xlim=(0, 1), xticks=np.arange(0, 1.01, 0.1))
+  if savecom is not None:
+    plt.savefig(f"{dir}/{savecom}")
+    mod_df = pd.DataFrame({"SO":list_distri[0].data_df.pf.values, "SR":list_distri[1].data_df.pf.values, "CD":list_distri[2].data_df.pf.values, "PJ":list_distri[3].data_df.pf.values})
+    with pd.HDFStore(f"{dir}/{savecom}.h5", mode="w") as fpol:
+      fpol.put(f"bins", pd.Series(bins))
+      fpol.put("models", mod_df)
+
+  plt.show()
+
+############################################################################################################################################################################
+# Constructing distributions
+# v1 : initial distri : j - "distri", nu - distri_pearce
+############################################################################################################################################################################
+distri_nu = "distri_pearce"
+n_distri = 10
+int_steps = 100
+com = f"v3_{n_distri**2}"
+pol_distribution_maker(gamma_range=100, red_z_range=1, theta_j_range="distri", theta_nu_range=distri_nu, nu_0_range=350 / 100, alpha_range=-0.8, beta_range=-2.2,
+                       int_step=int_steps, n_distri=n_distri, savecom=com)
+# distri_nu = "distri_toma"
+# n_distri = 100
 # int_steps = 100
-# for distname in ["SO", "SR", "CD", "PJ"]:
-# # for distname in ["SO"]:
-#     simtime = time.time()
-#     list_distri.append(PolVSAngleRatio(model=distname, gamma_range=100, red_z_range=1, theta_j_range=("distri", n_distri),
-#                                   theta_nu_range=(distri_nu, n_distri), nu_0_range=350 / 100, alpha_range=-0.8, beta_range=-2.2,
-#                                   nu_min=None, nu_max=None, jet_model="top-hat", flux_rejection=True, integ_steps=int_steps,
-#                                   confidence=1.96, parallel=10))
-#     print(f"TIME TAKEN FOR {distname} : {time.time() - simtime} s")
-
-
+# com = f"v2_{n_distri**2}"
+# pol_distribution_maker(gamma_range=100, red_z_range=1, theta_j_range="distri", theta_nu_range=distri_nu, nu_0_range=350 / 100, alpha_range=-0.8, beta_range=-2.2,
+#                        int_step=int_steps, n_distri=n_distri, savecom=com)
 
 ########################################################################################
 # Trying to reproduce pearce figure
@@ -503,118 +563,118 @@ ylist_pearce = [np.array([0.019230769230769232, 0, 0, 0, 0, 0, 0, 0, 0, 0.038461
 # This kind of figure is considering only the variation of the models, with no error considered because of the detection (as done in Pearce 2019 with a rice distribution)
 # We obtain the error by taking the quantiles at 1, 2, and 3 sigmas
 ########################################################################################
-bins = np.array(list(range(0, 101, 2)))
-num_fig_bins = len(bins)
-centroids = (bins[1:] + bins[:-1]) / 2
-nvals_fit = 1000
-nsigma = 1
-
-model_sum = np.ones((4, nvals_fit, num_fig_bins - 1))
-# SO_sum = np.ones((nvals_fit, num_fig_bins - 1))
-# SR_sum = np.ones((nvals_fit, num_fig_bins - 1))
-# CD_sum = np.ones((nvals_fit, num_fig_bins - 1))
-# PJ_sum = np.ones((nvals_fit, num_fig_bins - 1))
-PFlim = 0.35
-for ite_row in range(nvals_fit):
-  print(f"Simulating : {ite_row / nvals_fit * 100:.0f} %", end="\r")
-  pf_SO = []
-  pf_SR = []
-  pf_CD = []
-  pf_PJ = []
-  nGRB_taken = 100
-  for vals in range(nGRB_taken):
-    pf_SO.append(acc_reject(SO_PF_distri, [], 0, 1))
-    pf_SR.append(acc_reject(SR_PF_distri, [], 0, 1))
-    pf_CD.append(acc_reject(CD_PF_distri, [], 0, 1))
-    pf_PJ.append(acc_reject(PJ_PF_distri, [], 0, 1))
-
-  pf_SO = np.array(pf_SO)
-  pf_SR = np.array(pf_SR)
-  pf_CD = np.array(pf_CD)
-  pf_PJ = np.array(pf_PJ)
-
-  for ite_col in range(num_fig_bins - 1):
-    model_sum[0][ite_row][ite_col] = np.count_nonzero(pf_SO[:bins[ite_col]] > PFlim)
-    model_sum[1][ite_row][ite_col] = np.count_nonzero(pf_SR[:bins[ite_col]] > PFlim)
-    model_sum[2][ite_row][ite_col] = np.count_nonzero(pf_CD[:bins[ite_col]] > PFlim)
-    model_sum[3][ite_row][ite_col] = np.count_nonzero(pf_PJ[:bins[ite_col]] > PFlim)
-
-# sums = [SO_sum, SR_sum, CD_sum, PJ_sum]
-# sums has the structure sums[number of model][number of the simulation][different bins for the given simulation]
-# The goal is to perform statistics on a given bin for a lot of simulations so work on sums[ite][:, bin_ite]
-labels = ["SO model", "SR model",
-          "CD model", "PJ model"]
-colors = ['blue', 'red', 'green', 'orange']
-
-xlabel = f"Number of GRB detected with MDP < {PFlim * 100:.0f}%"
-ylabel = f"Number of GRB detected with PF > {PFlim * 100:.0f}%"
-
+# bins = np.array(list(range(0, 101, 2)))
+# num_fig_bins = len(bins)
+# centroids = (bins[1:] + bins[:-1]) / 2
+# nvals_fit = 1000
 # nsigma = 1
-pf_mean = np.zeros((4, num_fig_bins - 1))
-pf_min = np.zeros((4, num_fig_bins - 1))
-pf_max = np.zeros((4, num_fig_bins - 1))
-expec_outside = 1 - erf(1/np.sqrt(2))
-min_quant = expec_outside / 2
-max_quant = 1 - min_quant
-
-figpearce1, ax = plt.subplots(1, 1, figsize=(10, 6))
-for ite in range(len(model_sum)):
-  for ite_col in range(len(model_sum[ite][0])):
-    pf_sims = model_sum[ite][:, ite_col]
-    pf_mean[ite][ite_col] = np.mean(pf_sims)
-    pf_min[ite][ite_col] = np.quantile(pf_sims, min_quant)
-    pf_max[ite][ite_col] = np.quantile(pf_sims, max_quant)
-  ax.plot(centroids, pf_mean[ite], label=labels[ite], color=colors[ite])
-  ax.fill_between(centroids, pf_min[ite], pf_max[ite], color=colors[ite], alpha=0.4)
-
-ax.legend()
-ax.set(xlabel=xlabel, ylabel=ylabel, xlim=(0, 1), xticks=np.arange(0, 101, 20), yticks=np.arange(0, 100, 20))
-plt.suptitle(f"Model separation at 1 $\sigma$")
-plt.show()
-
-# nsigma = 2
-pf_mean = np.zeros((4, num_fig_bins - 1))
-pf_min = np.zeros((4, num_fig_bins - 1))
-pf_max = np.zeros((4, num_fig_bins - 1))
-expec_outside = 1 - erf(2/np.sqrt(2))
-min_quant = expec_outside / 2
-max_quant = 1 - min_quant
-figpearce2, ax = plt.subplots(1, 1, figsize=(10, 6))
-for ite in range(len(model_sum)):
-  for ite_col in range(len(model_sum[ite][0])):
-    pf_sims = model_sum[ite][:, ite_col]
-    pf_mean[ite][ite_col] = np.mean(pf_sims)
-    pf_min[ite][ite_col] = np.quantile(pf_sims, min_quant)
-    pf_max[ite][ite_col] = np.quantile(pf_sims, max_quant)
-  ax.plot(centroids, pf_mean[ite], label=labels[ite], color=colors[ite])
-  ax.fill_between(centroids, pf_min[ite], pf_max[ite], color=colors[ite], alpha=0.4)
-
-ax.legend()
-ax.set(xlabel=xlabel, ylabel=ylabel, xlim=(0, 1), xticks=np.arange(0, 101, 20), yticks=np.arange(0, 100, 20))
-plt.suptitle(f"Model separation at 2 $\sigma$")
-plt.show()
-
-# nsigma = 3
-pf_mean = np.zeros((4, num_fig_bins - 1))
-pf_min = np.zeros((4, num_fig_bins - 1))
-pf_max = np.zeros((4, num_fig_bins - 1))
-expec_outside = 1 - erf(3/np.sqrt(2))
-min_quant = expec_outside / 2
-max_quant = 1 - min_quant
-figpearce3, ax = plt.subplots(1, 1, figsize=(10, 6))
-for ite in range(len(model_sum)):
-  for ite_col in range(len(model_sum[ite][0])):
-    pf_sims = model_sum[ite][:, ite_col]
-    pf_mean[ite][ite_col] = np.mean(pf_sims)
-    pf_min[ite][ite_col] = np.quantile(pf_sims, min_quant)
-    pf_max[ite][ite_col] = np.quantile(pf_sims, max_quant)
-  ax.plot(centroids, pf_mean[ite], label=labels[ite], color=colors[ite])
-  ax.fill_between(centroids, pf_min[ite], pf_max[ite], color=colors[ite], alpha=0.4)
-
-ax.legend()
-ax.set(xlabel=xlabel, ylabel=ylabel, xlim=(0, 1), xticks=np.arange(0, 101, 20), yticks=np.arange(0, 100, 20))
-plt.suptitle(f"Model separation at 3 $\sigma$")
-plt.show()
+#
+# model_sum = np.ones((4, nvals_fit, num_fig_bins - 1))
+# # SO_sum = np.ones((nvals_fit, num_fig_bins - 1))
+# # SR_sum = np.ones((nvals_fit, num_fig_bins - 1))
+# # CD_sum = np.ones((nvals_fit, num_fig_bins - 1))
+# # PJ_sum = np.ones((nvals_fit, num_fig_bins - 1))
+# PFlim = 0.35
+# for ite_row in range(nvals_fit):
+#   print(f"Simulating : {ite_row / nvals_fit * 100:.0f} %", end="\r")
+#   pf_SO = []
+#   pf_SR = []
+#   pf_CD = []
+#   pf_PJ = []
+#   nGRB_taken = 100
+#   for vals in range(nGRB_taken):
+#     pf_SO.append(acc_reject(SO_PF_distri, [], 0, 1))
+#     pf_SR.append(acc_reject(SR_PF_distri, [], 0, 1))
+#     pf_CD.append(acc_reject(CD_PF_distri, [], 0, 1))
+#     pf_PJ.append(acc_reject(PJ_PF_distri, [], 0, 1))
+#
+#   pf_SO = np.array(pf_SO)
+#   pf_SR = np.array(pf_SR)
+#   pf_CD = np.array(pf_CD)
+#   pf_PJ = np.array(pf_PJ)
+#
+#   for ite_col in range(num_fig_bins - 1):
+#     model_sum[0][ite_row][ite_col] = np.count_nonzero(pf_SO[:bins[ite_col]] > PFlim)
+#     model_sum[1][ite_row][ite_col] = np.count_nonzero(pf_SR[:bins[ite_col]] > PFlim)
+#     model_sum[2][ite_row][ite_col] = np.count_nonzero(pf_CD[:bins[ite_col]] > PFlim)
+#     model_sum[3][ite_row][ite_col] = np.count_nonzero(pf_PJ[:bins[ite_col]] > PFlim)
+#
+# # sums = [SO_sum, SR_sum, CD_sum, PJ_sum]
+# # sums has the structure sums[number of model][number of the simulation][different bins for the given simulation]
+# # The goal is to perform statistics on a given bin for a lot of simulations so work on sums[ite][:, bin_ite]
+# labels = ["SO model", "SR model",
+#           "CD model", "PJ model"]
+# colors = ['blue', 'red', 'green', 'orange']
+#
+# xlabel = f"Number of GRB detected with MDP < {PFlim * 100:.0f}%"
+# ylabel = f"Number of GRB detected with PF > {PFlim * 100:.0f}%"
+#
+# # nsigma = 1
+# pf_mean = np.zeros((4, num_fig_bins - 1))
+# pf_min = np.zeros((4, num_fig_bins - 1))
+# pf_max = np.zeros((4, num_fig_bins - 1))
+# expec_outside = 1 - erf(1/np.sqrt(2))
+# min_quant = expec_outside / 2
+# max_quant = 1 - min_quant
+#
+# figpearce1, ax = plt.subplots(1, 1, figsize=(10, 6))
+# for ite in range(len(model_sum)):
+#   for ite_col in range(len(model_sum[ite][0])):
+#     pf_sims = model_sum[ite][:, ite_col]
+#     pf_mean[ite][ite_col] = np.mean(pf_sims)
+#     pf_min[ite][ite_col] = np.quantile(pf_sims, min_quant)
+#     pf_max[ite][ite_col] = np.quantile(pf_sims, max_quant)
+#   ax.plot(centroids, pf_mean[ite], label=labels[ite], color=colors[ite])
+#   ax.fill_between(centroids, pf_min[ite], pf_max[ite], color=colors[ite], alpha=0.4)
+#
+# ax.legend()
+# ax.set(xlabel=xlabel, ylabel=ylabel, xlim=(0, 1), xticks=np.arange(0, 101, 20), yticks=np.arange(0, 100, 20))
+# plt.suptitle(f"Model separation at 1 $\sigma$")
+# plt.show()
+#
+# # nsigma = 2
+# pf_mean = np.zeros((4, num_fig_bins - 1))
+# pf_min = np.zeros((4, num_fig_bins - 1))
+# pf_max = np.zeros((4, num_fig_bins - 1))
+# expec_outside = 1 - erf(2/np.sqrt(2))
+# min_quant = expec_outside / 2
+# max_quant = 1 - min_quant
+# figpearce2, ax = plt.subplots(1, 1, figsize=(10, 6))
+# for ite in range(len(model_sum)):
+#   for ite_col in range(len(model_sum[ite][0])):
+#     pf_sims = model_sum[ite][:, ite_col]
+#     pf_mean[ite][ite_col] = np.mean(pf_sims)
+#     pf_min[ite][ite_col] = np.quantile(pf_sims, min_quant)
+#     pf_max[ite][ite_col] = np.quantile(pf_sims, max_quant)
+#   ax.plot(centroids, pf_mean[ite], label=labels[ite], color=colors[ite])
+#   ax.fill_between(centroids, pf_min[ite], pf_max[ite], color=colors[ite], alpha=0.4)
+#
+# ax.legend()
+# ax.set(xlabel=xlabel, ylabel=ylabel, xlim=(0, 1), xticks=np.arange(0, 101, 20), yticks=np.arange(0, 100, 20))
+# plt.suptitle(f"Model separation at 2 $\sigma$")
+# plt.show()
+#
+# # nsigma = 3
+# pf_mean = np.zeros((4, num_fig_bins - 1))
+# pf_min = np.zeros((4, num_fig_bins - 1))
+# pf_max = np.zeros((4, num_fig_bins - 1))
+# expec_outside = 1 - erf(3/np.sqrt(2))
+# min_quant = expec_outside / 2
+# max_quant = 1 - min_quant
+# figpearce3, ax = plt.subplots(1, 1, figsize=(10, 6))
+# for ite in range(len(model_sum)):
+#   for ite_col in range(len(model_sum[ite][0])):
+#     pf_sims = model_sum[ite][:, ite_col]
+#     pf_mean[ite][ite_col] = np.mean(pf_sims)
+#     pf_min[ite][ite_col] = np.quantile(pf_sims, min_quant)
+#     pf_max[ite][ite_col] = np.quantile(pf_sims, max_quant)
+#   ax.plot(centroids, pf_mean[ite], label=labels[ite], color=colors[ite])
+#   ax.fill_between(centroids, pf_min[ite], pf_max[ite], color=colors[ite], alpha=0.4)
+#
+# ax.legend()
+# ax.set(xlabel=xlabel, ylabel=ylabel, xlim=(0, 1), xticks=np.arange(0, 101, 20), yticks=np.arange(0, 100, 20))
+# plt.suptitle(f"Model separation at 3 $\sigma$")
+# plt.show()
 
 
 

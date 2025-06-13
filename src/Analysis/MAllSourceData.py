@@ -18,7 +18,7 @@ from time import time
 import os
 
 # Developped modules imports
-from src.General.funcmod import printcom, printv, endtask, read_grbpar, horizon_angle, save_grb_data, eff_area_func, make_error_histogram, compile_finder
+from src.General.funcmod import printcom, printv, endtask, read_grbpar, horizon_angle, save_grb_data, eff_area_func, make_error_histogram, compile_finder, calc_trigger
 from src.Catalogs.catalog import Catalog, SampleCatalog
 from src.Analysis.MBkgContainer import BkgContainer
 from src.Analysis.MmuSeffContainer import MuSeffContainer
@@ -598,79 +598,49 @@ class AllSourceData:
     else:
       print("Type error for savefile, must be str or None")
 
-  def count_triggers(self, const_index=0, graphs=False, lc_aligned=False):
+  def count_triggers(self, const_index=0, parallel=10, graphs=False, lc_aligned=False, nthread=1):
     """
     Function to count and print the number of triggers using different criterions
     """
     print("================================================================================================")
     print(f"== Triggers according to GBM method with   {self.number_of_down_per_const[const_index]}   down satellite")
     print("================================================================================================")
+    # total_in_view = 0
+    # no_trig_name = []
+    # no_trig_duration = []
+    # no_trig_dec = []
+    # no_trig_e_fluence = []
+    # trigg_1s_ite = []
+    # trigg_2s_ite = []
+    # trigg_3s_ite = []
+    # trigg_4s_ite = []
+    # triggs = np.zeros((4, len(self.alldata)))
+
+    if type(parallel) == int:
+      print(f"Parallel extraction of the data with {parallel} threads")
+      with mp.Pool(parallel) as pool:
+        ret = pool.starmap(calc_trigger, zip(self.alldata, range(len(self.alldata)), repeat(const_index), repeat(lc_aligned)))
+    else:
+      raise TypeError("Parameter parallel must be an int")
+    [trigg_1s, trigg_2s, trigg_3s, trigg_4s, no_trig_name, no_trig_duration, no_trig_dec, no_trig_e_fluence] = np.array(ret).transpose()
+    # [trigg_1s, trigg_2s, trigg_3s, trigg_4s, no_trig_name, no_trig_duration, no_trig_dec, no_trig_e_fluence] = np.array([calc_trigger(source, source_ite, const_index, lc_aligned) for source_ite, source in enumerate(self.alldata)]).transpose()
+    # trigg_1s = np.array(trigg_1s, dtype=int)
+    # trigg_2s = np.array(trigg_2s, dtype=int)
+    # trigg_3s = np.array(trigg_3s, dtype=int)
+    # trigg_4s = np.array(trigg_4s, dtype=int)
+    # no_trig_duration = np.array(no_trig_duration, dtype=np.float64)
+    # no_trig_dec = np.array(no_trig_dec, dtype=np.float64)
+    # no_trig_e_fluence = np.array(no_trig_e_fluence, dtype=np.float64)
     total_in_view = 0
-    const_trigger_counter_4s = 0
-    const_trigger_counter_3s = 0
-    const_trigger_counter_2s = 0
-    const_trigger_counter_1s = 0
-    no_trig_name = []
-    no_trig_duration = []
-    no_trig_dec = []
-    no_trig_e_fluence = []
     for source in self.alldata:
       if source is not None:
-        for ite_sim, sim in enumerate(source):
+        for sim in source:
           if sim is not None:
             total_in_view += 1
-            if lc_aligned:
-              list_snrs_lc_2s = []
-              list_snrs_lc_3s = []
-              list_snrs_lc_4s = []
-              for sat in sim:
-                if sat is not None:
-                  # 2 sat trigger
-                  if len(list_snrs_lc_2s) == 0:
-                    list_snrs_lc_2s = sat.hits_snrs_over_lc(source.source_duration, nsat=2)
-                  else:
-                    temp_snrs_lc_2s = sat.hits_snrs_over_lc(source.source_duration, nsat=2)
-                    for int_time_ite in range(len(list_snrs_lc_2s)):
-                      list_snrs_lc_2s[int_time_ite] += temp_snrs_lc_2s[int_time_ite]
-                  # 3 sat trigger
-                  if len(list_snrs_lc_3s) == 0:
-                    list_snrs_lc_3s = sat.hits_snrs_over_lc(source.source_duration, nsat=3)
-                  else:
-                    temp_snrs_lc_3s = sat.hits_snrs_over_lc(source.source_duration, nsat=3)
-                    for int_time_ite in range(len(list_snrs_lc_3s)):
-                      list_snrs_lc_3s[int_time_ite] += temp_snrs_lc_3s[int_time_ite]
-                  # 4 sat trigger
-                  if len(list_snrs_lc_4s) == 0:
-                    list_snrs_lc_4s = sat.hits_snrs_over_lc(source.source_duration, nsat=4)
-                  else:
-                    temp_snrs_lc_4s = sat.hits_snrs_over_lc(source.source_duration, nsat=4)
-                    for int_time_ite in range(len(list_snrs_lc_4s)):
-                      list_snrs_lc_4s[int_time_ite] += temp_snrs_lc_4s[int_time_ite]
-              if True in (np.concatenate(list_snrs_lc_2s) >= 3):
-                const_trigger_counter_2s += 1
-              if True in (np.concatenate(list_snrs_lc_3s) >= 3):
-                const_trigger_counter_3s += 1
-              if True in (np.concatenate(list_snrs_lc_4s) >= 3):
-                const_trigger_counter_4s += 1
-              if True in (sim.const_data[const_index].const_beneficial_trigger_1s >= 1):
-                const_trigger_counter_1s += 1
-            else:
-              if sim.const_data[const_index] is not None:
-                if True in (sim.const_data[const_index].const_beneficial_trigger_4s >= 4):
-                  const_trigger_counter_4s += 1
-                if True in (sim.const_data[const_index].const_beneficial_trigger_3s >= 3):
-                  const_trigger_counter_3s += 1
-                else:
-                  no_trig_name.append(source.source_name)
-                  no_trig_duration.append(source.source_duration)
-                  no_trig_dec.append(sim.dec_world_frame)
-                  no_trig_e_fluence.append(source.source_energy_fluence)
-                  # if len(no_trig_name) <= 30 and graphs:
-                  #   print("Not triggered : ", source.source_name, source.source_duration, sim.dec_world_frame, source.source_energy_fluence)
-                if True in (sim.const_data[const_index].const_beneficial_trigger_2s >= 2):
-                  const_trigger_counter_2s += 1
-                if True in (sim.const_data[const_index].const_beneficial_trigger_1s >= 1):
-                  const_trigger_counter_1s += 1
+    const_trigger_counter_4s = np.count_nonzero(~np.isnan(trigg_4s.astype(float)))
+    const_trigger_counter_3s = np.count_nonzero(~np.isnan(trigg_3s.astype(float)))
+    const_trigger_counter_2s = np.count_nonzero(~np.isnan(trigg_2s.astype(float)))
+    const_trigger_counter_1s = np.count_nonzero(~np.isnan(trigg_1s.astype(float)))
 
     print(f"   Trigger for at least 4 satellites :        {const_trigger_counter_4s:.2f} triggers")
     print(f"   Trigger for at least 3 satellites :        {const_trigger_counter_3s:.2f} triggers")
@@ -695,6 +665,7 @@ class AllSourceData:
       ax3.hist(no_trig_e_fluence, bins=np.logspace(int(np.log10(np.min(no_trig_e_fluence))), int(np.log10(np.max(no_trig_e_fluence)) + 1), 20), histtype="step")
       ax3.set(xlabel="GRB energy fluence (erg/cm²)", ylabel="Number of not triggered", xscale="log", yscale="linear")
       plt.show()
+    return trigg_1s, trigg_2s, trigg_3s, trigg_4s
 
   def fov_const(self, num_val=500, show=True, save=False):
     """
