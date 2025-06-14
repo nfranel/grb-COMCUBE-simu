@@ -316,9 +316,10 @@ class AllSourceData:
       ext_name.append(temp_name)
       pres_list[grb_det_ites[ite]][sim_det_ites[ite]][sat_det_ites[ite]] = temp_name
     pres_list = pres_list.tolist()
-    for ite in range(len(pres_list) -1, -1, -1):
-      if np.all([val is None for val in np.array(pres_list[ite]).flatten()]):
-        _ = pres_list.pop(ite)
+    final_pres_list = []
+    for ite in range(len(pres_list)):
+      if not np.all([val is None for val in np.array(pres_list[ite]).flatten()]):
+        final_pres_list.append(pres_list[ite])
     return tobe_ext, ext_name, pres_list
 
   # TODO finish the comments and rework the methods !
