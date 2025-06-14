@@ -320,7 +320,7 @@ class AllSourceData:
     for ite in range(len(pres_list)):
       if not np.all([val is None for val in np.array(pres_list[ite]).flatten()]):
         final_pres_list.append(pres_list[ite])
-    return tobe_ext, ext_name, pres_list
+    return tobe_ext, ext_name, final_pres_list
 
   # TODO finish the comments and rework the methods !
   def extract_sources(self, prefix, duration=None):
