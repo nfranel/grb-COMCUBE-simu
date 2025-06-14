@@ -236,7 +236,7 @@ class AllSourceData:
 
     if not os.path.exists(f"{self.sim_prefix.split('/sim/')[0]}/extracted"):
       os.mkdir(f"{self.sim_prefix.split('/sim/')[0]}/extracted")
-    tobe_extracted, extracted_name, presence_list = self.filenames_creation(grb_names, grb_det_ites, sim_det_ites, sat_det_ites, suffix_ite)
+    tobe_extracted, extracted_name, presence_list, filtered_ites = self.filenames_creation(grb_names, grb_det_ites, sim_det_ites, sat_det_ites, suffix_ite)
     num_files = int(subprocess.getoutput(f"ls {self.sim_prefix.split('/sim/')[0]}/sim | wc").strip().split("  ")[0])
     if num_files > self.n_sim_simulated:
       print("ERROR : The number of file in the log is smaller than the number of files")
@@ -284,13 +284,13 @@ class AllSourceData:
     if parallel == 'all':
       print("Parallel extraction of the data with all threads")
       with mp.Pool() as pool:
-        self.alldata = pool.starmap(AllSimData, zip(presence_list, range(self.n_source), repeat(cat_data), repeat(self.sat_info), repeat(self.sim_duration), repeat(self.bkgdata), repeat(self.muSeffdata), repeat(self.options)))
+        self.alldata = pool.starmap(AllSimData, zip(presence_list, filtered_ites, repeat(cat_data), repeat(self.sat_info), repeat(self.sim_duration), repeat(self.bkgdata), repeat(self.muSeffdata), repeat(self.options)))
     elif type(parallel) is int:
       print(f"Parallel extraction of the data with {parallel} threads")
       with mp.Pool(parallel) as pool:
-        self.alldata = pool.starmap(AllSimData, zip(presence_list, range(self.n_source), repeat(cat_data), repeat(self.sat_info), repeat(self.sim_duration), repeat(self.bkgdata), repeat(self.muSeffdata), repeat(self.options)))
+        self.alldata = pool.starmap(AllSimData, zip(presence_list, filtered_ites, repeat(cat_data), repeat(self.sat_info), repeat(self.sim_duration), repeat(self.bkgdata), repeat(self.muSeffdata), repeat(self.options)))
     else:
-      self.alldata = [AllSimData(presence_list[source_ite], source_ite, cat_data, self.sat_info, self.sim_duration, self.bkgdata, self.muSeffdata, self.options) for source_ite in range(self.n_source)]
+      self.alldata = [AllSimData(presence_list[source_ite], filtered_ites[source_ite], cat_data, self.sat_info, self.sim_duration, self.bkgdata, self.muSeffdata, self.options) for source_ite in range(self.n_source)]
     endtask("Step 8", timevar=init_time)
 
     if memory_check:
@@ -317,10 +317,12 @@ class AllSourceData:
       pres_list[grb_det_ites[ite]][sim_det_ites[ite]][sat_det_ites[ite]] = temp_name
     pres_list = pres_list.tolist()
     final_pres_list = []
+    final_ites = []
     for ite in range(len(pres_list)):
       if not np.all([val is None for val in np.array(pres_list[ite]).flatten()]):
         final_pres_list.append(pres_list[ite])
-    return tobe_ext, ext_name, final_pres_list
+        final_ites.append(ite)
+    return tobe_ext, ext_name, final_pres_list, final_ites
 
   # TODO finish the comments and rework the methods !
   def extract_sources(self, prefix, duration=None):
