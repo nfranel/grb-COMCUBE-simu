@@ -606,24 +606,13 @@ class AllSourceData:
     else:
       print("Type error for savefile, must be str or None")
 
-  def count_triggers(self, const_index=0, parallel=10, graphs=False, lc_aligned=False, nthread=1):
+  def count_triggers(self, const_index=0, parallel=10, graphs=False, lc_aligned=False):
     """
     Function to count and print the number of triggers using different criterions
     """
     print("================================================================================================")
     print(f"== Triggers according to GBM method with   {self.number_of_down_per_const[const_index]}   down satellite")
     print("================================================================================================")
-    # total_in_view = 0
-    # no_trig_name = []
-    # no_trig_duration = []
-    # no_trig_dec = []
-    # no_trig_e_fluence = []
-    # trigg_1s_ite = []
-    # trigg_2s_ite = []
-    # trigg_3s_ite = []
-    # trigg_4s_ite = []
-    # triggs = np.zeros((4, len(self.alldata)))
-
     if type(parallel) == int:
       print(f"Parallel extraction of the data with {parallel} threads")
       with mp.Pool(parallel) as pool:
@@ -631,24 +620,27 @@ class AllSourceData:
     else:
       raise TypeError("Parameter parallel must be an int")
     [trigg_1s, trigg_2s, trigg_3s, trigg_4s, no_trig_name, no_trig_duration, no_trig_dec, no_trig_e_fluence] = np.array(ret).transpose()
-    # [trigg_1s, trigg_2s, trigg_3s, trigg_4s, no_trig_name, no_trig_duration, no_trig_dec, no_trig_e_fluence] = np.array([calc_trigger(source, source_ite, const_index, lc_aligned) for source_ite, source in enumerate(self.alldata)]).transpose()
-    # trigg_1s = np.array(trigg_1s, dtype=int)
-    # trigg_2s = np.array(trigg_2s, dtype=int)
-    # trigg_3s = np.array(trigg_3s, dtype=int)
-    # trigg_4s = np.array(trigg_4s, dtype=int)
-    # no_trig_duration = np.array(no_trig_duration, dtype=np.float64)
-    # no_trig_dec = np.array(no_trig_dec, dtype=np.float64)
-    # no_trig_e_fluence = np.array(no_trig_e_fluence, dtype=np.float64)
     total_in_view = 0
     for source in self.alldata:
       if source is not None:
         for sim in source:
           if sim is not None:
             total_in_view += 1
-    const_trigger_counter_4s = np.count_nonzero(~np.isnan(trigg_4s.astype(float)))
-    const_trigger_counter_3s = np.count_nonzero(~np.isnan(trigg_3s.astype(float)))
-    const_trigger_counter_2s = np.count_nonzero(~np.isnan(trigg_2s.astype(float)))
-    const_trigger_counter_1s = np.count_nonzero(~np.isnan(trigg_1s.astype(float)))
+
+    trigg_1s = trigg_1s[~np.isnan(trigg_1s.astype(float))]
+    trigg_2s = trigg_2s[~np.isnan(trigg_2s.astype(float))]
+    trigg_3s = trigg_3s[~np.isnan(trigg_3s.astype(float))]
+    trigg_4s = trigg_4s[~np.isnan(trigg_4s.astype(float))]
+
+    # const_trigger_counter_4s = np.count_nonzero(~np.isnan(trigg_4s.astype(float)))
+    # const_trigger_counter_3s = np.count_nonzero(~np.isnan(trigg_3s.astype(float)))
+    # const_trigger_counter_2s = np.count_nonzero(~np.isnan(trigg_2s.astype(float)))
+    # const_trigger_counter_1s = np.count_nonzero(~np.isnan(trigg_1s.astype(float)))
+
+    const_trigger_counter_4s = np.count_nonzero(trigg_4s)
+    const_trigger_counter_3s = np.count_nonzero(trigg_3s)
+    const_trigger_counter_2s = np.count_nonzero(trigg_2s)
+    const_trigger_counter_1s = np.count_nonzero(trigg_1s)
 
     print(f"   Trigger for at least 4 satellites :        {const_trigger_counter_4s:.2f} triggers")
     print(f"   Trigger for at least 3 satellites :        {const_trigger_counter_3s:.2f} triggers")

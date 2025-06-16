@@ -1696,6 +1696,46 @@ def calc_trigger(source_data, source_ite, const_index, lc_aligned):
     return np.array([trigg_1s, trigg_2s, trigg_3s, trigg_4s, no_trig_name, no_trig_duration, no_trig_dec, no_trig_e_fluence], dtype=object)
 
 
+def get_mdp_list(data, ite_const=0):
+  """
+
+  """
+  number_detected = 0
+  mdp_list = []
+  mdp_list_inf = []
+  mdp_list_sup = []
+  for source in data:
+    if source is not None:
+      for sim in source:
+        if sim is not None:
+          if sim.const_data is not None:
+            number_detected += 1
+            if sim.const_data[ite_const] is not None:
+              if sim.const_data[ite_const].mdp is not None:
+                if sim.const_data[ite_const].mdp <= 1:
+                  mdp_list.append(sim.const_data[ite_const].mdp * 100)
+                  mdp_list_inf.append((sim.const_data[ite_const].mdp - sim.const_data[ite_const].mdp_err) * 100)
+                  if sim.const_data[ite_const].mdp + sim.const_data[ite_const].mdp_err <= 1:
+                    mdp_list_sup.append((sim.const_data[ite_const].mdp + sim.const_data[ite_const].mdp_err) * 100)
+  mdp_list = np.array(mdp_list)
+  mdp_list_inf = np.array(mdp_list_inf)
+  mdp_list_sup = np.array(mdp_list_sup)
+  return number_detected, mdp_list, mdp_list_inf, mdp_list_sup
+
+
+def get_mdp_rates(mdp_list, mdp_list_inf, mdp_list_sup, threshold, weights):
+  """
+  threshold in %
+
+  """
+  rate = np.sum(np.where(mdp_list <= threshold, 1, 0)) * weights
+  rate_inf_err = np.sum(np.where(mdp_list_inf <= threshold, 1, 0)) * weights - rate
+  rate_sup_err = np.sum(np.where(mdp_list_sup <= threshold, 1, 0)) * weights - rate
+  # print(rate, np.sum(np.where(mdp_list_inf <= threshold, 1, 0)) * weights, np.sum(np.where(mdp_list_sup <= threshold, 1, 0)) * weights)
+  # print(rate, rate_inf_err, rate_sup_err)
+  return rate, np.min([0, rate_inf_err, rate_sup_err]), np.max([0, rate_inf_err, rate_sup_err])
+
+
 def eff_area_func(dec_wf, ra_wf, info_sat, mu100_list, burst_time=0):  # TODO : limits on variables
   """
   Returns a value of the effective area for single event, compton event or 1 if the satellite is in sight for a direction dec_wt, ra_wf
