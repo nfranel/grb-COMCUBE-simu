@@ -1637,45 +1637,46 @@ def calc_trigger(source_data, source_ite, const_index, lc_aligned):
     ite_sim, sim = 0, source_data[0]
     if sim is not None:
       if lc_aligned:
-        list_snrs_lc_2s = []
-        list_snrs_lc_3s = []
-        list_snrs_lc_4s = []
-        for sat in sim:
-          if sat is not None:
-            # 2 sat trigger
-            if len(list_snrs_lc_2s) == 0:
-              list_snrs_lc_2s = sat.hits_snrs_over_lc(source_data.source_duration, nsat=2)
-            else:
-              temp_snrs_lc_2s = sat.hits_snrs_over_lc(source_data.source_duration, nsat=2)
-              for int_time_ite in range(len(list_snrs_lc_2s)):
-                list_snrs_lc_2s[int_time_ite] += temp_snrs_lc_2s[int_time_ite]
-            # 3 sat trigger
-            if len(list_snrs_lc_3s) == 0:
-              list_snrs_lc_3s = sat.hits_snrs_over_lc(source_data.source_duration, nsat=3)
-            else:
-              temp_snrs_lc_3s = sat.hits_snrs_over_lc(source_data.source_duration, nsat=3)
-              for int_time_ite in range(len(list_snrs_lc_3s)):
-                list_snrs_lc_3s[int_time_ite] += temp_snrs_lc_3s[int_time_ite]
-            # 4 sat trigger
-            if len(list_snrs_lc_4s) == 0:
-              list_snrs_lc_4s = sat.hits_snrs_over_lc(source_data.source_duration, nsat=4)
-            else:
-              temp_snrs_lc_4s = sat.hits_snrs_over_lc(source_data.source_duration, nsat=4)
-              for int_time_ite in range(len(list_snrs_lc_4s)):
-                list_snrs_lc_4s[int_time_ite] += temp_snrs_lc_4s[int_time_ite]
-        if True in (np.concatenate(list_snrs_lc_2s) >= 2):
-          trigg_2s = source_ite
-        if True in (np.concatenate(list_snrs_lc_3s) >= 3):
-          trigg_3s = source_ite
-        else:
-          no_trig_name = source_data.source_name
-          no_trig_duration = source_data.source_duration
-          no_trig_dec = sim.dec_world_frame
-          no_trig_e_fluence = source_data.source_energy_fluence
-        if True in (np.concatenate(list_snrs_lc_4s) >= 4):
-          trigg_4s = source_ite
-        if True in (sim.const_data[const_index].const_beneficial_trigger_1s >= 1):
-          trigg_1s = source_ite
+        if sim.const_data[const_index] is not None:
+          list_snrs_lc_2s = []
+          list_snrs_lc_3s = []
+          list_snrs_lc_4s = []
+          for sat in sim:
+            if sat is not None:
+              # 2 sat trigger
+              if len(list_snrs_lc_2s) == 0:
+                list_snrs_lc_2s = sat.hits_snrs_over_lc(source_data.source_duration, nsat=2)
+              else:
+                temp_snrs_lc_2s = sat.hits_snrs_over_lc(source_data.source_duration, nsat=2)
+                for int_time_ite in range(len(list_snrs_lc_2s)):
+                  list_snrs_lc_2s[int_time_ite] += temp_snrs_lc_2s[int_time_ite]
+              # 3 sat trigger
+              if len(list_snrs_lc_3s) == 0:
+                list_snrs_lc_3s = sat.hits_snrs_over_lc(source_data.source_duration, nsat=3)
+              else:
+                temp_snrs_lc_3s = sat.hits_snrs_over_lc(source_data.source_duration, nsat=3)
+                for int_time_ite in range(len(list_snrs_lc_3s)):
+                  list_snrs_lc_3s[int_time_ite] += temp_snrs_lc_3s[int_time_ite]
+              # 4 sat trigger
+              if len(list_snrs_lc_4s) == 0:
+                list_snrs_lc_4s = sat.hits_snrs_over_lc(source_data.source_duration, nsat=4)
+              else:
+                temp_snrs_lc_4s = sat.hits_snrs_over_lc(source_data.source_duration, nsat=4)
+                for int_time_ite in range(len(list_snrs_lc_4s)):
+                  list_snrs_lc_4s[int_time_ite] += temp_snrs_lc_4s[int_time_ite]
+          if True in (np.concatenate(list_snrs_lc_2s) >= 2):
+            trigg_2s = source_ite
+          if True in (np.concatenate(list_snrs_lc_3s) >= 3):
+            trigg_3s = source_ite
+          else:
+            no_trig_name = source_data.source_name
+            no_trig_duration = source_data.source_duration
+            no_trig_dec = sim.dec_world_frame
+            no_trig_e_fluence = source_data.source_energy_fluence
+          if True in (np.concatenate(list_snrs_lc_4s) >= 4):
+            trigg_4s = source_ite
+          if True in (sim.const_data[const_index].const_beneficial_trigger_1s >= 1):
+            trigg_1s = source_ite
       else:
         if sim.const_data[const_index] is not None:
           if True in (sim.const_data[const_index].const_beneficial_trigger_4s >= 4):
