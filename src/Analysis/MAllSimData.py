@@ -61,8 +61,9 @@ class AllSimData(list):
       self.best_fit_model = "band"
       self.best_fit_mean_flux = float(cat_data.df.mean_flux.values[source_ite])
       self.best_fit_p_flux = float(cat_data.df.peak_flux.values[source_ite])
-      self.ergcut_mean_flux = calc_flux_sample(cat_data, source_ite, options[0])
-      self.ergcut_peak_flux = self.best_fit_p_flux * self.ergcut_mean_flux / self.best_fit_mean_flux
+      # self.ergcut_mean_flux = calc_flux_sample(cat_data, source_ite, options[0])
+      self.ergcut_peak_flux = calc_flux_sample(cat_data, source_ite, options[0])
+      self.ergcut_mean_flux = self.best_fit_mean_flux * self.ergcut_peak_flux / self.best_fit_p_flux
       self.source_fluence = self.ergcut_mean_flux * self.source_duration
       self.source_energy_fluence = None
     else:
