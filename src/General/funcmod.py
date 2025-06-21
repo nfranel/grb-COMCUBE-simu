@@ -984,37 +984,37 @@ def make_error_histogram(array, error_array, bins, hardlim=(True, False)):
   In that situation if an errored value < 0 is found (to be put in bin 0 that was initialy in bin 1) then the value is not taken out of bin 1 into bin 0 as it's not physical to find it there
   Returns the sup error and inf error on bins
   """
-  array_sup = array + error_array
-  array_inf = array - error_array
-
-  ind = np.digitize(array, bins)
-  indsup = np.digitize(array_sup, bins)
-  indinf = np.digitize(array_inf, bins)
-
-  hist = np.histogram(array, bins=bins)[0]
-  nbins = len(hist)
-  hist_inf = np.zeros((nbins + 2))
-  hist_sup = np.zeros((nbins + 2))
-  for ite in range(len(array)):
-    if ind[ite] - indsup[ite] != 0:
-      if not (hardlim[1] and indsup[ite] == nbins and ind[ite] == nbins-1):
-        hist_sup[ind[ite] + 1:indsup[ite] + 1] += 1
-        hist_sup[ind[ite]] -= 1
-      # else:
-      #   print("Hardlim on final bin, value not taken away from the bin")
-    if ind[ite] - indinf[ite] != 0:
-      if not (hardlim[0] and indinf[ite] == 0 and ind[ite] == 1):
-        hist_inf[indinf[ite]:ind[ite]] += 1
-        hist_inf[ind[ite]] -= 1
-      # else:
-      #   print("Hardlim on initial bin, value not taken away from the bin")
-  hist_inf = hist_inf[1:-1]
-  hist_sup = hist_sup[1:-1]
-
-  err_sup = np.max(np.vstack([hist_sup + hist_inf, hist_sup, hist_inf, np.zeros(len(hist_inf))]), axis=0)
-  err_inf = np.min(np.vstack([hist_sup + hist_inf, hist_sup, hist_inf, np.zeros(len(hist_inf))]), axis=0)
-
-  return err_inf, err_sup
+  if len(array) != len(error_array):
+    raise ValueError("Data and its error don't have the same len")
+  # Determining at which bin belong the values
+  ind = np.digitize(array, bins) - 1
+  # Putting the values in their bins
+  binned_array = [array[ind == bin_ite] for bin_ite in range(len(bins) - 1)]
+  binned_err_array = [error_array[ind == bin_ite] for bin_ite in range(len(bins) - 1)]
+  # putting the sup and inf values in their bins
+  binned_array_sup = [binned_array[bin_ite] + binned_err_array[bin_ite] for bin_ite in range(len(bins) - 1)]
+  binned_array_inf = [binned_array[bin_ite] - binned_err_array[bin_ite] for bin_ite in range(len(bins) - 1)]
+  # Checking if the values get out of the bins after applying the error
+  # If hardlim is true then it stays in the first/last bin
+  # Else it doesn't
+  for bin_ite in range(len(bins) - 1):
+    if hardlim[0]:
+      binned_array_inf[bin_ite] = np.where(binned_array_inf[bin_ite] < bins[0], bins[0], binned_array_inf[bin_ite])
+    if hardlim[1]:
+      binned_array_sup[bin_ite] = np.where(binned_array_inf[bin_ite] > bins[-1], bins[-1], binned_array_inf[bin_ite])
+  # Creating the error arrays and filling them
+  inf_err = np.zeros((len(bins) -  1))
+  sup_err = np.zeros((len(bins) -  1))
+  for bin_ite in range(len(bins) - 1):
+    repartition_sup = np.histogram(binned_array_sup[bin_ite], bins=bins)[0]
+    repartition_inf = np.histogram(binned_array_inf[bin_ite], bins=bins)[0]
+    # Inf error count the number of val getting out of the bin
+    inf_err[bin_ite] = repartition_inf[bin_ite] + repartition_sup[bin_ite] - 2 * len(binned_array[bin_ite])
+    repartition_sup[bin_ite] = 0
+    repartition_inf[bin_ite] = 0
+    # Sup error count the number of val getting in the bin from other bins
+    sup_err += repartition_sup + repartition_inf
+  return inf_err, sup_err
 
 
 def pol_unpol_hist_err(pol, unpol, pol_err, unpol_err, bins):
@@ -1703,8 +1703,7 @@ def get_mdp_list(data, ite_const=0):
   """
   number_detected = 0
   mdp_list = []
-  mdp_list_inf = []
-  mdp_list_sup = []
+  mdp_list_err = []
   for source in data:
     if source is not None:
       for sim in source:
@@ -1715,13 +1714,10 @@ def get_mdp_list(data, ite_const=0):
               if sim.const_data[ite_const].mdp is not None:
                 if sim.const_data[ite_const].mdp <= 1:
                   mdp_list.append(sim.const_data[ite_const].mdp * 100)
-                  mdp_list_inf.append((sim.const_data[ite_const].mdp - sim.const_data[ite_const].mdp_err) * 100)
-                  if sim.const_data[ite_const].mdp + sim.const_data[ite_const].mdp_err <= 1:
-                    mdp_list_sup.append((sim.const_data[ite_const].mdp + sim.const_data[ite_const].mdp_err) * 100)
+                  mdp_list_err.append(sim.const_data[ite_const].mdp_err * 100)
   mdp_list = np.array(mdp_list)
-  mdp_list_inf = np.array(mdp_list_inf)
-  mdp_list_sup = np.array(mdp_list_sup)
-  return number_detected, mdp_list, mdp_list_inf, mdp_list_sup
+  mdp_list_err = np.array(mdp_list_err)
+  return number_detected, mdp_list, mdp_list_err
 
 
 def get_mdp_rates(mdp_list, mdp_list_inf, mdp_list_sup, threshold, weights):
