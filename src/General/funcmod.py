@@ -977,7 +977,7 @@ def err_calculation(polhist, unpolhist, binwidth, polhist_err, unpolhist_err):
   return error/binwidth
 
 
-def make_error_histogram(array, error_array, bins, hardlim=(True, False)):
+def make_error_histogram(array, error_array, bins, cumulative=True, hardlim=(True, False)):
   """
   Hardlim is used to keep values that would be out of the physical range.
   For instance, hardlim on 0 for mdp, because mdp > 0.
@@ -986,35 +986,53 @@ def make_error_histogram(array, error_array, bins, hardlim=(True, False)):
   """
   if len(array) != len(error_array):
     raise ValueError("Data and its error don't have the same len")
-  # Determining at which bin belong the values
-  ind = np.digitize(array, bins) - 1
-  # Putting the values in their bins
-  binned_array = [array[ind == bin_ite] for bin_ite in range(len(bins) - 1)]
-  binned_err_array = [error_array[ind == bin_ite] for bin_ite in range(len(bins) - 1)]
-  # putting the sup and inf values in their bins
-  binned_array_sup = [binned_array[bin_ite] + binned_err_array[bin_ite] for bin_ite in range(len(bins) - 1)]
-  binned_array_inf = [binned_array[bin_ite] - binned_err_array[bin_ite] for bin_ite in range(len(bins) - 1)]
-  # Checking if the values get out of the bins after applying the error
-  # If hardlim is true then it stays in the first/last bin
-  # Else it doesn't
-  for bin_ite in range(len(bins) - 1):
+  if cumulative:
+    # creating the cumulative array
+    cumul_array = np.cumsum(np.histogram(array, bins=bins)[0])
+    # Checking if the values get out of the bins after applying the error
+    # If hardlim is true then it stays in the first/last bin
+    # Else it doesn't
     if hardlim[0]:
-      binned_array_inf[bin_ite] = np.where(binned_array_inf[bin_ite] < bins[0], bins[0], binned_array_inf[bin_ite])
+      array_inf = np.where(array - error_array < bins[0], bins[0], array - error_array)
+    else:
+      array_inf = array - error_array
     if hardlim[1]:
-      binned_array_sup[bin_ite] = np.where(binned_array_inf[bin_ite] > bins[-1], bins[-1], binned_array_inf[bin_ite])
-  # Creating the error arrays and filling them
-  inf_err = np.zeros((len(bins) -  1))
-  sup_err = np.zeros((len(bins) -  1))
-  for bin_ite in range(len(bins) - 1):
-    repartition_sup = np.histogram(binned_array_sup[bin_ite], bins=bins)[0]
-    repartition_inf = np.histogram(binned_array_inf[bin_ite], bins=bins)[0]
-    # Inf error count the number of val getting out of the bin
-    inf_err[bin_ite] = repartition_inf[bin_ite] + repartition_sup[bin_ite] - 2 * len(binned_array[bin_ite])
-    repartition_sup[bin_ite] = 0
-    repartition_inf[bin_ite] = 0
-    # Sup error count the number of val getting in the bin from other bins
-    sup_err += repartition_sup + repartition_inf
-  return inf_err, sup_err
+      array_sup = np.where(array + error_array > bins[0], bins[0], array + error_array)
+    else:
+      array_sup = array + error_array
+    sup_err = np.cumsum(np.histogram(array_inf, bins=bins)[0]) - cumul_array
+    inf_err = np.cumsum(np.histogram(array_sup, bins=bins)[0]) - cumul_array
+    return inf_err, sup_err
+  else:
+    # Determining at which bin belong the values
+    ind = np.digitize(array, bins) - 1
+    # Putting the values in their bins
+    binned_array = [array[ind == bin_ite] for bin_ite in range(len(bins) - 1)]
+    binned_err_array = [error_array[ind == bin_ite] for bin_ite in range(len(bins) - 1)]
+    # putting the sup and inf values in their bins
+    binned_array_sup = [binned_array[bin_ite] + binned_err_array[bin_ite] for bin_ite in range(len(bins) - 1)]
+    binned_array_inf = [binned_array[bin_ite] - binned_err_array[bin_ite] for bin_ite in range(len(bins) - 1)]
+    # Checking if the values get out of the bins after applying the error
+    # If hardlim is true then it stays in the first/last bin
+    # Else it doesn't
+    for bin_ite in range(len(bins) - 1):
+      if hardlim[0]:
+        binned_array_inf[bin_ite] = np.where(binned_array_inf[bin_ite] < bins[0], bins[0], binned_array_inf[bin_ite])
+      if hardlim[1]:
+        binned_array_sup[bin_ite] = np.where(binned_array_inf[bin_ite] > bins[-1], bins[-1], binned_array_inf[bin_ite])
+    # Creating the error arrays and filling them
+    inf_err = np.zeros((len(bins) - 1))
+    sup_err = np.zeros((len(bins) - 1))
+    for bin_ite in range(len(bins) - 1):
+      repartition_sup = np.histogram(binned_array_sup[bin_ite], bins=bins)[0]
+      repartition_inf = np.histogram(binned_array_inf[bin_ite], bins=bins)[0]
+      # Inf error count the number of val getting out of the bin
+      inf_err[bin_ite] = repartition_inf[bin_ite] + repartition_sup[bin_ite] - 2 * len(binned_array[bin_ite])
+      repartition_sup[bin_ite] = 0
+      repartition_inf[bin_ite] = 0
+      # Sup error count the number of val getting in the bin from other bins
+      sup_err += repartition_sup + repartition_inf
+    return inf_err, sup_err
 
 
 def pol_unpol_hist_err(pol, unpol, pol_err, unpol_err, bins):
