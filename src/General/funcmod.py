@@ -1633,16 +1633,18 @@ def calc_mdp(S, B, mu100, nsigma=4.29, mu100_err=None):
   :param mu100: modulation factor
   :param nsigma: significance of the result in number of sigmas, default=4.29 for 99% CL
   """
-  if S == 0:
-    mdp = np.inf
-    mdp_err = 0
-  else:
-    if mu100_err is not None:
-      mdp_err = np.sqrt((nsigma / (mu100 * S**2) * (S/2 + B))**2 * S + (nsigma / (2 * mu100 * S))**2 * B + (nsigma * (S + B) * mu100_err / (S * mu100**2))**2) / np.sqrt(S+B)
-    else:
-      mdp_err = 0
-    mdp = nsigma * np.sqrt(S + B) / (mu100 * S)
-
+  S = np.where(S == 0, np.nan, S)
+  mdp = np.where(np.isnan(S), np.inf, nsigma * np.sqrt(S + B) / (mu100 * S))
+  mdp_err = np.where(np.isnan(S), 0, np.where(mu100_err == None, 0, np.sqrt((nsigma / (mu100 * S**2) * (S/2 + B))**2 * S + (nsigma / (2 * mu100 * S))**2 * B + (nsigma * (S + B) * mu100_err / (S * mu100**2))**2) / np.sqrt(S+B)))
+  # if S == 0:
+  #   mdp = np.inf
+  #   mdp_err = 0
+  # else:
+  #   if mu100_err is not None:
+  #     mdp_err = np.sqrt((nsigma / (mu100 * S**2) * (S/2 + B))**2 * S + (nsigma / (2 * mu100 * S))**2 * B + (nsigma * (S + B) * mu100_err / (S * mu100**2))**2) / np.sqrt(S+B)
+  #   else:
+  #     mdp_err = 0
+  #   mdp = nsigma * np.sqrt(S + B) / (mu100 * S)
   return mdp, mdp_err
 
 
