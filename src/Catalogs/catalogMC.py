@@ -334,8 +334,13 @@ class MCCatalog:
     print("Starting")
     if self.mode == "catalog":
       param_list = None
-      par_size = 1
-      fold_name = f"cat_to_validate"
+      # Used when one cat is needed
+      # par_size = 1
+      # fold_name = f"cat_to_validate"
+      # Used to obtain several catalogs
+      par_size = 10
+      fold_name = f"multiple_cats"
+
       savefolder = f"../Data/CatData/CatSampling/{fold_name}/"
       sigma_number = 1
 
