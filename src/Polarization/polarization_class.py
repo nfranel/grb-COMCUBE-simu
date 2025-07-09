@@ -65,6 +65,8 @@ class PolVSAngleRatio:
         self.nu_max = nu_max
         self.jet_model = jet_model
         self.flux_rejection = flux_rejection
+        self.top_hat_max_beaming = 1
+        self.structured_max_beaming = 3
 
         # Data attributes
         self.columns = ["pf", "error_pf", "gamma", "z", "theta_j", "theta_nu", "nu_0", "alpha", "beta", "q", "yj", "gamma_nu_0"]
@@ -87,9 +89,9 @@ class PolVSAngleRatio:
         arg_list = []
         ite_count = 0
         if self.model == "PJ":
-          opening_factor = 3
+          opening_factor = self.structured_max_beaming
         else:
-          opening_factor = 1
+          opening_factor = self.top_hat_max_beaming
         # In that case we use a list for theta j and a 3-tuple for theta nu
         for gamma, ite_gamma in arg_convert(self.gamma_range):
             for red_z, ite_red_z in arg_convert(self.red_z_range):
@@ -311,11 +313,39 @@ def pol_distribution_maker(gamma_range, red_z_range, theta_j_range, theta_nu_ran
   list_distri = []
   dir = "../Data/Polar"
   mpl.use("Qt5Agg")
+  if gamma_range == "distri":
+    gamma_range_param = (gamma_range, n_distri)
+  else:
+    gamma_range_param = gamma_range
+  if red_z_range == "distri":
+    red_z_range_param = (red_z_range, n_distri)
+  else:
+    red_z_range_param = red_z_range
+  if theta_j_range in ["distri_toma", "distri_lognorm"]:
+    theta_j_range_param = (theta_j_range, n_distri)
+  else:
+    theta_j_range_param = theta_j_range
+  if theta_nu_range in ["distri", "distri_pearce", "distri_toma"]:
+    theta_nu_range_param = (theta_nu_range, n_distri)
+  else:
+    theta_nu_range_param = theta_nu_range
+  if nu_0_range == "distri":
+    nu_0_range_param = (nu_0_range, n_distri)
+  else:
+    nu_0_range_param = nu_0_range
+  if alpha_range == "distri":
+    alpha_range_param = (alpha_range, n_distri)
+  else:
+    alpha_range_param = alpha_range
+  if beta_range == "distri":
+    beta_range_param = (beta_range, n_distri)
+  else:
+    beta_range_param = beta_range
   for distname in ["SO", "SR", "CD", "PJ"]:
     # for distname in ["SO"]:
     simtime = time.time()
-    list_distri.append(PolVSAngleRatio(model=distname, gamma_range=gamma_range, red_z_range=red_z_range, theta_j_range=(theta_j_range, n_distri),
-                                       theta_nu_range=(theta_nu_range, n_distri), nu_0_range=nu_0_range, alpha_range=alpha_range, beta_range=beta_range,
+    list_distri.append(PolVSAngleRatio(model=distname, gamma_range=gamma_range_param, red_z_range=red_z_range_param, theta_j_range=theta_j_range_param,
+                                       theta_nu_range=theta_nu_range_param, nu_0_range=nu_0_range_param, alpha_range=alpha_range_param, beta_range=beta_range_param,
                                        nu_min=None, nu_max=None, jet_model="top-hat", flux_rejection=True, integ_steps=int_step,
                                        confidence=1.96, parallel=10))
     print(f"TIME TAKEN FOR {distname} : {time.time() - simtime} s")
@@ -367,10 +397,11 @@ def pol_distribution_maker(gamma_range, red_z_range, theta_j_range, theta_nu_ran
 # v1 : initial distri : j - "distri", nu - distri_pearce
 ############################################################################################################################################################################
 distri_nu = "distri_pearce"
+distri_j = "distri_lognorm"
 n_distri = 10
-int_steps = 100
-com = f"v3_{n_distri**2}"
-pol_distribution_maker(gamma_range=100, red_z_range=1, theta_j_range="distri", theta_nu_range=distri_nu, nu_0_range=350 / 100, alpha_range=-0.8, beta_range=-2.2,
+int_steps = 150
+com = f"v10_{n_distri**2}"
+pol_distribution_maker(gamma_range=100, red_z_range="distri", theta_j_range=distri_j, theta_nu_range=distri_nu, nu_0_range=350 / 100, alpha_range="distri", beta_range="distri",
                        int_step=int_steps, n_distri=n_distri, savecom=com)
 # distri_nu = "distri_toma"
 # n_distri = 100
@@ -710,3 +741,207 @@ pol_distribution_maker(gamma_range=100, red_z_range=1, theta_j_range="distri", t
 # # print(f"lens : {len(tt) == len(to)}")
 # print(f"pf : {round(testref[0], 8) == round(test[0], 8)}")# : {testref[0]} == {test[0]}")
 # # More precise ref : 0.4186017020492592
+
+
+
+##################################################################################
+# Opening angle models
+# Regular imports
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import time
+
+# Developped modules imports
+from src.General.funcmod import arg_convert, var_ite_setting, values_number, SO_PF_distri, SR_PF_distri, CD_PF_distri, PJ_PF_distri, acc_reject, gauss, distrib_theta_j
+from src.Polarization.models import integral_calculation_SO, integral_calculation_SR, integral_calculation_CD, integral_calculation_PJ
+
+import matplotlib as mpl
+mpl.use('Qt5Agg')
+
+# Ghirlanda 2007
+theta_j = [5.91, 11.02, 3.98, 3.74, 4.78, 9.46, 4.44, 5.25, 5.19, 6.27, 2.74, 8.27, 4.23, 3.59, 5.67, 6.15, 2.72, 3.8, 9.77, 4.03, 6.65, 3.61, 6.56, 11.12]
+uncertaintheta_j = [3.42, 4.42, 4.95, 3.61, 5.31, 8.16, 1.62, 4.47, 6.97]
+alltheta_j = theta_j + uncertaintheta_j
+
+# Frail 2001
+thetafrail = [0.293, 0.072, 0.056, 0.127, 0.135, 0.05, 0.053, 0.054, 0.411, 0.079, 0.051, 0.047, 0.105, 0.198, 0.051]
+
+# lim = 0.2
+len_dist = 100000
+bins = np.linspace(0, 0.5, 30)
+lognormvals1 = np.deg2rad(np.random.lognormal(size=len_dist, mean=np.log(5), sigma=0.4))
+lognormvals2 = np.deg2rad(np.random.lognormal(size=len_dist, mean=1.742, sigma=0.916))
+tomavals = np.array([acc_reject(distrib_theta_j, [], 0.001, 0.2) for i in range(len_dist)])
+fig, ax = plt.subplots(1, 1, figsize=(10, 6))
+ax.hist(lognormvals1, weights=[1/len_dist] * len_dist, histtype="step", bins=bins, label="ghirlanda lognorm1")
+ax.hist(lognormvals2, weights=[1/len_dist] * len_dist, histtype="step", bins=bins, label="ghirlanda lognorm2")
+ax.hist(tomavals, weights=[1/len_dist] * len_dist, histtype="step", bins=bins, label="toma")
+ax.hist(np.deg2rad(alltheta_j), weights=[1/len(alltheta_j)] * len(alltheta_j), histtype="step", bins=bins, label="ghirlanda 2007 values")
+ax.hist(thetafrail, weights=[1/len(thetafrail)] * len(thetafrail), histtype="step", bins=bins, label="frail 2001 values")
+ax.set(xlabel="Jet half opening angle (°)", ylabel="Number of values")
+ax.legend()
+# plt.plot(np.linspace(0, np.pi/2, 1000), 100000 * np.sin(np.linspace(0, np.pi/2, 1000)))
+plt.axvline(np.deg2rad(5), color="red")
+plt.show()
+
+import matplotlib.pyplot as plt
+import matplotlib as mpl
+import numpy as np
+from src.General.funcmod import red_rate_long, generator_theta_nu, pick_normal_alpha_beta, acc_reject
+list_z = []
+list_theta_nu = []
+list_theta_j = []
+list_alpha = []
+list_beta = []
+zmin, zmax = 0, 10
+long_rate = 0.616
+ind1_z_l = 2.623
+ind2_z_l = -1.518
+zb_l = 2.330
+gamma = 100
+op_factor = 3
+theta_j_val = 0.2
+band_low_l_mu, band_low_l_sig = -0.9608, 0.3008
+band_high_l_mu, band_high_l_sig = -2.1643, 0.2734
+for val in range(10000):
+  list_z.append(acc_reject(red_rate_long, [long_rate, ind1_z_l, ind2_z_l, zb_l], zmin, zmax))
+  list_theta_j.append(np.deg2rad(np.random.lognormal(mean=np.log(5), sigma=0.4)))
+  list_theta_nu.append(generator_theta_nu(theta_j_val, gamma, op_factor))
+  random_alpha, random_beta = pick_normal_alpha_beta(band_low_l_mu, band_low_l_sig, band_high_l_mu, band_high_l_sig)
+  list_alpha.append(random_alpha)
+  list_beta.append(random_beta)
+
+list_z = np.array(list_z)
+list_theta_j = np.rad2deg(list_theta_j)
+list_theta_nu = np.array(np.rad2deg(list_theta_nu))
+list_alpha = np.array(list_alpha)
+list_beta = np.array(list_beta)
+
+mpl.use("Qt5Agg")
+plt.rcParams.update({'font.size': 13})
+fig, axs = plt.subplots(2, 2, figsize=(18, 12))
+axs[0][0].hist(list_z, bins=30, weights=[1/10000]*10000)
+axs[0][0].set(xlabel="Redshift", ylabel="Distribution")
+axs[0][1].hist(list_theta_j, bins=30, weights=[1/10000]*10000)
+axs[0][1].set(xlabel=r"$\theta_j$", ylabel="Distribution")
+axs[1][0].hist(list_theta_nu, bins=30, weights=[1/10000]*10000)
+axs[1][0].set(xlabel=r"$\theta_\nu$", ylabel="Distribution")
+axs[1][1].hist(list_alpha, bins=30, weights=[1/10000]*10000, label=r"$\alpha$")
+axs[1][1].hist(list_beta, bins=30, weights=[1/10000]*10000, label=r"$\beta$")
+axs[1][1].set(xlabel="Spectral indexes", ylabel="Distribution")
+axs[1][1].legend()
+plt.tight_layout()
+plt.show()
+
+
+import matplotlib.pyplot as plt
+import matplotlib as mpl
+import numpy as np
+import pandas as pd
+dir = "../Data/Polar"
+distri_nu = "distri_pearce"
+distri_j = "distri_lognorm"
+n_distri = 10
+int_steps = 150
+com = f"v10_{n_distri**2}"
+with pd.HDFStore(f"{dir}/{com}.h5", mode="r") as fpol:
+  bins = fpol["bins"]
+  mod_df = fpol["models"]
+list_pf = [mod_df.SO.values, mod_df.SR.values, mod_df.CD.values, mod_df.PJ.values]
+
+xlist_pearce = [np.array([0.006646525679758308, 0.113595166163142, 0.12507552870090635, 0.13716012084592144, 0.1486404833836858,
+                          0.1607250755287009, 0.172809667673716, 0.18429003021148035, 0.19637462235649547, 0.20785498489425983,
+                          0.22054380664652568, 0.23202416918429003, 0.24410876132930515, 0.25619335347432026, 0.2676737160120846,
+                          0.2797583081570997, 0.29123867069486403, 0.30332326283987915, 0.3148036253776435, 0.3268882175226586,
+                          0.338368580060423, 0.3504531722054381, 0.36253776435045315, 0.37462235649546827, 0.3861027190332326,
+                          0.39818731117824774, 0.4096676737160121, 0.4217522658610272, 0.43323262839879156, 0.4453172205438066,
+                          0.45740181268882174, 0.4688821752265861, 0.4809667673716012, 0.49244712990936557]),
+                np.array([0.0072507552870090634, 0.01812688821752266, 0.030211480362537763, 0.04229607250755287, 0.054380664652567974,
+                          0.06646525679758308, 0.07794561933534744, 0.09003021148036254, 0.10151057401812688, 0.113595166163142,
+                          0.12507552870090635, 0.13716012084592144, 0.14924471299093656, 0.1607250755287009, 0.17341389728096676,
+                          0.18429003021148035, 0.19637462235649547, 0.2084592145015106, 0.22054380664652568, 0.23202416918429003,
+                          0.24410876132930515, 0.2555891238670695, 0.2676737160120846, 0.2791540785498489, 0.29123867069486403,
+                          0.3027190332326284, 0.3148036253776435]),
+                np.array([0.007854984894259818, 0.01812688821752266, 0.030211480362537763, 0.04229607250755287, 0.054380664652567974,
+                          0.06646525679758308, 0.07794561933534744, 0.08942598187311178, 0.10151057401812688, 0.113595166163142,
+                          0.12507552870090635, 0.13716012084592144, 0.14924471299093656, 0.1607250755287009, 0.17220543806646527,
+                          0.18489425981873112, 0.1957703927492447, 0.20785498489425983, 0.22054380664652568, 0.23202416918429003,
+                          0.24350453172205438, 0.25619335347432026, 0.2676737160120846, 0.2797583081570997, 0.29063444108761327,
+                          0.30332326283987915, 0.31540785498489426, 0.3268882175226586, 0.338368580060423, 0.3504531722054381,
+                          0.36253776435045315, 0.3740181268882175, 0.3867069486404834, 0.39818731117824774, 0.4096676737160121,
+                          0.4217522658610272, 0.43323262839879156, 0.4453172205438066, 0.456797583081571, 0.4688821752265861,
+                          0.4809667673716012, 0.49244712990936557, 0.5045317220543807, 0.5166163141993958, 0.5287009063444109,
+                          0.5401812688821752]),
+                np.array([0.0072507552870090634, 0.018731117824773415, 0.03081570996978852, 0.04229607250755287, 0.05377643504531722,
+                          0.06646525679758308, 0.07794561933534744, 0.09003021148036254, 0.10211480362537764, 0.113595166163142,
+                          0.12567975830815709, 0.13716012084592144, 0.14924471299093656, 0.1607250755287009, 0.172809667673716,
+                          0.18489425981873112, 0.19637462235649547, 0.2084592145015106, 0.2199395770392749, 0.2326283987915408,
+                          0.24410876132930515, 0.25619335347432026, 0.2676737160120846, 0.2797583081570997, 0.29123867069486403,
+                          0.3039274924471299, 0.31540785498489426, 0.3268882175226586, 0.338368580060423, 0.34984894259818733,
+                          0.3631419939577039, 0.37462235649546827, 0.3867069486404834, 0.39818731117824774])]
+
+ylist_pearce = [np.array([0.019230769230769232, 0, 0, 0, 0, 0, 0, 0, 0, 0.038461538461538464, 0.019230769230769232, 0.038461538461538464,
+                          0.038461538461538464, 0.019230769230769232, 0.31730769230769235, 0.1875, 0.4278846153846154, 0.16826923076923078,
+                          0.125, 0.038461538461538464, 0.08653846153846154, 0.125, 0.0625, 0.08653846153846154, 0.038461538461538464,
+                          0.10576923076923078, 0.1875, 0.08173076923076923, 0.10576923076923078, 0.2932692307692308, 0.42307692307692313,
+                          1, 0.46634615384615385, 0.25480769230769235, 0.23076923076923078, 0.16826923076923078, 0.23076923076923078,
+                          0.0625, 0.08173076923076923, 0.08173076923076923, 0.038461538461538464, 0.019230769230769232, 0, 0, 0, 0, 0, 0,
+                          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]),
+                np.array([1., 0.1764705882352941, 0.1568627450980392, 0.09313725490196079, 0.029411764705882353, 0.0392156862745098,
+                          0.058823529411764705, 0.058823529411764705, 0.06372549019607843, 0.029411764705882353, 0.06862745098039216,
+                          0.029411764705882353, 0.029411764705882353, 0.049019607843137254, 0.029411764705882353, 0.1323529411764706,
+                          0.09803921568627451, 0.049019607843137254, 0.0392156862745098, 0.0392156862745098, 0.058823529411764705,
+                          0.0392156862745098, 0.049019607843137254, 0.049019607843137254,  0.0392156862745098, 0.0392156862745098,
+                          0.014705882352941176, 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+                          0., 0., 0., 0., 0., 0., 0., 0., 0.]),
+                np.array([1., 0.1553398058252427, 0.09223300970873785, 0.1553398058252427, 0.06310679611650485, 0.08252427184466019,
+                          0.029126213592233007, 0.019417475728155338, 0.009708737864077669, 0.02427184466019417, 0.02427184466019417,
+                          0.029126213592233007, 0.029126213592233007, 0.038834951456310676, 0.029126213592233007, 0.04854368932038834,
+                          0.019417475728155338, 0.009708737864077669, 0.009708737864077669, 0.038834951456310676, 0.029126213592233007,
+                          0.02427184466019417, 0.029126213592233007, 0.009708737864077669, 0.009708737864077669, 0.029126213592233007,
+                          0.029126213592233007, 0.019417475728155338, 0.07766990291262135, 0.04854368932038834, 0.06796116504854369,
+                          0.058252427184466014, 0.029126213592233007, 0.019417475728155338, 0.038834951456310676, 0.019417475728155338,
+                          0.04854368932038834, 0.02427184466019417, 0.029126213592233007, 0.019417475728155338, 0.029126213592233007,
+                          0.019417475728155338, 0.04854368932038834, 0.029126213592233007, 0.019417475728155338, 0.009708737864077669,
+                          0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.]),
+                np.array([1., 0.1, 0.135, 0.155, 0.135, 0.065, 0.1, 0.065, 0.085, 0.105, 0.17, 0.15, 0.045, 0.085, 0.045, 0.1, 0.08, 0.12,
+                          0.085, 0.015, 0.12, 0.1, 0.03, 0.05, 0.1, 0.03, 0.03, 0.105, 0.155, 0.115, 0.185, 0.135, 0.155, 0.44, 0., 0., 0.,
+                          0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.])]
+
+mpl.use("Qt5Agg")
+plt.rcParams.update({'font.size': 13})
+labels = ["Distribution of PF for SO model", "Distribution of PF for SR model",
+          "Distribution of PF for CD model", "Distribution of PF for PJ model"]
+colors = ['blue', 'red', 'green', 'orange']
+
+fig_comp, axes = plt.subplots(len(list_pf), 1, figsize=(20, 10), sharex="all")
+# fig_comp.suptitle(f"Distribution of Polarization fraction\nInt step : {int_steps}, number of pf estimated : {n_distri ** 2}")
+bins = np.linspace(0, 0.7, 60)
+x_pearce = (bins[1:] + bins[:-1]) / 2
+if len(list_pf) == 1:
+  axes = [axes]
+for ax_idx in range(len(axes)):
+  axes[ax_idx].hist(list_pf[ax_idx], bins=bins, label=labels[ax_idx],
+                    weights=[1 / len(list_pf[ax_idx])] * len(list_pf[ax_idx]), color=colors[ax_idx])
+  axes[ax_idx].scatter(x_pearce, ylist_pearce[ax_idx] / np.sum(ylist_pearce[ax_idx]), label="Values from Pearce")
+  axes[ax_idx].legend()
+
+axes[-1].set(xlabel='Polarization fraction', xlim=(0, 0.75), xticks=np.arange(0, 0.7, 0.15))
+plt.tight_layout()
+plt.show()
+
+fig_pol, axes = plt.subplots(len(list_pf), 1, figsize=(20, 10), sharex="all")
+bins = np.linspace(0, 1, 101)
+if len(list_pf) == 1:
+  axes = [axes]
+for ax_idx in range(len(axes)):
+  axes[ax_idx].hist(list_pf[ax_idx], bins=bins, label=labels[ax_idx],
+                    weights=[1 / len(list_pf[ax_idx])] * len(list_pf[ax_idx]), color=colors[ax_idx])
+  axes[ax_idx].legend()
+  axes[ax_idx].grid(axis="x", linestyle="--", alpha=0.6)
+  axes[ax_idx].set(yscale="log")
+
+axes[-1].set(xlabel='Polarization fraction', xlim=(0, 1), xticks=np.arange(0, 1.01, 0.1))
+plt.tight_layout()
+plt.show()
