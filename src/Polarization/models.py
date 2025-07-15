@@ -23,7 +23,7 @@ def integral_calculation_SO_old(nu_min, nu_max, gamma, red_z, theta_j, theta_nu,
     if seed:
         np.random.seed(1)
     else:
-        np.random.seed(os.getpid() + int(time.time() * 1000) % 2 ** 32)
+        np.random.seed((os.getpid() + int(time.time() * 1000)) % 2 ** 32)
     # Step 2 : The integration starts here, definition of 2 first integration paramaters ==> 2 loops
     q_var = theta_nu / theta_j
     yj = (theta_j * gamma)**2
@@ -33,7 +33,6 @@ def integral_calculation_SO_old(nu_min, nu_max, gamma, red_z, theta_j, theta_nu,
     ################################################################################################################################
     # Integration range and integration random points
     rand_range_1 = (nu_max - nu_min)
-    # np.random.seed(seed1)
     # nu_integ_list = nu_min + np.reshape(np.random.random(integ_steps) * rand_range_1, (integ_steps, 1, 1))
     nu_integ_list = nu_min + np.random.random(integ_steps) * rand_range_1
 
@@ -42,7 +41,6 @@ def integral_calculation_SO_old(nu_min, nu_max, gamma, red_z, theta_j, theta_nu,
     ################################################################################################################################
     # Integration range and integration random points
     rand_range_2 = (1 + q_var) ** 2 * yj
-    # np.random.seed(seed2)
     y_integ_list = np.random.random((integ_steps, integ_steps)) * rand_range_2
     # Setting intermediate variables using parameters and integration points
     a_var = np.sqrt(y_integ_list / yj) / q_var
@@ -54,7 +52,6 @@ def integral_calculation_SO_old(nu_min, nu_max, gamma, red_z, theta_j, theta_nu,
     ################################################################################################################################
     # Integration range and integration random points
     rand_range_3 = 2 * delta_phi_val
-    # np.random.seed(seed3)
     phi_integ_list = -delta_phi_val + np.random.random((integ_steps, integ_steps, integ_steps)) * rand_range_3
     # Setting intermediate functions using parameters and integration points
     f_tilde_val = f_tilde(x_var, alpha, beta)
@@ -94,7 +91,7 @@ def integral_calculation_SO(nu_min, nu_max, gamma, red_z, theta_j, theta_nu, nu_
     if seed:
         np.random.seed(1)
     else:
-        np.random.seed(os.getpid() + int(time.time() * 1000) % 2 ** 32)
+        np.random.seed((os.getpid() + int(time.time() * 1000)) % 2 ** 32)
 
     # Step 2 : The integration starts here, definition of 2 first integration paramaters ==> 2 loops
     q_var = theta_nu / theta_j
@@ -172,7 +169,7 @@ def integral_calculation_SO3(nu_min, nu_max, gamma, red_z, theta_j, theta_nu, nu
     if seed:
         np.random.seed(1)
     else:
-        np.random.seed(os.getpid() + int(time.time() * 1000) % 2 ** 32)
+        np.random.seed((os.getpid() + int(time.time() * 1000)) % 2 ** 32)
 
     # Step 2 : The integration starts here, definition of 2 first integration paramaters ==> 2 loops
     q_var = theta_nu / theta_j
@@ -276,7 +273,7 @@ def integral_calculation_SR_old(nu_min, nu_max, gamma, red_z, theta_j, theta_nu,
     if seed:
         np.random.seed(1)
     else:
-        np.random.seed(os.getpid() + int(time.time() * 1000) % 2 ** 32)
+        np.random.seed((os.getpid() + int(time.time() * 1000)) % 2 ** 32)
 
     q_var = theta_nu / theta_j
     yj = (theta_j * gamma)**2
@@ -343,7 +340,7 @@ def integral_calculation_SR(nu_min, nu_max, gamma, red_z, theta_j, theta_nu, nu_
     if seed:
         np.random.seed(1)
     else:
-        np.random.seed(os.getpid() + int(time.time() * 1000) % 2 ** 32)
+        np.random.seed((os.getpid() + int(time.time() * 1000)) % 2 ** 32)
 
     q_var = theta_nu / theta_j
     yj = (theta_j * gamma)**2
@@ -398,7 +395,7 @@ def integral_calculation_CD_old(nu_min, nu_max, gamma, red_z, theta_j, theta_nu,
     if seed:
         np.random.seed(1)
     else:
-        np.random.seed(os.getpid() + int(time.time() * 1000) % 2 ** 32)
+        np.random.seed((os.getpid() + int(time.time() * 1000)) % 2 ** 32)
 
     q_var = theta_nu / theta_j
     yj = (theta_j * gamma)**2
@@ -451,7 +448,7 @@ def integral_calculation_CD(nu_min, nu_max, gamma, red_z, theta_j, theta_nu, nu_
     if seed:
         np.random.seed(1)
     else:
-        np.random.seed(os.getpid() + int(time.time() * 1000) % 2 ** 32)
+        np.random.seed((os.getpid() + int(time.time() * 1000)) % 2 ** 32)
 
     q_var = theta_nu / theta_j
     yj = (theta_j * gamma)**2
