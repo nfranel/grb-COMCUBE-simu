@@ -821,7 +821,7 @@ class MCCatalog:
     Creates the quatities of a short burst according to distributions
     Based on Lana Salmon's thesis and Ghirlanda et al, 2016
     """
-    np.random.seed(os.getpid() + int(time() * 1000) % 2 ** 32)
+    np.random.seed((os.getpid() + int(time() * 1000)) % 2 ** 32)
     ##################################################################################################################
     # picking according to distributions
     ##################################################################################################################
@@ -862,7 +862,7 @@ class MCCatalog:
     Creates the quatities of a long burst according to distributions
     Based on Sarah Antier's thesis
     """
-    np.random.seed(os.getpid() + int(time() * 1000) % 2 ** 32)
+    np.random.seed((os.getpid() + int(time() * 1000)) % 2 ** 32)
     ##################################################################################################################
     # picking according to distributions
     ##################################################################################################################
