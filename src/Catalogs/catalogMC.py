@@ -338,6 +338,7 @@ class MCCatalog:
       # par_size = 1
       # fold_name = f"cat_to_validate"
       # Used to obtain several catalogs
+      iteoffsetnum = 1
       par_size = 10
       fold_name = f"multiple_cats"
 
@@ -357,7 +358,7 @@ class MCCatalog:
       else:
         print(f"MC execution with 1 thread")
 
-      rows_ret = [self.get_catalog_sample(ite, thread_num, savefolder, method=param_list, comment="", n_sig=sigma_number) for ite in range(par_size)]
+      rows_ret = [self.get_catalog_sample(ite, thread_num, savefolder, method=param_list, comment="", n_sig=sigma_number) for ite in range(iteoffsetnum, par_size + iteoffsetnum)]
       self.result_df = pd.DataFrame(data=rows_ret, columns=self.columns)
       self.result_df.to_csv(f"{savefolder}catalogs_fit.csv", index=False)
     else:
