@@ -19,7 +19,7 @@ class BkgContainer:
   """
   Class containing the information for 1 background file
   """
-  def __init__(self, bkgparfile, ergcut, special_name=None):
+  def __init__(self, bkgparfile, ergcut, special_name=None, special_folder=None):
     """
     :param bkgparfile: background parameter file
     :param save_time: True if the interaction times are to be saved
@@ -37,16 +37,21 @@ class BkgContainer:
       self.fold_name = geom.split(".geo.setup")[0].split("/")[-1]
     else:
       self.fold_name = special_name
+    if special_folder is None:
+      self.fold_path = "../Data/"
+    else:
+      self.fold_path = special_folder
+
     saving = f"bkgsaved_{self.fold_name}_{np.min(self.lat_range):.0f}-{np.max(self.lat_range):.0f}-{len(self.lat_range):.0f}_{np.min(self.alt_range):.0f}-{np.max(self.alt_range):.0f}-{len(self.alt_range):.0f}.h5"
     cond_saving = f"cond_bkg-saved_{self.fold_name}_{np.min(self.lat_range):.0f}-{np.max(self.lat_range):.0f}-{len(self.lat_range):.0f}_{np.min(self.alt_range):.0f}-{np.max(self.alt_range):.0f}-{len(self.alt_range):.0f}_ergcut-{ergcut[0]}-{ergcut[1]}.h5"
-    if cond_saving not in os.listdir(f"../Data/bkg/sim_{self.fold_name}"):
-      if saving not in os.listdir(f"../Data/bkg/sim_{self.fold_name}"):
+    if cond_saving not in os.listdir(f"{self.fold_path}bkg/sim_{self.fold_name}"):
+      if saving not in os.listdir(f"{self.fold_path}bkg/sim_{self.fold_name}"):
         init_time = time()
         print("###########################################################################")
         print(" bkg data not saved : Saving ")
         print("###########################################################################")
         compile_finder()
-        self.save_fulldata(f"../Data/bkg/sim_{self.fold_name}/{saving}", f"../Data/bkg/sim_{self.fold_name}/{cond_saving}", ergcut)
+        self.save_fulldata(f"{self.fold_path}bkg/sim_{self.fold_name}/{saving}", f"{self.fold_path}bkg/sim_{self.fold_name}/{cond_saving}", ergcut)
         print("=======================================")
         print(" Saving of bkg data finished in : ", time() - init_time, "seconds")
         print("=======================================")
@@ -55,7 +60,7 @@ class BkgContainer:
         print("###########################################################################")
         print(" bkg condensed data not saved : Saving ")
         print("###########################################################################")
-        self.save_condensed_data(f"../Data/bkg/sim_{self.fold_name}/{saving}", f"../Data/bkg/sim_{self.fold_name}/{cond_saving}", ergcut)
+        self.save_condensed_data(f"{self.fold_path}bkg/sim_{self.fold_name}/{saving}", f"{self.fold_path}bkg/sim_{self.fold_name}/{cond_saving}", ergcut)
         print("=======================================")
         print(" Saving of bkg data finished in : ", time() - init_time, "seconds")
         print("=======================================")
@@ -65,9 +70,9 @@ class BkgContainer:
     print(" Extraction of bkg data ")
     print("###########################################################################")
     # # Saving the data with a full format
-    # list.__init__(self, self.read_data(f"../Data/bkg/sim_{self.fold_name}/{saving}", save_time, ergcut, data_type="full"))
+    # list.__init__(self, self.read_data(f"{self.fold_path}bkg/sim_{self.fold_name}/{saving}", save_time, ergcut, data_type="full"))
     # Saving the data with a condensed format
-    self.bkgdf = self.read_data(f"../Data/bkg/sim_{self.fold_name}/{cond_saving}")
+    self.bkgdf = self.read_data(f"{self.fold_path}bkg/sim_{self.fold_name}/{cond_saving}")
     # print(self.bkgdf.index)
     self.bkgdf.sort_values(by=["bkg_alt", "bkg_dec"], ascending=[True, True], inplace=True)
     # print(self.bkgdf.index)
@@ -87,7 +92,7 @@ class BkgContainer:
       bkg_tab = []
       for ite_alt, alt in enumerate(self.alt_range):
         for ite_lat, lat in enumerate(self.lat_range):
-          decbkg, altbkg, compton_second, compton_ener, compton_time, single_ener, single_time, compton_first_detector, compton_sec_detector, single_detector = analyze_bkg_event(f"../Data/bkg/sim_{self.fold_name}/sim/bkg_{alt:.1f}_{lat:.1f}_{self.sim_time:.0f}s.inc1.id1.extracted.tra", lat, alt, self.geometry, self.array_dtype)
+          decbkg, altbkg, compton_second, compton_ener, compton_time, single_ener, single_time, compton_first_detector, compton_sec_detector, single_detector = analyze_bkg_event(f"{self.fold_path}bkg/sim_{self.fold_name}/sim/bkg_{alt:.1f}_{lat:.1f}_{self.sim_time:.0f}s.inc1.id1.extracted.tra", lat, alt, self.geometry, self.array_dtype)
 
           df_compton = pd.DataFrame({"compton_ener": compton_ener, "compton_second": compton_second, "compton_time": compton_time,
              "compton_first_detector": compton_first_detector, "compton_sec_detector": compton_sec_detector})
