@@ -338,7 +338,7 @@ class MCCatalog:
       # par_size = 1
       # fold_name = f"cat_to_validate"
       # Used to obtain several catalogs
-      iteoffsetnum = 10
+      iteoffsetnum = 11
       par_size = 20
       fold_name = f"multiple_cats"
 
@@ -348,7 +348,8 @@ class MCCatalog:
       if not (f"{fold_name}" in os.listdir("../Data/CatData/CatSampling/")):
         os.mkdir(f"../Data/CatData/CatSampling/{fold_name}")
       else:
-        raise NameError("A simulation with this name already exists, please change it or delete the old simulation before running")
+        if os.path.exists(f"../Data/CatData/CatSampling/{fold_name}/sampled_grb_cat_{self.n_year}years_v{iteoffsetnum}.txt"):
+          raise NameError("A simulation with this name already exists, please change it or delete the old simulation before running")
 
       print(f"Starting the catalog creation")
       if thread_num == 'all':
