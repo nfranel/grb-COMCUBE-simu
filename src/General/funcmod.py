@@ -1916,7 +1916,7 @@ def format_detector(det_str):
   elif unit == "InstrumentU_2_2":
     det_id = 15
   else:
-    raise ValueError("The unit name doesn't match")
+    raise ValueError(f"The unit name doesn't match : {unit}")
 
   if det == "SideDetX":
     det_id += 1
@@ -1929,7 +1929,7 @@ def format_detector(det_str):
   elif det == "Calor":
     det_id += 5
   else:
-    raise ValueError("The detector name doesn't match")
+    raise ValueError(f"The detector name doesn't match : {det}")
 
   return det_id
 

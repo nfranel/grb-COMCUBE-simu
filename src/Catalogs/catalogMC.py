@@ -338,8 +338,8 @@ class MCCatalog:
       # par_size = 1
       # fold_name = f"cat_to_validate"
       # Used to obtain several catalogs
-      iteoffsetnum = 1
-      par_size = 10
+      iteoffsetnum = 10
+      par_size = 20
       fold_name = f"multiple_cats"
 
       savefolder = f"../Data/CatData/CatSampling/{fold_name}/"
