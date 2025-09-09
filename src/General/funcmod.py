@@ -1916,7 +1916,7 @@ def format_detector(det_str):
   elif unit == "InstrumentU_2_2":
     det_id = 15
   else:
-    raise ValueError("The unit name doesn't match")
+    raise ValueError(f"The unit name doesn't match : {unit}")
 
   if det == "SideDetX":
     det_id += 1
@@ -1929,7 +1929,7 @@ def format_detector(det_str):
   elif det == "Calor":
     det_id += 5
   else:
-    raise ValueError("The detector name doesn't match")
+    raise ValueError(f"The detector name doesn't match : {det}")
 
   return det_id
 
@@ -1987,6 +1987,7 @@ def execute_finder(file, events, geometry, cpp_routine="find_detector"):
   with open(f"{file}.txt", "w") as data_file:
     for event in events:
       data_file.write(f"{event[0]} {event[1]} {event[2]}\n")
+  # subprocess.call(f"{cpp_routine} -g {geometry} -f {file}", shell=True)
   subprocess.call(f"{cpp_routine} -g {geometry} -f {file}", shell=True, stdout=open(os.devnull, 'wb'), stderr=open(os.devnull, 'wb'))
   with open(f"{file}save.txt", "r") as save_file:
     lines = save_file.read().split("\n")[:-1]
