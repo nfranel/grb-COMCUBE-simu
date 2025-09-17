@@ -819,17 +819,17 @@ list_alpha = np.array(list_alpha)
 list_beta = np.array(list_beta)
 
 mpl.use("Qt5Agg")
-plt.rcParams.update({'font.size': 13})
+plt.rcParams.update({'font.size': 15})
 fig, axs = plt.subplots(2, 2, figsize=(18, 12))
 axs[0][0].hist(list_z, bins=30, weights=[1/10000]*10000)
-axs[0][0].set(xlabel="Redshift", ylabel="Distribution")
+axs[0][0].set(xlabel="Redshift", ylabel="Frequency")
 axs[0][1].hist(list_theta_j, bins=30, weights=[1/10000]*10000)
-axs[0][1].set(xlabel=r"$\theta_j$", ylabel="Distribution")
+axs[0][1].set(xlabel=r"$\theta_j$ (°)", ylabel="Frequency")
 axs[1][0].hist(list_theta_nu, bins=30, weights=[1/10000]*10000)
-axs[1][0].set(xlabel=r"$\theta_\nu$", ylabel="Distribution")
+axs[1][0].set(xlabel=r"$\theta_\nu$ (°)", ylabel="Frequency")
 axs[1][1].hist(list_alpha, bins=30, weights=[1/10000]*10000, label=r"$\alpha$")
 axs[1][1].hist(list_beta, bins=30, weights=[1/10000]*10000, label=r"$\beta$")
-axs[1][1].set(xlabel="Spectral indexes", ylabel="Distribution")
+axs[1][1].set(xlabel="Spectral indices", ylabel="Frequency")
 axs[1][1].legend()
 plt.tight_layout()
 plt.show()
@@ -910,9 +910,9 @@ ylist_pearce = [np.array([0.019230769230769232, 0, 0, 0, 0, 0, 0, 0, 0, 0.038461
                           0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.])]
 
 mpl.use("Qt5Agg")
-plt.rcParams.update({'font.size': 13})
-labels = ["Distribution of PF for SO model", "Distribution of PF for SR model",
-          "Distribution of PF for CD model", "Distribution of PF for PJ model"]
+plt.rcParams.update({'font.size': 15})
+labels = ["SO model", "SR model",
+          "CD model", "PJ model"]
 colors = ['blue', 'red', 'green', 'orange']
 
 fig_comp, axes = plt.subplots(len(list_pf), 1, figsize=(20, 10), sharex="all")
@@ -931,7 +931,7 @@ axes[-1].set(xlabel='Polarization fraction', xlim=(0, 0.75), xticks=np.arange(0,
 plt.tight_layout()
 plt.show()
 
-fig_pol, axes = plt.subplots(len(list_pf), 1, figsize=(20, 10), sharex="all")
+fig_pol, axes = plt.subplots(len(list_pf), 1, figsize=(16, 8), sharex="all")
 bins = np.linspace(0, 1, 101)
 if len(list_pf) == 1:
   axes = [axes]
@@ -940,7 +940,8 @@ for ax_idx in range(len(axes)):
                     weights=[1 / len(list_pf[ax_idx])] * len(list_pf[ax_idx]), color=colors[ax_idx])
   axes[ax_idx].legend()
   axes[ax_idx].grid(axis="x", linestyle="--", alpha=0.6)
-  axes[ax_idx].set(yscale="log")
+  if ax_idx != 0:
+    axes[ax_idx].set(yscale="log")
 
 axes[-1].set(xlabel='Polarization fraction', xlim=(0, 1), xticks=np.arange(0, 1.01, 0.1))
 plt.tight_layout()
