@@ -113,7 +113,7 @@ def bkg_data_map(field, bkgdata, altitude, dec_range=np.linspace(0, 180, 181), r
         # print("dssd_cr : ", dsssd_count / bkgdata.sim_time)
         # print("ucd_cr : ", calor_count / bkgdata.sim_time)
         # print("hits_cr : ", total_hits / bkgdata.sim_time)
-  fontsize = 13
+  fontsize = 15
   plt.rcParams.update({'font.size': fontsize})
   if proj == "carre":
     fig, ax = plt.subplots(subplot_kw={'projection': ccrs.PlateCarree()}, figsize=(10, 6))
@@ -127,11 +127,11 @@ def bkg_data_map(field, bkgdata, altitude, dec_range=np.linspace(0, 180, 181), r
   ax.coastlines()
   cbar = fig.colorbar(p1)
   if language == "en":
-    plt.suptitle(f"Background map for {item_legend} at {altitude} km")
+    # plt.suptitle(f"Background map for {item_legend} at {altitude} km")
     ax.set(xlabel="Longitude (deg)", ylabel="Latitude (deg)")
     cbar.set_label(f"Background {item_legend}", rotation=270, labelpad=20, fontsize=fontsize)
   elif language == "fr":
-    plt.suptitle(f"{item_legend} dû au bruit de fond à {altitude}km")
+    # plt.suptitle(f"{item_legend} dû au bruit de fond à {altitude}km")
     ax.set(xlabel="Longitude (deg)", ylabel="Latitude (deg)")
     cbar.set_label(f"{item_legend}", rotation=270, labelpad=20, fontsize=fontsize)
   else:
@@ -151,7 +151,7 @@ def mu100_data_map(mu100data, theta_sat=np.linspace(0, 114, 115), phi_sat=np.lin
   """
   mpl.use("Qt5Agg")
 
-  fontsize = 13
+  fontsize = 15
   plt.rcParams.update({'font.size': fontsize})
 
   nrows = len(theta_sat)
@@ -229,7 +229,7 @@ def mu100_data_map(mu100data, theta_sat=np.linspace(0, 114, 115), phi_sat=np.lin
   # plt.suptitle("Smoothed Compton event effective area map")
   p3 = ax.pcolormesh(x_mu, y_mu, smooth_seff_com_list, cmap="Blues", transform=ccrs.PlateCarree())
   cbar = fig.colorbar(p3, ax=ax)
-  cbar.set_label("Compton event effective area (cm²)", rotation=270, labelpad=20, fontsize=fontsize)
+  cbar.set_label("Compton event effective area (cm²)", rotation=270, labelpad=20)
   ax.set(xlabel="Right ascension (deg)", ylabel="Latitude (deg)")
   ax.gridlines(draw_labels=False, xlocs=xgrid, ylocs=ygrid)
   ax.text(0, 90, ' 90°\n\n', transform=ccrs.PlateCarree(), ha="center", va='center')
@@ -250,7 +250,7 @@ def mu100_data_map(mu100data, theta_sat=np.linspace(0, 114, 115), phi_sat=np.lin
   # plt.suptitle("Smoothed single event effective area map")
   p4 = ax.pcolormesh(x_mu, y_mu, smooth_seff_sin_list, cmap="Blues", transform=ccrs.PlateCarree())
   cbar = fig.colorbar(p4, ax=ax)
-  cbar.set_label("Single event effective area (cm²)", rotation=270, labelpad=20, fontsize=fontsize)
+  cbar.set_label("Single event effective area (cm²)", rotation=270, labelpad=20)
   ax.set(xlabel="Right ascension (deg)", ylabel="Latitude (deg)")
   ax.gridlines(draw_labels=False, xlocs=xgrid, ylocs=ygrid)
   ax.text(0, 90, ' 90°\n\n', transform=ccrs.PlateCarree(), ha="center", va='center')
@@ -305,7 +305,7 @@ def mu100_data_map(mu100data, theta_sat=np.linspace(0, 114, 115), phi_sat=np.lin
   # plt.suptitle(r"$\mu_{100}$ map")
   p5 = ax.pcolormesh(x_mu, y_mu, mu100list, cmap="Blues", transform=ccrs.PlateCarree())
   cbar = fig.colorbar(p5, ax=ax)
-  cbar.set_label(r"$\mu_{100}$ values", rotation=270, labelpad=20, fontsize=fontsize)
+  cbar.set_label(r"$\mu_{100}$ values", rotation=270, labelpad=20)
   ax.set(xlabel="Right ascension (deg)", ylabel="Latitude (deg)")
   ax.gridlines(draw_labels=False, xlocs=xgrid, ylocs=ygrid)
   ax.text(0, 90, ' 90°\n\n', transform=ccrs.PlateCarree(), ha="center", va='center')
@@ -327,7 +327,7 @@ def mu100_data_map(mu100data, theta_sat=np.linspace(0, 114, 115), phi_sat=np.lin
   # plt.suptitle(r"Smoothed $\mu_{100}$ map")
   p6 = ax.pcolormesh(x_mu, y_mu, smooth_mu100list, cmap="Blues", transform=ccrs.PlateCarree())
   cbar = fig.colorbar(p6, ax=ax, pad=0.1)
-  cbar.set_label(r"$\mu_{100}$ values", rotation=270, labelpad=20, fontsize=fontsize)
+  cbar.set_label(r"$\mu_{100}$ values", rotation=270, labelpad=20)
   ax.set(xlabel="Right ascension (deg)", ylabel="Latitude (deg)")
   ax.gridlines(draw_labels=False, xlocs=xgrid, ylocs=ygrid)
   ax.text(0, 90, ' 90°\n\n', transform=ccrs.PlateCarree(), ha="center", va='center')
@@ -609,16 +609,17 @@ def fov_const(parfile, museffdata, num_val=500, erg_cut=(10, 1000), show=True, s
   levels = range(detec_min, detec_max + 1, max(1, int((detec_max + 1 - detec_min) / 15)))
 
   if chosen_proj == "carre":
-    fig1, ax1 = plt.subplots(subplot_kw={'projection': ccrs.PlateCarree()}, figsize=(15, 8))
+    fig1, ax1 = plt.subplots(subplot_kw={'projection': ccrs.PlateCarree()}, figsize=(10, 6))
   elif chosen_proj == "mollweide":
-    fig1, ax1 = plt.subplots(subplot_kw={'projection': ccrs.Mollweide()}, figsize=(15, 8))
+    fig1, ax1 = plt.subplots(subplot_kw={'projection': ccrs.Mollweide()}, figsize=(10, 6))
   else:
     raise ValueError("Use a correct value for proj 'carre' or 'mollweide'")
   # ax1.set_global()
   # ax1.coastlines()
   h1 = ax1.pcolormesh(phi_plot, theta_plot, detec_sum, cmap=cmap_det, transform=ccrs.PlateCarree())
   # ax1.axis('scaled')
-  ax1.set(xlabel=xlab, ylabel=ylab, title=title1)
+  # ax1.set(xlabel=xlab, ylabel=ylab, title=title1)
+  ax1.set(xlabel=xlab, ylabel=ylab)
   # ax1.scatter(cancel_phi, cancel_theta, s=1, color="red", transform=ccrs.PlateCarree())
   # ax1.scatter(ok_phi, ok_theta, s=1, color="green", transform=ccrs.PlateCarree())
 
@@ -637,16 +638,17 @@ def fov_const(parfile, museffdata, num_val=500, erg_cut=(10, 1000), show=True, s
   levels_compton = range(detec_min_compton, detec_max_compton + 1, max(1, int((detec_max_compton + 1 - detec_min_compton) / 15)))
 
   if chosen_proj == "carre":
-    fig2, ax2 = plt.subplots(subplot_kw={'projection': ccrs.PlateCarree()}, figsize=(15, 8))
+    fig2, ax2 = plt.subplots(subplot_kw={'projection': ccrs.PlateCarree()}, figsize=(10, 6))
   elif chosen_proj == "mollweide":
-    fig2, ax2 = plt.subplots(subplot_kw={'projection': ccrs.Mollweide()}, figsize=(15, 8))
+    fig2, ax2 = plt.subplots(subplot_kw={'projection': ccrs.Mollweide()}, figsize=(10, 6))
   else:
     raise ValueError("Use a correct value for proj 'carre' or 'mollweide'")
   # ax2.set_global()
   # ax2.coastlines()
   h3 = ax2.pcolormesh(phi_plot, theta_plot, detec_sum_compton, cmap=cmap_compton, transform=ccrs.PlateCarree())
   # ax2.axis('scaled')
-  ax2.set(xlabel=xlab, ylabel=ylab, title=title2)
+  # ax2.set(xlabel=xlab, ylabel=ylab, title=title2)
+  ax2.set(xlabel=xlab, ylabel=ylab)
   cbar = fig2.colorbar(h3, ticks=levels_compton)
   cbar.set_label(bar2, rotation=270, labelpad=20)
   plt.tight_layout()
@@ -662,16 +664,17 @@ def fov_const(parfile, museffdata, num_val=500, erg_cut=(10, 1000), show=True, s
   levels_single = range(detec_min_single, detec_max_single + 1, max(1, int((detec_max_single + 1 - detec_min_single) / 15)))
 
   if chosen_proj == "carre":
-    fig3, ax3 = plt.subplots(subplot_kw={'projection': ccrs.PlateCarree()}, figsize=(15, 8))
+    fig3, ax3 = plt.subplots(subplot_kw={'projection': ccrs.PlateCarree()}, figsize=(10, 6))
   elif chosen_proj == "mollweide":
-    fig3, ax3 = plt.subplots(subplot_kw={'projection': ccrs.Mollweide()}, figsize=(15, 8))
+    fig3, ax3 = plt.subplots(subplot_kw={'projection': ccrs.Mollweide()}, figsize=(10, 6))
   else:
     raise ValueError("Use a correct value for proj 'carre' or 'mollweide'")
   # ax3.set_global()
   # ax3.coastlines()
   h5 = ax3.pcolormesh(phi_plot, theta_plot, detec_sum_single, cmap=cmap_single, transform=ccrs.PlateCarree())
   # ax3.axis('scaled')
-  ax3.set(xlabel=xlab, ylabel=ylab, title=title3)
+  # ax3.set(xlabel=xlab, ylabel=ylab, title=title3)
+  ax3.set(xlabel=xlab, ylabel=ylab)
   cbar = fig3.colorbar(h5, ticks=levels_single)
   cbar.set_label(bar3, rotation=270, labelpad=20)
   plt.tight_layout()
@@ -693,9 +696,6 @@ def get_mean_seff_values(parfile, museffdata, num_val=100, erg_cut=(10, 1000)):
   Plots a map of the sensibility over the sky for number of sat in sight, single events and compton events
   :param num_val: number of value to
   """
-  plt.rcParams.update({'font.size': 15})
-  suffix = parfile.split("/")[-1].split("polGBM.par")[0]
-
   sat_info = read_grbpar(parfile)[-1]
   n_sat = len(sat_info)
   # museffdata = MuSeffContainer(mu100par, erg_cut, armcut)
