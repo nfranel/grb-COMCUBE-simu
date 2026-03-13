@@ -1,9 +1,12 @@
-/* 
- * find_detector.cxx
- *
+/*
+ * ================================================================
+ * Author      : Nathan Franel
+ * Version     : 1.0
+ * Created     : 2024-01-09
+ * Description  :  find_detector.cxx
  * This program uses the MEGALib software to obtain the detector of interation 
  * using the position of an event and the geometry used for the simulation
- *
+ * ================================================================
  */
 
 // Standard
@@ -55,6 +58,8 @@ public:
 private:
   //! True, if the analysis needs to be interrupted
   bool m_Interrupt;
+  bool m_UseFile;
+  bool m_UsePos;
   //! Other attributes that will be needed (geometry, x, y, z)
   MString m_GeometryFileName;
   string m_dat_file;
@@ -69,7 +74,7 @@ private:
 
 
 //! Default constructor : Initialize the interuption as false
-PosFinder::PosFinder() : m_Interrupt(false)
+PosFinder::PosFinder() : m_Interrupt(false), m_UseFile(false), m_UsePos(false)
 {
   gStyle->SetPalette(1, 0);
 }
@@ -99,6 +104,7 @@ bool PosFinder::ParseCommandLine(int argc, char** argv)
   Usage<<"         -p:   position of 1 event"<<endl;
   Usage<<"         -f:   name of the file containing the events position"<<endl;
   Usage<<"         -h:   print this help"<<endl;
+  Usage<<"    Warning : Either -p x y z or -f filename must be used"<<endl;
   Usage<<endl;
 
   string Option;
@@ -151,18 +157,28 @@ bool PosFinder::ParseCommandLine(int argc, char** argv)
       cout << "Accepting Geometry file name: " << m_GeometryFileName << endl;
     }
     else if (Option == "-p") {
+      if (m_UseFile) {
+        cout << "Error: -p and -f cannot be used together!" << endl;
+        return false;
+      }
+      m_UsePos = true;
       m_PosVector = MVector(stod(argv[i+1]), stod(argv[i+2]), stod(argv[i+3]));
       cout<<"Saving the position vector: "<<m_PosVector<<endl;
       i+=3;
     }
     else if (Option == "-f") {
+      if (m_UsePos) {
+        cout << "Error: -p and -f cannot be used together!" << endl;
+        return false;
+      }
+      m_UseFile = true;
       m_dat_file = argv[i+1];
       m_dat_file += ".txt";
-      cout << "Nom du fichier d'extraction : " << m_dat_file.c_str() << "\n" << endl;
+      cout << "Name of the extraction file : " << m_dat_file.c_str() << "\n" << endl;
       m_save_file = argv[i+1];
       m_save_file += "save.txt";
-      cout << "Nom du fichier de sauvegarde : " << m_save_file.c_str() << "\n" << endl;
-      i+=3;
+      cout << "Name of the saving file : " << m_save_file.c_str() << "\n" << endl;
+      i+=1;
     }
     else {
       cout<<"Error: Unknown option \""<<Option<<"\"!"<<endl;
@@ -170,14 +186,18 @@ bool PosFinder::ParseCommandLine(int argc, char** argv)
       return false;
     }
   }
-
+  if (!m_UseFile && !m_UsePos) {
+    cout << "Error: either -p or -f must be specified!" << endl;
+    cout << Usage.str() << endl;
+    return false;
+  }
   return true;
 }
 
 
 ////////////////////////////////////////////////////////////////////////////////
 
-//! Do whatever analysis is necessary
+//! Retrieve the detector where the interaction happened
 bool PosFinder::Analyze(int argc, char** argv)
 {
   // Variable declaration
@@ -196,65 +216,95 @@ bool PosFinder::Analyze(int argc, char** argv)
     return false;
   }
 
-  // Opening the file containing positions
-  std::ifstream file_stream(m_dat_file.c_str(), std::ios::binary);
-  if (!file_stream) {
-    cerr<<"Impossible d'ouvrir le fichier de positions"<<endl;
-  }
-  // Opening the file where the interaction detector will be saved
-    std::ofstream save_stream(m_save_file.c_str());
-  if (!save_stream) {
-    cerr<<"Impossible d'ouvrir le fichier de sauvegarde"<<endl;
-  }
-
-  // Reading the file, making the analysis for each line and saving the result
-  while (getline(file_stream, line)) {
-    cout << "Line : " << line << endl;
-    // Using a stremstring to extract the positions from the line
-    std::istringstream iss(line);
-
-    // Extraction of the position from the line
-    if (iss >> xpos >> ypos >> zpos) {
-//         // Displaying the positions
-//         std::cout << "xpos : " << xpos << std::endl;
-//         std::cout << "ypos : " << ypos << std::endl;
-//         std::cout << "zpos : " << zpos << std::endl;
+  // Analysing according to the two possibilities -p or -f
+  if (m_UseFile) {
+    // Opening the file containing positions
+    std::ifstream file_stream(m_dat_file.c_str(), std::ios::binary);
+    if (!file_stream) {
+      cerr<<"Impossible to open position file"<<endl;
+      return false;
     }
-    else {
-        std::cerr << "Erreur lors de l'extraction des variables depuis la ligne." << std::endl;
+    // Opening the file where the interaction detector will be saved
+      std::ofstream save_stream(m_save_file.c_str());
+    if (!save_stream) {
+      cerr<<"Impossible to open saving file"<<endl;
+      return false;
     }
-    m_PosVector = MVector(xpos, ypos, zpos);
 
+    // Reading the file, making the analysis for each line and saving the result
+    while (getline(file_stream, line)) {
+      cout << "Line : " << line << endl;
+      // Using a streamstring to extract the positions from the line
+      std::istringstream iss(line);
+
+      // Extraction of the position from the line
+      if (iss >> xpos >> ypos >> zpos) {
+          // Displaying the positions if needed for testing
+          // std::cout << "xpos : " << xpos << std::endl;
+          // std::cout << "ypos : " << ypos << std::endl;
+          // std::cout << "zpos : " << zpos << std::endl;
+      }
+      else {
+          std::cerr << "Error during varible extraction from the line." << std::endl;
+          save_stream << "Error" << " " << "InvalidPosition" << endl;
+          continue;
+      }
+      m_PosVector = MVector(xpos, ypos, zpos);
+
+      // First a goody: Check for overlaps:
+      vector<MDVolume*> OverlappingVolumes;
+      m_Geometry->GetWorldVolume()->FindOverlaps(m_PosVector, OverlappingVolumes);
+      cout<<endl;
+      if (OverlappingVolumes.size() == 0) {
+        save_stream << "Outside" << " " << "Outside" << endl;
+        cout<<"Outside worldvolume "<<m_PosVector<<" cm:"<<endl;
+      }
+      else if (OverlappingVolumes.size() == 1) {
+        cout<<"Details for position "<<m_PosVector<<" cm (no overlaps found) :"<<endl;
+        MDVolumeSequence Vol = m_Geometry->GetVolumeSequence(m_PosVector);
+        // Next line gives out all the information about the location, works for all location, even out of a sensitive volume
+        // cout<<Vol.ToString()<<endl;
+        // Next line enable the extraction of the precise location, but it does not work if the location given is not in a sensitive volume !
+        // cout<<"  TEST  :  "<<Vol.GetVolumeAt(1)->GetName()<<"/"<<Vol.GetVolumeAt(2)->GetName()<<endl;
+        // cout<<"Outside worldvolume "<<m_PosVector<<" cm:"<<endl;
+        save_stream << Vol.GetVolumeAt(1)->GetName() << " " << Vol.GetVolumeAt(2)->GetName() << endl;
+      }
+      else {
+        cout<<"Following volumes overlap at position "<<m_PosVector<<" cm:"<<endl;
+        for (unsigned int i = 0; i < OverlappingVolumes.size(); ++i) {
+          cout<<OverlappingVolumes[i]->GetName()<<endl;
+          save_stream << "Overlap" << " " << "Overlap" << endl;
+        }
+      }
+    }
+    // Closing the files
+    file_stream.close();
+    save_stream.close();
+  } else {
     // First a goody: Check for overlaps:
     vector<MDVolume*> OverlappingVolumes;
     m_Geometry->GetWorldVolume()->FindOverlaps(m_PosVector, OverlappingVolumes);
     cout<<endl;
     if (OverlappingVolumes.size() == 0) {
-      save_stream << "Outside" << " " << "Outside" << endl;
-      cout<<"Outside worldvolume "<<m_PosVector<<" cm:"<<endl;
+      cout <<"Outside worldvolume "<<m_PosVector<<" cm:"<<endl;
     }
     else if (OverlappingVolumes.size() == 1) {
       cout<<"Details for position "<<m_PosVector<<" cm (no overlaps found) :"<<endl;
       MDVolumeSequence Vol = m_Geometry->GetVolumeSequence(m_PosVector);
       // Next line gives out all the information about the location, works for all location, even out of a sensitive volume
-//       cout<<Vol.ToString()<<endl;
+      // cout<<Vol.ToString()<<endl;
       // Next line enable the extraction of the precise location, but it does not work if the location given is not in a sensitive volume !
-//       cout<<"  TEST  :  "<<Vol.GetVolumeAt(1)->GetName()<<"/"<<Vol.GetVolumeAt(2)->GetName()<<endl;
-//       cout<<"Outside worldvolume "<<m_PosVector<<" cm:"<<endl;
-      save_stream << Vol.GetVolumeAt(1)->GetName() << " " << Vol.GetVolumeAt(2)->GetName() << endl;
+      // cout<<"  TEST  :  "<<Vol.GetVolumeAt(1)->GetName()<<"/"<<Vol.GetVolumeAt(2)->GetName()<<endl;
+      // cout<<"Outside worldvolume "<<m_PosVector<<" cm:"<<endl;
+      cout << Vol.GetVolumeAt(1)->GetName() << " " << Vol.GetVolumeAt(2)->GetName() << endl;
     }
     else {
       cout<<"Following volumes overlap at position "<<m_PosVector<<" cm:"<<endl;
       for (unsigned int i = 0; i < OverlappingVolumes.size(); ++i) {
-        cout<<OverlappingVolumes[i]->GetName()<<endl;
-      save_stream << "Overlap" << " " << "Overlap" << endl;
+        cout << "Overlap : " << OverlappingVolumes[i]->GetName()<<endl;
       }
     }
   }
-
-  // Closing the files
-  file_stream.close();
-  save_stream.close();
   return true;
 }
 
@@ -287,29 +337,22 @@ void CatchSignal(int a)
 //! Main program
 int main(int argc, char** argv)
 {
-  // Catch a user interupt for graceful shutdown
-  // signal(SIGINT, CatchSignal);
-
-  // Initialize global MEGALIB variables, especially mgui, etc.
-  //MGlobal::Initialize("PosFinder", "a program to find the detector in which an event occured");
-
-  //TApplication PosFinderApp("PosFinderApp", 0, 0);
+//   Catch a user interupt for graceful shutdown
+  signal(SIGINT, CatchSignal);
 
   g_Prg = new PosFinder();
   // The following lines are used to call the methods and determine if there was an error
   if (g_Prg->ParseCommandLine(argc, argv) == false) {
     cerr<<"Error during parsing of command line!"<<endl;
     return -1;
-  } 
+  }
+  // Execution of the analysis
   if (g_Prg->Analyze(argc, argv) == false) {
     cerr<<"Error during analysis!"<<endl;
     return -2;
   }
 
-  //PosFinderApp.Run();
-
   cout<<"Program exited normally!"<<endl;
-
   return 0;
 }
 

@@ -1,7 +1,10 @@
-# Autor Nathan Franel
-# Date 01/12/2023
-# Version 2 :
-# file to launch background simulations
+# ================================================================
+# Author      : Nathan Franel
+# Version     : 1.0
+# Created     : 2023-12-01
+# Description  :  launch_bkg_sim.py
+# Contains various functions and a main to run automatically the background simulations
+# ================================================================
 
 # Package imports
 import subprocess
@@ -16,9 +19,14 @@ from src.General.funcmod import read_bkgpar
 
 def make_directories(geomfile, spectrapath):
   """
-  Create the directories in which the simulations are saved
-  :param geomfile: geometry used for the simulations
-  :param spectrapath: path of the folder in which the background spectra are saved
+  Creates the directory tree required to store background simulation outputs,
+  including the spectra folder, the folder containing the simulations for a given geometry, and
+  its sim/ and rawsim/ subdirectories. Directories that already exist are
+  left untouched.
+  :param geomfile: str, path to the geometry file (must end with ".geo.setup");
+      the geometry name is extracted from the filename stem
+  :param spectrapath: str, path of the folder in which the background spectra
+      are saved; created inside ../Data/bkg/ if it does not exist
   """
   # Creating the bkg_source_spectra repertory if it doesn't exist
   if not spectrapath.split("/")[-1] in os.listdir("../Data/bkg"):
@@ -36,8 +44,13 @@ def make_directories(geomfile, spectrapath):
 
 def make_spectra(params):
   """
-  Create background spectra of different particles for different altitudes and latitudes
-  :param params: parameters from the parameter file
+  Generates background particle spectra for a single (altitude, latitude) point
+  by calling the external CreateBackgroundSpectrumMEGAlib.py script, then moves
+  the resulting .dat files into the appropriate subfolder of spectrapath.
+  :param params: tuple, parameter tuple as produced by make_parameters():
+      params[0] - float, altitude for the background simulation [km]
+      params[1] - float, geomagnetic latitude for the background simulation [deg]
+      params[6] - str, path to the spectra folder
   """
   spectrapath, alt, lat = params[6], params[0], params[1]
   bkg_code = "./src/Background"
@@ -45,7 +58,6 @@ def make_spectra(params):
     os.mkdir(f"{spectrapath}/source-dat--alt_{alt:.1f}--lat_{lat:.1f}")
   os.chdir(bkg_code)
   subprocess.call(f"python CreateBackgroundSpectrumMEGAlib.py -i {lat} -a {alt}", shell=True)
-  # source_spectra = subprocess.getoutput(f"ls *_Spec_{alt:.1f}km_{lat:.1f}deg.dat").split("\n")
   source_spectra = glob.glob(f"*_Spec_{alt:.1f}km_{lat:.1f}deg.dat")
   os.chdir("../../")
   for spectrum in source_spectra:
@@ -54,9 +66,11 @@ def make_spectra(params):
 
 def read_flux_from_spectrum(file):
   """
-  Reads the flux writen in the spectrum file and returns the value
-  :param file: spectrum file
-  :returns: Flux [/cm^2/s]
+  Reads the integrated flux value written in the header of a background spectrum
+  file and returns it as a float.
+  :param file: str, path to the spectrum file; the flux is expected on a header
+      line starting with "# Integral Flux:" within the first 10 lines
+  :returns: float, integral flux read from the file [/cm^2/s]
   """
   with open(file, "r") as f:
     lines = f.read().split("\n")
@@ -67,18 +81,22 @@ def read_flux_from_spectrum(file):
       return float(line.split("# Integral Flux:")[1].split("#")[0].strip())
     line_ite += 1
     line = lines[line_ite]
+  return None
 
 
 def make_tmp_source(alt, lat, geom, source_model, spectrapath, simduration):
   """
-  Creates a temporary source file based on a model "source model"
-  :param alt: altitude for the background simulation
-  :param lat: latitude for the background simulation
-  :param geom: geometry used for the background simulation
-  :param source_model: model used to create temporary source files
-  :param spectrapath: path to spectra folder
-  :param simduration: duration of the background simulation
-  :returns: name of the temporary source file, name of the simulation without the extension
+  Creates a temporary cosima source file for a single background simulation point
+  by filling in the geometry, run name, simulation duration, beam type, particle
+  spectra, and fluxes for all background particle species into a template source file.
+  :param alt: float, altitude for the background simulation [km]
+  :param lat: float, geomagnetic latitude for the background simulation [deg]
+  :param geom: str, path to the geometry file used for the simulation
+  :param source_model: str, path to the template source file to use as a base
+  :param spectrapath: str, path to the folder containing the particle spectrum files
+  :param simduration: float, duration of the background simulation [s]
+  :returns: str, str, path to the temporary source file created, base path and
+      stem for the simulation output files (without extension)
   """
   fname = f"tmp_{os.getpid()}.source"
   geom_name = geom.split(".geo.setup")[0].split("/")[-1]
@@ -127,15 +145,18 @@ def make_tmp_source(alt, lat, geom, source_model, spectrapath, simduration):
 
 def make_parameters(alts, lats, geomfile, source_model, rcffile, mimfile, spectrapath, simduration):
   """
-  Creates a lists of parameters for several altitudes and latitudes
-  :param alts: altitudes for the background simulation
-  :param lats: latitudes for the background simulation
-  :param geomfile: geometry used for the background simulation
-  :param source_model: model used to create temporary source files
-  :param rcffile: revan configuration file to treat raw simulations
-  :param mimfile: mimrec configuration file to extract simulations treated with revan
-  :param spectrapath: path to spectra folder
-  :param simduration: duration of the background simulation
+  Builds the full list of parameter tuples for all (altitude, latitude) simulation
+  points, one tuple per point, ready to be mapped over by the multiprocessing pool.
+  :param alts: list or np.ndarray, altitudes for the background simulation [km]
+  :param lats: list or np.ndarray, geomagnetic latitudes for the background simulation [deg]
+  :param geomfile: str, path to the geometry file used for the simulations
+  :param source_model: str, path to the template source file
+  :param rcffile: str, path to the revan configuration file
+  :param mimfile: str, path to the mimrec configuration file
+  :param spectrapath: str, path to the folder containing the particle spectrum files
+  :param simduration: float, duration of each background simulation [s]
+  :returns: list, list of tuples, each containing
+      (alt, lat, geomfile, source_model, rcffile, mimfile, spectrapath, simduration)
   """
   parameters_container = []
   for alt in alts:
@@ -144,11 +165,15 @@ def make_parameters(alts, lats, geomfile, source_model, rcffile, mimfile, spectr
   return parameters_container
 
 
-def run(command, error_file, expected_file):
+def autorun(command, error_file, expected_file):
   """
-  Runs a command
+  Executes a shell command and logs any stderr output or missing output files
+  to an error log file.
   :param command: str, shell command to run
-  :param error_file: str, name of the error logfile
+  :param error_file: str, path to the error log file where stderr output and
+      missing-file warnings are appended
+  :param expected_file: str, path to the output file that the command is
+      expected to produce; if absent after execution, a warning is logged
   """
   proc = subprocess.run(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
   folder = f"{expected_file.split('/sim/')[0]}/sim/"
@@ -165,8 +190,19 @@ def run(command, error_file, expected_file):
 
 def run_bkg(params):
   """
-  Runs the cosima, revan and mimrec programs and either move to rawsim or remove the .sim.gz and .tra.gz files
-  :param params: list of parameters to run the simulation
+  Runs the full cosima -> revan -> mimrec pipeline for a single background
+  simulation point (one altitude/latitude pair). The raw .sim.gz file is
+  moved to rawsim/ after cosima, and the .tra.gz file is moved to rawsim/
+  after mimrec extraction.
+  :param params: tuple, parameter tuple as produced by make_parameters():
+      params[0] - float, altitude [km]
+      params[1] - float, geomagnetic latitude [deg]
+      params[2] - str, path to the geometry file
+      params[3] - str, path to the template source file
+      params[4] - str, path to the revan configuration file
+      params[5] - str, path to the mimrec configuration file
+      params[6] - str, path to the spectra folder
+      params[7] - float, simulation duration [s]
   """
   # Making a temporary source file using a source_model
   sourcefile, simname = make_tmp_source(params[0], params[1], params[2], params[3], params[6], params[7])
@@ -178,21 +214,16 @@ def run_bkg(params):
   #   Running the different simulations
   print(f"Running bkg simulation : {simname}")
   # Running cosima
-  # subprocess.call(f"cosima -z {sourcefile}; rm -f {sourcefile}", shell=True, stdout=open(os.devnull, 'wb'), stderr=open(os.devnull, 'wb'))
-  # subprocess.call(f"cosima -z {sourcefile}; rm -f {sourcefile}", shell=True, stdout=open(os.devnull, 'wb'))
-  run(f"cosima -z {sourcefile}; rm -f {sourcefile}", f"{simname.split('/sim/')[0]}/cosima_errlog.txt", simfile)
+  autorun(f"cosima -z {sourcefile}; rm -f {sourcefile}", f"{simname.split('/sim/')[0]}/cosima_errlog.txt", simfile)
 
   # Running revan
-  # subprocess.call(f"revan -g {params[2]} -c {params[3]} -f {simfile} -n -a; rm -f {simfile}", shell=True, stdout=open(os.devnull, 'wb'), stderr=open(os.devnull, 'wb'))
-  # subprocess.call(f"revan -g {params[2]} -c {params[4]} -f {simfile} -n -a", shell=True, stdout=open(os.devnull, 'wb'))
-  run(f"revan -g {params[2]} -c {params[4]} -f {simfile} -n -a", f"{simname.split('/sim/')[0]}/revan_errlog.txt", trafile)
+  autorun(f"revan -g {params[2]} -c {params[4]} -f {simfile} -n -a", f"{simname.split('/sim/')[0]}/revan_errlog.txt", trafile)
   # Moving the cosima file in rawsim or removing it
   subprocess.call(f"mv {simfile} {mv_simfile}", shell=True)
   # subprocess.call(f"rm -f {simfile}", shell=True)
 
   # Running mimrec
-  # subprocess.call(f"mimrec -g {params[2]} -c {params[5]} -f {trafile} -x -n", shell=True, stdout=open(os.devnull, 'wb'))
-  run(f"mimrec -g {params[2]} -c {params[5]} -f {trafile} -x -n", f"{simname.split('/sim/')[0]}/mimrec_errlog.txt", extrfile)
+  autorun(f"mimrec -g {params[2]} -c {params[5]} -f {trafile} -x -n", f"{simname.split('/sim/')[0]}/mimrec_errlog.txt", extrfile)
   # Moving the revan analyzed file in rawsim or removing it
   subprocess.call(f"mv {trafile} {mv_trafile}", shell=True)
   # subprocess.call(f"rm -f {trafile}", shell=True)

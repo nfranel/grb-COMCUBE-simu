@@ -1,9 +1,16 @@
+# ================================================================
+# Author      : Nathan Franel
+# Version     : 1.0
+# Created     : 2023-12-01
+# Description  :  funcmod.py
+# Contains various functions used in the project
+# ================================================================
+
 import numpy as np
 import pandas as pd
 import os
 import subprocess
 from time import time
-
 import gzip
 from scipy.integrate import quad, simpson, trapezoid, IntegrationWarning
 from scipy.stats import binned_statistic, norm, skewnorm
@@ -22,7 +29,6 @@ Gpc_to_cm = Gpc_to_cm.to_value("cm")
 # Cosmology used
 cosmology = FlatLambdaCDM(H0=70, Om0=0.3)
 
-# TODO USE ASTROPY CONSTANTS
 m_elec = 9.1094e-31  # kg
 c_light = 2.99792458e+8  # m/s
 charge_elem = 1.6021e-19  # C
@@ -39,14 +45,20 @@ earth_rot_time = 86164 + 98e-3 + 903e-6 + 697e-9  # s
 def printv(message, verbose):
   """
   Print message is verbose is True
-  :param message: message to print
-  :param verbose: whether or not the message is displayed (True or False)
+  :param message: str, message to print
+  :param verbose: bool, whether or not the message is displayed
   """
   if verbose:
     print(message)
 
 
 def printcom(comment):
+  """
+  Print a formatted comment block surrounded by a visual separator line.
+  Accepts either a single string or a list of strings, each printed on its own line.
+  :param comment: str or list of str, the comment(s) to display
+  :raises TypeError: if comment is neither a str nor a list of str
+  """
   print()
   if type(comment) is list:
     print("=========================================================================================================================")
@@ -62,6 +74,12 @@ def printcom(comment):
 
 
 def endtask(taskname, timevar=None):
+  """
+  Print a formatted message indicating that a task has finished.
+  Optionally includes the elapsed processing time if a start time is provided.
+  :param taskname: str, name of the task that has finished
+  :param timevar: float or None, start time obtained with time(), default=None (no time displayed)
+  """
   if timevar is None:
     print(f"======      {taskname} finished      ======")
   else:
@@ -75,6 +93,13 @@ def endtask(taskname, timevar=None):
 def use_scipyquad(func, low_edge, high_edge, func_args=(), x_logscale=False):
   """
   Proceed to the quad integration using scipy quad and handle the integration warning by using simpson integration method from scipy if the warning is raised
+  :param func: callable, the function to integrate
+  :param low_edge: float, lower bound of the integration
+  :param high_edge: float, upper bound of the integration
+  :param func_args: tuple, additional arguments to pass to func, default=()
+  :param x_logscale: bool, if True the x axis is sampled in log scale for the fallback simpson integration, default=False
+  :returns: tuple (integral value, error estimate or None if simpson was used)
+  :raises TypeError: if func_args is not a tuple
   """
   if type(func_args) != tuple:
     raise TypeError(f"Function use_scipyquad takes func_args as tuple only, {type(func_args)} given")
@@ -98,10 +123,10 @@ def use_scipyquad(func, low_edge, high_edge, func_args=(), x_logscale=False):
 def horizon_angle(h, earthradius=R_earth, atmosphereheight=40):
   """
   Calculates the angle between the zenith and the horizon for a LEO satellite
-  :param h: altitude of the satellite (km)
-  :param earthradius: radius of the Earth (km), default=6371
-  :param atmosphereheight: height of the atmosphere (km), default=40
-  :returns: horizon angle (deg)
+  :param h: float, altitude of the satellite (km)
+  :param earthradius: float, radius of the Earth (km), default=6371
+  :param atmosphereheight: float, height of the atmosphere (km), default=40
+  :returns: float, horizon angle (deg)
   """
   if h >= atmosphereheight:
     return 90 + np.rad2deg(np.arccos((earthradius + atmosphereheight) / (earthradius + h)))  # deg
@@ -112,8 +137,8 @@ def horizon_angle(h, earthradius=R_earth, atmosphereheight=40):
 def orbital_period_calc(alt):
   """
   Calculates the orbital period of a satellite at a specific altitude
-  :param alt : altitude of the orbit
-  :returns: duration of orbital period in [seconds]
+  :param alt: float, altitude of the orbit [km]
+  :returns: float, duration of orbital period [seconds]
   """
   return np.sqrt(4 * np.pi**2 / (G_const * m_earth) * ((R_earth + alt) * 1000)**3)
 
@@ -123,8 +148,8 @@ def earth_rotation_offset(time_val):
   Calculates the offset in right ascension due to the earth rotation.
   The earth turns from W to E, so if the satellite orbits from W to E this correction has to be deducted from the
   calculated RA. If not it has to be added.
-  :param time_val : time at which the rotational offset is calculated in seconds
-  returns a correction angle in deg
+  :param time_val: float, time at which the rotational offset is calculated [seconds]
+  :returns: float, correction angle [deg]
   """
   return np.mod(360 * time_val / earth_rot_time, 360)
 
@@ -132,21 +157,21 @@ def earth_rotation_offset(time_val):
 def true_anomaly_calc(time_val, period):
   """
   Calculates the true anomaly between 0 and 360° for a time "time_val" and an orbit of period "period"
-  :param time_val : time at which the true anomaly is calculated in seconds
-  :param period : period of the orbit in seconds
-  Return the true anomaly [deg]
+  :param time_val: float, time at which the true anomaly is calculated [seconds]
+  :param period: float, period of the orbit [seconds]
+  :returns: float, true anomaly [deg]
   """
   return np.mod(360 * time_val / period, 360)
 
 
-def decra2orbitalparam(dec_sat_wf, ra_sat_wf):  # TODO : limits on variables
+def decra2orbitalparam(dec_sat_wf, ra_sat_wf):
   """
   Calculates the orbital parameters of an object knowing its dec and ra
     Only works for a value of omega set to pi/2
   Returned results are in rad
-  :param dec_sat_wf : satellite's dec [deg]
-  :param ra_sat_wf : satellite's ra [deg]
-  :returns: inclination, ohm, omega [deg]
+  :param dec_sat_wf: float, satellite's dec [deg]
+  :param ra_sat_wf: float, satellite's ra [deg]
+  :returns: float, float, float, inclination, ohm, omega [deg]
   """
   dec_sat_wf, ra_sat_wf = np.deg2rad(dec_sat_wf), np.deg2rad(ra_sat_wf)
   inclination = np.arcsin(np.cos(dec_sat_wf))
@@ -155,15 +180,15 @@ def decra2orbitalparam(dec_sat_wf, ra_sat_wf):  # TODO : limits on variables
   return np.deg2rad(inclination), np.deg2rad(ohm), np.deg2rad(omega)
 
 
-def orbitalparam2decra(inclination, ohm, omega, nu=0):  # TODO : limits on variables
+def orbitalparam2decra(inclination, ohm, omega, nu=0):
   """
   Calculates the declination and right ascention of an object knowing its orbital parameters
   Returned results are in deg and the north direction is at 0° making the equator at 90°
-  :param inclination : inclination of the orbit [deg]
-  :param ohm : longitude/ra of the ascending node of the orbit [deg]
-  :param omega : argument of periapsis of the orbit [deg]
-  :param nu : true anomalie at epoch t0 [deg]
-  :returns: dec_sat_wf, ra_sat_wf [deg]
+  :param inclination: float, inclination of the orbit [deg]
+  :param ohm: float, longitude/ra of the ascending node of the orbit [deg]
+  :param omega: float, argument of periapsis of the orbit [deg]
+  :param nu: float, true anomalie at epoch t0 [deg]
+  :returns: float, float, dec_sat_wf, ra_sat_wf [deg]
   """
   # Variable domain verification verif on ra_max is done without function to make things easier in the param file
   # TODO
@@ -178,24 +203,24 @@ def orbitalparam2decra(inclination, ohm, omega, nu=0):  # TODO : limits on varia
   return np.rad2deg(dec_sat_wf), np.rad2deg(ra_sat_wf)
 
 
-def geo_to_mag(dec_wf, ra_wf, altitude):  # TODO : limits on variables
+def geo_to_mag(dec_wf, ra_wf, altitude):
   """
   Converts the geographic declination and right ascension into geomagnetic declination and right ascension
-  :param dec_wf: geographic declination in world frame [0 to 180°]
-  :param ra_wf: geographic right ascension in world frame [0 to 360°]
-  :param altitude: altitude of the point
-  :returns: geomagnetic declination and right ascension
+  :param dec_wf: float, geographic declination in world frame [0 to 180°]
+  :param ra_wf: float, geographic right ascension in world frame [0 to 360°]
+  :param altitude: float, altitude of the point [km]
+  :returns: float, float, geomagnetic declination and right ascension [deg]
   """
   apex15 = Apex(date=2025)
   mag_lat, mag_lon = apex15.convert(90 - dec_wf, ra_wf, 'geo', 'apex', height=altitude)
   return 90 - mag_lat, mag_lon
 
 
-def duty_calc(inclination):  # TODO : limits on variables CHANGE IT WITH THE NEW
+def duty_calc(inclination):
   """
   Function to estimate a duty cycle according to inclination
-  :param inclination: inclination of the orbit
-  :returns: the duty cycle
+  :param inclination: float, inclination of the orbit [deg]
+  :returns: float, the duty cycle
   """
   print("inc value : ", inclination)
   precise = False
@@ -223,14 +248,14 @@ def duty_calc(inclination):  # TODO : limits on variables CHANGE IT WITH THE NEW
       return 0.5
 
 
-def grb_decra_worldf2satf(dec_grb_wf, ra_grb_wf, dec_sat_wf, ra_sat_wf):  # TODO : limits on variables
+def grb_decra_worldf2satf(dec_grb_wf, ra_grb_wf, dec_sat_wf, ra_sat_wf):
   """
   Converts dec_grb_wf, ra_grb_wf (declination, right ascension) world coordinates into satellite coordinate
-  :param dec_grb_wf: declination of the source in world frame (0° at north pole) [deg]
-  :param ra_grb_wf : Right ascension of the source in world frame (0->360°) [deg]
-  :param dec_sat_wf: declination of the satellite in world frame (0° at north pole) [deg]
-  :param ra_sat_wf : Right ascension of the satellite in world frame (0->360°) [deg]
-  :returns: dec_grb_sf, ra_grb_sf [deg]
+  :param dec_grb_wf: float, declination of the source in world frame (0° at north pole) [deg]
+  :param ra_grb_wf: float, right ascension of the source in world frame (0->360°) [deg]
+  :param dec_sat_wf: float, declination of the satellite in world frame (0° at north pole) [deg]
+  :param ra_sat_wf: float, right ascension of the satellite in world frame (0->360°) [deg]
+  :returns: float, float, dec_grb_sf, ra_grb_sf [deg]
   """
   dec_grb_wf, ra_grb_wf, dec_sat_wf, ra_sat_wf = np.deg2rad(dec_grb_wf), np.deg2rad(ra_grb_wf), np.deg2rad(dec_sat_wf), np.deg2rad(ra_sat_wf)
   # source being the direction of the source in world coordinates
@@ -258,12 +283,15 @@ def grb_decrapol_worldf2satf(dec_grb_wf, ra_grb_wf, dec_sat_wf, ra_sat_wf, dec_g
   Polarization angle calculation rely on the fact that the polarization angle is in the plane generated by the direction of the source and the dec=0 direction.
   The polarization angle, dec and ra are defined according to MEGAlib's RelativeY convention :
     polarization vector in the plan defined by north pole direction, source direction (and also ysat base vector hence the "RelativeY convention")
-  :param dec_grb_wf : declination (except it is 0 at north pole, 90° at equator and 180° at south pole) [deg]
-  :param ra_grb_wf : Right ascension (0->360°) [deg]
-  :param dec_sat_wf : satellite dec in world frame [deg]
-  :param ra_sat_wf : satellite ra in world frame [deg]
-  :returns: pol_angle, dec_grb_sf, ra_grb_sf, dec_pol_sf, ra_pol_sf [deg]
-  CARREFUL : not tested for variables being numpy arrays, validated only with floats
+  :param dec_grb_wf: float, declination (except it is 0 at north pole, 90° at equator and 180° at south pole) [deg]
+  :param ra_grb_wf: float, right ascension (0->360°) [deg]
+  :param dec_sat_wf: float, satellite dec in world frame [deg]
+  :param ra_sat_wf: float, satellite ra in world frame [deg]
+  :param dec_grb_wf_err : float, uncertainty on dec_grb_wf [deg], default=None (no error propagation)
+  :param ra_grb_wf_err : float, uncertainty on ra_grb_wf [deg], default=None (no error propagation)
+  :param dec_sat_wf_err : float, uncertainty on dec_sat_wf [deg], default=None (no error propagation)
+  :param ra_sat_wf_err : float, uncertainty on ra_sat_wf [deg], default=None (no error propagation)
+  :returns: floats -> pol_angle, dec_grb_sf, ra_grb_sf, dec_grb_sf_err, ra_grb_sf_err, dec_pol_sf, ra_pol_sf, polstr [deg]
   """
   # Variable domain verification verif on ra_max is done without function to make things easier in the param file
   dec_verif(dec_grb_wf)
@@ -358,7 +386,6 @@ def grb_decrapol_worldf2satf(dec_grb_wf, ra_grb_wf, dec_sat_wf, ra_sat_wf, dec_g
                              ((derphi_u4(dec_grb_wf, ra_grb_wf, dec_sat_wf, ra_sat_wf) * val_vphi - derphi_v4(dec_grb_wf, ra_grb_wf, ra_sat_wf) * val_uphi) * ra_sat_wf_err)**2) /
                      (val_vphi**2 * (1 + (val_uphi/val_vphi)**2)))
 
-    # print(f"grb_dec_err : {np.rad2deg(dec_grb_sf_err):.4f} grb_ra_err : {np.rad2deg(ra_grb_sf_err):.4f}")
   else:
     dec_grb_sf_err, ra_grb_sf_err = 0, 0
 
@@ -375,14 +402,14 @@ def grb_decrapol_worldf2satf(dec_grb_wf, ra_grb_wf, dec_sat_wf, ra_sat_wf, dec_g
   return np.rad2deg(pol_angle), np.rad2deg(dec_grb_sf), np.rad2deg(ra_grb_sf), np.rad2deg(dec_grb_sf_err), np.rad2deg(ra_grb_sf_err), np.rad2deg(dec_pol_sf), np.rad2deg(ra_pol_sf), polstr
 
 
-def decrasat2world(dec_grb_sf, ra_grb_sf, dec_sat_wf, ra_sat_wf):  # TODO : limits on variables
+def decrasat2world(dec_grb_sf, ra_grb_sf, dec_sat_wf, ra_sat_wf):  #
   """
   Converts dec_grb_sf, ra_grb_sf (declination, right ascension) satellite coordinates into world coordinate dec_grb_wf, ra_grb_wf
-  :param dec_grb_sf: grb declination in sat frame (0° at instrument zenith) [deg]
-  :param ra_grb_sf : grb right ascension in sat frame (0->360°) [deg]
-  :param dec_sat_wf: sat declination in world frame (0° at instrument zenith) [deg]
-  :param ra_sat_wf : sat right ascension in world frame (0->360°) [deg]
-  :returns: dec_grb_wf, ra_grb_wf [deg]
+  :param dec_grb_sf: float, grb declination in sat frame (0° at instrument zenith) [deg]
+  :param ra_grb_sf: float, grb right ascension in sat frame (0->360°) [deg]
+  :param dec_sat_wf: float, sat declination in world frame (0° at instrument zenith) [deg]
+  :param ra_sat_wf: float, sat right ascension in world frame (0->360°) [deg]
+  :returns: float, float, dec_grb_wf, ra_grb_wf [deg]
   """
   dec_grb_sf, ra_grb_sf = np.deg2rad(dec_grb_sf), np.deg2rad(ra_grb_sf)
   dec_sat_wf, ra_sat_wf = np.deg2rad(dec_sat_wf), np.deg2rad(ra_sat_wf)
@@ -405,13 +432,13 @@ def decrasat2world(dec_grb_sf, ra_grb_sf, dec_sat_wf, ra_sat_wf):  # TODO : limi
 
 def sat_info_2_decra(info_sat, burst_time):
   """
-  Uses orbital parameters of a satellite in the for of "info_sat" to obtain its dec and ra in world frame
+  Uses orbital parameters of a satellite in the form of "info_sat" to obtain its dec and ra in world frame
   dec is calculated so that it is from 0 to 180°
   ra is calculated so that it is from 0 to 360°
-  :param info_sat: information about the satellite orbit
+  :param info_sat: list, information about the satellite orbit
     [inclination, RA of ascending node, argument of periapsis, altitude]
-  :param burst_time: time at which the burst occured
-  :returns  dec_sat_world_frame, ra_sat_world_frame [deg] [deg]
+  :param burst_time: float, time at which the burst occured [s]
+  :returns: float, float, dec_sat_world_frame, ra_sat_world_frame [deg]
   """
   orbital_period = orbital_period_calc(info_sat[3])
   earth_ra_offset = earth_rotation_offset(burst_time)
@@ -424,11 +451,11 @@ def sat_info_2_decra(info_sat, burst_time):
 def random_grb_dec_ra(lat_min, lat_max, lon_min, lon_max):
   """
   Take a random position for a GRB in an area defined by min/max dec and ra
-  :param lat_min : minimum latitude [deg] [-90, 90]
-  :param lat_max : maximum latitude [deg] [-90, 90]
-  :param lon_min : minimum longitude [deg] [-180, 180[
-  :param lon_max : maximum longitude [deg] [-180, 180[
-  :returns: dec and ra. [0, 180] & [0, 360[
+  :param lat_min: float, minimum latitude [deg] [-90, 90]
+  :param lat_max: float, maximum latitude [deg] [-90, 90]
+  :param lon_min: float, minimum longitude [deg] [-180, 180[
+  :param lon_max: float, maximum longitude [deg] [-180, 180[
+  :returns: float, float, dec and ra [0, 180] & [0, 360[
   """
   # Variable domain verification verif on ra_max is done without function to make things easier in the param file
   lat_verif(lat_min)
@@ -452,10 +479,10 @@ def random_grb_dec_ra(lat_min, lat_max, lon_min, lon_max):
 def verif_zone_file(lat, long, file):
   """
   Function to verify whether a coordinate is in the exclusion area or not, using an exclusion file
-  :param lat: latitude (-90 - 90°) [deg]
-  :param long: longitude (-180 - 180°) [deg]
-  :param file: exclusion file
-  :returns: True when the latitude and longitude are in an exclusion area
+  :param lat: float, latitude (-90 - 90°) [deg]
+  :param long: float, longitude (-180 - 180°) [deg]
+  :param file: str, path to the exclusion file
+  :returns: bool, True when the latitude and longitude are in an exclusion area
   """
   lat_verif(lat)
   lon_verif(long)
@@ -493,10 +520,12 @@ def verif_rad_belts(dec, ra, alt, zonetype="all"):
   """
   Function to verify whether a coordinate is in the exclusion area of several exclusion files at a certain altitude
   The exclusion files represent the Earth's radiation belts
-  :param dec: earth declination (0 - 180°) [deg]
-  :param ra: earth ra (0 - 360°) [deg]
-  :param alt: altitude of the verification
-  :returns: True when the latitude and longitude are in an exclusion area
+  :param dec: float, earth declination (0 - 180°) [deg]
+  :param ra: float, earth ra (0 - 360°) [deg]
+  :param alt: float, altitude of the verification [km]
+  :param zonetype: str, type of radiation belt to check - "all", "electron" or "proton", default="all"
+  :returns: bool, True when the latitude and longitude are in an exclusion area
+  :raises ValueError: if zonetype is not one of the accepted values
   """
   dec_verif(dec)
   ra_verif(ra)
@@ -523,15 +552,17 @@ def verif_rad_belts(dec, ra, alt, zonetype="all"):
 def treat_ce(event_ener):
   """
   Function to sum the 2 energy deposits given by trafiles for a compton event
-  :param event_ener: list of information about the energy of an event given by a trafile
+  :param event_ener: list, energy information of an event given by a trafile
+  :returns: np.ndarray, array of the 2 energy deposits [keV]
   """
   return np.array([float(event_ener[0]), float(event_ener[4])])
 
 
 def treat_pe(event_ener):
   """
-  Function to sum the 2 energy deposits given by trafiles for a compton event
-  :param event_ener: list of information about the energy of an event given by a trafile
+  Function get the energy of a single event
+  :param event_ener: list, energy information of an event given by a trafile
+  :returns: float, energy of the event [keV]
   """
   return float(event_ener)
 
@@ -541,9 +572,9 @@ def readevt(event, ergcut=None):
   Reads the information of an event given by readfile and returns this information in a list if it's in the energy range
   :param event: str, event in a trafile
   :param ergcut: couple (Emin, Emax) or None, energy range in which events have to be to be processed, default=None(=no selection)
-  :returns:
-    list of 3-uple of float if this is a single event (energy, time, position)
-    list of 5-uple of float if this is a compton event (first deposit, total energy, time, 1st position, 2nd position)
+  :returns: list, 3-tuple of float if single event (energy, time, position),
+    or 9-tuple of float if compton event (second_ener, total_ener, time, first_pos, second_pos, second_ener_err, total_ener_err, first_pos_err, second_pos_err),
+    or [None] if event is outside ergcut
   """
   lines = event.split("\n")[1:-1]
   # Treating compton events
@@ -589,7 +620,22 @@ def readevt(event, ergcut=None):
 
 def analyze_localized_event(data_file, grb_dec_sat_frame, grb_ra_sat_frame, source_name, num_sim, num_sat, grb_dec_sf_err, grb_ra_sf_err, geometry, array_dtype):
   """
-
+  Reads a localized (in the instrument frame) GRB simulation file, extracts Compton and single events, computes
+  scattering angles (polar and azimuthal), ARM values, and identifies the detector of interaction for each event.
+  :param data_file: str, path to the .tra or .tra.gz simulation file
+  :param grb_dec_sat_frame: float, declination of the GRB in the satellite frame [deg]
+  :param grb_ra_sat_frame: float, right ascension of the GRB in the satellite frame [deg]
+  :param source_name: str, name of the simulated source
+  :param num_sim: int, simulation index
+  :param num_sat: int, satellite index
+  :param grb_dec_sf_err: float, uncertainty on the GRB declination in satellite frame [deg]
+  :param grb_ra_sf_err: float, uncertainty on the GRB right ascension in satellite frame [deg]
+  :param geometry: str, path to the geometry file used for detector identification
+  :param array_dtype: numpy dtype, dtype to use for output arrays (e.g. np.float32)
+  :returns: np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray,
+            compton_ener, compton_second, compton_time, pol, pol_err, polar_from_position,
+            polar_from_energy, arm_pol, compton_first_detector, compton_sec_detector,
+            single_ener, single_time, single_detector
   """
   data_pol = readfile(data_file)
   compton_second = []
@@ -664,7 +710,17 @@ def analyze_localized_event(data_file, grb_dec_sat_frame, grb_ra_sat_frame, sour
 
 def analyze_bkg_event(data_file, lat, alt, geometry, array_dtype):
   """
-
+  Reads a background simulation file and extracts Compton and single events, then identifies
+  the detector of interaction for each event. Does not compute scattering angles as the
+  background has no localized source direction.
+  :param data_file: str, path to the .tra or .tra.gz background simulation file
+  :param lat: float, geographic latitude of the satellite at the time of simulation [deg]
+  :param alt: float, altitude of the satellite [km]
+  :param geometry: str, path to the geometry file used for detector identification
+  :param array_dtype: numpy dtype, dtype to use for output arrays (e.g. np.float32)
+  :returns: float, float, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray,
+            decbkg, altbkg, compton_second, compton_ener, compton_time,
+            single_ener, single_time, compton_first_detector, compton_sec_detector, single_detector
   """
   data = readfile(data_file)
   decbkg = 90 - lat
@@ -723,20 +779,30 @@ def analyze_bkg_event(data_file, lat, alt, geometry, array_dtype):
 
 def get_pol_unpol_event_data(pol_data_file, unpol_data_file, dec_sf, ra_sf, dec_sf_err, ra_sf_err, geometry, array_dtype):
   """
-  Calls the function for the pol and unpol files and returns only the vectors with useful values to save memory
-  This function can be changed to return the detectors of interaction too, to perform event selection. In case we would want to see the impact of a non working part of the instrument
+  Calls analyze_localized_event for both the polarized and unpolarized simulation files
+  and returns only the physically relevant vectors to minimize memory usage.
+  :param pol_data_file: str, path to the polarized simulation file (.tra or .tra.gz)
+  :param unpol_data_file: str, path to the unpolarized simulation file (.tra or .tra.gz)
+  :param dec_sf: float, declination of the source in satellite frame [deg]
+  :param ra_sf: float, right ascension of the source in satellite frame [deg]
+  :param dec_sf_err: float, uncertainty on dec_sf [deg]
+  :param ra_sf_err: float, uncertainty on ra_sf [deg]
+  :param geometry: str, path to the geometry file
+  :param array_dtype: numpy dtype, dtype to use for output arrays
+  :returns: np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray,
+            compton_ener_pol, pol, pol_err, arm_pol, single_ener_pol,
+            compton_ener_unpol, unpol, unpol_err, arm_unpol
   """
   compton_ener_pol, compton_second_pol, compton_time_pol, pol, pol_err, polar_from_position_pol, polar_from_energy_pol, arm_pol, compton_first_detector_pol, compton_sec_detector_pol, single_ener_pol, single_time_pol, single_detector_pol = analyze_localized_event(pol_data_file, dec_sf, ra_sf, f"{dec_sf}_{ra_sf}_pol", 0, 0, dec_sf_err, ra_sf_err, geometry, array_dtype)
   compton_ener_unpol, compton_second_unpol, compton_time_unpol, unpol, unpol_err, polar_from_position_unpol, polar_from_energy_unpol, arm_unpol, compton_first_detector_unpol, compton_sec_detector_unpol, single_ener_unpol, single_time_unpol, single_detector_unpol = analyze_localized_event(unpol_data_file, dec_sf, ra_sf, f"{dec_sf}_{ra_sf}_pol", 0, 0, dec_sf_err, ra_sf_err, geometry, array_dtype)
-  # return compton_ener_pol, pol, pol_err, arm_pol, compton_first_detector_pol, compton_sec_detector_pol, single_ener_pol, single_detector_pol,     compton_ener_unpol, unpol, unpol_err, arm_unpol, compton_first_detector_unpol, compton_sec_detector_unpol
   return compton_ener_pol, pol, pol_err, arm_pol, single_ener_pol, compton_ener_unpol, unpol, unpol_err, arm_unpol
 
 
 def ra2lon(ra):
   """
   Change a coordinate in ra to its longitude
-  :param ra: earth right ascension [0 - 360]
-  :returns: longitude  [-180 - 180]
+  :param ra: float, earth right ascension [0 - 360] [deg]
+  :returns: float, longitude [-180 - 180] [deg]
   """
   ra_verif(ra)
   if ra <= 180:
@@ -748,8 +814,9 @@ def ra2lon(ra):
 def inwindow(energy, ergcut):
   """
   Checks whether an energy is in the energy window defined by ergcut
-  :param energy: energy to test
-  :param ergcut: energy window (Emin, Emax)
+  :param energy: float, energy to test [keV]
+  :param ergcut: tuple, energy window (Emin, Emax) [keV]
+  :returns: bool, True if energy is in the window
   :returns: bool
   """
   return ergcut[0] <= energy <= ergcut[1]
@@ -758,10 +825,11 @@ def inwindow(energy, ergcut):
 def compatibility_test(val1, bin_w1, val2, bin_w2):
   """
   Checks if the 2 intervals are compatible
-  :param val1: Center of interval 1
-  :param bin_w1: Amplitude of the interval 1 (=1bin)
-  :param val2: Center of interval 2
-  :param bin_w2: Amplitude of the interval 2 (=1bin)
+  :param val1: float, Center of interval 1
+  :param bin_w1: float, Amplitude of the interval 1 (=1bin)
+  :param val2: float, Center of interval 2
+  :param bin_w2: float, Amplitude of the interval 2 (=1bin)
+  :returns: bool
   """
   min1, max1 = val1 - bin_w1, val1 + bin_w1
   min2, max2 = val2 - bin_w2, val2 + bin_w2
@@ -774,7 +842,8 @@ def compatibility_test(val1, bin_w1, val2, bin_w2):
 def dec_verif(dec):
   """
   Raises an error if dec is not in the domain [0, 180]
-  :param dec:
+  :param dec: float, declination to verify [deg]
+  :raises ValueError: if dec is not in [0, 180]
   """
   if not 0 <= dec <= 180:
     raise ValueError(f"Declination has a wrong value : 0 <= {dec} <= 180")
@@ -783,7 +852,8 @@ def dec_verif(dec):
 def ra_verif(ra):
   """
   Raises an error if ra is not in the domain [0, 360[
-  :param ra:
+  :param ra: float, right ascension to verify [deg]
+  :raises ValueError: if ra is not in [0, 360[
   """
   if not 0 <= ra < 360:
     raise ValueError(f"Right ascension has a wrong value : 0 <= {ra} < 360")
@@ -792,7 +862,8 @@ def ra_verif(ra):
 def lat_verif(lat):
   """
   Raises an error if lat is not in the domain [-90, 90]
-  :param lat:
+  :param lat: float, latitude to verify [deg]
+  :raises ValueError: if lat is not in [-90, 90]
   """
   if not -90 <= lat <= 90:
     raise ValueError(f"verif_rad_belts : Latitude has a wrong value : -90 <= {lat} <= 90")
@@ -801,7 +872,8 @@ def lat_verif(lat):
 def lon_verif(lon):
   """
   Raises an error if lon is not in the domain ]-180, 180]
-  :param lon:
+  :param lon: float, longitude to verify [deg]
+  :raises ValueError: if lon is not in ]-180, 180]
   """
   if not -180 < lon <= 180:
     raise ValueError(f"Longitude has a wrong value : -180 < {lon} <= 180")
@@ -816,10 +888,13 @@ def calculate_polar_angle(ener_sec, ener_tot, ener_sec_err=None, ener_tot_err=No
     (Most of the time first interaction and final absorption)
   This function is made so that the cos of the angle is >=-1 as it's not possible to take the arccos of a number <-1.
   By construction of cos_value, the value cannot exceed 1.
-  :param ener_sec: Energy of second deposit
-  :param ener_tot: Total energy of deposits
-  # base unit of mc**2 is Joule, dividing it by charge_elem and 1000 makes it in keV to correspond with E2 and Etot that are in keV
+  :param ener_sec: float or array, energy of the second deposit [keV]
+  :param ener_tot: float or array, total energy of deposits [keV]
+  :param ener_sec_err: float or array or None, uncertainty on ener_sec [keV], default=None
+  :param ener_tot_err: float or array or None, uncertainty on ener_tot [keV], default=None
+  :returns: float or np.ndarray, float or np.ndarray, polar_angle [deg], polar_angle_err [deg] (0 if no errors provided)
   """
+  # base unit of mc**2 is Joule, dividing it by charge_elem and 1000 makes it in keV to correspond with E2 and Etot that are in keV
   cos_value = 1 - electron_rest_ener * (1 / ener_sec - 1 / ener_tot)
   cos_value_filtered = np.where(cos_value < -1, -1, np.where(cos_value > 1, 1, cos_value))
   if ener_sec_err is not None and ener_tot_err is not None:
@@ -845,10 +920,13 @@ def angle(scatter_vector, grb_dec_sf, grb_ra_sf, source_name, num_sim, num_sat, 
   :param scatter_vector:  array of 3-uple, Compton scattered gamma-ray vector
   :param grb_dec_sf:      float,  source polar angle seen by satellite [deg]
   :param grb_ra_sf:       float,  source azimuthal angle seen by satellite [deg]
-  :param source_name:     name of the source
-  :param num_sim:         number of the simulation
-  :param num_sat:         number of the satellite
-  :returns:     2 array, polar and azimuthal compton scattering angles [deg]
+  :param source_name:     str, name of the source
+  :param num_sim:         int, number of the simulation
+  :param num_sat:         int, number of the satellite
+  :param scatter_vector_err: np.ndarray or None, uncertainty on each component of scatter_vector, default=None
+  :param grb_dec_sf_err:  float or None, uncertainty on grb_dec_sf [deg], default=None
+  :param grb_ra_sf_err:   float or None, uncertainty on grb_ra_sf [deg], default=None
+  :returns: np.ndarray, np.ndarray, np.ndarray, azim [deg], polar [deg], azim_err [deg]
   """
   if len(scatter_vector) == 0:
     print(f"There is no compton event detected for source {source_name}, simulation {num_sim} and satellite {num_sat}")
@@ -942,11 +1020,12 @@ def modulation_func(x, pa, mu, S):
 def set_bins(bin_mode, data=None):
   """
   Create bins for polarigrams
-  :param bin_mode: How the bins are created
+  :param bin_mode: str, how the bins are created:
     fixed : 21 equal bins between -180 and 180
     limited : Each bin has at list 9 events TODO
     optimized : bins are created so that the fit is optimized TODO + find how to have this optimization
-  :returns:   array with the bins' values
+  :param data: np.ndarray or None, data used for bin creation (required for 'limited' and 'optimized' modes), default=None
+  :returns: np.ndarray, array with the bins' values
   """
   bins = ""
   if bin_mode == "fixed":
@@ -965,13 +1044,12 @@ def err_calculation(polhist, unpolhist, binwidth, polhist_err, unpolhist_err):
   :param polhist:      list,   bins for the polarized polarigram
   :param unpolhist:    list,   bins for the unpolarized polarigram
   :param binwidth: list,   bin widths
+  :param polhist_err:   list,   uncertainties on each polarized bin
+  :param unpolhist_err: list,   uncertainties on each unpolarized bin
+  :returns: np.ndarray, array of error values normalized by bin width
   """
   nbins = len(polhist)
   mean_unpol = np.mean(unpolhist)
-
-  # uncertainty = (pol/unpol**2*mean_unpol*np.sqrt(unpol))**2 + (mean_unpol/unpol*np.sqrt(pol))**2
-  # for ite_j in range(nbins):
-  #   uncertainty += (pol / unpol / nbins * np.sqrt(unpol[ite_j])) ** 2
   uncertainty = (mean_unpol / unpolhist) ** 2 * (polhist + polhist_err) + (polhist * mean_unpol / unpolhist**2)**2 * (unpolhist + unpolhist_err) + (polhist / unpolhist) ** 2 * mean_unpol / nbins
   error = np.sqrt(uncertainty)
   return error/binwidth
@@ -979,10 +1057,18 @@ def err_calculation(polhist, unpolhist, binwidth, polhist_err, unpolhist_err):
 
 def make_error_histogram(array, error_array, bins, cumulative=True, hardlim=(True, False)):
   """
+  Computes the lower and upper error bars on a histogram by shifting each value by its uncertainty
+  and measuring how events migrate between bins.
   Hardlim is used to keep values that would be out of the physical range.
   For instance, hardlim on 0 for mdp, because mdp > 0.
   In that situation if an errored value < 0 is found (to be put in bin 0 that was initialy in bin 1) then the value is not taken out of bin 1 into bin 0 as it's not physical to find it there
-  Returns the sup error and inf error on bins
+  :param array: array, data values
+  :param error_array: array, uncertainty on each value (same length as array)
+  :param bins: array, bin edges
+  :param cumulative: bool, if True computes error on the cumulative histogram, default=True
+  :param hardlim: tuple of 2 bool, whether to enforce hard limits at the lower and upper bin edges, default=(True, False)
+  :returns: inf_err, sup_err — lower and upper error arrays on the histogram bins
+  :raises ValueError: if array and error_array do not have the same length
   """
   if len(array) != len(error_array):
     raise ValueError("Data and its error don't have the same len")
@@ -1037,9 +1123,16 @@ def make_error_histogram(array, error_array, bins, cumulative=True, hardlim=(Tru
 
 def pol_unpol_hist_err(pol, unpol, pol_err, unpol_err, bins):
   """
-  The method for estimated the error in each bin is not exact but as there is a overestimation of the error value by taking bin - maxerr <= bin <= bin + maxerr with maxerr = max(abs(errinf), abs(errsup))
-  intead of bin - errinf <= bin <= bin + errsup
-
+  Estimates the bin-by-bin error on both the polarized and unpolarized polarigrams by shifting
+  each event by its uncertainty and measuring the resulting change in histogram counts.
+  Note: the method slightly overestimates the error by using max(|err_inf|, |err_sup|) symmetrically
+  instead of asymmetric error bars.
+  :param pol: array, azimuthal scattering angles for the polarized simulation [deg] in [-180, 180]
+  :param unpol: array, azimuthal scattering angles for the unpolarized simulation [deg] in [-180, 180]
+  :param pol_err: array, uncertainty on each polarized angle value [deg]
+  :param unpol_err: array, uncertainty on each unpolarized angle value [deg]
+  :param bins: array, bin edges for the polarigram histogram
+  :returns: histpolerr, histunpolerr — bin-by-bin error arrays for the polarized and unpolarized histograms
   """
   polp = np.where(pol + pol_err > 180, pol + pol_err - 360, pol + pol_err)
   polm = np.where(pol - pol_err < -180, 360 - (pol - pol_err), pol - pol_err)
@@ -1068,8 +1161,8 @@ def fname2decra(fname):
   """
   Infers dec and RA from file name with the shape :
     {prefix}_{sourcename}_sat{num_sat}_{num_sim}_{dec_world_frame}_{ra_world_frame}.inc{1/2}.id1.extracted.tra
-  :param fname: *.tra or *.tra.gz filename
-  :returns: dec, RA, sourcename, number of the sim, number of the sat
+  :param fname: str, *.tra or *.tra.gz filename
+  :returns: float, float, str, int, int, dec, RA, sourcename, number of the sim, number of the sat
   """
   data = fname.split("/")[-1]  # to get rid of the first part of the prefix (and the potential "_" in it)
   data = data.split("_")
@@ -1080,8 +1173,8 @@ def fname2decratime(fname):
   """
   Infers dec and RA from file name with the shape :
     {prefix}_{sourcename}_sat{num_sat}_{num_sim}_{dec_world_frame}_{ra_world_frame}_{burst_time}.inc{1/2}.id1.extracted.tra
-  :param fname: *.tra or *.tra.gz filename
-  :returns: dec, RA, time at which the burst happened, sourcename, number of the sim, number of the sat
+  :param fname: str, *.tra or *.tra.gz filename
+  :returns: float, float, float, str, int, int, dec, RA, time at which the burst happened, sourcename, number of the sim, number of the sat
   """
   data = fname.split("/")[-1]  # to get rid of the first part of the prefix (and the potential "_" in it)
   data = data.split("_")
@@ -1095,28 +1188,36 @@ def save_log(filename, name, num_grb, num_sim, num_sat, status, inc, ohm, omega,
   """
   Saves all the simulation information into a log file.
   May be used to make sure everything works or to make some plots
-  :param filename: name of the log file to store information
-  :param name: name of the source
-  :param num_sim: number of the sime
-  :param num_sat: number of the sat
-  :param status: status of the simulation - Simulated - Ignored(horizon) - Ignored(off) - Ignored(faint)
-  :param inc: inclination of the satellite's orbite
-  :param ohm: ra of the ascending node of the satellite's orbite
-  :param omega: argument of periapsis of the satellite's orbite
-  :param alt: altitude of the satellite's orbite
-  :param random_time: random time at which the source is simulated
-  :param sat_dec_wf: satellite's dec in world frame
-  :param sat_ra_wf: satellite's ra in world frame
-  :param grb_dec_wf: source's dec in world frame
-  :param grb_ra_wf: source's ra in world frame
-  :param grb_dec_st: source's dec in sat frame
-  :param grb_ra_sf: source's ra in sat frame
+  :param filename: str, name of the log file to store information
+  :param name: str, name of the source
+  :param num_sim: int, number of the simulation
+  :param num_sat: int, number of the satellite
+  :param status: str, status of the simulation - Simulated - Ignored(horizon) - Ignored(off) - Ignored(faint)
+  :param inc: float, inclination of the satellite's orbit [deg]
+  :param ohm: float, ra of the ascending node of the satellite's orbit [deg]
+  :param omega: float, argument of periapsis of the satellite's orbit [deg]
+  :param alt: float, altitude of the satellite's orbit [km]
+  :param random_time: float, random time at which the source is simulated [s]
+  :param sat_dec_wf: float, satellite's dec in world frame [deg]
+  :param sat_ra_wf: float, satellite's ra in world frame [deg]
+  :param grb_dec_wf: float, source's dec in world frame [deg]
+  :param grb_ra_wf: float, source's ra in world frame [deg]
+  :param grb_dec_st: float, source's dec in sat frame [deg]
+  :param grb_ra_sf: float, source's ra in sat frame [deg]
   """
   with open(filename, "a") as f:
     f.write(f"{name} | {num_grb} | {num_sim} | {num_sat} | {status} | {inc} | {ohm} | {omega} | {alt} | {random_time} | {sat_dec_wf} | {sat_ra_wf} | {grb_dec_wf} | {grb_ra_wf} | {grb_dec_st} | {grb_ra_sf}\n")
 
 
 def save_value(file, value):
+  """
+  Writes a single value to an open file in a consistent format.
+  Handles None, numpy arrays, lists, and scalar numeric types.
+  Array elements are separated by '|' on a single line; empty arrays write a blank line.
+  :param file: file object opened in write mode
+  :param value: value to write — None, list, np.ndarray, int, float, np.int32/64, np.float32/64
+  :raises TypeError: if value is of an unsupported type
+  """
   if value is None:
     file.write(f"None\n")
   else:
@@ -1135,15 +1236,20 @@ def save_value(file, value):
 
 
 def save_grb_data(data_file, filename, sat_info_list, bkg_data, mu_data, geometry, force=False):
-  # tracemalloc.start()  # Start memory monitoring
-  #
-  # # get memory statistics
-  # current, peak = tracemalloc.get_traced_memory()
-  # print("\nInit")
-  # print(f"Current memory use : {current / 1024:.2f} Ko")
-  # print(f"Peak use : {peak / 1024:.2f} Ko")
+  """
+  Extracts and saves all relevant data from a GRB simulation file into an HDF5 file.
+  If the output file already exists and force=False, the extraction is skipped.
+  Extracted quantities include Compton and single event data, satellite and GRB position,
+  background rates, mu100 reference values, and simulation metadata.
+  :param data_file: str, path to the input .tra or .tra.gz simulation file
+  :param filename: str, path to the output HDF5 file to write
+  :param sat_info_list: list, orbital parameters for each satellite
+  :param bkg_data: background data object containing count rates per position and altitude
+  :param mu_data: mu100 data object containing modulation factors per direction
+  :param geometry: str, path to the geometry file used for detector identification
+  :param force: bool, if True overwrites an existing output file, default=False
+  """
   array_dtype = np.float32
-  # sim_dir, fname = filename.split(f"/extracted-{ergcut[0]}-{ergcut[1]}/")
 
   file_exist = os.path.exists(filename)
   if file_exist and not force:
@@ -1160,19 +1266,8 @@ def save_grb_data(data_file, filename, sat_info_list, bkg_data, mu_data, geometr
     # Error on estimating the GRB direction (obtained with Alexey's estimations)
     dec_wf_error, ra_wf_error = 1, 1
     sat_info = sat_info_list[num_sat]
-    # sat_dec_wf, sat_ra_wf = sat_info_2_decra(sat_info, burst_time)
     if sat_info is not None:
-      # # get memory statistics
-      # current, peak = tracemalloc.get_traced_memory()
-      # print("\nBefore affecting")
-      # print(f"Current memory use : {current / 1024:.2f} Ko")
-      # print(f"Peak use : {peak / 1024:.2f} Ko")
       sat_dec_wf, sat_ra_wf, sat_mag_dec, sat_alt, compton_b_rate, single_b_rate, b_idx = affect_bkg(sat_info, burst_time, bkg_data)
-      # # get memory statistics
-      # current, peak = tracemalloc.get_traced_memory()
-      # print("\nAfter affecting")
-      # print(f"Current memory use : {current / 1024:.2f} Ko")
-      # print(f"Peak use : {peak / 1024:.2f} Ko")
     else:
       raise ValueError("Satellite information given is None. Please give satellite information for the analyse to work.")
 
@@ -1183,89 +1278,11 @@ def save_grb_data(data_file, filename, sat_info_list, bkg_data, mu_data, geometr
 
     mu_index, mu100_ref, mu100_err_ref, s_eff_compton_ref, s_eff_single_ref = closest_mufile(grb_dec_sat_frame, grb_ra_sat_frame, mu_data)
 
-    # # get memory statistics
-    # current, peak = tracemalloc.get_traced_memory()
-    # print("\nBefore file reading")
-    # print(f"Current memory use : {current / 1024:.2f} Ko")
-    # print(f"Peak use : {peak / 1024:.2f} Ko")
-
     #################################################################################################################
     #        Readding file and saving values
     #################################################################################################################
     # Extracting the data from first file
     compton_ener, compton_second, compton_time, pol, pol_err, polar_from_position, polar_from_energy, arm_pol, compton_first_detector, compton_sec_detector, single_ener, single_time, single_detector = analyze_localized_event(data_file, grb_dec_sat_frame, grb_ra_sat_frame, source_name, num_sim, num_sat, grb_dec_sf_err, grb_ra_sf_err, geometry, array_dtype)
-    # data_pol = readfile(data_file)
-    # compton_second = []
-    # compton_ener = []
-    # compton_time = []
-    # compton_firstpos = []
-    # compton_secpos = []
-    # single_ener = []
-    # single_time = []
-    # single_pos = []
-    # compton_second_err = []
-    # compton_ener_err = []
-    # compton_firstpos_err = []
-    # compton_secpos_err = []
-    # for event in data_pol:
-    #   reading = readevt(event, None)
-    #   if len(reading) == 9:
-    #     compton_second.append(reading[0])
-    #     compton_ener.append(reading[1])
-    #     compton_time.append(reading[2])
-    #     compton_firstpos.append(reading[3])
-    #     compton_secpos.append(reading[4])
-    #     compton_second_err.append(reading[5])
-    #     compton_ener_err.append(reading[6])
-    #     compton_firstpos_err.append(reading[7])
-    #     compton_secpos_err.append(reading[8])
-    #   elif len(reading) == 3:
-    #     single_ener.append(reading[0])
-    #     single_time.append(reading[1])
-    #     single_pos.append(reading[2])
-    # # Free the variable
-    # del data_pol
-    #
-    # compton_ener = np.array(compton_ener, dtype=array_dtype)
-    # compton_second = np.array(compton_second, dtype=array_dtype)
-    # single_ener = np.array(single_ener, dtype=array_dtype)
-    # compton_firstpos = np.array(compton_firstpos, dtype=array_dtype)
-    # compton_secpos = np.array(compton_secpos, dtype=array_dtype)
-    # single_pos = np.array(single_pos, dtype=array_dtype)
-    # compton_time = np.array(compton_time, dtype=array_dtype)
-    # single_time = np.array(single_time, dtype=array_dtype)
-    # compton_ener_err = np.array(compton_ener_err, dtype=array_dtype)
-    # compton_second_err = np.array(compton_second_err, dtype=array_dtype)
-    # compton_firstpos_err = np.array(compton_firstpos_err, dtype=array_dtype)
-    # compton_secpos_err = np.array(compton_secpos_err, dtype=array_dtype)
-    # scat_vec_err = np.sqrt(compton_secpos_err**2 + compton_firstpos_err**2)
-    #
-    # #################################################################################################################
-    # #                     Filling the fields
-    # #################################################################################################################
-    # # Calculating the polar angle with energy values and compton azim and polar scattering angles from the kinematics
-    # # polar and position angle stored in deg
-    # polar_from_energy, polar_from_energy_err = calculate_polar_angle(compton_second, compton_ener, ener_sec_err=compton_second_err, ener_tot_err=compton_ener_err)
-    # pol, polar_from_position, pol_err = angle(compton_secpos - compton_firstpos, grb_dec_sat_frame, grb_ra_sat_frame, source_name, num_sim, num_sat, scatter_vector_err=scat_vec_err, grb_dec_sf_err=grb_dec_sf_err, grb_ra_sf_err=grb_ra_sf_err)
-    #
-    # # Calculating the arm and extracting the indexes of correct arm events (arm in deg)
-    # arm_pol = np.array(polar_from_position - polar_from_energy, dtype=array_dtype)
-    # polar_from_energy = np.array(polar_from_energy)
-    # # polar_from_energy_err = np.array(polar_from_energy_err)
-    # pol = np.array(pol)
-    # polar_from_position = np.array(polar_from_position)
-    # # pol_err = np.array(pol_err)
-    #
-    # #################################################################################################################
-    # #     Finding the detector of interaction for each event
-    # #################################################################################################################
-    # compton_first_detector, compton_sec_detector, single_detector = find_detector(compton_firstpos, compton_secpos, single_pos, geometry)
-
-    # # get memory statistics
-    # current, peak = tracemalloc.get_traced_memory()
-    # print("\nAfter detector search")
-    # print(f"Current memory use : {current / 1024:.2f} Ko")
-    # print(f"Peak use : {peak / 1024:.2f} Ko")
 
     # Saving information
     df_compton = pd.DataFrame({"compton_ener": compton_ener, "compton_second": compton_second, "compton_time": compton_time, "pol": pol, "polar_from_position": polar_from_position, "polar_from_energy": polar_from_energy,
@@ -1284,14 +1301,8 @@ def save_grb_data(data_file, filename, sat_info_list, bkg_data, mu_data, geometr
       f.get_storer("compton").attrs.sat_ra_wf = sat_ra_wf
       f.get_storer("compton").attrs.sat_alt = sat_alt
       f.get_storer("compton").attrs.num_sat = num_sat
-      # f.get_storer("compton").attrs.compton_b_rate = compton_b_rate
-      # f.get_storer("compton").attrs.single_b_rate = single_b_rate
       # Information from mu files
       f.get_storer("compton").attrs.mu_index = mu_index
-      # f.get_storer("compton").attrs.mu100_ref = mu100_ref
-      # f.get_storer("compton").attrs.mu100_err_ref = mu100_err_ref
-      # f.get_storer("compton").attrs.s_eff_compton_ref = s_eff_compton_ref
-      # f.get_storer("compton").attrs.s_eff_single_ref = s_eff_single_ref
       # GRB position and polarisation
       f.get_storer("compton").attrs.grb_dec_sat_frame = grb_dec_sat_frame
       f.get_storer("compton").attrs.grb_ra_sat_frame = grb_ra_sat_frame
@@ -1303,13 +1314,6 @@ def save_grb_data(data_file, filename, sat_info_list, bkg_data, mu_data, geometr
       f.get_storer("compton").attrs.source_name = source_name
       f.get_storer("compton").attrs.num_sim = num_sim
 
-  #   # get memory statistics
-  #   current, peak = tracemalloc.get_traced_memory()
-  #   print("\nAfter saving")
-  #   print(f"Current memory use : {current / 1024:.2f} Ko")
-  #   print(f"Peak use : {peak / 1024:.2f} Ko")
-  #   tracemalloc.stop()
-
 
 ######################################################################################################################################################
 # File readers and extractors
@@ -1317,7 +1321,8 @@ def save_grb_data(data_file, filename, sat_info_list, bkg_data, mu_data, geometr
 def extract_lc(fullname):
   """
   Opens a light curve file from a .dat file and returns 2 lists containing time and count
-  :param fullname: path + name of the file to save the light curves
+  :param fullname: str, path + name of the light curve .dat file
+  :returns: np.ndarray, np.ndarray, times [s] and counts arrays
   """
   times = []
   counts = []
@@ -1335,7 +1340,9 @@ def extract_lc(fullname):
 def read_grbpar(parfile):
   """
   reads a source's parameter file to get useful information for the analysis
-  :param parfile: path/name of the parameter file
+  :param parfile: str, path/name of the parameter file
+  :returns: str, str, str, str, str, str, str, str, str, int, float, list, list,
+            geometry, revan_file, mimrec_file, sim_mode, spectra_path, cat_file, source_file, sim_prefix, sttype, n_sim, simtime, position_allowed_sim, sat_info
   """
   sat_info = []
   geometry, revan_file, mimrec_file, sim_mode, spectra_path, cat_file, source_file, sim_prefix, sttype, n_sim, simtime, position_allowed_sim = None, None, None, None, None, None, None, None, None, None, None, None
@@ -1375,7 +1382,9 @@ def read_grbpar(parfile):
 def read_bkgpar(parfile):
   """
   reads a background parameter file to get useful information for the analysis
-  :param parfile: path/name of the parameter file
+  :param parfile: str, path/name of the parameter file
+  :returns: str, str, str, str, str, float, np.ndarray, list,
+            geom, revanf, mimrecf, source_base, spectra, simtime, latitudes, altitudes
   """
   geom, revanf, mimrecf, source_base, spectra, simtime, latitudes, altitudes = None, None, None, None, None, None, None, None
   with open(parfile, "r") as f:
@@ -1420,7 +1429,9 @@ def read_bkgpar(parfile):
 def read_mupar(parfile):
   """
   reads a mu100 parameter file to get useful information for the analysis
-  :param parfile: path/name of the parameter file
+  :param parfile: str, path/name of the parameter file
+  :returns: str, str, str, str, str, list, float, float, list, list,
+            geom, revanf, mimrecf, source_base, spectra, bandparam, poltime, unpoltime, decs, ras
   """
   geom, revanf, mimrecf, source_base, spectra, bandparam, poltime, unpoltime, decs, ras = None, None, None, None, None, None, None, None, None, None
   with open(parfile, "r") as f:
@@ -1455,7 +1466,7 @@ def readfile(fname):
   """
   Reads a .tra or .tra.gz file and returns the information for an event, delimited by "SE" in the .tra file
   :param fname: str, name of .tra file
-  :returns: information on the event
+  :returns: list of str, list of raw event strings extracted from the file
   """
   if fname.endswith(".tra"):
     with open(fname) as f:
@@ -1475,57 +1486,21 @@ def pflux_to_mflux_calculator(lc_name):
   """
   Returns the conversion value from pflux to mflux.
   It's based on a 1-second pflux as the Lpeak in the Yonetoku correlation is based on a 1-second timescale.
+  :param lc_name: str, filename of the light curve in the GBM_Light_Curves directory
+  :returns: float, ratio of mean count rate to peak count rate (pflux to mflux conversion factor)
   """
   times, counts = extract_lc(f"../Data/sources/GBM_Light_Curves/{lc_name}")
   pflux_to_mflux = np.mean(counts) / np.max(counts)
   return pflux_to_mflux
-
-  # delta_time = times[1:]-times[:-1]
-  #
-  # if t90 <= 2:
-  #   peak_duration = 0.064
-  # else:
-  #   peak_duration = 1.024
-
-  # new_bins = np.arange(0, t90 + peak_duration, peak_duration)
-  #
-  # rebinned_lc = binned_statistic(times, counts, statistic="sum", bins=new_bins)[0]
-  # print()
-  # print("counts", len(counts))
-  # print("rebin", len(rebinned_lc))
-  # print("nbin edges", len(new_bins))
-  # print("new mc", np.sum(rebinned_lc) / t90)
-  # reduced_count = counts[:-1]
-  # Mean number of count/second
-  # mean_count = np.sum(reduced_count) / t90
-  # print("mc", mean_count)
-  # if times[-1] <= 1:
-  #   # Case where the T90 <1s, mflux and pflux over 1s are then the same
-  #   pflux_to_mflux = 1
-  # elif np.min(delta_time) >= 1:
-  #   # No need to rebin, we just re-normalize the counts with the duration of the bin that is >1s
-  #   reduced_count = reduced_count / delta_time
-  #   pflux_to_mflux = mean_count / np.max(reduced_count)
-  # else:
-  #   # Rebining needed, we define the number of rebins necessary and rebin
-  #   rebining = int(1 / delta_time[0]) + 1
-  #   newcount = []
-  #   bin_ite = 0
-  #   while bin_ite + rebining < len(reduced_count):
-  #     newcount.append(np.sum(reduced_count[bin_ite:bin_ite+rebining]))
-  #     bin_ite += rebining
-  #   newcount.append(np.sum(reduced_count[bin_ite:]))
-  #   pflux_to_mflux = mean_count / np.max(newcount)
-  # return pflux_to_mflux
 
 
 def rescale_cr_to_GBM_pf(cr, GBM_mean_flux, GBM_peak_flux):
   """
   Rescales the count rate for a simulation made using a mean flux for the source to obtain an estimation of the count
   rate that should be obtained during the peak of the burst
-  :param cr: count rate for a simulation of a GRB with a mean flux
-  :param GBM_mean_flux: mean flux given by GBM for a given GRB
-  :param GBM_peak_flux: peak flux given by GBM for this same GRB
+  :param cr: float, count rate for a simulation of a GRB with a mean flux [counts/s]
+  :param GBM_mean_flux: float, mean flux given by GBM for a given GRB [ph/cm²/s]
+  :param GBM_peak_flux: float, peak flux given by GBM for this same GRB [ph/cm²/s]
   :returns: float, count rate at peak
   """
   flux_ratio = GBM_peak_flux / GBM_mean_flux
@@ -1535,10 +1510,11 @@ def rescale_cr_to_GBM_pf(cr, GBM_mean_flux, GBM_peak_flux):
 def calc_flux_gbm(catalog, index, ergcut, cat_is_df=False):
   """
   Calculates the fluence per unit time of a given source using an energy cut and its spectrum
-  :param catalog: GBM catalog containing sources' information
-  :param index: index of the source in the catalog
-  :param ergcut: energy window over which the fluence is calculated
-  :returns: the number of photons per cm² for a given energy range, averaged over the duration of the sim : ncount/cm²/s
+  :param catalog: object, GBM catalog containing sources' information
+  :param index: int, index of the source in the catalog
+  :param ergcut: tuple, energy window over which the fluence is calculated [keV]
+  :param cat_is_df: bool, if True the catalog is already a DataFrame, default=False
+  :returns: float, the number of photons per cm² for a given energy range, averaged over the duration of the sim [ncount/cm²/s]
   """
   if cat_is_df:
     used_df = catalog
@@ -1566,10 +1542,10 @@ def calc_flux_gbm(catalog, index, ergcut, cat_is_df=False):
 def calc_flux_sample(catalog, index, ergcut):
   """
   Calculates the fluence per unit time of a given source using an energy cut and its spectrum
-  :param catalog: GBM catalog containing sources' information
-  :param index: index of the source in the catalog
-  :param ergcut: energy window over which the fluence is calculated
-  :returns: the number of photons per cm² for a given energy range, averaged over the duration of the sim : ncount/cm²/s
+  :param catalog: object, GBM catalog containing sources' information
+  :param index: int, index of the source in the catalog
+  :param ergcut: tuple, energy window over which the fluence is calculated [keV]
+  :returns: float, the number of photons per cm² for a given energy range, averaged over the duration of the sim [ncount/cm²/s]
   """
   num_val = 100001
   pflux = norm_band_spec_calc(catalog.df.alpha.values[index], catalog.df.beta.values[index], catalog.df.z_obs.values[index], catalog.df.dl.values[index], catalog.df.ep_rest.values[index], catalog.df.liso.values[index],
@@ -1582,7 +1558,12 @@ def calc_flux_sample(catalog, index, ergcut):
 ######################################################################################################################################################
 def make_sample_lc(smp_cat, cat_ite, gbmt90):
   """
-  
+  Generates a rescaled light curve file for a sample GRB by stretching an observed GBM light curve
+  to match the target T90 duration. The output file is saved in the Sample_Light_Curves directory.
+  :param smp_cat: catalog object, sample catalog containing GRB properties and associated light curve filenames
+  :param cat_ite: int, index of the source in the sample catalog
+  :param gbmt90: float, T90 duration of the reference GBM light curve [s]
+  :raises ValueError: if any count bin is negative
   """
   corr = smp_cat.df.t90.values[cat_ite] / gbmt90
   times, counts = extract_lc(f"../Data/sources/GBM_Light_Curves/{smp_cat.df.lc.values[cat_ite]}")
@@ -1606,10 +1587,10 @@ def make_sample_lc(smp_cat, cat_ite, gbmt90):
 def calc_snr(S, B, C=0):
   """
   Calculates the signal to noise ratio of a GRB in a time bin. Returns 0 if the value is negative.
-  :param S: number of counts in the source (background not included)
-  :param B: expected number of background counts
-  :param C: minimum number of counts in the source to consider the detection
-  :returns: SNR (as defined in Sarah Antier's PhD thesis)
+  :param S: float or np.ndarray, number of counts in the source (background not included)
+  :param B: float or np.ndarray, expected number of background counts
+  :param C: float, minimum number of counts in the source to consider the detection, default=0
+  :returns: float or np.ndarray, float or np.ndarray, SNR and SNR uncertainty (as defined in Sarah Antier's PhD thesis)
   """
   try:
     S, B = np.where(S <= 0, 0, S), np.where(S <= 0, 1, B)
@@ -1628,29 +1609,30 @@ def calc_mdp(S, B, mu100, nsigma=4.29, mu100_err=None):
   """
   Calculates the minimum detectable polarization for a burst
   Error is calculated with error propagation
-  :param S: number of expected counts from the burst
-  :param B: number of expected counts from the background
-  :param mu100: modulation factor
-  :param nsigma: significance of the result in number of sigmas, default=4.29 for 99% CL
+  :param S: float or array, number of expected counts from the burst
+  :param B: float or array, number of expected counts from the background
+  :param mu100: float or array, modulation factor at 100% polarization
+  :param nsigma: float, significance of the result in number of sigmas, default=4.29 for 99% CL
+  :param mu100_err: float or array or None, uncertainty on mu100, default=None (no error on mu100)
+  :returns: float or np.ndarray, float or np.ndarray, mdp [fraction], mdp_err [fraction]
   """
   S = np.where(S == 0, np.nan, S)
   mdp = np.where(np.isnan(S), np.inf, nsigma * np.sqrt(S + B) / (mu100 * S))
   mdp_err = np.where(np.isnan(S), 0, np.where(mu100_err == None, 0, np.sqrt((nsigma / (mu100 * S**2) * (S/2 + B))**2 * S + (nsigma / (2 * mu100 * S))**2 * B + (nsigma * (S + B) * mu100_err / (S * mu100**2))**2) / np.sqrt(S+B)))
-  # if S == 0:
-  #   mdp = np.inf
-  #   mdp_err = 0
-  # else:
-  #   if mu100_err is not None:
-  #     mdp_err = np.sqrt((nsigma / (mu100 * S**2) * (S/2 + B))**2 * S + (nsigma / (2 * mu100 * S))**2 * B + (nsigma * (S + B) * mu100_err / (S * mu100**2))**2) / np.sqrt(S+B)
-  #   else:
-  #     mdp_err = 0
-  #   mdp = nsigma * np.sqrt(S + B) / (mu100 * S)
   return mdp, mdp_err
 
 
 def calc_trigger(source_data, source_ite, const_index, lc_aligned):
   """
-
+  Evaluates whether a GRB source triggers a constellation of satellites based on SNR thresholds,
+  for 1, 2, 3 and 4 satellite coincidence trigger levels. Returns the source index for each trigger
+  level that is satisfied, and records information about non-triggering sources.
+  :param source_data: source data object containing simulation results for multiple sims and satellites
+  :param source_ite: int, index of the current source in the catalog
+  :param const_index: int, index of the constellation configuration to evaluate
+  :param lc_aligned: bool, if True uses light-curve-aligned SNR computation, otherwise uses pre-computed trigger arrays
+  :returns: np.array of shape (8,) containing [trigg_1s, trigg_2s, trigg_3s, trigg_4s,
+            no_trig_name, no_trig_duration, no_trig_dec, no_trig_e_fluence]
   """
   trigg_1s, trigg_2s, trigg_3s, trigg_4s, no_trig_name, no_trig_duration, no_trig_dec, no_trig_e_fluence = np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan
   if source_data is not None:
@@ -1719,7 +1701,10 @@ def calc_trigger(source_data, source_ite, const_index, lc_aligned):
 
 def get_mdp_list(data, ite_const=0):
   """
-
+  Iterates over all sources and simulations to collect MDP values below 100% (physically meaningful).
+  :param data: nested list/object of source simulation results
+  :param ite_const: int, index of the constellation configuration to use, default=0
+  :returns: int, np.ndarray, np.ndarray, number_detected, mdp_list [%], mdp_list_err [%]
   """
   number_detected = 0
   mdp_list = []
@@ -1742,26 +1727,31 @@ def get_mdp_list(data, ite_const=0):
 
 def get_mdp_rates(mdp_list, mdp_list_inf, mdp_list_sup, threshold, weights):
   """
-  threshold in %
-
+  Computes the weighted rate of sources with MDP below a given threshold, along with
+  the lower and upper error bounds derived from the shifted MDP distributions.
+  :param mdp_list: array, central MDP values [%]
+  :param mdp_list_inf: array, lower-error-shifted MDP values [%]
+  :param mdp_list_sup: array, upper-error-shifted MDP values [%]
+  :param threshold: float, MDP threshold below which a source is considered detectable [%]
+  :param weights: float, weight to apply to each count (e.g. GRB rate normalization)
+  :returns: float, float, float, rate, inf_err, sup_err — weighted detection rate and its asymmetric errors
   """
   rate = np.sum(np.where(mdp_list <= threshold, 1, 0)) * weights
   rate_inf_err = np.sum(np.where(mdp_list_inf <= threshold, 1, 0)) * weights - rate
   rate_sup_err = np.sum(np.where(mdp_list_sup <= threshold, 1, 0)) * weights - rate
-  # print(rate, np.sum(np.where(mdp_list_inf <= threshold, 1, 0)) * weights, np.sum(np.where(mdp_list_sup <= threshold, 1, 0)) * weights)
-  # print(rate, rate_inf_err, rate_sup_err)
   return rate, np.min([0, rate_inf_err, rate_sup_err]), np.max([0, rate_inf_err, rate_sup_err])
 
 
-def eff_area_func(dec_wf, ra_wf, info_sat, mu100_list, burst_time=0):  # TODO : limits on variables
+def eff_area_func(dec_wf, ra_wf, info_sat, mu100_list, burst_time=0):
   """
   Returns a value of the effective area for single event, compton event or 1 if the satellite is in sight for a direction dec_wt, ra_wf
   The value is obtained from mu100 files
-  :param dec_wf: dec for which the function is used
-  :param ra_wf: ra for which the function is used
-  :param info_sat: orbital information about the satellite
-  :param mu100_list: Data contained in the mu100 files
-  :returns:
+  :param dec_wf: float, dec for which the function is used [deg]
+  :param ra_wf: float, ra for which the function is used [deg]
+  :param info_sat: list, orbital information about the satellite [inclination, ohm, omega, altitude]
+  :param mu100_list: object, data contained in the mu100 files
+  :param burst_time: float, time at which the burst occurred used to compute satellite position [s], default=0
+  :returns: float, float, int, seff_compton, seff_single, in_sight — effective areas and visibility flag (0 if not visible)
   """
   dec_verif(dec_wf)
   ra_verif(ra_wf)
@@ -1777,25 +1767,6 @@ def eff_area_func(dec_wf, ra_wf, info_sat, mu100_list, burst_time=0):  # TODO : 
     angle_lim = horizon_angle(sat_alt)
     if dec_sf < angle_lim:
       seff_compton, seff_single = closest_mufile(dec_sf, ra_sf, mu100_list)[-2:]  # TODO test !
-
-      # ampl = 1
-      # ang_freq = 0.222
-      # phi0 = 0.76
-      # y_off_set = 2.5
-      # seff_compton = np.absolute(ampl * np.cos(dec_sf * 2 * np.pi * ang_freq - phi0)) + y_off_set
-      #
-      #
-      # angles = np.array([0, 10, 20, 30, 40, 50, 60, 70, 80, 89, 91, 100, 110])
-      # eff_area = np.array([137.4, 148.5, 158.4, 161.9, 157.4, 150.4, 133.5, 112.8, 87.5, 63.6, 64.7, 71.8, 77.3])
-      # interpo_ite = 1
-      # if dec_sf > angles[-1]:
-      #   seff_single = eff_area[-2] + (eff_area[-1] - eff_area[-2]) / (angles[-1] - angles[-2]) * (dec_sf - angles[-2])
-      # else:
-      #   while dec_sf > angles[interpo_ite]:
-      #     interpo_ite += 1
-      #   seff_single = eff_area[interpo_ite - 1] + (eff_area[interpo_ite] - eff_area[interpo_ite - 1]) / (
-      #             angles[interpo_ite] - angles[interpo_ite - 1]) * (dec_sf - angles[interpo_ite - 1])
-
       return seff_compton, seff_single, 1
     else:
       return 0, 0, 0
@@ -1806,35 +1777,30 @@ def eff_area_func(dec_wf, ra_wf, info_sat, mu100_list, burst_time=0):  # TODO : 
 ######################################################################################################################################################
 # Closest finder
 ######################################################################################################################################################
-def closest_bkg_info(mag_dec, sat_alt, bkgdata):  # TODO : limits on variables
+def closest_bkg_info(mag_dec, sat_alt, bkgdata):
   """
   Find the closest bkg file for a satellite (in terms of latitude, may be updated for longitude too)
   Returns the count rate of this bkg file
   Warning : for now, only takes into account the dec of backgrounds, can be updated but the way the error is calculated
   may not be optimal as the surface of the sphere (polar coordinates) is not a plan.
-  :param mag_dec: declination of the satellite [deg] [0 - 180]
-  :param sat_ra: right ascension of the satellite [deg] [0 - 360]
-    :param sat_alt: altitude of the satellite [km]
-
-  :param bkgdata: list of all the background files
-  :returns: compton and single event count rates of the closest background file
+  :param mag_dec: float, declination of the satellite [deg] [0 - 180]
+  :param sat_alt: float, altitude of the satellite [km]
+  :param bkgdata: object, list of all the background files
+  :returns: list [compton_cr, single_cr, row_index] — count rates of the closest background file and its index
+  :raises FileNotFoundError: if no background file is found for the given altitude
+  :raises IndexError: if the closest background file index is inconsistent
   """
   if len(bkgdata.bkgdf) == 0:
     return 0.000001
   else:
-    # bkg_count = 0
-    # dec_error = []
-    # ra_error = np.zeros(len(bkgdata.bkgdf))
     df_selec_alt = bkgdata.bkgdf[bkgdata.bkgdf.bkg_alt == sat_alt]
     decs = df_selec_alt.bkg_dec.values
     if len(decs) == 0:
       raise FileNotFoundError("No background file were loaded for the given altitude.")
     error = np.abs(decs - mag_dec)
-    # print(error)
     min_arg = np.argmin(error)
     row_num = bkgdata.bkgdf.index.get_loc(df_selec_alt.index[min_arg])
     error_verif = np.abs(bkgdata.bkgdf.bkg_dec.values[row_num] - mag_dec)
-    # print("row, compton_cr, compton_single, compton_dec, mag_dec, compton_alt : ", row_num, bkgdata.bkgdf.compton_cr.values[row_num], bkgdata.bkgdf.single_cr.values[row_num], bkgdata.bkgdf.bkg_dec.values[row_num], mag_dec, bkgdata.bkgdf.bkg_alt.values[row_num])
     if error[min_arg] != error_verif:
       raise IndexError("Problem with finding the closest background file")
     return [bkgdata.bkgdf.compton_cr.values[row_num], bkgdata.bkgdf.single_cr.values[row_num], row_num]
@@ -1846,10 +1812,10 @@ def affect_bkg(info_sat, burst_time, bkg_list):
   for compton and single events at this position
   dec is calculated so that it is from 0 to 180°
   ra is calculated so that it is from 0 to 360°
-  :param info_sat: information about the satellite orbit
-  :param burst_time: time at which the burst occured
-  :param bkg_list: list of the background files to extract the correct count rates
-  :returns  dec_sat_world_frame, ra_sat_world_frame, compton_cr, single_cr
+  :param info_sat: list, information about the satellite orbit [inclination, ohm, omega, altitude]
+  :param burst_time: float, time at which the burst occured [s]
+  :param bkg_list: object, list of the background files to extract the correct count rates
+  :returns: float, float, float, float, float, float, int, dec_sat_world_frame, ra_sat_world_frame, mag_dec_sat_world_frame, altitude, compton_cr, single_cr, bkg_row_index
   """
   orbital_period = orbital_period_calc(info_sat[3])
   earth_ra_offset = earth_rotation_offset(burst_time)
@@ -1866,18 +1832,15 @@ def closest_mufile(grb_dec_sf, grb_ra_sf, mu_list):
   Find the mu100 file closest to a certain direction of detection
   Warning : for now, only takes into account the dec of backgrounds, can be updated but the way the error is calculated
   may not be optimal as the surface of the sphere (polar coordinates) is not a plan.
-  :param grb_dec_sf:  declination of the source in satellite frame [deg] [0 - 180]
-  :param grb_ra_sf:   right ascension of the source in satellite frame [deg] [0 - 360]
-  :param mu_list:     list of all the mu100 files
-  :returns:   mu100, mu100_err, s_eff_compton, s_eff_single
+  :param grb_dec_sf: float, declination of the source in satellite frame [deg] [0 - 180]
+  :param grb_ra_sf: float, right ascension of the source in satellite frame [deg] [0 - 360]
+  :param mu_list: object, list of all the mu100 files
+  :returns: int, float, float, float, float, index, mu100, mu100_err, s_eff_compton, s_eff_single
+  :raises IndexError: if the closest mu file index is inconsistent
   """
   if len(mu_list.mudf) == 0:
     return 0.000001, 0.000001, 0.000001, 0.000001
   else:
-    # dec_error = np.array([(mu.dec - grb_dec_sf) ** 2 for mu in mu_list])
-    # ra_error = np.array([(mu.ra - grb_ra_sf) ** 2 for mu in mu_list])
-    # total_error = np.sqrt(dec_error + ra_error)
-
     error = np.sqrt((mu_list.mudf.dec.values - grb_dec_sf) ** 2 + (mu_list.mudf.ra.values - grb_ra_sf) ** 2)
     index = np.argmin(error)
     error_verif = np.sqrt((mu_list.mudf.dec.values[index] - grb_dec_sf) ** 2 + (mu_list.mudf.ra.values[index] - grb_ra_sf) ** 2)
@@ -1892,6 +1855,12 @@ def closest_mufile(grb_dec_sf, grb_ra_sf, mu_list):
 # Detector functions
 ######################################################################################################################################################
 def det_counter(det_idx_array):
+  """
+  Counts the number of interactions in each of the 20 detectors and returns the result
+  as a 4x5 array matching the physical layout of the instrument units.
+  :param det_idx_array: array of int, detector indices (1 to 20) for each event
+  :returns: np.array of shape (4, 5) with interaction counts per detector
+  """
   return np.array([[np.count_nonzero(det_idx_array == 1), np.count_nonzero(det_idx_array == 2), np.count_nonzero(det_idx_array == 3), np.count_nonzero(det_idx_array == 4), np.count_nonzero(det_idx_array == 5)],
                    [np.count_nonzero(det_idx_array == 6), np.count_nonzero(det_idx_array == 7), np.count_nonzero(det_idx_array == 8), np.count_nonzero(det_idx_array == 9), np.count_nonzero(det_idx_array == 10)],
                    [np.count_nonzero(det_idx_array == 11), np.count_nonzero(det_idx_array == 12), np.count_nonzero(det_idx_array == 13), np.count_nonzero(det_idx_array == 14), np.count_nonzero(det_idx_array == 15)],
@@ -1899,12 +1868,24 @@ def det_counter(det_idx_array):
 
 
 def det_counter_by_type(det_idx_array):
+  """
+  Counts interactions per detector type across all instrument units.
+  Detector types are : SideDet (indices 1,2,6,7,11,12,16,17), DSSD (indices 3,4,8,9,13,14,18,19),
+  and UCD Calorimeter (indices 5,10,15,20).
+  :param det_idx_array: array of int, detector indices (1 to 20) for each event
+  :returns: int, int, int, int, n_side, n_dssd, n_calor, n_total — counts per detector type and total
+  """
   return np.count_nonzero(np.isin(det_idx_array, [1, 2, 6, 7, 11, 12, 16, 17])), np.count_nonzero(np.isin(det_idx_array, [3, 4, 8, 9, 13, 14, 18, 19])), np.count_nonzero(np.isin(det_idx_array, [5, 10, 15, 20])), len(det_idx_array)
 
 
 def format_detector(det_str):
   """
-
+  Converts a detector string of the form "InstrumentUnit DetectorName" into a unique integer detector ID from 1 to 20.
+  Each instrument unit contributes an offset of 0, 5, 10, or 15, and each detector type adds 1 to 5.
+  :param det_str: str, space-separated string with unit name and detector name
+    e.g. "InstrumentU_1_1 SideDetX" or "InstrumentU_2_2 Calor"
+  :returns: int, detector ID in [1, 20]
+  :raises ValueError: if the unit name or detector name is not recognized
   """
   unit, det = det_str.split(" ")
   if unit == "InstrumentU_1_1":
@@ -1936,7 +1917,8 @@ def format_detector(det_str):
 
 def compile_finder():
   """
-
+  Compiles the find_detector C++ routine using its Makefile.
+  Changes the working directory to ./src/Analysis, runs make, then returns to the original directory.
   """
   os.chdir("./src/Analysis")
   subprocess.call(f"make -f Makefile PRG=find_detector", shell=True)
@@ -1946,11 +1928,11 @@ def compile_finder():
 def find_detector(pos_first_compton, pos_sec_compton, pos_single, geometry):
   """
   Execute the position finder for different arrays pos_first_compton, pos_sec_compton, pos_single
-  :param pos_first_compton: array containing the position of the first compton interaction
-  :param pos_sec_compton: array containing the position of the second compton interaction
-  :param pos_single: array containing the position of the single event interaction
-  :param geometry: geometry to use
-  :returns: 3 arrays containing a list [Instrument unit of the interaction, detector where interaction happened]
+  :param pos_first_compton: np.ndarray, array containing the position of the first compton interaction [cm]
+  :param pos_sec_compton: np.ndarray, array containing the position of the second compton interaction [cm]
+  :param pos_single: np.ndarray, array containing the position of the single event interaction [cm]
+  :param geometry: str, geometry file to use
+  :returns: np.ndarray, np.ndarray, np.ndarray, 3 arrays containing detector IDs for first compton, second compton, and single events
   """
   pid = os.getpid()
   file_fc = f"./src/Analysis/temp_pos_fc_{pid}"
@@ -1978,11 +1960,11 @@ def execute_finder(file, events, geometry, cpp_routine="find_detector"):
   """
   Executes the "find_detector" c++ routine that find the detector of interaction of different position of interaction
   stored in a file
-  :param file: file name used to create the files
-  :param events: array containing the 3 coordinate of multiple events
-  :param geometry: geometry to use
-  :param cpp_routine: name of the c++ routine
-  :returns: an array containing a list [Instrument unit of the interaction, detector where interaction happened]
+  :param file: str, file name used to create the temporary position files
+  :param events: np.ndarray, array containing the 3 coordinates of multiple events [cm]
+  :param geometry: str, geometry file to use
+  :param cpp_routine: str, name of the c++ routine, default="find_detector"
+  :returns: np.ndarray, array of int8 containing detector IDs for each event
   """
   with open(f"{file}.txt", "w") as data_file:
     for event in events:
@@ -2001,11 +1983,11 @@ def execute_finder(file, events, geometry, cpp_routine="find_detector"):
 def plaw(e, ampl, index_l, pivot=100):
   """
   Power-law spectrum (ph/cm2/keV/s)
-  :param e: energy (keV)
-  :param ampl: amplitude (ph/cm2/keV/s)
-  :param index_l: spectral index
-  :param pivot: pivot energy (keV), depends only on the instrument, default=100 keV for Fermi/GBM
-  :returns: ph/cm2/keV/s
+  :param e: float or np.ndarray, energy (keV)
+  :param ampl: float, amplitude (ph/cm2/keV/s)
+  :param index_l: float, spectral index
+  :param pivot: float, pivot energy (keV), depends only on the instrument, default=100 keV for Fermi/GBM
+  :returns: float or np.ndarray, spectrum value [ph/cm2/keV/s]
   """
   return ampl * (e / pivot) ** index_l
 
@@ -2013,12 +1995,12 @@ def plaw(e, ampl, index_l, pivot=100):
 def comp(e, ampl, index_l, ep, pivot=100):
   """
   Comptonized spectrum (ph/cm2/keV/s)
-  :param e: energy (keV)
-  :param ampl: amplitude (ph/cm2/keV/s)
-  :param index_l: spectral index
-  :param ep: peak energy (keV)
-  :param pivot: pivot energy (keV), depends only on the instrument, default=100 keV for Fermi/GBM
-  :returns: ph/cm2/keV/s
+  :param e: float or np.ndarray, energy (keV)
+  :param ampl: float, amplitude (ph/cm2/keV/s)
+  :param index_l: float, spectral index
+  :param ep: float, peak energy (keV)
+  :param pivot: float, pivot energy (keV), depends only on the instrument, default=100 keV for Fermi/GBM
+  :returns: float or np.ndarray, spectrum value [ph/cm2/keV/s]
   """
   return ampl * (e / pivot) ** index_l * np.exp(-(index_l + 2) * e / ep)
 
@@ -2026,11 +2008,11 @@ def comp(e, ampl, index_l, ep, pivot=100):
 def glog(e, ampl, ec, s):
   """
   log10-gaussian spectrum model (ph/cm2/keV/s)
-  :param e: energy (keV)
-  :param ampl: amplitude (ph/cm2/keV/s)
-  :param ec: central energy (keV)
+  :param e: float or np.ndarray, energy (keV)
+  :param ampl: float, amplitude (ph/cm2/keV/s)
+  :param ec: float, central energy (keV)
   :param s: distribution width
-  :returns: ph/cm2/keV/s
+  :returns: float or np.ndarray, spectrum value [ph/cm2/keV/s]
   """
   return ampl / np.sqrt(2 * np.pi * s) * np.exp(-.5 * (np.log10(e / ec) / s) ** 2)
 
@@ -2038,13 +2020,13 @@ def glog(e, ampl, ec, s):
 def band(e, ampl, alpha, beta, ep, pivot=100):
   """
   Band spectrum (ph/cm2/keV/s)
-  :param e: energy (keV)
-  :param ampl: amplitude (ph/cm2/keV/s)
-  :param alpha: low-energy spectral index
-  :param beta: high-energy spectral index
-  :param ep: peak energy (keV)
-  :param pivot: pivot energy (keV), depends only on the instrument, default=100 keV for Fermi/GBM
-  :returns: ph/cm2/keV/s
+  :param e: float or np.ndarray, energy (keV)
+  :param ampl: float, amplitude (ph/cm2/keV/s)
+  :param alpha: float, low-energy spectral index
+  :param beta: float, high-energy spectral index
+  :param ep: float, peak energy (keV)
+  :param pivot: float, pivot energy (keV), depends only on the instrument, default=100 keV for Fermi/GBM
+  :returns: float or np.ndarray, spectrum value [ph/cm2/keV/s]
   """
   c = (alpha - beta) * ep / (alpha + 2)
   if e > c:
@@ -2056,13 +2038,14 @@ def band(e, ampl, alpha, beta, ep, pivot=100):
 def sbpl_sa(e, ampl, l1, l2, eb, delta, pivot=100):
   """
   Smoothly broken power law spectrum (ph/cm2/keV/s)
-  :param e: energy (keV)
-  :param ampl: amplitude (ph/cm2/keV/s)
-  :param l1: first powerlaw index
-  :param l2: second powerlaw index
-  :param eb: break energy [keV]
-  :param delta: break scale [keV]
-  :param pivot: pivot energy [keV]
+  :param e: float or np.ndarray, energy (keV)
+  :param ampl: float, amplitude (ph/cm2/keV/s)
+  :param l1: float, first powerlaw index
+  :param l2: float, second powerlaw index
+  :param eb: float, break energy [keV]
+  :param delta: float, break scale [keV]
+  :param pivot: float, pivot energy [keV]
+  :returns: float or np.ndarray, spectrum value [ph/cm2/keV/s]
   """
   b, m = .5 * (l1 + l2), .5 * (l1 - l2)
   q, qp = np.log10(e / eb / delta), np.log10(pivot / eb / delta)
@@ -2073,13 +2056,14 @@ def sbpl_sa(e, ampl, l1, l2, eb, delta, pivot=100):
 def sbpl(e, ampl, l1, l2, eb, delta, pivot=100):
   """
   Smoothly broken power law spectrum (ph/cm2/keV/s)
-  :param e: energy (keV)
-  :param ampl: amplitude (ph/cm2/keV/s)
-  :param l1: first powerlaw index
-  :param l2: second powerlaw index
-  :param eb: break energy [keV]
-  :param delta: break scale [keV]
-  :param pivot: pivot energy [keV]
+  :param e: float or np.ndarray, energy (keV)
+  :param ampl: float, amplitude (ph/cm2/keV/s)
+  :param l1: float, first powerlaw index
+  :param l2: float, second powerlaw index
+  :param eb: float, break energy [keV]
+  :param delta: float, break scale [keV]
+  :param pivot: float, pivot energy [keV]
+  :returns: float or np.ndarray, spectrum value [ph/cm2/keV/s]
   """
   b, m = .5 * (l2 + l1), .5 * (l2 - l1)
   q, qp = np.log10(e / eb) / delta, np.log10(pivot / eb) / delta
@@ -2088,6 +2072,16 @@ def sbpl(e, ampl, l1, l2, eb, delta, pivot=100):
 
 
 def sbplaw(x, A, xb, alpha1, alpha2, delta):
+  """
+  Smoothly broken power law (alternative parametrization)
+  :param x: float or array, energy [keV]
+  :param A: float, amplitude
+  :param xb: float, break energy [keV]
+  :param alpha1: float, low-energy spectral index
+  :param alpha2: float, high-energy spectral index
+  :param delta: float, smoothness of the break
+  :returns: float or array, spectral value at energy x
+  """
   return A * (x/xb)**(-alpha1) * (1/2*(1+(x/xb)**(1/delta)))**((alpha1-alpha2)*delta)
 
 
@@ -2095,12 +2089,24 @@ def sbplaw(x, A, xb, alpha1, alpha2, delta):
 # Normalized spectrum
 ######################################################################################################################################################
 def int_band(x, ind1, ind2):
+  """
+  Integrand of the normalized Band function in the low-energy regime (x <= xb).
+  Used internally by normalisation_calc to compute the normalization constant.
+  :param x: float or array, reduced energy variable x = E/Ep
+  :param ind1: float, low-energy spectral index alpha
+  :param ind2: float, high-energy spectral index beta
+  :returns: float or array, value of the integrand
+  """
   return x ** (ind1 + 1) * np.exp(-(ind1 + 2) * x)
 
 
 def normalisation_calc(ind1, ind2):
   """
-
+  Computes the normalization constant of the Band function so that the integral of x*B(x) over [0, +inf] equals 1.
+  This normalization is used in norm_band_spec_calc to convert luminosity into a physical spectrum.
+  :param ind1: float, low-energy spectral index alpha
+  :param ind2: float, high-energy spectral index beta
+  :returns: float, normalization constant
   """
   xb = (ind1-ind2) / (ind1+2)
 
@@ -2113,8 +2119,14 @@ def normalisation_calc(ind1, ind2):
 
 def band_norm(ener, norm, ind1, ind2):
   """
-  Normalized Band function as described in Sarah Antier's thesis
+  Normalized Band function
   Returns B~
+  :param ener: float or np.ndarray, reduced energy variable x = (1+z)*E/Ep
+  :param norm: float, normalization constant from normalisation_calc
+  :param ind1: float, low-energy spectral index alpha
+  :param ind2: float, high-energy spectral index beta
+  :returns: float or np.ndarray, value of the normalized Band function
+  :raises TypeError: if ener is not float or np.ndarray
   """
   xb = (ind1-ind2) / (ind1+2)
   if type(ener) is float or type(ener) is int:
@@ -2132,6 +2144,15 @@ def norm_band_spec_calc(band_low, band_high, red, dl, ep, liso, ener_range, verb
   """
   Calculates the spectrum of a band function based on indexes and energy/luminosity values
   returns norm, spectrum, peak_flux
+  :param band_low: float, low-energy spectral index alpha
+  :param band_high: float, high-energy spectral index beta
+  :param red: float, redshift of the source
+  :param dl: float, luminosity distance [Gpc]
+  :param ep: float, peak energy in the rest frame [keV]
+  :param liso: float, isotropic peak luminosity [erg/s]
+  :param ener_range: np.ndarray, observer-frame energy range over which to compute the spectrum [keV]
+  :param verbose: bool, if True prints detailed diagnostic information, default=False
+  :returns: float, np.ndarray, float, norm, norm * spec_norm [ph/cm²/keV/s], peak_flux [ph/cm²/s]
   """
   # Normalisation value
   ampl_norm = normalisation_calc(band_low, band_high)
@@ -2179,14 +2200,27 @@ def norm_band_spec_calc(band_low, band_high, red, dl, ep, liso, ener_range, verb
 ######################################################################################################################################################
 def gauss(x, amp, mu, sig):
   """
-
+  Gaussian function evaluated at x.
+  :param x: float or array, evaluation point(s)
+  :param amp: float, amplitude (scaling factor)
+  :param mu: float, mean of the Gaussian
+  :param sig: float, standard deviation of the Gaussian
+  :returns: float or array, Gaussian value at x
   """
   return amp * norm.pdf(x, loc=mu, scale=sig)
 
 
 def double_gauss(x, amp1, mu1, sig1, amp2, mu2, sig2):
   """
-
+  Sum of two Gaussian functions evaluated at x.
+  :param x: float or array, evaluation point(s)
+  :param amp1: float, amplitude of the first Gaussian
+  :param mu1: float, mean of the first Gaussian
+  :param sig1: float, standard deviation of the first Gaussian
+  :param amp2: float, amplitude of the second Gaussian
+  :param mu2: float, mean of the second Gaussian
+  :param sig2: float, standard deviation of the second Gaussian
+  :returns: float or array, sum of both Gaussians at x
   """
   return gauss(x, amp1, mu1, sig1) + gauss(x, amp2, mu2, sig2)
 
@@ -2196,7 +2230,11 @@ def double_gauss(x, amp1, mu1, sig1, amp2, mu2, sig2):
 ######################################################################################################################################################
 def chi2(observed_data, simulated_data):
   """
-
+  Computes the chi-squared statistic between observed and simulated data arrays.
+  :param observed_data: array, observed counts or values (used as denominator — must be non-zero)
+  :param simulated_data: array, simulated/expected values
+  :returns: float, chi-squared value
+  :raises ValueError: if the two arrays do not have the same length
   """
   if len(observed_data) != len(simulated_data):
     raise ValueError("Mean ans sigma variables must be arrays and have the same dimension")
@@ -2209,7 +2247,13 @@ def chi2(observed_data, simulated_data):
 # General
 def broken_plaw(val, ind1, ind2, val_b):
   """
-  Proken power law function
+  Broken power law function, continuous at val_b by construction.
+  :param val: float, int, or np.ndarray, input value(s)
+  :param ind1: float, power law index below the break
+  :param ind2: float, power law index above the break
+  :param val_b: float, break value
+  :returns: float or np.ndarray, value of the broken power law
+  :raises TypeError: if val is not float, int, or np.ndarray
   """
   if type(val) is float or type(val) is int:
     if val < val_b:
@@ -2225,11 +2269,23 @@ def broken_plaw(val, ind1, ind2, val_b):
 def equi_distri(min_val, max_val):
   """
   Picks a value between min_val and max_val in an equi-repartition
+  :param min_val: float, lower bound of the uniform distribution
+  :param max_val: float, upper bound of the uniform distribution
+  :returns: float, randomly drawn value in [min_val, max_val]
   """
   return min_val + np.random.random() * (max_val - min_val)
 
 
 def transfo_broken_plaw(ind1, ind2, val_b, inf_lim, sup_lim):
+  """
+  Draws a random value from a broken power law distribution using the inverse CDF (transformation) method.
+  :param ind1: float, power law index below the break (must be != -1)
+  :param ind2: float, power law index above the break (must be != -1)
+  :param val_b: float, break value
+  :param inf_lim: float, lower bound of the distribution
+  :param sup_lim: float, upper bound of the distribution
+  :returns: float, randomly drawn value following the broken power law distribution
+  """
   ral = val_b / (ind1 + 1)
   pal = (inf_lim / val_b)**(ind1 + 1)
   rbe = val_b / (ind2 + 1)
@@ -2240,9 +2296,6 @@ def transfo_broken_plaw(ind1, ind2, val_b, inf_lim, sup_lim):
 
   rand_val = np.random.random()
 
-  # print(rb, rand_val)
-
-  # print(rand_val, rb)
   if rand_val <= rb:
     return val_b * (rand_val / ampl / ral + pal)**(1/(ind1 + 1))
   else:
@@ -2252,6 +2305,12 @@ def transfo_broken_plaw(ind1, ind2, val_b, inf_lim, sup_lim):
 def pick_normal_alpha_beta(mu_alpha, sig_alpha, mu_beta, sig_beta):
   """
   Used to obtain alpha and beta using lognormal distributions so that the spectrum is feasible (norm>0)
+  Redraws until the combination of alpha and beta yields a valid (positive) normalization constant.
+  :param mu_alpha: float, mean of the normal distribution for alpha
+  :param sig_alpha: float, standard deviation of the normal distribution for alpha
+  :param mu_beta: float, mean of the normal distribution for beta
+  :param sig_beta: float, standard deviation of the normal distribution for beta
+  :returns: float, float, band_low_obs_temp, band_high_obs_temp — valid alpha and beta values
   """
   band_low_obs_temp = np.random.normal(loc=mu_alpha, scale=sig_alpha)
   band_high_obs_temp = np.random.normal(loc=mu_beta, scale=sig_beta)
@@ -2274,8 +2333,13 @@ def redshift_distribution_long(red, red0, n1, n2, z1):
   """
   Version
     redshift distribution for long GRBs
-    Function and associated parameters and cases are taken from Lan G., 2019
+    Function and associated parameters and cases are taken from Lien et al. 2014
   :param red: float or array of float containing redshifts
+  :param red0: float, normalization factor
+  :param n1: float, power law index below z1
+  :param n2: float, power law index above z1
+  :param z1: float, redshift of the break
+  :returns: float or array, GRB rate at redshift red
   """
   if type(red) is float or type(red) is int:
     if red <= z1:
@@ -2293,6 +2357,12 @@ def red_rate_long(red, rate0, n1, n2, z1):
   Version
     Function to obtain the number of long GRB and to pick them according to their distribution
     Function and associated parameters and cases are taken from Lien et al. 2014
+  :param red: float or array, redshift value(s)
+  :param rate0: float, normalization rate
+  :param n1: float, power law index below z1
+  :param n2: float, power law index above z1
+  :param z1: float, break redshift
+  :returns: float or array, differential GRB rate at redshift red [Gpc^-3 sr^-1]
   """
   vol_com = cosmology.differential_comoving_volume(red).to_value("Gpc3 / sr")  # Change from Mpc3 / sr to Gpc3 / sr
   return redshift_distribution_long(red, rate0, n1, n2, z1) / (1 + red) * 4 * np.pi * vol_com
@@ -2301,21 +2371,22 @@ def red_rate_long(red, rate0, n1, n2, z1):
 def epeak_distribution_long(epeak):
   """
   Version
-    Peak energy distribution for short GRBs
+    Peak energy distribution for long GRBs
     Function and associated parameters and cases are taken from Ghirlanda et al. 2016
-  :param epeak: float or array of float containing peak energies
+  :param epeak: float or array of float containing peak energies [keV]
+  :returns: float or array, relative probability at the given peak energy
   """
   a1, a2, epb = 0.53, -4, 1600  # Took -a1 because the results were coherent only this way
   return broken_plaw(epeak, a1, a2, epb)
-  # ampl, skewness, mu, sigma = 80,  1.6,  1.9,  0.44
-  # return ampl * skewnorm.pdf(epeak, skewness, mu, sigma)
 
 
 def t90_long_log_distri(time):
   """
   Version
-    Distribution of T90 based on GBM t90 >= 2 with a sbpl
-      Not optimal as no correlation with other parameters is considered
+    Distribution of T90 based on GBM t90 >= 2 with a skewed normal distribution in log space.
+    Not optimal as no correlation with other parameters is considered.
+  :param time: float or array, T90 duration [s]
+  :returns: float or array, probability density at the given T90
   """
   ampl, skewness, mu, sigma = 54.18322289, -2.0422097,  1.89431034,  0.74602339
   return ampl * skewnorm.pdf(time, skewness, mu, sigma)
@@ -2328,6 +2399,10 @@ def redshift_distribution_short(red, p1, zp, p2):
     redshift distribution for short GRBs
     Function and associated parameters and cases are taken from Ghirlanda et al. 2016
   :param red: float or array of float containing redshifts
+  :param p1: float, linear rise parameter
+  :param zp: float, peak redshift
+  :param p2: float, high-z power law decay index
+  :returns: float or array, relative GRB rate at the given redshift
   """
   return (1 + p1 * red) / (1 + (red / zp)**p2)
 
@@ -2337,6 +2412,12 @@ def red_rate_short(red, rate0, p1, zp, p2):
   Version
     Function to obtain the number of short GRB and to pick them according to their distribution
     Parameters from Ghirlanda et al. 2016
+  :param red: float or array, redshift value(s)
+  :param rate0: float, normalization rate
+  :param p1: float, linear rise parameter
+  :param zp: float, peak redshift
+  :param p2: float, high-z power law decay index
+  :returns: float or array, differential short GRB rate at redshift red [Gpc^-3 sr^-1]
   """
   vol_com = cosmology.differential_comoving_volume(red).to_value("Gpc3 / sr")  # Change from Mpc3 / sr to Gpc3 / sr
   return rate0 * 4 * np.pi * redshift_distribution_short(red, p1, zp, p2) / (1 + red) * vol_com
@@ -2347,20 +2428,21 @@ def epeak_distribution_short(epeak):
   Version
     Peak energy distribution for short GRBs
     Function and associated parameters and cases are taken from Ghirlanda et al. 2016
-  :param epeak: float or array of float containing peak energies
+  :param epeak: float or array of float containing peak energies [keV]
+  :returns: float or array, relative probability at the given peak energy
   """
-  a1, a2, epb = -0.53, -4, 1600  # Took -a1 because the results were coherent only this way
-  # a1, a2, epb = 0.61, -2.8, 2200  # test
+  a1, a2, epb = -0.53, -4, 1600
   return broken_plaw(epeak, a1, a2, epb)
-  # ampl, skewness, mu, sigma = 16, -5.2, 3.15, 0.66
-  # return ampl * skewnorm.pdf(epeak, skewness, mu, sigma)
 
 
 def t90_short_distri(time):
   """
   Version
-    Distribution of T90 based on GBM t90 < 2
-      Not optimal as lGRB might biase the distribution
+    Distribution of T90 based on GBM t90 < 2 using a broken power law in log space.
+    Not optimal as lGRB might bias the distribution.
+  :param time: float, int, or np.ndarray, T90 duration [s]
+  :returns: float or array, probability density at the given T90
+  :raises TypeError: if time is not float, int, or np.ndarray
   """
   if type(time) is float or type(time) is int:
     if time <= 0.75:
@@ -2378,8 +2460,9 @@ def amati_long(epeak):
   """
   Version
     Amatie relation (Amati, 2006) linking Epeak and Eiso (peak energy and isotropic equivalent energy)
-  :param epeak: float or array of float containing peak energies if reversed = True or isotropic equivalent energies if False
-  :returns: Eiso
+  :param epeak: float or array of float containing peak energies [keV]
+  :returns: float or array, Eiso [erg]
+  :raises TypeError: if epeak is not a supported numeric type
   """
   if type(epeak) is float or type(epeak) is int or type(epeak) is np.float64 or type(epeak) is np.ndarray:
     return 10**(52 + np.log10(epeak / 110) / 0.51)
@@ -2391,7 +2474,8 @@ def yonetoku_long(epeak):
   """
   Version
     Yonetoku relation for long GRBs (Yonetoku et al, 2010)
-  :returns: Peak Luminosity
+  :param epeak: float, peak energy in the rest frame [keV]
+  :returns: float, peak luminosity [erg/s] drawn from the relation with scatter
   """
   id1, s_id1, id2, s_id2 = 52.43, 0.037, 1.60, 0.082
   rand1 = np.random.normal(id1, s_id1)
@@ -2404,16 +2488,11 @@ def yonetoku_reverse_long(lpeak):
   WARNING : The correlation is between rest frame properties. The Luminosity is the one for the 1sec peak luminosity !
   Version
     Changed Yonetoku relation
-    Coefficients from Sarah Antier's thesis
-  :returns: Peak energy
+  :param lpeak: float, peak luminosity [erg/s]
+  :returns: float, peak energy [keV]
   """
   ampl, l0, ind1 = 372, 1e52, 0.5
   return ampl * (lpeak / l0) ** ind1
-  # yonetoku
-  # id1, s_id1, id2, s_id2 = 52.43, 0.037, 1.60, 0.082
-  # rand1 = np.random.normal(id1, s_id1)
-  # rand2 = np.random.normal(id2, s_id2)
-  # return 355 * (lpeak/10**rand1)**(1/rand2)
 
 
 # correlations short
@@ -2421,8 +2500,9 @@ def amati_short(epeak):
   """
   Version
     Amatie relation (Amati, 2006) linking Epeak and Eiso (peak energy and isotropic equivalent energy)
-  :param epeak: float or array of float containing peak energies if reversed = True or isotropic equivalent energies if False
-  :returns: Eiso
+  :param epeak: float or array of float containing peak energies [keV]
+  :returns: float or array, Eiso [erg]
+  :raises TypeError: if epeak is not a supported numeric type
   """
   ma, qa = 1.1, 0.042
   if type(epeak) is float or type(epeak) is int or type(epeak) is np.float64 or type(epeak) is np.ndarray:
@@ -2435,7 +2515,8 @@ def yonetoku_short(epeak):
   """
   Version
     Yonetoku relation (Yonetoku et al, 2014) from Ghirlanda et al, 2016
-  :returns: Peak luminosity
+  :param epeak: float, peak energy in the rest frame [keV]
+  :returns: float, peak luminosity [erg/s]
   """
   qy, my = 0.034, 0.84
   return 1e52 * (epeak/(670 * 10 ** qy))**(1/my)
@@ -2445,15 +2526,11 @@ def yonetoku_reverse_short(lpeak):
   """
   Version
     Yonetoku relation (Yonetoku et al, 2014) from Ghirlanda et al, 2016
-  :returns: Epeak
+  :param lpeak: float, peak luminosity [erg/s]
+  :returns: float, peak energy [keV]
   """
   qy, my = 0.034, 0.84
   return 670 * 10 ** qy * (lpeak / 10 ** 52) ** my
-  # tsutsui
-  # id1, s_id1, id2, s_id2 = 52.29, 0.066, 1.59, 0.11
-  # rand1 = np.random.normal(id1, s_id1)
-  # rand2 = np.random.normal(id2, s_id2)
-  # return 10 ** rand1 * (epeak / 774.5) ** rand2
 
 
 ######################################################################################################################################################
@@ -2461,7 +2538,11 @@ def yonetoku_reverse_short(lpeak):
 ######################################################################################################################################################
 def make_it_list(var):
   """
-
+  Ensures the input is returned as a list or array.
+  Converts scalar float or int values to a single-element list.
+  :param var: list, np.ndarray, float, or int
+  :returns: list or np.ndarray
+  :raises ValueError: if var is not a supported type
   """
   if type(var) is list or type(var) is np.ndarray:
     return var
@@ -2473,9 +2554,25 @@ def make_it_list(var):
 
 def build_params(l_rate, l_ind1_z, l_ind2_z, l_zb, l_ind1, l_ind2, l_lb, s_rate, s_ind1_z, s_ind2_z, s_zb, s_ind1, s_ind2, s_lb):
   """
-
+  Builds a list of all parameter combinations for long and short GRB populations
+  by forming the Cartesian product of all provided parameter ranges.
+  Each parameter can be a scalar (int/float) or a list/array of values to sweep.
+  :param l_rate: float or list, long GRB rate normalization
+  :param l_ind1_z: float or list, long GRB redshift distribution index 1 (below break)
+  :param l_ind2_z: float or list, long GRB redshift distribution index 2 (above break)
+  :param l_zb: float or list, long GRB redshift break
+  :param l_ind1: float or list, long GRB Epeak distribution index 1
+  :param l_ind2: float or list, long GRB Epeak distribution index 2
+  :param l_lb: float or list, long GRB luminosity break
+  :param s_rate: float or list, short GRB rate normalization
+  :param s_ind1_z: float or list, short GRB redshift distribution index 1
+  :param s_ind2_z: float or list, short GRB redshift distribution index 2
+  :param s_zb: float or list, short GRB redshift break
+  :param s_ind1: float or list, short GRB Epeak distribution index 1
+  :param s_ind2: float or list, short GRB Epeak distribution index 2
+  :param s_lb: float or list, short GRB luminosity break
+  :returns: list of parameter lists, each containing one combination of all 14 parameters
   """
-  # mpl.use("Qt5Agg")
   par_list = []
   for var1 in make_it_list(l_rate):
     for var2 in make_it_list(l_ind1_z):
@@ -2492,20 +2589,18 @@ def build_params(l_rate, l_ind1_z, l_ind2_z, l_zb, l_ind1, l_ind2, l_lb, s_rate,
                           for var13 in make_it_list(s_ind2):
                             for var14 in make_it_list(s_lb):
                               par_list.append([var1, var2, var3, var4, var5, var6, var7, var8, var9, var10, var11, var12, var13, var14])
-  # param_df = pd.DataFrame(data=par_list, columns=["l_rate", "l_ind1_z", "l_ind2_z", "l_zb", "l_ind1", "l_ind2", "l_lb", "s_rate", "s_ind1_z", "s_ind2_z", "s_zb", "s_ind1", "s_ind2", "s_lb"])
-  # select_cols = ["l_rate", "l_ind1_z", "l_ind2_z", "l_zb", "l_ind1", "l_ind2", "l_lb"]
-  # df_selec = param_df[select_cols]
-  # plt.subplots(1, 1)
-  # title = f"Log p-value"
-  # plt.suptitle(title)
-  # sns.pairplot(df_selec, corner=True, plot_kws={'s': 10})
-  # plt.show()
   return par_list
 
 
 def acc_reject(func, func_args, xmin, xmax):
   """
-  Proceeds to an acceptance rejection method
+  Proceeds to an acceptance rejection method to draw a random variable from a target distribution.
+  The maximum of func on [xmin, xmax] is estimated on a 1000-point grid and used as the proposal envelope.
+  :param func: callable, target distribution function f(x, *func_args) proportional to the desired pdf
+  :param func_args: list, additional arguments to pass to func
+  :param xmin: float, lower bound of the sampling range
+  :param xmax: float, upper bound of the sampling range
+  :returns: float, accepted sample from the distribution
   """
   loop = True
   max_func = np.max(func(np.linspace(xmin, xmax, 1000), *func_args)) * 1.05
@@ -2514,7 +2609,6 @@ def acc_reject(func, func_args, xmin, xmax):
     thresh_value = func(variable, *func_args)
     test_value = np.random.random() * max_func
     if test_value <= thresh_value:
-      # loop = False
       return variable
 
 
@@ -2522,6 +2616,16 @@ def acc_reject(func, func_args, xmin, xmax):
 # Polarization Monte Carlo event handler
 ######################################################################################################################################################
 def arg_convert(arg):
+  """
+  Converts a simulation parameter argument into an iterable of (value, index) pairs.
+  Supported formats:
+    - int or float : single value, yields (arg, 0)
+    - tuple of length 3 : (start, stop, n) → np.linspace(start, stop, n)
+    - tuple of length 2 starting with 'distri' : repeats 'distri' arg[1] times
+    - list : iterated directly
+  :param arg: int, float, tuple, or list, simulation parameter in one of the accepted formats
+  :returns: zip, zip iterator of (value, index) pairs
+  """
   if type(arg) == int or type(arg) == float:
     return zip([arg], [0])
   elif type(arg) == tuple and len(arg) == 3:
@@ -2535,6 +2639,17 @@ def arg_convert(arg):
 
 
 def values_number(gamma_range_func, red_z_range_func, theta_j_range_func, theta_nu_range_func, nu_0_range_func, alpha_range_func, beta_range_func):
+  """
+  Computes the total number of parameter combinations for a polarization Monte Carlo simulation.
+  :param gamma_range_func: tuple, list, or float, Lorentz factor range
+  :param red_z_range_func: tuple, list, or float, redshift range
+  :param theta_j_range_func: tuple, list, or float, jet opening angle range [rad]
+  :param theta_nu_range_func: tuple, list, or float, observer angle range [rad]
+  :param nu_0_range_func: tuple, list, or float, synchrotron frequency range
+  :param alpha_range_func: tuple, list, or float, low-energy spectral index range
+  :param beta_range_func: tuple, list, or float, high-energy spectral index range
+  :returns: int, total number of parameter combinations
+  """
   range_list = [theta_j_range_func, theta_nu_range_func, red_z_range_func, gamma_range_func, nu_0_range_func, alpha_range_func,
                 beta_range_func]
   values_num = 1
@@ -2549,9 +2664,21 @@ def values_number(gamma_range_func, red_z_range_func, theta_j_range_func, theta_
 def var_ite_setting(iteration, gamma_func, red_z_func, theta_j_func, theta_nu_func, nu_0_func, alpha_func, beta_func, opening_factor, jet_model, flux_rejection):
   """
   Function to obtain a set of parameters according to simulation settings and distributions
+  Draws a physically consistent set of GRB parameters for one Monte Carlo iteration.
+  If flux_rejection is True, redraws until the resulting flux exceeds the detection threshold.
+  :param iteration: int, current iteration index (passed through to the output)
+  :param gamma_func: float or "distri", Lorentz factor (or distribution key)
+  :param red_z_func: float or "distri", redshift
+  :param theta_j_func: float or "distri_toma"/"distri_lognorm", jet opening angle [rad]
+  :param theta_nu_func: float or "distri_pearce"/"distri_toma", observer angle [rad]
+  :param nu_0_func: float or "distri", characteristic synchrotron frequency
+  :param alpha_func: float or "distri", low-energy Band spectral index
+  :param beta_func: float or "distri", high-energy Band spectral index
+  :param opening_factor: float, scaling factor for theta_nu max when using "distri_pearce"
+  :param jet_model: str, jet structure model — "top-hat" or "structured"
+  :param flux_rejection: bool, if True rejects events below the flux detection limit
+  :returns: list [iteration, gamma, red_z, theta_j, theta_nu, nu_0, alpha, beta]
   """
-  # Best parameters : 1.5e-8 for PJ
-  #
   limit_flux = 3.5e-7  # erg/cm2/s
   calculated_flux = 0
   while calculated_flux < limit_flux:
@@ -2567,7 +2694,6 @@ def var_ite_setting(iteration, gamma_func, red_z_func, theta_j_func, theta_nu_fu
     # Redshift
     ############################################################################################################
     if red_z_func == "distri":
-      # red_z_loop_func = acc_reject(distrib_z, [], 0, 10)
       zmin, zmax = 0, 10
       long_rate = 0.616
       ind1_z_l = 2.623
@@ -2598,7 +2724,6 @@ def var_ite_setting(iteration, gamma_func, red_z_func, theta_j_func, theta_nu_fu
       theta_nu_loop_func = acc_reject(distrib_theta_nu_toma, [], 0, 0.22)
     else:
       theta_nu_loop_func = theta_nu_func
-      # theta_nu_loop_func = theta_nu_func * theta_j_loop_func
     ############################################################################################################
     # nu_0
     ############################################################################################################
@@ -2616,7 +2741,6 @@ def var_ite_setting(iteration, gamma_func, red_z_func, theta_j_func, theta_nu_fu
       random_alpha, random_beta = pick_normal_alpha_beta(band_low_l_mu, band_low_l_sig, band_high_l_mu, band_high_l_sig)
 
     if alpha_func == "distri":
-      # alpha_loop_func = acc_reject(distrib_alpha, [], -1.6, 0.06)
       alpha_loop_func = random_alpha
     else:
       alpha_loop_func = alpha_func
@@ -2624,7 +2748,6 @@ def var_ite_setting(iteration, gamma_func, red_z_func, theta_j_func, theta_nu_fu
     # beta
     ############################################################################################################
     if beta_func == "distri":
-      # beta_loop_func = acc_reject(distrib_beta, [], -3.32, -1.6)
       beta_loop_func = random_beta
     else:
       beta_loop_func = beta_func
@@ -2636,14 +2759,10 @@ def var_ite_setting(iteration, gamma_func, red_z_func, theta_j_func, theta_nu_fu
     lum_dist = cosmology.luminosity_distance(red_z_loop_func).to_value("cm")  # Gpc
     # Core flux initiated with a luminosity of 10^52 erg/s (flux in erg/cm2/s)
     core_flux = 1e52 / (4 * np.pi * lum_dist ** 2)
-    # print(core_flux)
     if flux_rejection:
       calculated_flux = jet_shape(theta_nu_loop_func, theta_j_loop_func, gamma_loop_func, jet_model, core_flux)
     else:
       calculated_flux = limit_flux
-  #     if calculated_flux < limit_flux:
-  #         print("q = ", theta_nu_loop_func/theta_j_loop_func)
-  # print("q kept !!!!!! q = ", theta_nu_loop_func/theta_j_loop_func)
   return [iteration, gamma_loop_func, red_z_loop_func, theta_j_loop_func, theta_nu_loop_func, nu_0_loop_func,
           alpha_loop_func, beta_loop_func]
 
@@ -2652,6 +2771,13 @@ def jet_shape(theta_nu, theta_j, gamma, jet_structure, lum_flux_init):
   """
   Returns the luminosity or a flux at a given angle
   Formula from Pearce, but a - is mission in the article
+  :param theta_nu: float, observer angle [rad]
+  :param theta_j: float, jet opening angle [rad]
+  :param gamma: float, Lorentz factor of the jet
+  :param jet_structure: str, jet model — "top-hat" or "structured"
+  :param lum_flux_init: float, on-axis luminosity or flux
+  :returns: float, flux/luminosity at observer angle theta_nu
+  :raises ValueError: if jet_structure is not a recognized model
   """
   if jet_structure == "top-hat":
     if theta_nu <= theta_j + 1/gamma:
@@ -2668,10 +2794,25 @@ def jet_shape(theta_nu, theta_j, gamma, jet_structure, lum_flux_init):
 # Polarization model functions
 ######################################################################################################################################################
 def calc_x(z_func, nu_func, y_func, gamma_nu_0_func):
+  """
+  Computes x as defined in Toma et al, 2009
+  :param z_func: float, redshift of the source
+  :param nu_func: float, observed frequency
+  :param y_func: float, y = (gamma * theta)^2, off-axis parameter
+  :param gamma_nu_0_func: float, product gamma * nu_0
+  :returns: float, reduced frequency x
+  """
   return (1 + z_func) * nu_func * (1 + y_func) / (2 * gamma_nu_0_func)
 
 
 def delta_phi(q_func, y_func, yj_func):
+  """
+  Computes delta_phi as defined in Toma et al, 2009
+  :param q_func: float, ratio theta_nu / theta_j (observer-to-jet angle ratio)
+  :param y_func: float, y = (gamma * theta)^2, off-axis parameter
+  :param yj_func: float, yj = (gamma * theta_j)^2
+  :returns: float or array, delta_phi value [rad]
+  """
   if q_func > 1:
     val = np.where(y_func < (1 - q_func) ** 2 * yj_func, 1, ((q_func ** 2 - 1) * yj_func + y_func) / (2 * q_func * np.sqrt(yj_func * y_func)))
   elif q_func < 1:
@@ -2682,6 +2823,13 @@ def delta_phi(q_func, y_func, yj_func):
 
 
 def f_tilde(x_func, alpha_func, beta_func):
+  """
+  Computes f_tilde as defined in Toma et al, 2009
+  :param x_func: float or np.ndarray, reduced frequency variable
+  :param alpha_func: float, low-energy spectral index
+  :param beta_func: float, high-energy spectral index
+  :returns: float or np.ndarray, value of F~(x)
+  """
   if type(x_func) != np.ndarray:
     x_func = np.array(x_func)
   return np.where(x_func <= beta_func - alpha_func, x_func ** (-alpha_func) * np.exp(-x_func),
@@ -2689,26 +2837,61 @@ def f_tilde(x_func, alpha_func, beta_func):
 
 
 def sin_theta_b(y_func, a_func, phi_func):
+  """
+  Computes sin_theta_b as defined in Toma et al, 2009
+  :param y_func: float or array, y = (gamma * theta)^2, local off-axis parameter
+  :param a_func: float, ratio of observer and local angles
+  :param phi_func: float or array, azimuthal integration angle [rad]
+  :returns: float or array, sin(theta_B) at the given geometry
+  """
   return np.sqrt(((1 - y_func) / (1 + y_func)) ** 2 + 4 * y_func / (1 + y_func) ** 2 * (a_func - np.cos(phi_func)) ** 2 /
                  (1 + a_func ** 2 - 2 * a_func * np.cos(phi_func)))
 
 
 def pi_syn(x_func, alpha_func, beta_func):
+  """
+  Computes pi_syn as defined in Toma et al, 2009
+  :param x_func: float or np.ndarray, reduced frequency variable
+  :param alpha_func: float, low-energy photon spectral index
+  :param beta_func: float, high-energy photon spectral index
+  :returns: float or np.ndarray, local polarization fraction in [0, 1]
+  """
   if type(x_func) != np.ndarray:
     x_func = np.array(x_func)
   return np.where(x_func <= beta_func - alpha_func, (alpha_func + 1) / (alpha_func + 5 / 3), (beta_func + 1) / (beta_func + 5 / 3))
 
 
 def ksi(y_func, a_func, phi_func):
+  """
+  Computes ksi as defined in Toma et al, 2009
+  :param y_func: float or array, y = (gamma * theta)^2
+  :param a_func: float, geometric ratio parameter
+  :param phi_func: float or array, azimuthal angle [rad]
+  :returns: float or array, polarization angle ksi [rad]
+  """
   return phi_func + np.arctan((1 - y_func) / (1 + y_func) * np.sin(phi_func) / (a_func - np.cos(phi_func)))
 
 
 def val_moy_sin_cos(eta_func, y_func, alpha_func):
+  """
+  Computes the mean value val_moy_sin_cos as defined in Toma et al, 2009
+  :param eta_func: float or array, integration angle variable [rad]
+  :param y_func: float, y = (gamma * theta)^2
+  :param alpha_func: float, low-energy spectral index
+  :returns: float or array, integrand value
+  """
   return (1 - 4 * y_func / (1 + y_func) ** 2 * (np.cos(eta_func)) ** 2) ** ((alpha_func - 1) / 2) * \
     ((np.sin(eta_func)) ** 2 - ((1 - y_func) / (1 + y_func)) ** 2 * (np.cos(eta_func)) ** 2)
 
 
 def val_moy_sin(eta_func, y_func, alpha_func):
+  """
+  Computes the mean value val_moy_sin as defined in Toma et al, 2009
+  :param eta_func: float or array, integration angle variable [rad]
+  :param y_func: float, y = (gamma * theta)^2
+  :param alpha_func: float, low-energy spectral index
+  :returns: float or array, integrand value
+  """
   return (1 - 4 * y_func / (1 + y_func) ** 2 * (np.cos(eta_func)) ** 2) ** ((alpha_func + 1) / 2)
 
 
@@ -2716,9 +2899,15 @@ def error_calc(num, num_std, denom, denom_std, iteration_number, confidence=1.96
   """
   Function to calculate the error of a value that has the shape value = num/denom
   Knowing num, num_std, denom, denom_std
+  :param num: float, numerator value
+  :param num_std: float, standard deviation of the numerator
+  :param denom: float, denominator value
+  :param denom_std: float, standard deviation of the denominator
+  :param iteration_number: int, number of Monte Carlo iterations used (for standard error scaling)
+  :param confidence: float, confidence factor (z-score), default=1.96 for 95% CI
+  :returns: float, propagated uncertainty on num/denom
   """
   num = np.abs(num)
-  # std = num / denom * np.sqrt((num_std / num)**2 + (denom_std / denom)**2)
   std = np.sqrt((num_std / denom) ** 2 + (num * denom_std / denom ** 2) ** 2)
   return std / np.sqrt(iteration_number) * confidence
 
@@ -2729,6 +2918,8 @@ def error_calc(num, num_std, denom, denom_std, iteration_number, confidence=1.96
 def distrib_alpha(val):
   """
   Alpha follows a distribution obtained from the GBM data, for GRB with best fit being band spectrum
+  :param val: float, value of alpha at which to evaluate the distribution
+  :returns: float, relative probability (histogram bin height) at val
   """
   histo = np.array([0.00465116, 0.00465116, 0.00930233, 0.01395349, 0.05581395, 0.08372093, 0.09302326, 0.10232558,
                     0.10697674, 0.17674419, 0.11162791, 0.05581395, 0.06046512, 0.04651163, 0.02790698, 0.00930233,
@@ -2743,6 +2934,8 @@ def distrib_alpha(val):
 def distrib_beta(val):
   """
   Beta follows a distribution obtained from the GBM data, for GRB with best fit being band spectrum
+  :param val: float, value of beta at which to evaluate the distribution
+  :returns: float, relative probability (histogram bin height) at val
   """
   histo = np.array([0.01860465, 0.00465116, 0.00465116, 0.01395349, 0.01860465, 0.01395349, 0.02325581, 0.02790698,
                     0.04651163, 0.06046512, 0.06511628, 0.09302326, 0.13023256, 0.10697674, 0.12093023, 0.09302326,
@@ -2757,6 +2950,8 @@ def distrib_beta(val):
 def distrib_theta_nu_toma(val):
   """
   theta nu follows a distribution given by Toma_2009
+  :param val: float, observer angle theta_nu [rad]
+  :returns: float, probability proportional to sin(val)
   """
   return np.sin(val)
 
@@ -2765,12 +2960,10 @@ def distrib_theta_j(theta_j):
   """
   Distri theta j given by Toma_2009
   q2 comes from observation of jet breaks and from analysis of BATSE, q1 highly uncertain
+  :param theta_j: float or array, jet opening angle [rad]
+  :returns: float or array, relative probability at theta_j
   """
   coupure = 0.02
-  # if theta_j <= coupure:
-  #     return coupure**(-0.5) * theta_j**0.5
-  # else:
-  #     return coupure**2 * theta_j**(-2)
   return np.where(theta_j <= coupure, coupure ** (-0.5) * theta_j ** 0.5, coupure ** 2 * theta_j ** (-2))
 
 
@@ -2782,6 +2975,8 @@ def distrib_z(red):
   more recent ones (the equation used comes from Porciani_2001
   zmax = 5, value taken from Dainotti_2023, may be a little high considering the shape of the distribution (doesn't
   seem to be that much GRB at high z, but maybe selection effect of the platinum sample from Dainotti)
+  :param red: float or array, redshift value(s)
+  :returns: float or array, relative GRB rate proportional to the SFR at redshift red
   """
   rate = np.exp(3.4 * red) / (np.exp(3.4 * red) + 22) * np.sqrt(0.3 * (1 + red) ** 3 + 0.7) / (1 + red) ** (3 / 2)
   return rate
@@ -2791,20 +2986,32 @@ def generator_theta_nu(theta_j, gamma, opening_factor):
   """
   Generate a value for theta_nu using the transformation method
   Values follows a distribution with a sin shape between theta_nu = 0 and theta_j + X/gamma value of X isn't clear
+  :param theta_j: float, jet opening angle [rad]
+  :param gamma: float, Lorentz factor of the jet
+  :param opening_factor: float, scaling factor for the upper bound theta_j + opening_factor/gamma
+  :returns: float, randomly drawn observer angle theta_nu [rad]
   """
   theta_nu_lim = theta_j + opening_factor / gamma
   return np.arccos(1 - np.random.random() * (1 - np.cos(theta_nu_lim)))
-  # return np.arccos(np.cos(theta_j + opening_factor / gamma) + np.random.random() * (1 - np.cos(theta_j + opening_factor / gamma)))
 
 
 def generator_nu_0(theta_j, gamma):
   """
   Generate a value for nu_0 according to the formula from Toma 2009
+  :param theta_j: float, jet opening angle [rad]
+  :param gamma: float, Lorentz factor
+  :returns: float, characteristic synchrotron frequency nu_0 [Hz]
   """
   return 80 / gamma * np.random.lognormal(1, np.sqrt(0.15)) * np.sqrt(np.random.lognormal(1, np.sqrt(0.3)) / (5 * theta_j ** 2))
 
 
 def SO_PF_distri(pf):
+  """
+  Returns the probability density of the polarization fraction for the SO (Synchrotron Ordered) jet model,
+  based on a pre-computed histogram from Monte Carlo simulations.
+  :param pf: float or other, polarization fraction in [0, 1]. If not a recognized scalar type, returns the max value.
+  :returns: float, probability density at pf
+  """
   bins = np.linspace(0, 1, 101)
   freq = np.array([6.600e-04, 5.200e-04, 5.800e-04, 4.600e-04, 5.900e-04, 5.600e-04, 6.100e-04,
                    5.700e-04, 6.100e-04, 8.300e-04, 9.300e-04, 1.190e-03, 1.470e-03, 1.280e-03,
@@ -2829,6 +3036,12 @@ def SO_PF_distri(pf):
 
 
 def SR_PF_distri(pf):
+  """
+  Returns the probability density of the polarization fraction for the SR (Synchrotron Random) jet model,
+  based on a pre-computed histogram from Monte Carlo simulations.
+  :param pf: float or other, polarization fraction in [0, 1]. If not a recognized scalar type, returns the max value.
+  :returns: float, probability density at pf
+  """
   bins = np.linspace(0, 1, 101)
   freq = np.array([6.1553e-01, 5.6260e-02, 5.3910e-02, 5.6780e-02, 2.7810e-02, 9.3600e-03, 5.7300e-03,
                    4.9700e-03, 4.6000e-03, 4.6300e-03, 4.6100e-03, 4.3200e-03, 3.9800e-03, 4.3800e-03,
@@ -2853,6 +3066,12 @@ def SR_PF_distri(pf):
 
 
 def CD_PF_distri(pf):
+  """
+  Returns the probability density of the polarization fraction for the CD (Compton Drag) model,
+  based on a pre-computed histogram from Monte Carlo simulations.
+  :param pf: float or other, polarization fraction in [0, 1]. If not a recognized scalar type, returns the max value.
+  :returns: float, probability density at pf
+  """
   bins = np.linspace(0, 1, 101)
   freq = np.array([5.8116e-01, 4.9540e-02, 3.4880e-02, 3.1250e-02, 3.1290e-02, 3.7090e-02, 3.0080e-02,
                    1.4420e-02, 6.2500e-03, 3.8200e-03, 3.2100e-03, 2.5900e-03, 2.6200e-03, 2.3800e-03,
@@ -2877,6 +3096,12 @@ def CD_PF_distri(pf):
 
 
 def PJ_PF_distri(pf):
+  """
+  Returns the probability density of the polarization fraction for the PJ (Photospheric Jet) model,
+  based on a pre-computed histogram from Monte Carlo simulations.
+  :param pf: float or other, polarization fraction in [0, 1]. If not a recognized scalar type, returns the max value.
+  :returns: float, probability density at pf
+  """
   bins = np.linspace(0, 1, 101)
   freq = np.array([0.39492, 0.03335, 0.02236, 0.01675, 0.01461, 0.01197, 0.01054, 0.00995, 0.00917,
                    0.0088,  0.00833, 0.00785, 0.00751, 0.00743, 0.00734, 0.00794, 0.00679, 0.00639,

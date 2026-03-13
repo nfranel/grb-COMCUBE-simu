@@ -1,7 +1,11 @@
-# Autor Nathan Franel
-# Date 01/12/2023
-# Version 2 :
-# Separating the code in different modules
+# ================================================================
+# Author      : Nathan Franel
+# Version     : 1.0
+# Created     : 2023-12-01
+# Description  :  MGRBFullData.py
+# Class to contain GRB data for a given source, simulation, and satellite
+# ================================================================
+
 
 # Package imports
 import matplotlib.pyplot as plt
@@ -13,12 +17,6 @@ import traceback
 # Developped modules imports
 from src.General.funcmod import set_bins, calc_mdp, calc_snr, det_counter
 
-# Ploting adjustments
-# mpl.use('Qt5Agg')
-# mpl.use('TkAgg')
-
-# plt.rcParams.update({'font.size': 20})
-
 
 class GRBFullData:
   """
@@ -27,81 +25,84 @@ class GRBFullData:
 
   def __init__(self, datafile, sim_duration, source_duration, source_fluence, bkgdata, mudata, options):
     """
-    :param datafile: file to read
-    :param sat_info: orbital information about the satellite detecting the source
-    :param sim_duration: duration of the simulation
-    :param bkg_data: list of background data to affect the correct count rates to this simulation
-    :param mu_data: list of mu100 data to affect the correct mu100 and effective area to this simulation
-    :param ergcut: energy cut to use
-    :param armcut: ARM (Angular Resolution Measurement) cut to use
-    :param geometry: geometry used for the simulation
-    :param corr: True if the polarigrams should be corrected (useful when adding them together for the constellation)
-    :param polarigram_bins: bins for the polarigram
+    :param datafile: Simulation file to read
+    :param sim_duration: Duration of the simulation
+    :param source_duration: Duration of the source emission
+    :param source_fluence: Source fluence
+    :param bkgdata: background container to affect the correct count rates to this simulation
+    :param mudata: mu100/Seff container to affect the correct mu100 and effective area to this simulation
+    :param options: list containing [erg_cut, armcut, geometry, init_correction, polarigram_bins]
+    options gives information about the following options, required for data analysis
+        ergcut: Energy cut to use
+        armcut: ARM (Angular Resolution Measurement) cut to use
+        geometry: geometry of the mass model used for the simulation
+        init_correction: True if the polarigrams should be corrected (useful when adding them together for the constellation)
+        polarigram_bins: Bins for the polarigram
     """
     ergcut, armcut, corr, polarigram_bins = options[0], options[1], options[3], options[4]
     ###################################################################################################################
-    #  Attributes declaration    +    way they are treated with constellation
+    #  Attributes declaration    +    way they are combined to obtain constellation level data
     ###################################################################################################################
     self.array_dtype = np.float32
     ###################################################################################################################
     # Attributes for the sat
     self.bkg_index = None                  # Appened
-    self.sat_mag_dec = None                  # Appened
-    self.compton_b_rate = 0                # Summed                  # Compton
-    self.single_b_rate = 0                 # Summed                  # Single
-    self.sat_dec_wf = None                 # Not changed             #
-    self.sat_ra_wf = None                  # Not changed             #
-    self.sat_alt = None                    # Not changed             #
-    self.num_offsat = None                 # Not changed             #
-    self.num_sat = None                    # Appened                 #
+    self.sat_mag_dec = None                # Appened
+    self.compton_b_rate = 0                # Summed
+    self.single_b_rate = 0                 # Summed
+    self.sat_dec_wf = None                 # Not changed
+    self.sat_ra_wf = None                  # Not changed
+    self.sat_alt = None                    # Not changed
+    self.num_offsat = None                 # Not changed
+    self.num_sat = None                    # Appened
     ###################################################################################################################
     # Attributes from the mu100 files
-    self.mu_index = None                    # Appened                 #
-    self.mu100_ref = None                  # Weighted mean           # Compton
-    self.mu100_err_ref = None              # Weighted mean           # Compton
-    self.s_eff_compton_ref = 0             # Summed                  # Compton
-    self.s_eff_single_ref = 0              # Summed                  # Single
+    self.mu_index = None                   # Appened
+    self.mu100_ref = None                  # Weighted mean
+    self.mu100_err_ref = None              # Weighted mean
+    self.s_eff_compton_ref = 0             # Summed
+    self.s_eff_single_ref = 0              # Summed
     ###################################################################################################################
     # Attributes filled with file reading (or to be used from this moment)
-    self.grb_dec_sat_frame = None          # Not changed             #
-    self.grb_ra_sat_frame = None           # Not changed             #
-    self.expected_pa = None                # Not changed             #
+    self.grb_dec_sat_frame = None          # Not changed
+    self.grb_ra_sat_frame = None           # Not changed
+    self.expected_pa = None                # Not changed
     self.df_compton = None
     self.df_single = None
     ###################################################################################################################
     # Correction applied
-    self.azim_angle_corrected = False      # Set to true             #
+    self.azim_angle_corrected = False      # Set to true
     ###################################################################################################################
     # Attributes filled after the reading
     # Set using extracted data
-    self.s_eff_compton = 0                 # Summed                  # Compton
-    self.s_eff_single = 0                  # Summed                  # Single
+    self.s_eff_compton = 0                 # Summed
+    self.s_eff_single = 0                  # Summed
     self.s_eff_compton_err = 0             # propagated sum
     self.s_eff_single_err = 0              # propagated sum
-    self.single = 0                        # Summed                  # Single
-    self.single_cr = 0                     # Summed                  # Single
-    self.compton = 0                       # Summed                  # Compton
-    self.compton_cr = 0                    # Summed                  # Compton
+    self.single = 0                        # Summed
+    self.single_cr = 0                     # Summed
+    self.compton = 0                       # Summed
+    self.compton_cr = 0                    # Summed
 
-    self.bins = None                       # All the same            #
-    self.mdp = None                        # Not changed             #
-    self.mdp_err = None                    # Not changed             #
-    self.hits_snrs = None                  # Not changed             #
-    self.compton_snrs = None               # Not changed             #
-    self.single_snrs = None                # Not changed             #
-    self.hits_snrs_err = None              # Not changed             #
-    self.compton_snrs_err = None           # Not changed             #
-    self.single_snrs_err = None            # Not changed             #
+    self.bins = None                       # All the same
+    self.mdp = None                        # Not changed
+    self.mdp_err = None                    # Not changed
+    self.hits_snrs = None                  # Not changed
+    self.compton_snrs = None               # Not changed
+    self.single_snrs = None                # Not changed
+    self.hits_snrs_err = None              # Not changed
+    self.compton_snrs_err = None           # Not changed
+    self.single_snrs_err = None            # Not changed
     ###################################################################################################################
     # Attributes that are used while making const
-    self.n_sat_detect = 1                  # Summed                  #
+    self.n_sat_detect = 1                  # Summed
     ###################################################################################################################
-    self.const_beneficial_compton = True   # Appened                 #
-    self.const_beneficial_single = True    # Appened                 #
-    self.const_beneficial_trigger_4s = np.zeros(9, dtype=np.int16)  # List sum                  #
-    self.const_beneficial_trigger_3s = np.zeros(9, dtype=np.int16)  # List sum                  #
-    self.const_beneficial_trigger_2s = np.zeros(9, dtype=np.int16)  # List sum                  #
-    self.const_beneficial_trigger_1s = np.zeros(9, dtype=np.int16)  # List sum                  #
+    self.const_beneficial_compton = True   # Appened
+    self.const_beneficial_single = True    # Appened
+    self.const_beneficial_trigger_4s = np.zeros(9, dtype=np.int16)  # List sum
+    self.const_beneficial_trigger_3s = np.zeros(9, dtype=np.int16)  # List sum
+    self.const_beneficial_trigger_2s = np.zeros(9, dtype=np.int16)  # List sum
+    self.const_beneficial_trigger_1s = np.zeros(9, dtype=np.int16)  # List sum
 
     ###################################################################################################################
     #                   Reading data from file
@@ -138,7 +139,6 @@ class GRBFullData:
       #################################################################################################################
       #        Conducting other calculations
       #################################################################################################################
-      # TODO testing
       self.analyze(source_duration, source_fluence)
 
       self.set_beneficial_compton()
@@ -148,6 +148,14 @@ class GRBFullData:
       raise TypeError("Impossible to create the data container : the data must be None or a string")
 
   def read_saved_grb(self, filename, bkgdata, mudata, ergcut=None, armcut=None):
+    """
+    Method to read the HDFS files containing the condensed GRB simulation data
+    :param filename: Name of the condensed data file
+    :param bkgdata: Background data container
+    :param mudata: mu100/Seff data container
+    :param ergcut: Energy cut applied during the analysis
+    :param armcut: ARM (Angular Resolution Measurement) cut applied during the analysis
+    """
     with pd.HDFStore(filename, mode="r") as f:
       self.df_compton = f["compton"]
       self.df_single = f["single"]
@@ -166,14 +174,8 @@ class GRBFullData:
       self.sat_ra_wf = f.get_storer("compton").attrs.sat_ra_wf
       self.sat_alt = f.get_storer("compton").attrs.sat_alt
       self.num_sat = f.get_storer("compton").attrs.num_sat
-      # self.compton_b_rate = f.get_storer("compton").attrs.compton_b_rate
-      # self.single_b_rate = f.get_storer("compton").attrs.single_b_rate
       # Information from mu files
       self.mu_index = f.get_storer("compton").attrs.mu_index
-      # self.mu100_ref = f.get_storer("compton").attrs.mu100_ref
-      # self.mu100_err_ref = f.get_storer("compton").attrs.mu100_err_ref
-      # self.s_eff_compton_ref = f.get_storer("compton").attrs.s_eff_compton_ref
-      # self.s_eff_single_ref = f.get_storer("compton").attrs.s_eff_single_ref
       # GRB position and polarisation
       self.grb_dec_sat_frame = f.get_storer("compton").attrs.grb_dec_sat_frame
       self.grb_ra_sat_frame = f.get_storer("compton").attrs.grb_ra_sat_frame
@@ -200,7 +202,7 @@ class GRBFullData:
 
   def behave(self, width=360):
     """
-    Make angles be between the beginning of the first bin and the beginning of the first bin plus the width parameter
+    Makes angles be between the beginning of the first bin and the beginning of the first bin plus the width parameter
     Calculi are made in-place
     :param width: float, width of the polarigram in deg, default=360, SHOULD BE 360
     """
@@ -262,11 +264,13 @@ class GRBFullData:
 
   def calculates_snrs(self, source_duration):
     """
-    Calculates the snr for different integration time
+    Calculates the maximum SNR for different integration time
+      compton_snrs corresponds to the SNR of compton events only
+      single_snrs corresponds to the SNR of single events only
+      hits_snrs corresponds to the SNR of both types of events
     :param source_duration: duration of the source
     """
     integration_times = [0.016, 0.032, 0.064, 0.128, 0.256, 0.512, 1.024, 2.048, 4.096, source_duration]
-
     self.hits_snrs = []
     self.compton_snrs = []
     self.single_snrs = []
@@ -299,6 +303,13 @@ class GRBFullData:
       self.single_snrs_err.append(snr_ret3[1])
 
   def hits_snrs_over_lc(self, source_duration, nsat=3):
+    """
+    Calculates the SNR over the light curve for various integration times to check if the detection threshold is exceeded
+    This method aims at performing detection estimation
+    :param source_duration: Duration of the source
+    :param nsat: Number of satellites considered for the simultaneous detection
+    """
+    # Setting the threshold for detection according to the number of satellite
     if nsat == 1:
       thresh_list_nsat = [8.2, 7.5, 6.9, 6.6, 6.3, 6, 5.8, 5.6, 5.5]
     elif nsat == 2:
@@ -309,6 +320,8 @@ class GRBFullData:
       thresh_list_nsat = [4.1, 3.9, 3.7, 3.6, 3.5, 3.3, 3.3, 3.2, 3.1]
     else:
       raise ValueError("Uncorrect number of sat : only 2, 3, and 4 sat constellation are considered")
+
+    # Calculation of the snr over the light curve for various integration times to check if the detection threshold is exceeded
     integration_times = [0.016, 0.032, 0.064, 0.128, 0.256, 0.512, 1.024, 2.048, 4.096]
     hits_snrs_lc = []
     for ite_int, int_time in enumerate(integration_times):
@@ -320,6 +333,7 @@ class GRBFullData:
   def set_beneficial_compton(self, threshold=2.6):
     """
     Sets const_beneficial_compton to True is the value for a satellite is worth considering
+    Objective : Filter data from satellites where adding the data would not be beneficial
     :param threshold: the mdp threshold required to consider a satellite is worth
     """
     if self.mdp < threshold:
@@ -330,15 +344,19 @@ class GRBFullData:
   def set_beneficial_single(self):
     """
     Sets const_beneficial_compton to True is the value for a satellite is worth considering
+    Objective : Filter data from satellites where adding the data would not be beneficial
+    Set to True as no filtering is made on single events
     """
     self.const_beneficial_single = True
 
   def set_beneficial_trigger(self):
     """
     Sets const_beneficial_compton to True is the value for a satellite is worth considering
+    Objective : Create arrays indicating if the detection threshold is exceeded for different number of satellites and different integration times
+    This is used for a first fast and coarse detection method
     """
+    # thresh_list_ns has the sigma threshold for 16, 32, 64, 128, 256, 512, 1024, 2048 and 4096s for n satellites
     # For 4 sats
-    # thresh_list has the sigma threshold for 16, 32, 64, 128, 256, 512, 1024, 2048 and 4096s
     thresh_list_4s = [4.1, 3.9, 3.7, 3.6, 3.5, 3.3, 3.3, 3.2, 3.1]
     for ite_ts in range(len(self.const_beneficial_trigger_4s)):
       if self.hits_snrs[ite_ts] >= thresh_list_4s[ite_ts]:
@@ -371,48 +389,27 @@ class GRBFullData:
         self.const_beneficial_trigger_1s[ite_ts] = 0
 
   def detector_statistics(self, bkg_cont, bkg_duration, source_duration, source_name, show=False):
+    """
+    Method used to estimate the count rate of each detector
+    :param bkg_cont: Background data container
+    :param bkg_duration: Background duration
+    :param source_duration: Source duration
+    :param source_name: Source name
+    :param show: True if the plot of the light curve for each detector should be shown
+    """
     bkg_stats = (bkg_cont.com_det_idx + bkg_cont.sin_det_idx).reshape(4, 5) / bkg_duration
 
     hit_times = np.concatenate((self.df_compton.compton_time.values, self.df_compton.compton_time.values, self.df_single.single_time.values))
     det_list = np.concatenate((self.df_compton.compton_first_detector.values, self.df_compton.compton_sec_detector.values, self.df_single.single_detector.values))
     bin_edges = np.arange(0, source_duration + 1, 1)
     bin_index = np.digitize(hit_times, bin_edges) - 1
-    hit_hist = np.histogram(hit_times, bins=bin_edges)[0]
 
-    # print("=================== Digitize verif ===================")
-    # for iteval in range(len(bin_index)):
-    #   print(f"{hit_times[iteval]} - {bin_index[iteval]} - {det_list[iteval]}")
-    # print("=================== Digitize verif ===================")
-
-    binned_dets = [[] for ite in range(len(bin_edges) - 1)]
+    binned_dets = [[] for _ in range(len(bin_edges) - 1)]
     for ite_ev, idx in enumerate(bin_index):
       if bin_edges[idx] <= hit_times[ite_ev] < bin_edges[idx + 1]:
         binned_dets[idx].append(det_list[ite_ev])
 
-    # print("=================== Binning verif ===================")
-    # for itebin, bin in enumerate(binned_dets):
-    #   print(f"Bin {itebin}")
-    #   print(f"hit_hist and binned_dets same size : {hit_hist[itebin] == len(binned_dets[itebin])}")
-    # print("=================== Binning verif ===================")
-
     shaped_det_lc = np.transpose(np.array([det_counter(np.array(binned_det)) for binned_det in binned_dets]), (1, 2, 0))
-    # dets_lc = np.array([det_counter(np.array(binned_det)) for binned_det in binned_dets])
-    # shaped_det_lc = np.transpose(dets_lc, (1, 2, 0))
-    # print("=================== Transposition verif ===================")
-    # test_cont = np.zeros((4, 5, len(dets_lc)))
-    # for ite_lc in range(len(dets_lc)):
-    #   # Bin de la lc
-    #   for ite_quad in range(len(dets_lc[ite_lc])):
-    #     # Dans le quad
-    #     for ite_det in range(len(dets_lc[ite_lc][ite_quad])):
-    #       test_cont[ite_quad][ite_det][ite_lc] = dets_lc[ite_lc][ite_quad][ite_det]
-
-    # print(shaped_det_lc)
-    # print(test_cont)
-    # print(f"transposition size and looped size : {shaped_det_lc.shape} - {test_cont.shape}")
-    # if shaped_det_lc.shape == test_cont.shape:
-    #   print(f"shaped_det_lc == test_cont : {np.all(shaped_det_lc == test_cont)}")
-    # print("=================== Transposition verif ===================")
 
     if show:
       mpl.use('Qt5Agg')

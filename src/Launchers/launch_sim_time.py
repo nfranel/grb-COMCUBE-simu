@@ -1,12 +1,12 @@
-"""
-Multi-threaded automated MEGAlib runner
-"""
+# ================================================================
+# Author      : Nathan Franel & Adrien Laviron
+# Version     : 1.0
+# Created     : 2023-12-01
+# Description  :  launch_sim_time.py
+# Contains various functions and a main to run automatically the GRB simulations
+# ================================================================
 __version__ = "alpha"
 __author__ = "Nathan Franel"
-
-# Date 01/12/2023
-# Version 2 :
-# file to launch background simulations
 
 # Package imports
 import numpy as np
@@ -31,7 +31,10 @@ __verbose__ = 1
 # Utility functions
 def vprint(message, verb, level):
   """
-  Prints string message if verbosity verb is superior to verbosity level level
+  Prints a message to stdout only if the verbosity level is high enough.
+  :param message: str, message to print
+  :param verb: int, current verbosity level
+  :param level: int, minimum verbosity threshold required for the message to be printed
   """
   if verb > level:
     print(message)
@@ -40,7 +43,20 @@ def vprint(message, verb, level):
 # System functions
 def gen_commands(args):
   """
-  Parses parameter file and fills Namespace with the data gathered
+  Reads the parameter file referenced in args, generates all MEGAlib simulation
+  commands for each GRB in the catalog, and populates args.commands with the
+  resulting command tuples. Also creates the spectrum and light curve files
+  needed by cosima if they do not already exist, and initialises the simulation
+  log file.
+  :param args: argparse.Namespace, parsed command-line arguments. Must contain at
+      least args.parameterfile. The following attributes are set by this function:
+      args.geometry, args.rcf, args.mcf, args.simmode, args.spectrafilepath,
+      args.grbfile, args.csf, args.prefix, args.sttype, args.simulationsperevent,
+      args.simtime, args.position, args.satellites, args.commands
+  :returns: argparse.Namespace, the updated args Namespace with args.commands
+      populated
+  :raises ValueError: if the simulation mode read from the parameter file is
+      neither "GBM" nor "sampled"
   """
   args.commands = []
   args.geometry, args.rcf, args.mcf, args.simmode, args.spectrafilepath, args.grbfile, args.csf, args.prefix, args.sttype, args.simulationsperevent, args.simtime, args.position, args.satellites = read_grbpar(args.parameterfile)
@@ -105,13 +121,6 @@ def gen_commands(args):
       pht_pflx = cat.df.peak_flux.values[i]
       if np.isnan(pht_pflx):
         pht_pflx = "No value fitted"
-      # if type(pfluxmodel) == str:
-      #   pht_pflx = cat.df[f"{pfluxmodel}_phtflux"].values[i]
-      # else:
-      #   if np.isnan(pfluxmodel):
-      #     pht_pflx = "No value fitted"
-      #   else:
-      #     raise ValueError("A value for pflx_best_fitting_model is not set properly")
       # Creation of spectra if they have not been created yet
       if not (f"{cat.df.name.values[i]}_spectrum.dat" in os.listdir(args.spectrafilepath)):
         logE = np.logspace(1, 3, 100)  # energy (log scale)
@@ -192,14 +201,38 @@ def gen_commands(args):
 
 def make_sim_name(args, command):
   """
-  Makes the beginning of the .sim file name from args and command
+  Builds the base path and filename stem for a simulation output file,
+  without any extension.
+  :param args: argparse.Namespace, parsed command-line arguments containing
+      at least args.prefix
+  :param command: tuple, simulation command tuple as appended to args.commands,
+      where command[3] is the GRB name, command[4] is the satellite index,
+      command[-4] is the simulation number, and command[-3] is the position string
+  :returns: str, base name (path + stem) for the simulation output files
   """
   return f"{args.prefix}_{command[3]}_sat{command[4]}_{command[-4]:04d}_{command[-3]}"
 
 
 def maketmpsf(command, args, pid):
   """
-  Makes a temporary source file for cosima from a standard one and returns its name
+  Creates a temporary cosima source file for a single GRB simulation by filling
+  in the geometry, run name, simulation duration, beam direction, spectrum,
+  polarization, flux, and optional light curve into a template source file.
+  :param command: tuple, simulation command tuple as appended to args.commands.
+      Relevant indices:
+        command[3]  - str, GRB name
+        command[5]  - str, path to the spectrum file
+        command[6]  - float, photon mean flux [ph/cm2/s]
+        command[7]  - float, simulation duration [s]
+        command[8]  - bool, whether to use a light curve
+        command[9]  - str or None, light curve filename (None for GBM mode)
+        command[10] - str, polarization string
+        command[-2] - float, source declination in satellite frame [deg]
+        command[-1] - float, source right ascension in satellite frame [deg]
+  :param args: argparse.Namespace, parsed command-line arguments containing
+      at least args.csf (template source file path) and args.geometry
+  :param pid: int, process ID used to make the temporary filename unique
+  :returns: str, path to the temporary source file created
   """
   fname = f"tmp_{pid}_{command[3]}.source"
   sname = make_sim_name(args, command)
@@ -253,9 +286,15 @@ def maketmpsf(command, args, pid):
 # MEGAlib interface functions
 def cosirevan(command):
   """
-  Launches cosima and/or revan
-  command syntax : tuple : command[0] - bool, run cosima : command[1] - run revan
-  if both, runs revan only on the latest .sim file with the correct name
+  Launches cosima, revan, and/or mimrec for a single simulation command,
+  according to the boolean flags stored in the command tuple. Each tool is
+  run conditionally: cosima produces the raw .sim.gz file, revan reconstructs
+  events into a .tra.gz file, and mimrec extracts the final .extracted.tra file.
+  :param command: tuple, simulation command tuple as appended to args.commands.
+      Relevant indices:
+        command[0] - bool, if True run cosima
+        command[1] - bool, if True run revan
+        command[2] - bool, if True run mimrec
   """
   pid = os.getpid()
   simname = make_sim_name(args, command)
@@ -265,10 +304,6 @@ def cosirevan(command):
   source_name = maketmpsf(command, args, pid)
   if command[0]:
     # Running cosima
-    # if command[3] in ["GRB080804456", "GRB120420858", "GRB130215063", "GRB140603476"]:
-    #   print(f"RUNNING {command[3]}")
-    #   run(f"cosima -z {source_name}", 3)
-    # else:
     run(f"cosima -z {source_name}; rm -f {source_name}", f"{simname.split('/sim/')[0]}/cosima_errlog.txt", simfile, __verbose__)
   if command[1]:
     # Running revan and moving the simulation file to rawsim
@@ -284,17 +319,20 @@ def cosirevan(command):
 
 def run(command, error_file, expected_file, __verbose__):
   """
-  Runs a command
+  Executes a shell command and logs any errors or missing output files to an
+  error log file. The level of stdout/stderr capture depends on the verbosity.
   :param command: str, shell command to run
-  :param error_file: str, name of the error logfile
-  :param __verbose__: verbosity
-    0 -> No output
-    1 -> One-line output (proscesses id, command and verbosity)
-    2 -> Adds stderr of command
-    3 -> Adds stdout of command
+  :param error_file: str, path to the error log file where stderr output and
+      missing-file warnings are appended
+  :param expected_file: str, path to the output file that the command is
+      expected to produce; if absent after execution, a warning is logged
+  :param __verbose__: int, verbosity level controlling output capture:
+      0 -> stderr and stdout fully captured, errors written to log only
+      1 -> stdout suppressed, stderr visible in terminal
+      2 -> stdout and stderr both visible in terminal
   """
   vprint(f"Process id {os.getpid()} from {os.getppid()} runs {command} (verbosity {__verbose__})", __verbose__, 0)
-  if __verbose__ < 2:
+  if __verbose__ < 1:
     proc = subprocess.run(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
     folder = f"{expected_file.split('/sim/')[0]}/sim/"
     simname = expected_file.split("/sim/")[-1]
@@ -306,7 +344,7 @@ def run(command, error_file, expected_file, __verbose__):
       with open(error_file, "a") as errfile:
         errormess = "\n=========================================================================================================\n" + f"NOFILE output : {simname}\n" + proc.stdout + "\n"
         errfile.write(errormess)
-  elif __verbose__ < 3:
+  elif __verbose__ < 2:
     subprocess.call(command, shell=True, stdout=open(os.devnull, 'wb'))
   else:
     subprocess.call(command, shell=True)
@@ -314,7 +352,10 @@ def run(command, error_file, expected_file, __verbose__):
 
 def run_sims(commands):
   """
-  Run each command in commands through multiprocessing module
+  Dispatches all simulation commands to a multiprocessing pool, running up to
+  60 cosima/revan/mimrec processes in parallel.
+  :param commands: list, list of simulation command tuples to execute, each
+      passed individually to cosirevan()
   """
   with mp.Pool(60) as pool:
     pool.map(cosirevan, commands)

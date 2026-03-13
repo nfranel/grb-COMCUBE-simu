@@ -1,8 +1,15 @@
+# ================================================================
+# Author      : Nathan Franel
+# Version     : 1.0
+# Created     : 2023-12-01
+# Description  :  catalogMC.py
+# Contains functions and class to create a synthetic GRB catalogue using Monte Carlo methods
+# ================================================================
+
 import numpy as np
 import seaborn as sns
 import pandas as pd
 import matplotlib.pyplot as plt
-import matplotlib as mpl
 import multiprocessing as mp
 import os
 import subprocess
@@ -13,11 +20,23 @@ from src.Catalogs.catalog import Catalog
 from src.General.funcmod import calc_flux_gbm, use_scipyquad, equi_distri, red_rate_long, red_rate_short, acc_reject, transfo_broken_plaw, pick_normal_alpha_beta, norm_band_spec_calc, amati_long, amati_short, yonetoku_reverse_long, yonetoku_reverse_short, pflux_to_mflux_calculator
 from astropy.cosmology import FlatLambdaCDM
 
-# mpl.use("Qt5Agg")
-mpl.use('Agg')
-
 
 def categorize_pierson_chi2(pierson_chi2_array, mode="fine", grbtype="long"):
+  """
+  Assigns each Pearson chi2 value in an array to a quality category based on
+  sigma-equivalent thresholds, and builds label strings for use as seaborn hue
+  categories in pair plots.
+  :param pierson_chi2_array: np.ndarray, array of Pearson chi2 values to categorize
+  :param mode: str, threshold set to use; one of "fine", "medium_fine",
+      "medium_coarse", "coarse", or "very_coarse"; controls how tightly simulations
+      are classified, default="fine"
+  :param grbtype: str, GRB population being evaluated; "long" uses 12 bins and
+      "short" uses 8 bins for chi2 limit computation, default="long"
+  :returns: np.ndarray, str, array of category label strings (one per input
+      value) to use as a hue column, and the ordered list of unique category
+      labels for the hue_order argument
+  :raises ValueError: if mode is not one of the five accepted values
+  """
   if grbtype == "long":
     nbins = 12
   else:
@@ -76,15 +95,31 @@ def categorize_pierson_chi2(pierson_chi2_array, mode="fine", grbtype="long"):
 
 
 def get_df(select_col, csvfile="../Data/CatData/CatSampling/longred_lum_discreet/longfit_red.csv"):
+  """
+  Reads a CSV file and returns the selected columns as a pandas DataFrame.
+  :param select_col: list, list of str column names to extract from the CSV file
+  :param csvfile: str, path to the CSV file to read,
+      default="../Data/CatData/CatSampling/longred_lum_discreet/longfit_red.csv"
+  :returns: pd.DataFrame, DataFrame containing only the requested columns
+  """
   result_df = pd.read_csv(csvfile)
   return result_df[select_col]
 
 
 def MC_explo_pairplot(fileused, legend_mode, grbtype):
+  """
+  Reads Monte Carlo exploration results from a CSV file, categorizes each run
+  by its Pearson chi2 value, and draws a seaborn pair plot coloured by quality
+  category. Handles CSV files that may or may not contain pre-computed GRB counts
+  (nlong / nshort), recomputing them from the rate parameters if absent.
+  :param fileused: str, path to the CSV file containing MC exploration results
+  :param legend_mode: str, threshold mode passed to categorize_pierson_chi2();
+      one of "fine", "medium_fine", "medium_coarse", "coarse", "very_coarse"
+  :param grbtype: str, GRB population to plot; "long" or "short"
+  """
   if grbtype == "long":
     extract_cols = ["nlong", "long_rate", "long_ind1_z", "long_ind2_z", "long_zb", "long_ind1_lum", "long_ind2_lum", "long_lb", "pierson_chi2"]
     select_cols = ["nlong", "long_rate", "long_ind1_z", "long_ind2_z", "long_zb", "long_ind1_lum", "long_ind2_lum", "long_lb_2"]
-    # select_cols = ["nlong", "long_rate", "long_ind1_z", "long_ind2_z", "long_zb", "long_ind1_lum", "long_ind2_lum", "long_lb"]
   elif grbtype == "short":
     extract_cols = ["nshort", "short_rate", "short_ind1_z", "short_ind2_z", "short_zb", "short_ind1_lum", "short_ind2_lum", "short_lb", "pierson_chi2"]
     select_cols = ["nshort", "short_rate", "short_ind1_z", "short_ind2_z", "short_zb", "short_ind1_lum", "short_ind2_lum", "short_lb"]
@@ -109,9 +144,6 @@ def MC_explo_pairplot(fileused, legend_mode, grbtype):
 
   pierson_chi2_categories, order_hue = categorize_pierson_chi2(df_selec['pierson_chi2'].values, mode=legend_mode, grbtype=grbtype)
 
-  # rainbow_palette = sns.color_palette("rainbow", len(order_hue))  # Nombre de catégories
-  # palette = {cat: rainbow_palette[i] for i, cat in enumerate(order_hue)}
-
   df_selec['pierson_chi2_category'] = pierson_chi2_categories
   if grbtype == "long":
     df_selec['long_lb_2'] = df_selec['long_lb'] / 1e51
@@ -121,11 +153,29 @@ def MC_explo_pairplot(fileused, legend_mode, grbtype):
 
 class MCCatalog:
   """
-
+  Monte Carlo GRB catalog generator. Builds synthetic short and long GRB
+  populations by drawing redshifts and luminosities from broken power-law
+  distributions and spectra from Band function parameters, then accepts or
+  rejects parameter sets based on a Pearson chi2 comparison with the observed
+  GBM peak-flux and fluence distributions. Supports three operating modes:
+  "catalog" (generate accepted synthetic catalogs), "mc" (explore parameter
+  space), and "parametrized" (run with a fixed parameter list).
   """
   def __init__(self, gbm_file="../Data/CatData/allGBM.txt", sttype=None, rf_file="../Data/CatData/rest_frame_properties.txt", mode="catalog"):
     """
-
+    Initialises the MCCatalog by loading the GBM reference catalog, computing
+    observed flux and fluence histograms for short and long GRBs, setting the
+    parameter space boundaries, and immediately running the selected mode.
+    :param gbm_file: str, path to the GBM catalog text file,
+        default="../Data/CatData/allGBM.txt"
+    :param sttype: list or None, standardized file format descriptor of length 5
+        for the GBM catalog file; if None, defaults to [4, newline, 5, "|", 4000]
+    :param rf_file: str, path to the rest-frame properties file,
+        default="../Data/CatData/rest_frame_properties.txt"
+    :param mode: str, operating mode; one of "catalog", "mc", or "parametrized",
+        default="catalog"
+    :raises ValueError: if mode is not one of the three accepted values
+    :raises NameError: if a simulation output folder with the target name already exists
     """
     if sttype is None:
       sttype = [4, '\n', 5, '|', 4000]
@@ -175,8 +225,6 @@ class MCCatalog:
       self.gbm_s_mflux.append(self.df_short[f"{model}_phtflux"].values[ite_s])
       self.gbm_s_flnc.append(calc_flux_gbm(self.df_short, ite_s, self.ergcut, cat_is_df=True) * self.df_short.t90.values[ite_s])
 
-    ######### CHECK IF WE KEEP A VARIABLE FOR THE TIME OF THE CATALOG, BUT GBM IS 10 YEARS OF DATA SO WE SHOULD BROBABLY STICK TO THAT TIME
-
     # Acceptance limits
     # Number of GRB
     self.nlong_min = 5000
@@ -194,9 +242,7 @@ class MCCatalog:
     self.nflncbin_l = [30, 4, 1]
     self.nflncbin_s = [30, 1, 1]
     self.usual_bins = np.logspace(-1, 4, 50)
-    # l_pflux_bright = np.array([16.44, 27, 44.4, 73, 120 , 1000])
     l_pflux_bright = np.array([12, 14, 16, 19, 22, 27, 35, 45, 57, 73, 120, 1000])
-    # s_pflux_bright = np.array([10,  23,  52.4, 120 , 1000])
     s_pflux_bright = np.array([12, 14.5, 17, 20, 25, 34, 53, 120 , 1000])
     self.bin_flux_l = np.concatenate((np.logspace(-1, np.log10(self.flux_lim[0]), self.nfluxbin_l[0] + 1), l_pflux_bright))
     self.bin_flux_s = np.concatenate((np.logspace(-1, np.log10(self.flux_lim[0]), self.nfluxbin_s[0] + 1), s_pflux_bright))
@@ -231,7 +277,6 @@ class MCCatalog:
     # Version treating high and low bins the same way
     self.l_flnc_bins = flnc_l_hist[self.nflncbin_l[0]:]
     self.s_flnc_bins = flnc_s_hist[self.nflncbin_s[0]:]
-
 
     # INITIAL min and max values for distributions (Wandermann & Piran 2021, Lien, 2014, Lan et al 2019 for long GRBs and Ghirlanda, 2016 for short ones)
     # Redshift
@@ -318,8 +363,6 @@ class MCCatalog:
     self.result_df = pd.DataFrame(columns=self.columns)
 
     # build_params(l_rate, l_ind1_z, l_ind2_z, l_zb, l_ind1, l_ind2, l_lb, s_rate, s_ind1_z, s_ind2_z, s_zb, s_ind1, s_ind2, s_lb)
-    # main :     [0.42, 2.07, -0.7, 3.6, -0.65, -3, 1.12e+52, 0.25, 2.8, 3.5, 2.3, -0.53, -3.4, 2.8e52]
-
     # param_list = [[0.42, 2.07, -0.7, 3.6, -0.36, -1.28, 1.48e+52, 0.25, 2.8, 3.5, 2.3, -0.53, -3.4, 2.8e52],  # Lan no evo
     #               [0.42, 2.07, -0.7, 3.6, -0.69, -1.76, 2.09e+52, 0.25, 2.8, 3.5, 2.3, -0.53, -3.4, 2.8e52],  # Lan empirical
     #               [0.42, 2.07, -0.7, 3.6, -0.2, -1.4, 3.16e+52, 0.25, 2.8, 3.5, 2.3, -0.53, -3.4, 2.8e52],    # Wanderman Piran
@@ -391,6 +434,23 @@ class MCCatalog:
       self.run_mc(par_size, thread_number=thread_num, method=param_list, savefile=savefile, mctype=mctype)
 
   def run_mc(self, run_number, thread_number=1, method=None, savefile=None, comment="", mctype="long"):
+    """
+    Runs run_number Monte Carlo iterations using a multiprocessing pool (if
+    thread_number > 1) or sequentially, collects the results in self.result_df,
+    and optionally saves them to a CSV file.
+    :param run_number: int, number of MC iterations to run
+    :param thread_number: int or str, number of parallel worker processes; use
+        "all" to use all available CPUs, default=1
+    :param method: list or None, if None parameters are drawn randomly via
+        get_params(); if a list, each iteration uses get_set_params(method[i]),
+        default=None
+    :param savefile: str or None, path to a CSV file where results are saved;
+        if None results are not saved to disk, default=None
+    :param comment: str, optional comment string appended to plot titles,
+        default=""
+    :param mctype: str, population used for the acceptance condition; "long"
+        or "short", default="long"
+    """
     print(f"Starting the run for {run_number} iterations")
     if thread_number == 'all':
       print("Parallel execution with all threads")
@@ -407,6 +467,17 @@ class MCCatalog:
       self.result_df.to_csv(savefile, index=False)
 
   def get_params(self):
+    """
+    Draws a random set of long and short GRB population parameters uniformly
+    from their allowed ranges and rejects combinations that do not produce a
+    GRB count ratio (long/short) and absolute counts within the pre-defined
+    acceptance limits. Loops until a valid parameter set is found.
+    :returns: tuple, tuple of two tuples (l_params, s_params) where:
+        l_params = (l_rate, l_ind1_z, l_ind2_z, l_zb, l_ind1, l_ind2, l_lb,
+                    nlong) for the long GRB population
+        s_params = (s_rate, s_ind1_z, s_ind2_z, s_zb, s_ind1, s_ind2, s_lb,
+                    nshort) for the short GRB population
+    """
     l_rate_temp = equi_distri(self.l_rate_min, self.l_rate_max)
     l_ind1_z_temp = equi_distri(self.l_ind1_z_min, self.l_ind1_z_max)
     l_ind2_z_temp = equi_distri(self.l_ind2_z_min, self.l_ind2_z_max)
@@ -449,6 +520,16 @@ class MCCatalog:
     return l_params, s_params
 
   def get_set_params(self, params):
+    """
+    Builds the (l_params, s_params) tuple from a fixed parameter vector,
+    computing the expected GRB counts by integrating the redshift rate functions.
+    Prints a warning if the resulting counts fall outside the acceptance limits.
+    :param params: list, 14-element parameter vector in the order:
+        [l_rate, l_ind1_z, l_ind2_z, l_zb, l_ind1, l_ind2, l_lb,
+         s_rate, s_ind1_z, s_ind2_z, s_zb, s_ind1, s_ind2, s_lb]
+    :returns: tuple, tuple of two tuples (l_params, s_params); same structure
+        as the return value of get_params()
+    """
     l_rate_temp = params[0]
     l_ind1_z_temp = params[1]
     l_ind2_z_temp = params[2]
@@ -478,6 +559,27 @@ class MCCatalog:
     return l_params, s_params
 
   def get_sample(self, run_iteration, method=None, comment="", savefile=None, mctype="long"):
+    """
+    Runs one full MC iteration: draws parameters, generates long and short GRB
+    populations, evaluates the acceptance condition, and returns a result row.
+    Also calls hist_plotter() to produce and optionally save diagnostic plots.
+    Loops until the acceptance condition is met when method is None (random
+    parameter draw mode).
+    :param run_iteration: int, index of this iteration (used for seeding and logging)
+    :param method: list or None, if None parameters are drawn randomly; if a
+        list, uses method[run_iteration] as the fixed parameter vector, default=None
+    :param comment: str, optional comment string appended to plot titles,
+        default=""
+    :param savefile: str or None, path prefix for saving diagnostic plot files;
+        if None plots are not saved, default=None
+    :param mctype: str, population used for the chi2 acceptance condition;
+        "long" or "short", default="long"
+    :returns: list, result row with columns matching self.columns:
+        [nlong, l_rate, l_ind1_z, l_ind2_z, l_zb, nshort, s_rate, s_ind1_z,
+         s_ind2_z, s_zb, l_ind1, l_ind2, l_lb, s_ind1, s_ind2, s_lb,
+         pierson_chi2, status]
+    :raises ValueError: if method is not None and not a list
+    """
     # Using a different seed for each thread, somehow the seed what the same without using it
     np.random.seed(os.getpid() + int(time() * 1000) % 2**32)
 
@@ -528,6 +630,27 @@ class MCCatalog:
     return row
 
   def get_catalog_sample(self, run_iteration, thread_number, savefolder, method=None, comment="", n_sig=1):
+    """
+    Generates one accepted synthetic GRB catalog by independently iterating on
+    long and short populations until each passes the chi2 acceptance criterion,
+    then writes the full catalog to a text file and produces diagnostic plots.
+    :param run_iteration: int, iteration index used to name the output file and seed the RNG
+    :param thread_number: int or str, number of parallel workers for GRB
+        generation inside each iteration; use "all" for all CPUs
+    :param savefolder: str, path to the folder where the catalog text file and
+        diagnostic plots are saved
+    :param method: list or None, if None parameters are drawn randomly; if a
+        list, uses method[run_iteration] as the fixed parameter vector, default=None
+    :param comment: str, optional comment string appended to plot titles, default=""
+    :param n_sig: int or float, sigma threshold for the chi2 acceptance criterion;
+        a set is accepted when chi2 < n_bins * n_sig², default=1
+    :returns: list, result row with columns matching self.columns:
+        [nlong, l_rate, l_ind1_z, l_ind2_z, l_zb, nshort, s_rate, s_ind1_z,
+         s_ind2_z, s_zb, l_ind1, l_ind2, l_lb, s_ind1, s_ind2, s_lb,
+         pierson_chi2, status]
+    :raises ValueError: if method is not None and not a list, or if a GRB
+        type tag is neither "Sample short" nor "Sample long"
+    """
     # Using a different seed for each thread, somehow the seed what the same without using it
     np.random.seed(os.getpid() + int(time() * 1000) % 2**32)
 
@@ -635,17 +758,27 @@ class MCCatalog:
 
   def mcmc_condition(self, l_m_flux_temp, l_p_flux_temp, l_flnc_temp, s_m_flux_temp, s_p_flux_temp, s_flnc_temp, params=None, mode="pflx", n_sig=1):
     """
-    Condition on the histograms to consider a value is correct
+    Evaluates the Pearson chi2 acceptance condition by comparing the simulated
+    peak-flux histogram(s) against the GBM reference histograms.
+    :param l_m_flux_temp: np.ndarray, mean photon fluxes of the simulated long GRBs [ph/cm2/s]
+    :param l_p_flux_temp: np.ndarray, peak photon fluxes of the simulated long GRBs [ph/cm2/s]
+    :param l_flnc_temp: np.ndarray, photon fluences of the simulated long GRBs [ph/cm2]
+    :param s_m_flux_temp: np.ndarray, mean photon fluxes of the simulated short GRBs [ph/cm2/s]
+    :param s_p_flux_temp: np.ndarray, peak photon fluxes of the simulated short GRBs [ph/cm2/s]
+    :param s_flnc_temp: np.ndarray, photon fluences of the simulated short GRBs [ph/cm2]
+    :param params: tuple or None, parameter set (unused in the condition itself but kept
+        for interface consistency), default=None
+    :param mode: str, which distribution(s) to compare; "pflx" compares both long and short
+        peak fluxes, "l_pflx" compares long only, "s_pflx" compares short only, default="pflx"
+    :param n_sig: int or float, sigma threshold; accepted when chi2 < n_bins * n_sig², default=1
+    :returns: bool, float, float, True if the chi2 condition is met, the chi2 value, and
+        the ratio of the last long peak-flux bin (1 for "s_pflx" mode)
+    :raises ValueError: if mode is not one of the three accepted values
     """
     smp_pflux_l_hist = np.histogram(l_p_flux_temp, bins=self.bin_flux_l[self.nfluxbin_l[0]:])[0]
     smp_pflux_s_hist = np.histogram(s_p_flux_temp, bins=self.bin_flux_s[self.nfluxbin_s[0]:])[0]
     smp_flnc_l_hist = np.histogram(l_flnc_temp, bins=self.bin_flnc_l[self.nflncbin_l[0]:])[0]
     smp_flnc_s_hist = np.histogram(s_flnc_temp, bins=self.bin_flnc_s[self.nflncbin_s[0]:])[0]
-
-    # smp_pflux_l_hist_norm = smp_pflux_l_hist * np.sum(self.l_pflux_bins) / np.sum(smp_pflux_l_hist)
-    # smp_pflux_s_hist_norm = smp_pflux_s_hist * np.sum(self.s_pflux_bins) / np.sum(smp_pflux_s_hist)
-    # smp_flnc_l_hist_norm = smp_flnc_l_hist * np.sum(self.l_flnc_bins) / np.sum(smp_flnc_l_hist)
-    # smp_flnc_s_hist_norm = smp_flnc_s_hist * np.sum(self.s_flnc_bins) / np.sum(smp_flnc_s_hist)
 
     if mode == "pflx":
       obs_dat = np.concatenate((smp_pflux_l_hist, smp_pflux_s_hist))
@@ -668,13 +801,47 @@ class MCCatalog:
 
   def save_grb(self, filename, name, t90, lcname, fluence, mean_flux, peak_flux, red, band_low, band_high, ep, dl, lpeak, eiso, thetaj):
     """
-    Saves a GRB in a catalog file
+    Appends a single synthetic GRB entry as a pipe-separated line to a catalog
+    text file.
+    :param filename: str, path to the catalog file to append to
+    :param name: str, GRB identifier (e.g. "lGRB10S42")
+    :param t90: float, T90 duration [s]
+    :param lcname: str, filename of the associated light curve
+    :param fluence: float, photon fluence [ph/cm2]
+    :param mean_flux: float, mean photon flux [ph/cm2/s]
+    :param peak_flux: float, peak photon flux [ph/cm2/s]
+    :param red: float, observed redshift
+    :param band_low: float, Band function low-energy spectral index alpha
+    :param band_high: float, Band function high-energy spectral index beta
+    :param ep: float, observed peak energy [keV]
+    :param dl: float, luminosity distance [Gpc]
+    :param lpeak: float, isotropic peak luminosity [erg/s]
+    :param eiso: float, isotropic energy [erg]
+    :param thetaj: float, jet opening angle [deg]
     """
     with open(filename, "a") as f:
-      # print(f"{name}|{t90}|{lcname}|{fluence}|{mean_flux}|{peak_flux}|{red}|{band_low}|{band_high}|{ep}|{dl}|{lpeak}|{eiso}|{thetaj}\n")
       f.write(f"{name}|{t90}|{lcname}|{fluence}|{mean_flux}|{peak_flux}|{red}|{band_low}|{band_high}|{ep}|{dl}|{lpeak}|{eiso}|{thetaj}\n")
 
   def hist_plotter(self, iteration, histos, params, comment="", savefile=None):
+    """
+    Produces two diagnostic figures comparing the simulated and GBM reference
+    flux/fluence distributions for both long and short GRBs, and optionally
+    saves them and the underlying data as HDF5 files.
+    :param iteration: int, iteration index used for naming output files
+    :param histos: list, seven-element list containing:
+        histos[0] - np.ndarray, simulated long GRB mean fluxes
+        histos[1] - np.ndarray, simulated long GRB peak fluxes
+        histos[2] - np.ndarray, simulated long GRB fluences
+        histos[3] - np.ndarray, simulated short GRB mean fluxes
+        histos[4] - np.ndarray, simulated short GRB peak fluxes
+        histos[5] - np.ndarray, simulated short GRB fluences
+        histos[6] - float, Pearson chi2 value (used in title and filename)
+    :param params: tuple or None, 14-element parameter tuple used in the plot
+        title; if None only the chi2 is shown in the title
+    :param comment: str, optional comment string prepended to the plot title, default=""
+    :param savefile: str or None, path prefix for output files (without
+        extension); if None figures and data files are not saved, default=None
+    """
     if params is not None:
       title = f"{comment}\n{params[0:7]}\n{params[7:]}\nPierson chi2 of pflx : {histos[6]}"
     else:
@@ -714,8 +881,6 @@ class MCCatalog:
     ax1l2.grid(True, which='major', linestyle='--', color='black', alpha=0.3)
     ax1l2.legend()
 
-    # print(np.array(histos[0]))
-    # print(np.array(histos[1]))
     ax2l2.hist(self.gbm_l_mp_ratio, bins=30, histtype="step", color="red", label="GBM", weights=[1/len(self.gbm_l_mp_ratio)] * len(self.gbm_l_mp_ratio))
     ax2l2.hist(np.array(histos[1]) / np.array(histos[0]), bins=np.logspace(0, 3, 30), histtype="step", color="blue", label="Sample",  weights=[1/len(histos[1])] * len(histos[1]))
     ax2l2.set(xlabel="p/m ratio lGRB", ylabel="proportion over full population", xscale="log", yscale="linear")
@@ -769,11 +934,6 @@ class MCCatalog:
     ax3s2.legend()
 
     if savefile is not None:
-      # if np.isinf(histos[6]):
-      #   pval_suf = "-inf"
-      # else:
-      #   pval_suf = int(histos[6])
-      # plt.savefig(f"{savefile.split('.csv')[0]}_{iteration}_{pval_suf}_{int(histos[7])}")
       plt.savefig(f"{savefile.split('.csv')[0]}_{iteration}_{int(histos[6])}")
     plt.close(fig1)
 
@@ -820,15 +980,29 @@ class MCCatalog:
 
   def get_short(self, ite_num, short_rate, ind1_z_s, ind2_z_s, zb_s, ind1_s, ind2_s, lb_s):
     """
-    Creates the quatities of a short burst according to distributions
-    Based on Lana Salmon's thesis and Ghirlanda et al, 2016
+    Generates the observable and intrinsic properties of a single synthetic short GRB
+    by drawing from the redshift and luminosity distributions and computing
+    the Band spectrum normalisation.
+    :param ite_num: int, iteration index (useful for testing)
+    :param short_rate: float, overall rate normalisation for the short GRB
+        redshift distribution
+    :param ind1_z_s: float, low-z slope of the broken power-law redshift rate
+    :param ind2_z_s: float, high-z slope of the broken power-law redshift rate
+    :param zb_s: float, break redshift of the short GRB rate distribution
+    :param ind1_s: float, low-luminosity slope of the broken power-law luminosity function
+    :param ind2_s: float, high-luminosity slope of the broken power-law luminosity function
+    :param lb_s: float, break luminosity of the short GRB luminosity function [erg/s]
+    :returns: list, 15-element list:
+        [z_obs, ep_obs [keV], ep_rest [keV], lpeak_rest [erg/s],
+         mean_flux [ph/cm2/s], peak_flux [ph/cm2/s], t90 [s],
+         fluence [ph/cm2], lc_name, band_low, band_high,
+         dl [Gpc], eiso [erg], "Sample short", "Sample"]
     """
     np.random.seed((os.getpid() + int(time() * 1000)) % 2 ** 32)
     ##################################################################################################################
     # picking according to distributions
     ##################################################################################################################
     z_obs_temp = acc_reject(red_rate_short, [short_rate, ind1_z_s, ind2_z_s, zb_s], self.zmin, self.zmax)
-    # lpeak_rest_temp = acc_reject(broken_plaw, [ind1_s, ind2_s, lb_s], self.lmin, self.lmax)
     lpeak_rest_temp = transfo_broken_plaw(ind1_s, ind2_s, lb_s, self.lmin, self.lmax)
 
     band_low_obs_temp, band_high_obs_temp = pick_normal_alpha_beta(self.band_low_s_mu, self.band_low_s_sig, self.band_high_s_mu, self.band_high_s_sig)
@@ -861,30 +1035,35 @@ class MCCatalog:
 
   def get_long(self, ite_num, long_rate, ind1_z_l, ind2_z_l, zb_l, ind1_l, ind2_l, lb_l):
     """
-    Creates the quatities of a long burst according to distributions
-    Based on Sarah Antier's thesis
+    Generates the observable and intrinsic properties of a single synthetic long GRB
+    by drawing from the redshift and luminosity distributions and computing
+    the Band spectrum normalisation.
+    :param ite_num: int, iteration index (useful for testing)
+    :param long_rate: float, overall rate normalisation for the long GRB
+        redshift distribution
+    :param ind1_z_l: float, low-z slope of the broken power-law redshift rate
+    :param ind2_z_l: float, high-z slope of the broken power-law redshift rate
+    :param zb_l: float, break redshift of the long GRB rate distribution
+    :param ind1_l: float, low-luminosity slope of the broken power-law luminosity function
+    :param ind2_l: float, high-luminosity slope of the broken power-law luminosity function
+    :param lb_l: float, break luminosity of the long GRB luminosity function [erg/s]
+    :returns: list, 15-element list:
+        [z_obs, ep_obs [keV], ep_rest [keV], lpeak_rest [erg/s],
+         mean_flux [ph/cm2/s], peak_flux [ph/cm2/s], t90 [s],
+         fluence [ph/cm2], lc_name, band_low, band_high,
+         dl [Gpc], eiso [erg], "Sample long", "Sample"]
     """
     np.random.seed((os.getpid() + int(time() * 1000)) % 2 ** 32)
     ##################################################################################################################
     # picking according to distributions
     ##################################################################################################################
-    # timelist = []
-    # init_time = time()
     z_obs_temp = acc_reject(red_rate_long, [long_rate, ind1_z_l, ind2_z_l, zb_l], self.zmin, self.zmax)
 
-    # timelist.append(time() - init_time)
-    # init_time = time()
-    # lpeak_rest_temp = acc_reject(broken_plaw, [ind1_l, ind2_l, lb_l], self.lmin, self.lmax)
     lpeak_rest_temp = transfo_broken_plaw(ind1_l, ind2_l, lb_l, self.lmin, self.lmax)
-    # timelist.append(time() - init_time)
-    # init_time = time()
     band_low_obs_temp, band_high_obs_temp = pick_normal_alpha_beta(self.band_low_l_mu, self.band_low_l_sig, self.band_high_l_mu, self.band_high_l_sig)
-    # timelist.append(time() - init_time)
-    # init_time = time()
     t90_obs_temp = 0
     while t90_obs_temp <= 2:
       t90_obs_temp = 10 ** np.random.normal(1.4438, 0.4956)
-    # timelist.append(time() - init_time)
 
     lc_temp, gbm_mflux, gbm_pflux = self.closest_lc(t90_obs_temp)[:3]
     if np.isnan(gbm_pflux):
@@ -894,7 +1073,6 @@ class MCCatalog:
 
     dl_obs_temp = self.cosmo.luminosity_distance(z_obs_temp).value / 1000  # Gpc
     ep_rest_temp = yonetoku_reverse_long(lpeak_rest_temp)
-    # init_time = time()
     ep_obs_temp = ep_rest_temp / (1 + z_obs_temp)
     eiso_rest_temp = amati_long(ep_rest_temp)
 
@@ -905,20 +1083,20 @@ class MCCatalog:
     norm_val, spec, temp_peak_flux = norm_band_spec_calc(band_low_obs_temp, band_high_obs_temp, z_obs_temp, dl_obs_temp, ep_rest_temp, lpeak_rest_temp, ener_range, verbose=False)
     temp_mean_flux = temp_peak_flux * pflux_to_mflux
 
-    # timelist.append(time() - init_time)
-    # init_time = time()
-    # for times in timelist:
-    #   print(f"Time taken : {times:8.6f}s making {times/np.sum(timelist)*100:5.2f}% of the run")
     return [z_obs_temp, ep_obs_temp, ep_rest_temp, lpeak_rest_temp, temp_mean_flux, temp_peak_flux, t90_obs_temp, temp_mean_flux * t90_obs_temp, lc_temp, band_low_obs_temp, band_high_obs_temp, dl_obs_temp,
             eiso_rest_temp, "Sample long", "Sample"]
 
   def closest_lc(self, searched_time):
     """
-    Find the lightcurve file with a duration which is the closest to the sampled t90 time
+    Finds the GBM light curve file whose GRB T90 duration is closest to the requested time.
+    If multiple GRBs share the minimum distance, one is chosen at random.
+    :param searched_time: float, target T90 duration to match [s]
+    :returns: str, float, float, float, the light curve filename, the GRB mean
+        flux [ph/cm2/s], the GRB peak flux [ph/cm2/s], and the GRB T90 [s]
+    :raises ValueError: if no matching GRB is found (should not occur in normal use)
     """
     abs_diff = np.abs(np.array(self.gbm_cat.df.t90.values, dtype=float) - searched_time)
     gbm_indexes = np.where(abs_diff == np.min(abs_diff))[0]
-    # print(gbm_indexes)
     if len(gbm_indexes) == 0:
       raise ValueError("No GRB found for the closest GRB duration")
     elif len(gbm_indexes) == 1:
@@ -929,7 +1107,11 @@ class MCCatalog:
 
   def gbm_reference_distri(self, print_bins=True):
     """
-    Creates the GBM distribution used for estimating the sample parameters. Distributions are obtained with a kde method on the GBM datasets
+    Displays the GBM reference flux and fluence distributions used for the
+    chi2 comparison, plotting peak flux, mean flux, and fluence histograms for
+    both long and short GRBs. Optionally prints the bin-by-bin counts to stdout.
+    :param print_bins: bool, if True print the histogram bin edges and counts
+        for all four distributions (long/short peak flux and fluence) to stdout, default=True
     """
     if print_bins:
       pflux_l_hist = np.histogram(self.gbm_l_pflux, bins=self.bin_flux_l, weights=[self.gbm_weight] * len(self.gbm_l_pflux))
@@ -1000,15 +1182,20 @@ class MCCatalog:
     ax3s.legend()
     plt.show()
 
+####################################################################################################
+# USE EXAMPLES
+####################################################################################################
 # from src.Catalogs.catalogMC import MCCatalog
-# testcat = MCCatalog(mode="mc")
-# testcat = MCCatalog(mode="catalog")
+# testcat = MCCatalog(mode="mc") # To explore the variable space
+# testcat = MCCatalog(mode="parametrized") # To execute with pre-set parameters
+# testcat = MCCatalog(mode="catalog") # To create a catalogue
 
+# To show the plots to explore the variable space with the mode "mc"
 # from catalogMC import *
 # import matplotlib as mpl
 # mpl.use("Qt5Agg")
 #
-# file = "../Data/CatData/CatSampling/mclongv9-300/mc_fit.csv"
+# file = "../Data/CatData/CatSampling/mclongv9-300/mc_fit.csv" # file obtained with the "mc" mode
 # leg_mode = "fine"
 # MC_explo_pairplot(file, leg_mode, grbtype="short")
 # plt.show()

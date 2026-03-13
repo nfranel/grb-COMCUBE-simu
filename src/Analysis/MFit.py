@@ -1,7 +1,10 @@
-# Autor Nathan Franel
-# Date 01/12/2023
-# Version 2 :
-# Separating the code in different modules
+# ================================================================
+# Author      : Nathan Franel & Adrien Laviron
+# Version     : 1.0
+# Created     : 2023-12-01
+# Description  :  MFit.py
+# Class to perform and contain fitting results for the polarigrams
+# ================================================================
 
 # Package imports
 import numpy as np

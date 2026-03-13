@@ -1,10 +1,14 @@
-# Autor Nathan Franel
-# Date 01/12/2023
-# Version 2 :
-# Separating the code in different modules
+# ================================================================
+# Author      : Nathan Franel
+# Version     : 1.0
+# Created     : 2023-12-01
+# Description  :  MAllSimData.py
+# Class to contain GRB data for a given source from all simulations of the source
+# ================================================================
 
 # Package imports
 import numpy as np
+
 # Developped modules imports
 from src.General.funcmod import calc_flux_sample, calc_flux_gbm
 from src.Analysis.MAllSatData import AllSatData
@@ -16,15 +20,20 @@ class AllSimData(list):
   """
   def __init__(self, all_sim_data, source_ite, cat_data, sat_info, param_sim_duration, bkgdata, mudata, options):
     """
-    :param sim_prefix: prefix used for simulations
-    :param source_ite: iteration of the source simulated
-    :param cat_data: GBM catalog used
-    :param n_sim: number of simulation done
-    :param sat_info: orbital information on the satellites
+    :param all_sim_data: 2D list containing simulation filenames
+    :param source_ite: Catalogue iteration/index of the source simulated
+    :param cat_data: Catalogue used (usually GBM or synthetic GRB catalogue)
+    :param sat_info: Orbital information on the satellites
     :param param_sim_duration: duration of the simulation (fixed of t90)
-    :param bkg_data: list containing the background data
-    :param mu_data: list containing the mu100 data
-    :param options: options for the analysis, defined in AllSourceData
+    :param bkgdata: Background data container
+    :param mudata: mu100/Seff data container
+    :param options: List containing [erg_cut, armcut, geometry, init_correction, polarigram_bins]
+    options gives information about the following options, required for data analysis
+        ergcut: Energy cut to use
+        armcut: ARM (Angular Resolution Measurement) cut to use
+        geometry: geometry of the mass model used for the simulation
+        init_correction: True if the polarigrams should be corrected (useful when adding them together for the constellation)
+        polarigram_bins: Bins for the polarigram
     """
     temp_list = []
     self.n_sim_det = 0
@@ -36,21 +45,12 @@ class AllSimData(list):
       self.best_fit_model = cat_data.df.flnc_best_fitting_model.values[source_ite]
       self.best_fit_mean_flux = cat_data.df.mean_flux.values[source_ite]
       self.best_fit_p_flux = cat_data.df.peak_flux.values[source_ite]
-      # p_model = cat_data.df.pflx_best_fitting_model.values[source_ite]
-      # if type(p_model) == str:
-      # #   The peak flux is the one obtained after fitting the best pflux model - it is the one for the pic ! So for short GRBs it's not the one over 1s but over the peak duration
-        # self.best_fit_p_flux = cat_data.df[f"{p_model}_phtflux"][source_ite]
-      # else:
-      #   if np.isnan(p_model):
-      #     self.best_fit_p_flux = None
-      #   else:
-      #     raise ValueError("A value for pflx_best_fitting_model is not set properly")
-      # Retrieving fluence of the source [photons/cm²]
       self.ergcut_mean_flux = calc_flux_gbm(cat_data, source_ite, options[0])
       if self.best_fit_p_flux is not None:
         self.ergcut_peak_flux = self.best_fit_p_flux * self.ergcut_mean_flux / self.best_fit_mean_flux
       else:
         self.ergcut_peak_flux = None
+      # Retrieving fluence of the source [photons/cm²]
       self.source_fluence = self.ergcut_mean_flux * self.source_duration
       # Retrieving energy fluence of the source [erg/cm²]
       self.source_energy_fluence = cat_data.df.fluence.values[source_ite]
@@ -61,7 +61,6 @@ class AllSimData(list):
       self.best_fit_model = "band"
       self.best_fit_mean_flux = float(cat_data.df.mean_flux.values[source_ite])
       self.best_fit_p_flux = float(cat_data.df.peak_flux.values[source_ite])
-      # self.ergcut_mean_flux = calc_flux_sample(cat_data, source_ite, options[0])
       self.ergcut_peak_flux = calc_flux_sample(cat_data, source_ite, options[0])
       self.ergcut_mean_flux = self.best_fit_mean_flux * self.ergcut_peak_flux / self.best_fit_p_flux
       self.source_fluence = self.ergcut_mean_flux * self.source_duration

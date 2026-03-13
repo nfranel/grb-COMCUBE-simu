@@ -1,15 +1,16 @@
-# Autor Nathan Franel
-# Date 01/12/2023
-# Version 2 :
-# Separating the code in different modules
+# ================================================================
+# Author      : Nathan Franel
+# Version     : 1.0
+# Created     : 2023-12-01
+# Description  :  MAllSourceData.py
+# Class to contain GRB Simulations
+# ================================================================
 
 # Package imports
 import subprocess
 import multiprocessing as mp
 from itertools import repeat
 import matplotlib.pyplot as plt
-import matplotlib as mpl
-import cartopy.crs as ccrs
 import numpy as np
 import glob
 from pympler import asizeof
@@ -18,7 +19,7 @@ from time import time
 import os
 
 # Developped modules imports
-from src.General.funcmod import printcom, printv, endtask, read_grbpar, horizon_angle, save_grb_data, eff_area_func, make_error_histogram, compile_finder, calc_trigger
+from src.General.funcmod import printcom, printv, endtask, read_grbpar, horizon_angle, save_grb_data, make_error_histogram, compile_finder, calc_trigger
 from src.Catalogs.catalog import Catalog, SampleCatalog
 from src.Analysis.MBkgContainer import BkgContainer
 from src.Analysis.MmuSeffContainer import MuSeffContainer
@@ -34,7 +35,7 @@ from src.Analysis.MLogData import LogData
 
 class AllSourceData:
   """
-  Class containing all the data for a full set of trafiles
+  Class containing all the data for a full set of simulation files
   """
   def __init__(self, grb_param, bkg_param, mu_s_eff_param, erg_cut=(100, 460), armcut=180, polarigram_bins="fixed", parallel=False, memory_check=False):
     """
@@ -48,7 +49,9 @@ class AllSourceData:
       False no parallelization
       int   number of cores over which the parallelization is made
       "all" all cores are used
+    :param memory_check: True for printing information about the memory usage
     """
+    # Display the main information about the data and their filtering
     printcom([f"Analyze of the simulation with : "
               f"   parfile : {grb_param}",
               f"   bkgparfile : {bkg_param}",
@@ -128,13 +131,13 @@ class AllSourceData:
     print("Compiling of the position finder finished")
     endtask("Step 1")
 
-    # Setting the background files
+    # Retrieving Background data
     printcom("Step 2 - Extracting background data")
     init_time = time()
     self.bkgdata = BkgContainer(self.bkg_param, self.erg_cut)
     endtask("Step 2", timevar=init_time)
 
-    # Setting the background files
+    # Retrieving mu100/Seff data
     printcom("Step 3 - Extracting mu100 and Seff data")
     init_time = time()
     self.muSeffdata = MuSeffContainer(self.muSeff_param, self.erg_cut, self.armcut)
@@ -238,6 +241,7 @@ class AllSourceData:
       os.mkdir(f"{self.sim_prefix.split('/sim/')[0]}/extracted")
     tobe_extracted, extracted_name, presence_list, filtered_ites = self.filenames_creation(grb_names, grb_det_ites, sim_det_ites, sat_det_ites, suffix_ite)
     num_files = int(subprocess.getoutput(f"ls {self.sim_prefix.split('/sim/')[0]}/sim | wc").strip().split("  ")[0])
+    # Checking for missing or unexpected files
     if num_files > self.n_sim_simulated:
       print("ERROR : The number of file in the log is smaller than the number of files")
     elif num_files < self.n_sim_simulated:
@@ -305,6 +309,18 @@ class AllSourceData:
       print("==================================== Memory check ====================================")
 
   def filenames_creation(self, grb_names, grb_det_ites, sim_det_ites, sat_det_ites, suffix_ite):
+    """
+    :param grb_names : List of GRB source names in the logfile (1st column)
+    :param grb_det_ites : Array of GRB source catalogue index in the logfile (2nd column)
+    :param sim_det_ites : Array of the simulation number in the logfile (3rd column)
+    :param sat_det_ites : Array of the satellite index in the logfile (4th column)
+    :param suffix_ite : List of the suffix containing dec, ra and time for the simulations
+    Returns
+      tobe_ext a list containing the name of simulation file for a given entry of the log file
+      ext_name a list containing the name of extracted data file for a given entry of the log file
+      final_pres_list a 3D list containing the name of the extracted data files that should be obtained after simulation
+      final_ites a list of the GRB catalogue index that were simulated
+    """
     tobe_ext = []
     ext_name = []
     pres_list = np.empty((self.n_source, self.n_sim, self.n_sat), dtype=object)
@@ -315,6 +331,8 @@ class AllSourceData:
       temp_name = f"{self.sim_prefix.split('/sim/')[0]}/extracted/{self.sim_prefix.split('/sim/')[1]}_extracted{grbname}_sat{sat_det_ites[ite]}_{sim_det_ites[ite]:04d}.h5"
       ext_name.append(temp_name)
       pres_list[grb_det_ites[ite]][sim_det_ites[ite]][sat_det_ites[ite]] = temp_name
+    # Further treatment are necessary to be sure that no unwanted simulation remain in the pres_list variable
+    # The final_pres_list is then created by removing lines where there is no simulation expected (n=containing only None values)
     pres_list = pres_list.tolist()
     final_pres_list = []
     final_ites = []
@@ -324,10 +342,9 @@ class AllSourceData:
         final_ites.append(ite)
     return tobe_ext, ext_name, final_pres_list, final_ites
 
-  # TODO finish the comments and rework the methods !
   def extract_sources(self, prefix, duration=None):
     """
-    Function used when the simulations are not comming from GBM GRB data (ex Crab nebula, etc)
+    Function used when the simulations are not coming from GBM GRB data (ex Crab nebula, etc)
     :param prefix: Prefix used for the simulation file
     :param duration: Specific duration given to the source (option used for tests so far)
     :returns: a list containing a list of the source names and a list of their duration
@@ -343,7 +360,6 @@ class AllSourceData:
         duration = None
         print("Warning : unusual sim duration, please check the parameter file.")
 
-    # flist = subprocess.getoutput(f"ls {prefix}_*").split("\n")
     flist = glob.glob(f"{prefix}_*")
     source_names = []
     if len(flist) >= 1 and not flist[0].startswith("ls: cannot access"):
@@ -379,8 +395,7 @@ class AllSourceData:
 
   def analyze(self, sats_analysis=False):
     """
-    Proceed to the analysis of polarigrams for all satellites and constellation (unless specified) for all data
-    and calculates some probabilities
+    Proceed to the analysis of polarigrams for all satellites and constellation (unless specified) for all data and calculates some probabilities
     :param sats_analysis: True if the analysis is done both on the sat data and on the constellation data
     """
     printcom("Analyze of the data - Analyzing the data after extraction and creation of the constellations")
@@ -391,7 +406,6 @@ class AllSourceData:
         for sim_ite, sim in enumerate(source):
           if sim is not None:
             sim.analyze(source.source_duration, source.source_fluence, sats_analysis)
-        # source.set_probabilities(n_sat=self.n_sat, snr_min=self.snr_min, n_image_min=50)  # todo change it
     endtask("Analyze of the data", timevar=init_time)
 
   def set_beneficial(self, threshold_mdp):
@@ -411,7 +425,8 @@ class AllSourceData:
     """
     This function is used to combine results from different satellites
     Results are then stored in the key const_data
-    ! The polarigrams have to be corrected to combine the polarigrams !
+    REMINDER : The polarigrams have to be corrected to be combined !
+    :param condensed_const: True is the data container used for the constellation is condensed with only useful information
     :param const: Which satellite are considered for the constellation if none, all of them are
     """
     printcom("Creation of the constellations")
@@ -419,7 +434,7 @@ class AllSourceData:
     ###################################################################################################################
     # Setting some satellites off
     ###################################################################################################################
-    off_sats = []  # TODO put a verification to see if there is at least 1 value in the list number_of_down_per_const
+    off_sats = []
     for num_down in self.number_of_down_per_const:
       if num_down == 0:
         off_sats.append(None)
@@ -463,7 +478,7 @@ class AllSourceData:
     elif len(source_position) > 1:
       printv(f"Several items have been found that matches the source name {source_name}, returning a list of the indices", verbose)
       return source_position
-    elif len(source_position) == 1:
+    else:  # len(source_position) == 1
       printv(f"The source {source_name} has been found at position {source_position[0]}, returning this position as an integer", verbose)
       printv("==  Additionnal information about the source  ==", verbose)
       printv(f" - Source duration : {self.alldata[source_position[0]].source_duration} s", verbose)
@@ -525,7 +540,9 @@ class AllSourceData:
 
   def study_mdp_threshold(self, mdp_thresh_list, savefile=None):
     """
-    Give the mdp results for several MDP threshold to study its influence on the performances
+    Give the MDP estimation for several MDP threshold to allow combining data into a constellation to study its influence on the performances
+    :param mdp_thresh_list: List of the MDP thresholds to try
+    :param savefile: if a file name is given the data are saved in this file after execution, else it is printed
     """
     # Search for a mdp limit :
     if savefile is None:
@@ -608,7 +625,13 @@ class AllSourceData:
 
   def count_triggers(self, const_index=0, parallel=10, graphs=False, lc_aligned=False):
     """
-    Function to count and print the number of triggers using different criterions
+    Function to count and print the number of detection triggers using different methods
+    :param const_index: Index of the constellation in the const_data list of AllSatData class
+    :param parallel: Number of parallel threads
+    :param graphs: Whether to show graphs about GRBs not triggering the detection
+    :param lc_aligned: Option for choosing the detection method
+      If True, the algorithm checks if the exceeded triggers occur at the same moment in the different satellites
+      If not, the method runs a lot faster but tends to slightly overestimate the number of detections
     """
     print("================================================================================================")
     print(f"== Triggers according to GBM method with   {self.number_of_down_per_const[const_index]}   down satellite")
@@ -619,7 +642,7 @@ class AllSourceData:
         ret = pool.starmap(calc_trigger, zip(self.alldata, range(len(self.alldata)), repeat(const_index), repeat(lc_aligned)))
     else:
       raise TypeError("Parameter parallel must be an int")
-    [trigg_1s, trigg_2s, trigg_3s, trigg_4s, no_trig_name, no_trig_duration, no_trig_dec, no_trig_e_fluence] = np.array(ret).transpose()
+    [trigg_1s, trigg_2s, trigg_3s, trigg_4s, _, no_trig_duration, no_trig_dec, no_trig_e_fluence] = np.array(ret).transpose()
     total_in_view = 0
     for source in self.alldata:
       if source is not None:
@@ -631,11 +654,6 @@ class AllSourceData:
     trigg_2s = trigg_2s[~np.isnan(trigg_2s.astype(float))]
     trigg_3s = trigg_3s[~np.isnan(trigg_3s.astype(float))]
     trigg_4s = trigg_4s[~np.isnan(trigg_4s.astype(float))]
-
-    # const_trigger_counter_4s = np.count_nonzero(~np.isnan(trigg_4s.astype(float)))
-    # const_trigger_counter_3s = np.count_nonzero(~np.isnan(trigg_3s.astype(float)))
-    # const_trigger_counter_2s = np.count_nonzero(~np.isnan(trigg_2s.astype(float)))
-    # const_trigger_counter_1s = np.count_nonzero(~np.isnan(trigg_1s.astype(float)))
 
     const_trigger_counter_4s = np.count_nonzero(trigg_4s)
     const_trigger_counter_3s = np.count_nonzero(trigg_3s)
@@ -667,123 +685,6 @@ class AllSourceData:
       plt.show()
     return trigg_1s, trigg_2s, trigg_3s, trigg_4s
 
-  def fov_const(self, num_val=500, show=True, save=False):
-    """
-    Plots a map of the sensibility over the sky for number of sat in sight, single events and compton events
-    :param num_val: number of value to
-    """
-    plt.rcParams.update({'font.size': 15})
-    plt.tight_layout()
-    xlab = "Right ascention (°)"
-    ylab = "Declination (°)"
-    title1 = "Constellation sky coverage map"
-    title2 = "Constellation sky sensitivity map for Compton events"
-    title3 = "Constellation sky sensitivity map for single events"
-    bar1 = "Number of satellites covering the area"
-    bar2 = "Effective area for Compton events (cm²)"
-    bar3 = "Effective area for single events (cm²)"
-    chosen_proj = "mollweide"
-
-    phi_world = np.linspace(0, 360, num_val, endpoint=False)
-    # theta will be converted in sat coord with grb_decra_worldf2satf, which takes dec in world coord with 0 being north pole and 180 the south pole !
-    theta_world = np.linspace(0, 180, num_val)
-    detection = np.zeros((self.n_sat, num_val, num_val))
-    detection_compton = np.zeros((self.n_sat, num_val, num_val))
-    detection_single = np.zeros((self.n_sat, num_val, num_val))
-
-    nite = num_val ** 2 * len(self.sat_info)
-    ncount = 0
-    for ite, info_sat in enumerate(self.sat_info):
-      for ite_theta, theta in enumerate(theta_world):
-        for ite_phi, phi in enumerate(phi_world):
-          ncount += 1
-          detection_compton[ite][ite_theta][ite_phi], detection_single[ite][ite_theta][ite_phi], detection[ite][ite_theta][ite_phi] = eff_area_func(theta, phi, info_sat, self.muSeffdata)
-          print(f"Calculation : {int(ncount / nite * 100)}%", end="\r")
-    print("Calculation over")
-
-    detec_sum = np.sum(detection, axis=0)
-    detec_sum_compton = np.sum(detection_compton, axis=0)
-    detec_sum_single = np.sum(detection_single, axis=0)
-
-    phi_plot, theta_plot = np.meshgrid(np.deg2rad(phi_world) - np.pi, np.pi / 2 - np.deg2rad(theta_world))
-    detec_min = int(np.min(detec_sum))
-    detec_max = int(np.max(detec_sum))
-    detec_min_compton = int(np.min(detec_sum_compton))
-    detec_max_compton = int(np.max(detec_sum_compton))
-    detec_min_single = int(np.min(detec_sum_single))
-    detec_max_single = int(np.max(detec_sum_single))
-    cmap_det = mpl.cm.Blues_r
-    cmap_compton = mpl.cm.Greens_r
-    cmap_single = mpl.cm.Oranges_r
-
-    ##################################################################################################################
-    # Map for number of satellites in sight
-    ##################################################################################################################
-    levels = range(detec_min, detec_max + 1, max(1, int((detec_max + 1 - detec_min) / 15)))
-
-    fig1, ax1 = plt.subplots(subplot_kw={'projection': chosen_proj}, figsize=(15, 8))
-    # ax1.set_global()
-    # ax1.coastlines()
-    h1 = ax1.pcolormesh(phi_plot, theta_plot, detec_sum, cmap=cmap_det)
-    # ax1.axis('scaled')
-    ax1.set(xlabel=xlab, ylabel=ylab, title=title1)
-    cbar = fig1.colorbar(h1, ticks=levels)
-    cbar.set_label(bar1, rotation=270, labelpad=20)
-    if save:
-      fig1.savefig(f"{self.result_prefix}_in_sight_erg{self.erg_cut[0]}-{self.erg_cut[1]}")
-    if show:
-      plt.show()
-
-    ##################################################################################################################
-    # Map of constellation's compton effective area
-    ##################################################################################################################
-    levels_compton = range(detec_min_compton, detec_max_compton + 1, max(1, int((detec_max_compton + 1 - detec_min_compton) / 15)))
-
-    # fig2, ax2 = plt.subplots(1, 1, figsize=(10, 6))
-    fig2, ax2 = plt.subplots(subplot_kw={'projection': chosen_proj}, figsize=(15, 8))
-    # ax2.set_global()
-    # ax2.coastlines()
-    h3 = ax2.pcolormesh(phi_plot, theta_plot, detec_sum_compton, cmap=cmap_compton)
-    # ax2.axis('scaled')
-    ax2.set(xlabel=xlab, ylabel=ylab, title=title2)
-    cbar = fig2.colorbar(h3, ticks=levels_compton)
-    cbar.set_label(bar2, rotation=270, labelpad=20)
-    if save:
-      fig2.savefig(f"{self.result_prefix}_compton_seff_erg{self.erg_cut[0]}-{self.erg_cut[1]}")
-    if show:
-      plt.show()
-
-    ##################################################################################################################
-    # Map of constellation's single effective area
-    ##################################################################################################################
-    levels_single = range(detec_min_single, detec_max_single + 1, max(1, int((detec_max_single + 1 - detec_min_single) / 15)))
-
-    fig3, ax3 = plt.subplots(subplot_kw={'projection': chosen_proj}, figsize=(15, 8))
-    # ax3.set_global()
-    # ax3.coastlines()
-    h5 = ax3.pcolormesh(phi_plot, theta_plot, detec_sum_single, cmap=cmap_single)
-    # ax3.axis('scaled')
-    ax3.set(xlabel=xlab, ylabel=ylab, title=title3)
-    cbar = fig3.colorbar(h5, ticks=levels_single)
-    cbar.set_label(bar3, rotation=270, labelpad=20)
-    if save:
-      fig3.savefig(f"{self.result_prefix}_single_seff_erg{self.erg_cut[0]}-{self.erg_cut[1]}")
-    if show:
-      plt.show()
-
-    correction_values = (1 + np.sin(np.deg2rad(theta_world)) * (num_val - 1)) / num_val
-    # print(f"The mean number of satellites in sight is :       {np.mean(np.mean(detec_sum, axis=1) * correction_values):.4f} satellites")
-    # print(f"The mean effective area for Compton events is :  {np.mean(np.mean(detec_sum_compton, axis=1) * correction_values):.4f} cm²")
-    # print(f"The mean effective area for single events is :   {np.mean(np.mean(detec_sum_single, axis=1) * correction_values):.4f} cm²")
-
-    print(f"The mean number of satellites in sight is :       {np.average(np.mean(detec_sum, axis=1), weights=correction_values):.4f} satellites")
-    print(f"The mean effective area for Compton events is :  {np.average(np.mean(detec_sum_compton, axis=1), weights=correction_values):.4f} cm²")
-    print(f"The mean effective area for single events is :   {np.average(np.mean(detec_sum_single, axis=1), weights=correction_values):.4f} cm²")
-
-    # print(f"NOT SIN CORRECTED - The mean number of satellites in sight is :       {np.mean(detec_sum):.4f} satellites")
-    # print(f"NOT SIN CORRECTED - The mean effective area for Compton events is :  {np.mean(detec_sum_compton):.4f} cm²")
-    # print(f"NOT SIN CORRECTED - The mean effective area for single events is :   {np.mean(detec_sum_single):.4f} cm²")
-
   def grb_map_plot(self, mode="no_cm"):
     """
     Display the catalog GRBs position in the sky using the corresponding function in catalog.py
@@ -803,8 +704,8 @@ class AllSourceData:
 
   def mdp_histogram(self, const_index=0, mdp_limit=1, cumul=1, n_bins=30, x_scale='linear', y_scale="log"):
     """
-    Display and histogram representing the number of grb of a certain mdp per year
-    :param selected_sat: int or string, which sat is selected, if "const" the constellation is selected
+    Display a histogram representing the number of grb of a certain mdp per year
+    :param const_index: Index of the constellation in the const_data list of AllSatData class
     :param mdp_limit: limit in mdp (mdp more than 1 is not physical so should be between 0 and 1)
     :param cumul: int, 1 for a cumulative histogram, 0 for a usual one
     :param n_bins: number of bins in the histogram
@@ -862,7 +763,7 @@ class AllSourceData:
     """
     Display and histogram representing the number of grb that have at least a certain snr per year
     :param snr_type: "compton" or "single" to consider either compton events or single events
-    :param selected_sat: int or string, which sat is selected, if "const" the constellation is selected
+    :param const_index: Index of the constellation in the const_data list of AllSatData class
     :param cumul: int, 1 for a cumulative histogram, 0 for a usual one, -1 for an inverse cumulative one
     :param n_bins: number of bins in the histogram
     :param x_scale: scale for x-axis
@@ -920,12 +821,13 @@ class AllSourceData:
     plt.show()
 
   def brightest_det_stats(self, n_grb, lc_plot=True, det_max_repartition_plot=False):
+    """
+    :param n_grb: The n_grb brightest GRBs to plot
+    :param lc_plot: True if the light curve have to be shown for each detector
+    :param det_max_repartition_plot: True is a plot showing the maximum countrate for each detector and each satellite is wanted
+    """
     lst_pflux = []
     combined_sats_det_stats_shaped = None
-    # if self.simmode == "GBM":
-    #   cat_data = Catalog(self.cat_file, self.sttype, self.rest_cat_file)
-    # elif self.simmode == "sampled":
-    #   cat_data = SampleCatalog(self.cat_file, self.sttype)
     for source_ite, source in enumerate(self.alldata):
       if source is not None:
         if source.best_fit_p_flux is not None:
@@ -955,7 +857,7 @@ class AllSourceData:
               combined_sats_det_stats_shaped = sats_det_stats_shaped
             else:
               combined_sats_det_stats_shaped = np.concatenate((combined_sats_det_stats_shaped, sats_det_stats_shaped), axis=2)
-            # ! test the shape change, the detector stat gathering and the graphs
+            # Plot the maximum count rate for each detector and each satellite
             if det_max_repartition_plot:
               fig2, axes2 = plt.subplots(4, 5)
               fig2.suptitle(f"Detectors max count rate - {self.alldata[idx].source_name} at peak for different satellites")
@@ -989,12 +891,14 @@ class AllSourceData:
     for itequad in range(len(axes)):
       for itedet, ax in enumerate(axes[itequad]):
         ax.hist(combined_sats_det_stats_shaped[itequad][itedet], bins=30, color="blue")
-        if n_grb > 20 :
+        if n_grb > 20:
           ax.set(yscale="log")
-
     plt.show()
 
   def bkg_det_stats(self):
+    """
+    Prints and plots the background count rate in the different detectors for the different satellites of the constellation
+    """
     combined_sats_det_stats_bkg = None
     bkg_indexs = []
     for source in self.alldata:

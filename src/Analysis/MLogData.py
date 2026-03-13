@@ -1,7 +1,12 @@
-# Autor Nathan Franel
-# Date 06/12/2023
-# Version 2 :
-#
+# ================================================================
+# Author      : Nathan Franel
+# Version     : 1.0
+# Created     : 2025-06-12
+# Description  :  MLogData.py
+# Class to contain and manipulate the simulation logs from a log file
+# ================================================================
+from operator import index
+from tkinter.font import names
 
 # Package imports
 import numpy as np
@@ -15,11 +20,11 @@ import os
 ############################################################
 class LogData:
   """
-  Class containing the data from a log file
+  Class to contain and manipulate the simulation logs from a log file
   """
   def __init__(self, sim_prefix):
     """
-    :param sim_directory: Directory where the simulation data is saved
+    :param sim_prefix: Prefix of the simulations given in the simulation parameter file
     """
     self.sim_directory, self.data_prefix = sim_prefix.split("/sim/")
     self.keys_description = None
@@ -94,6 +99,24 @@ class LogData:
   def detection_statistics(self, cat, existing_check=False):
     """
     Prints the detection statistics for a set a simulation
+    :param cat: Catalogue used for the simulations
+    :param existing_check: Used to check if every simulation marked as "Simulated" in the log file is present
+    Returns
+    The detection statistics :
+      simulated : Number of simulations done
+      horizon : Number of simulations not done because the source is below the horizon
+      off : Number of simulations not done because the considered satellite is not working
+      faint : Number of simulations not done because the burst is too faint (peak flux < 0.1 ph/cm²/s)
+    The lists and arrays with information on simulation names and numbers :
+      ret_name : List of GRB source names
+      ret_name_ite : Array of GRB source index in the catalogue
+      ret_sim_ite : Array of the simulation number
+      ret_sat_ite : Array of the satellite index
+      ret_suffix_ite : List of the suffix containing dec, ra and time for the simulations
+      WARNING :
+        ret_name, ret_name_ite, ret_sim_ite and ret_sat_ite correspond to the 1st, 2nd, 3rd and 4th columns in the logfile
+        For these, each rank in the list/array correspond to a given simulation !
+        Then the names, and numbers are not unique but the combination of ret_name, ret_name_ite, ret_sim_ite and ret_sat_ite is expected to be unique !
     """
     simulated = np.sum(np.where(self.status == "Simulated", 1, 0))
     horizon = np.sum(np.where(self.status == "Ignored(horizon)", 1, 0))
@@ -115,6 +138,10 @@ class LogData:
     return simulated, horizon, off, faint, ret_name, ret_name_ite, ret_sim_ite, ret_sat_ite, ret_suffix_ite
 
   def detected_iteration_values(self, cat):
+    """
+    Returns lists and arrays containing information on simulation names and numbers
+    :param cat: Catalogue used for the simulations
+    """
     ret_name = []
     ret_grb_ite = []
     ret_sim_ite = []
@@ -132,14 +159,15 @@ class LogData:
     return ret_name, np.array(ret_grb_ite), np.array(ret_sim_ite), np.array(ret_sat_ite), ret_suffix_ite
 
   def check_existing_files(self, cat):
+    """
+    Returns a message error to be printed containing missing files that should have been simulated
+    :param cat: Catalogue used for the simulations
+    """
     error_list = ""
     for ite, name in enumerate(self.name):
       if self.grb_num[ite] >= len(cat.df.name):
         break
       if self.status[ite] == "Simulated":
-        # print(f"{self.sim_directory}/sim/")
-        # print(f"{self.data_prefix}_{name}_sat{self.sat_num[ite]}_{self.sim_num[ite]:04d}_{self.grb_decwf[ite]:.4f}_{self.grb_rawf[ite]:.4f}_{self.rand_time[ite]:.4f}.inc1.id1.extracted.tra")
-        # if not (f"{self.data_prefix}_{name}_sat{self.sat_num[ite]}_{self.sim_num[ite]:04d}_{self.grb_decwf[ite]:.4f}_{self.grb_rawf[ite]:.4f}_{self.rand_time[ite]:.4f}.inc1.id1.extracted.tra" in os.listdir(f"{self.sim_directory}/sim/")):
         if not os.path.exists(f"{self.sim_directory}/sim/{self.data_prefix}_{name}_sat{self.sat_num[ite]}_{self.sim_num[ite]:04d}_{self.grb_decwf[ite]:.4f}_{self.grb_rawf[ite]:.4f}_{self.rand_time[ite]:.4f}.inc1.id1.extracted.tra"):
           print("NOT IN")
           error_list += f"File not existing for {name}, sim {self.sim_num[ite]}, sat {self.sat_num[ite]}\n"

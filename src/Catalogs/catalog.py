@@ -1,3 +1,11 @@
+# ================================================================
+# Author      : Nathan Franel & Adrien Laviron
+# Version     : 1.0
+# Created     : 2023-12-01
+# Description  :  catalog.py
+# Contains functions and class to read and contain data from GRB catalogues
+# ================================================================
+
 import numpy as np
 import pandas as pd
 import seaborn as sns
@@ -15,9 +23,14 @@ from src.General.funcmod import comp, band, plaw, sbpl, calc_flux_gbm, gauss
 
 def treat_item(item_ev, item):
   """
-  Convert the event of an item to float, only strip the string otherwise, if the item has no value the value is set to None
-  :param item_ev: str, item event
-  :param item: str, name of the item treated
+  Converts the raw string value of a catalog item to float where possible.
+  Special handling is applied for dec (converted from deg/min/sec to decimal
+  degrees), ra (converted from hour/min/sec to decimal degrees), and masked
+  columns which are kept as strings. Empty strings are returned as np.nan.
+  :param item_ev: str, raw string value of the item as read from the catalog file
+  :param item: str, name of the item column being treated; used to select the
+      appropriate conversion (e.g. "dec", "ra", "bcat_detector_mask")
+  :returns: float or str, the converted value; np.nan if the raw value is empty
   """
   striped_item_ev = item_ev.strip()
   try:
@@ -42,9 +55,13 @@ def treat_item(item_ev, item):
 class Catalog:
   def __init__(self, datafile=None, sttype=None, rest_frame_file=None):
     """
-    Instanciates a catalog
-    :param datafile: None or string, data to put in the catalog
-    :param sttype: See Catalog.fill
+    Instantiates a GBM Catalog and, if all three arguments are provided, immediately
+    fills it with data by calling self.fill().
+    :param datafile: str or None, path to the GBM catalog text file, default=None
+    :param sttype: list or None, standardized file format descriptor of length 5
+        (see Catalog.formatsttype for the expected structure), default=None
+    :param rest_frame_file: str or None, path to the rest-frame properties file,
+        default=None
     """
     self.cat_type = "GBM"
     self.df = None
@@ -60,19 +77,21 @@ class Catalog:
 
   def __len__(self):
     """
-    Makes use of built-in len function
+    Returns the number of GRB events in the catalog, enabling use of len().
+    :returns: int, number of events (self.length)
     """
     return self.length
 
   def formatsttype(self):
     """
-    Formats self.sttype, the standardized type of text data file
-    sttype: iterable of len 5:
-      first header event (int)
-      event separator (str)
-      first event (int)
-      item separator (str)
-      last event (int) OR list of the sources wanted (list)
+    Formats self.sttype in-place, converting escape sequences and numeric
+    strings to their proper Python types.
+    sttype is an iterable of length 5:
+      index 0: int, line index of the header row in the file
+      index 1: str, event separator character (e.g. newline)
+      index 2: int, line index of the first data event
+      index 3: str, item separator character within an event (e.g. "|")
+      index 4: int or list, last event line index OR list of source names to select
     """
     for i in range(5):
       if self.sttype[i] == "n":
@@ -87,7 +106,10 @@ class Catalog:
 
   def fill(self):
     """
-    Fills a Catalog with data
+    Reads the GBM catalog file and the rest-frame properties file, merges their
+    data row by row on GRB name, and stores the result in self.df as a
+    pandas DataFrame. Also calls self.set_fluxes() to compute mean and peak
+    flux columns.
     """
     # Opening GBM data and removing undesired lines
     self.formatsttype()
@@ -155,7 +177,11 @@ class Catalog:
 
   def set_fluxes(self):
     """
-
+    Computes the photon mean flux and peak flux for each GRB in the catalog
+    by reading the best-fit spectral model columns, and adds them as new
+    columns "mean_flux" and "peak_flux" to self.df.
+    :raises ValueError: if a pflx_best_fitting_model value is neither a string
+        nor NaN
     """
     pht_mflx_list = []
     pht_pflx_list = []
@@ -406,26 +432,14 @@ class Catalog:
     plt.show()
 
   def grb_distribution(self):
+    """
+    Plots the Peak energy, fluence, mean flux and peak flux distributions for
+    long, short and all GBM GRBs
+    """
     mpl.use("Qt5Agg")
     plt.rcParams.update({'font.size': 15})
 
-    # gbm_ph_flux = []
-    # long_gbm_ph_flux = []
-    # short_gbm_ph_flux = []
     all_df = self.df.loc[np.logical_not(np.isnan(self.df.flnc_band_epeak))]
-    # long_df = all_df.loc[all_df.t90 > 2]
-    # short_df = all_df.loc[all_df.t90 <= 2]
-    # for ite_gbm, gbm_ep in enumerate(self.df.flnc_band_epeak.values):
-    #   if not np.isnan(gbm_ep):
-    #     ph_flux = calc_flux_gbm(self, ite_gbm, (10, 1000))
-    #     gbm_ph_flux.append(ph_flux)
-    #     if self.df.t90.values[ite_gbm] > 2:
-    #       long_gbm_ph_flux.append(ph_flux)
-    #     else:
-    #       short_gbm_ph_flux.append(ph_flux)
-    # gbm_ph_flux = np.array(gbm_ph_flux)
-    # long_gbm_ph_flux = np.array(long_gbm_ph_flux)
-    # short_gbm_ph_flux = np.array(short_gbm_ph_flux)
 
     gbm_ph_flux = self.df.mean_flux.values
     long_gbm_ph_flux = self.df[self.df.t90 > 2].mean_flux.values
@@ -484,7 +498,11 @@ class Catalog:
 
   def T90_hardness_graphs(self, show_fit_stats=False):
     """
-
+    Plots the T90 duration distribution with Gaussian fits for short and long
+    GRB populations, and a T90 vs hardness ratio scatter/KDE plot.
+    :param show_fit_stats: bool, if True overlays a histogram of T90 values
+        drawn from the fitted Gaussian distributions, annotated with fit
+        parameters and uncertainties, default=False
     """
     mpl.use("Qt5Agg")
 
@@ -497,8 +515,6 @@ class Catalog:
     temp_df["log_HR"] = np.log10(temp_df.flux_high.values / temp_df.flux_low.values)
     temp_df["log_t90"] = np.log10(temp_df.t90.values)
     temp_df["type"] = ["Short" if t90 <= 2 else "Long" for t90 in temp_df.t90.values]
-
-    # print(temp_df)
 
     # Fitting the T90 distribution
     bins = np.logspace(-3, 3, 30)
@@ -553,7 +569,10 @@ class Catalog:
 
   def spectral_index_graphs(self):
     """
-
+    Plots the distributions of low-energy spectral index alpha and high-energy
+    index beta for short, long, and all GRBs combined. Histograms are shown
+    separately for each spectral model (Band, Comp, SBPL, Plaw) as well as
+    their combination, with Gaussian fits overlaid.
     """
     mpl.use("Qt5Agg")
     plt.rcParams.update({'font.size': 15})
@@ -632,8 +651,12 @@ class Catalog:
 class SampleCatalog:
   def __init__(self, datafile=None, sttype=None):
     """
-    Instanciates a catalog
-    :param datafile: None or string, data to put in the catalog
+    Instantiates a SampleCatalog and, if both arguments are provided, immediately
+    fills it with data by calling self.fill().
+    :param datafile: str or None, path to the sampled GRB catalog text file,
+        default=None
+    :param sttype: list or None, standardized file format descriptor of length 5
+        (see SampleCatalog.formatsttype for the expected structure), default=None
     """
     self.cat_type = "sampled"
     self.df = None
@@ -648,16 +671,23 @@ class SampleCatalog:
       self.datafile = datafile
       self.fill()
 
-
   def __len__(self):
     """
-    Makes use of built-in len function
+    Returns the number of GRB events in the catalog, enabling use of len().
+    :returns: int, number of events (self.length)
     """
     return self.length
 
   def formatsttype(self):
     """
-    Formats self.sttype, the standardized type of text data file
+    Formats self.sttype in-place, converting escape sequences and numeric
+    strings to their proper Python types.
+    sttype is an iterable of length 5:
+      index 0: int, line index of the header row in the file
+      index 1: str, event separator character (e.g. newline)
+      index 2: int, line index of the first data event
+      index 3: str, item separator character within an event
+      index 4: int or list, last event line index OR list of source names to select
     """
     for i in range(5):
       if self.sttype[i] == "n":
@@ -672,14 +702,9 @@ class SampleCatalog:
 
   def fill(self):
     """
-    Fills a Catalog with data
-    :param datafile: string, data file name
-    :param sttype: iterable of len 5:
-      first header event (int)
-      event separator (str)
-      first event (int)
-      item separator (str)
-      last event (int) OR list of the sources wanted (list)
+    Reads the sampled GRB catalog file using the format specified by self.sttype
+    and stores the parsed data in self.df as a pandas DataFrame with columns
+    defined by self.columns.
     """
     self.formatsttype()
     with open(self.datafile) as f:
@@ -708,6 +733,9 @@ class SampleCatalog:
 
   def items(self):
     """
-    List all knowns items
+    Returns a list of the catalog's known attribute names, excluding internal
+    Python object attributes.
+    :returns: list, list of str attribute names starting from index 3 of
+        self.__dict__
     """
     return list(self.__dict__.keys())[3:]
