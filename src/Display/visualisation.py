@@ -1,6 +1,11 @@
-# Autor Nathan Franel
-# Date 06/12/2023
-# Version 2 :
+# ================================================================
+# Author      : Nathan Franel
+# Version     : 1.0
+# Created     : 2023-12-01
+# Description  :  visualisation.py
+# Contains various functions to visualise and calculate quantities that do not depend on GRB simulations
+# ================================================================
+
 # Module to have functions to make so usual actions not using GRB simulated data
 
 # Package imports
@@ -12,30 +17,32 @@ from apexpy import Apex
 
 # Developped modules imports
 from src.General.funcmod import read_grbpar, closest_mufile, closest_bkg_info, orbital_period_calc, earth_rotation_offset, true_anomaly_calc, orbitalparam2decra, verif_rad_belts, eff_area_func
-from src.Analysis.MmuSeffContainer import MuSeffContainer
-# from src.Analysis.MLogData import LogData
 
-# mpl.use('TkAgg')
-
-# TODO mix this file and trajectories.py ? Change the name of this file. Move some functions from trajectories to funcmod
 
 ############################################################
 # Usefull functions :
 ############################################################
 def bkg_data_map(field, bkgdata, altitude, dec_range=np.linspace(0, 180, 181), ra_range=np.linspace(0, 360, 361), language="en", ergcut=(10, 1000), proj="carre", save=False):
   """
-  TODO testing for the detectors !!!
-  :param field: Field ploted on the map :
-      compton_cr
-      single_cr
-      calor
-      dsssd
-      side
-      total_hits
-  :param bkgdata: background data obtained with MBkgContainer
-  :param altitude: altitude for the background
-  :param dec_range: range of declinations for the map
-  :param ra_range: range of right ascensions for the map
+  Plots a map of a background quantity over the sky in geographic coordinates.
+  The background count rates are obtained by finding the closest background file
+  to each geographic position after converting to geomagnetic coordinates.
+  :param field: str, field plotted on the map. Accepted values:
+      "compton_cr"  - Compton events count rate
+      "single_cr"   - single events count rate
+      "calor"       - calorimeter count rate
+      "dsssd"       - DSSD count rate
+      "side"        - side scintillator count rate
+      "total_hits"  - total hit count rate
+  :param bkgdata: object, background data container obtained with MBkgContainer
+  :param altitude: float, altitude for the background simulation [km]
+  :param dec_range: np.ndarray, range of declinations for the map [deg], default=np.linspace(0, 180, 181)
+  :param ra_range: np.ndarray, range of right ascensions for the map [deg], default=np.linspace(0, 360, 361)
+  :param language: str, language for axis labels and legend - "en" (English) or "fr" (French), default="en"
+  :param ergcut: tuple, energy window (Emin, Emax) [keV], default=(10, 1000)
+  :param proj: str, map projection to use - "carre" (PlateCarree) or "mollweide", default="carre"
+  :param save: bool, if True saves the figure to disk instead of displaying it, default=False
+  :raises ValueError: if field, language, or proj is not one of the accepted values
   """
   mpl.use("TkAgg")
   x_long, y_lat = np.meshgrid(ra_range, 90 - dec_range)
@@ -102,17 +109,6 @@ def bkg_data_map(field, bkgdata, altitude, dec_range=np.linspace(0, 180, 181), r
       total_hits = np.sum(det_count)
       bkg_values = [compton_cr, single_cr, calor_count / bkgdata.sim_time, dsssd_count / bkgdata.sim_time, side_count / bkgdata.sim_time, total_hits / bkgdata.sim_time]
       field_list[row][col] = bkg_values[field_index]
-      # if ra == 0:
-      #   print("dec, ra = ", lat, ra)
-      #   print("bkg mag dec : ", bkgdata.bkgdf.iloc[bkg_id].dec)
-      #   print("compton_cr : ", bkgdata.bkgdf.iloc[bkg_id].compton_cr)
-        # print("single_cr : ", bkgdata.bkgdf.iloc[bkg_id].single_cr)
-        # print("compton_cr : ", compton_cr)
-        # print("single_cr : ", single_cr)
-        # print("side_cr : ", side_count / bkgdata.sim_time)
-        # print("dssd_cr : ", dsssd_count / bkgdata.sim_time)
-        # print("ucd_cr : ", calor_count / bkgdata.sim_time)
-        # print("hits_cr : ", total_hits / bkgdata.sim_time)
   fontsize = 15
   plt.rcParams.update({'font.size': fontsize})
   if proj == "carre":
@@ -127,11 +123,9 @@ def bkg_data_map(field, bkgdata, altitude, dec_range=np.linspace(0, 180, 181), r
   ax.coastlines()
   cbar = fig.colorbar(p1)
   if language == "en":
-    # plt.suptitle(f"Background map for {item_legend} at {altitude} km")
     ax.set(xlabel="Longitude (deg)", ylabel="Latitude (deg)")
     cbar.set_label(f"Background {item_legend}", rotation=270, labelpad=20, fontsize=fontsize)
   elif language == "fr":
-    # plt.suptitle(f"{item_legend} dû au bruit de fond à {altitude}km")
     ax.set(xlabel="Longitude (deg)", ylabel="Latitude (deg)")
     cbar.set_label(f"{item_legend}", rotation=270, labelpad=20, fontsize=fontsize)
   else:
@@ -147,7 +141,15 @@ def bkg_data_map(field, bkgdata, altitude, dec_range=np.linspace(0, 180, 181), r
 
 def mu100_data_map(mu100data, theta_sat=np.linspace(0, 114, 115), phi_sat=np.linspace(0, 360, 181)):
   """
-
+  Plots multiple maps and graphs of the mu100 modulation factor and effective areas
+  as a function of the source direction in the satellite frame.
+  Displays smoothed and unsmoothed maps of mu100, Compton effective area, and single
+  event effective area, as well as their variation with declination.
+  :param mu100data: object, mu100 data container with a mudf DataFrame attribute
+  :param theta_sat: np.ndarray, polar angle (declination) grid in satellite frame [deg],
+      default=np.linspace(0, 114, 115)
+  :param phi_sat: np.ndarray, azimuthal angle (right ascension) grid in satellite frame [deg],
+      default=np.linspace(0, 360, 181)
   """
   mpl.use("Qt5Agg")
 
@@ -344,7 +346,6 @@ def mu100_data_map(mu100data, theta_sat=np.linspace(0, 114, 115), phi_sat=np.lin
   plt.tight_layout()
   plt.show()
 
-
   # fig, ax = plt.subplots(subplot_kw={'projection': ccrs.LambertConformal(central_longitude=0, central_latitude=0)}, figsize=(10, 6))
   # plt.suptitle(r"Smoothed $\mu_{100}$ map")
   # p7 = ax.pcolormesh(x_mu, y_mu, v2smooth_mu100list, cmap="Blues", transform=ccrs.PlateCarree())
@@ -377,10 +378,11 @@ def mu100_data_map(mu100data, theta_sat=np.linspace(0, 114, 115), phi_sat=np.lin
 
 def magnetic_latitude_convert(altitude, lat_range=np.linspace(90, -90, 361), lon_range=np.linspace(0, 360, 361)):
   """
-  TODO testing !!!
-  :param altitude: altitude for the background
-  :param lat_range: range of latitudes for the map
-  :param lon_range: range of longitudes for the map
+  Plots maps of geomagnetic latitudes derived from geographic coordinates at a given altitude,
+  using both a scatter plot and a contour plot representation.
+  :param altitude: float, altitude for the geomagnetic conversion [km]
+  :param lat_range: np.ndarray, range of geographic latitudes [deg], default=np.linspace(90, -90, 361)
+  :param lon_range: np.ndarray, range of geographic longitudes [deg], default=np.linspace(0, 360, 361)
   """
   apex15 = Apex(date=2025)
   # WITH SCATTER
@@ -419,14 +421,162 @@ def magnetic_latitude_convert(altitude, lat_range=np.linspace(90, -90, 361), lon
   plt.show()
 
 
+def orbitalparam2cartesian(i, ohm, omega):
+  """
+  Calculates the cartesian coordinates of a point defined by orbital parameters (at a unit distance from the center)
+  :param i: float, inclination of the orbit [deg]
+  :param ohm: float, longitude/ra of the ascending node of the orbit [deg]
+  :param omega: float or np.ndarray, argument of periapsis of the orbit [deg]
+  :returns: float or np.ndarray, float or np.ndarray, float or np.ndarray, x coordinate, y coordinate, z coordinate
+  """
+  x = np.cos(omega) * np.cos(ohm) - np.sin(omega) * np.cos(i) * np.sin(ohm)
+  y = np.cos(omega) * np.sin(ohm) + np.sin(omega) * np.cos(i) * np.cos(ohm)
+  z = np.sin(omega) * np.sin(i)
+  return x, y, z
+
+
+def orbit(inc, ohm, omega, nsat, alt):
+  """
+  Plots a 3D representation of a constellation of satellites on their respective orbits,
+  together with a wireframe Earth for spatial reference.
+  :param inc: list, inclination of the orbits [deg]
+  :param ohm: list, longitude/ra of the ascending node of the orbits [deg]
+  :param omega: float, argument of periapsis common to all orbits [deg]
+  :param nsat: list, number of satellites per orbit
+  :param alt: float, altitude of the orbits [km]
+  """
+  fig = plt.figure()
+  ax = fig.add_subplot(projection='3d')
+
+  ax.plot([0, 1], [0, 0], [0, 0], c="black")
+  ax.plot([0, 0], [0, 1], [0, 0], c="black")
+  ax.plot([0, 0], [0, 0], [0, 1], c="black")
+  ax.axis('off')
+  ax.grid(False)
+
+  r = (6371 - alt) / 6371
+  x = []
+  y = []
+  z = []
+  n_ite_eq = 100
+  for theta in np.linspace(-np.pi/2, np.pi/2, int(n_ite_eq/2)):
+    if theta == -np.pi/2 or theta == np.pi/2:
+      phi_list = [0]
+    else:
+      phi_list = np.linspace(0, 2 * np.pi, int(np.cos(theta) * n_ite_eq))
+    for phi in phi_list:
+      x.append(r * np.cos(phi) * np.cos(theta))
+      y.append(r * np.sin(phi) * np.cos(theta))
+      z.append(r * np.sin(theta))
+  ax.scatter(x, y, z, s=1, c='slategrey', alpha=0.1)
+
+  x1, y1, z1 = orbitalparam2cartesian(np.deg2rad(inc[0]), np.deg2rad(ohm[0]), omega + np.linspace(0, 2 * np.pi, nsat[0], endpoint=False))
+  x2, y2, z2 = orbitalparam2cartesian(np.deg2rad(inc[1]), np.deg2rad(ohm[1]), omega + np.linspace(0 + 2 * np.pi / (3 * nsat[1]), 2 * np.pi + 2 * np.pi / (3 * nsat[1]), nsat[1], endpoint=False))
+  x3, y3, z3 = orbitalparam2cartesian(np.deg2rad(inc[2]), np.deg2rad(ohm[2]), omega + np.linspace(0 + (2 * np.pi / (3 * nsat[1])) * 2, 2 * np.pi + (2 * np.pi / (3 * nsat[1])) * 2, nsat[2], endpoint=False))
+
+  xl1, yl1, zl1 = orbitalparam2cartesian(np.deg2rad(inc[0]), np.deg2rad(ohm[0]), np.linspace(0, 2 * np.pi, 100))
+  xl2, yl2, zl2 = orbitalparam2cartesian(np.deg2rad(inc[1]), np.deg2rad(ohm[1]), np.linspace(0, 2 * np.pi, 100))
+  xl3, yl3, zl3 = orbitalparam2cartesian(np.deg2rad(inc[2]), np.deg2rad(ohm[2]), np.linspace(0, 2 * np.pi, 100))
+
+  ax.scatter3D(x1, y1, z1, s=40, c="blue")
+  ax.scatter3D(x2, y2, z2, s=40, c='cornflowerblue')
+  ax.scatter3D(x3, y3, z3, s=40, c='darkblue')
+  ax.plot(xl1, yl1, zl1, c="blue", label=f'Inclination : {inc[0]}° \nRA of the ascending node : {ohm[0]}°')
+  ax.plot(xl2, yl2, zl2, c=f'cornflowerblue', label=f'Inclination : {inc[1]}° \nRA of the ascending node : {ohm[1]}°')
+  ax.plot(xl3, yl3, zl3, c=f'darkblue', label=f'Inclination : {inc[2]}° \nRA of the ascending node : {ohm[2]}°')
+  ax.legend(bbox_to_anchor = (0.1, 1.15), loc='upper left')
+  ax.set(xlabel="x", ylabel="y", zlabel="z")
+  ax.set_box_aspect([1.0, 1.0, 1.0])
+  plt.show()
+
+
+def trajectory(inc, ohm, nsat, alt, zonetype="all", omega=0, projection="carre"):
+  """
+  Plots the trajectory of one or more satellite orbits on a 2D sky map,
+  along with their satellite positions and the exclusion zones due to radiation belts.
+  :param inc: list, inclination of the orbits [deg]
+  :param ohm: list, longitude/ra of the ascending node of the orbits [deg]
+  :param nsat: list, number of satellites per orbit
+  :param alt: float, altitude of the orbits [km]
+  :param zonetype: str, name of the exclusion zone considered - "all", "electron" or "proton", default="all"
+  :param omega: float, argument of periapsis of the orbits [deg], default=0
+  :param projection: str, type of map projection to use - "carre" (PlateCarree) or "mollweide", default="carre"
+  :raises ValueError: if projection is not one of the accepted values
+  """
+  # Create the plot with the correct projection
+  if projection == "mollweide":
+    proj = ccrs.Mollweide(central_longitude=0)
+  elif projection == "carre":
+    proj = ccrs.PlateCarree(central_longitude=0)
+  else:
+    print("Please use either carre or mollweide for projection")
+    return None
+
+  fig, ax = plt.subplots(subplot_kw={'projection': proj})
+  ax.set_global()
+
+  theta_verif = np.linspace(0, 180, 181)
+  phi_verif = np.linspace(0, 360, 360, endpoint=False)
+  plottitle = f"Map of {zonetype} radiation belt at {alt} km"
+  ax.set(title=plottitle)
+
+  cancel_theta = []
+  cancel_phi = []
+  for theta in theta_verif:
+    for phi in phi_verif:
+      if verif_rad_belts(theta, phi, alt, zonetype=zonetype):
+        cancel_theta.append(90 - theta)
+        cancel_phi.append(phi if phi <= 180 else phi % 180 - 180)
+  cancel_theta = np.array(cancel_theta)
+  cancel_phi = np.array(cancel_phi)
+  ax.scatter(cancel_phi, cancel_theta, s=1, transform=ccrs.PlateCarree())
+
+  latitude_list = []
+  phi_list = []
+  latitude_line = []
+  phi_line = []
+  colors = ["royalblue", "blue", "navy", "lightsteelblue", "cornflowerblue"]
+  # Creating the lists of sat coordinates
+  for ite_orbit in range(len(inc)):
+    temp_theta = []
+    temp_phi = []
+    starting = 360/nsat[ite_orbit] / len(inc) * ite_orbit  # offset in the repartition of sat of different orbits so that there is a constant repartition in omega and that the first sat of each orbit are not at the same place
+    for ite_sat in range(nsat[ite_orbit]):
+      separation = 360/nsat[ite_orbit] * ite_sat  # separation between sats of a same orbit
+      theta, phi = orbitalparam2decra(inc[ite_orbit], ohm[ite_orbit], omega + separation + starting)
+      temp_theta.append(90 - theta)
+      temp_phi.append(np.mod(phi, 360))
+    line_temp_theta, line_temp_phi = orbitalparam2decra(inc[ite_orbit], ohm[ite_orbit], np.linspace(0, 360, 100))
+    latitude_line.append(90 - line_temp_theta)
+    phi_line.append(np.mod(line_temp_phi, 360))
+    latitude_list.append(temp_theta)
+    phi_list.append(temp_phi)
+  latitude_list = np.array(latitude_list)
+  phi_list = np.array(phi_list)
+  latitude_line = np.array(latitude_line)
+  phi_line = np.array(phi_line)
+  for ite_orbit in range(len(inc)):
+    ax.scatter(phi_list[ite_orbit], latitude_list[ite_orbit], color=colors[ite_orbit], transform=ccrs.PlateCarree())
+    ax.scatter(phi_line[ite_orbit], latitude_line[ite_orbit], s=1, color=colors[ite_orbit], transform=ccrs.PlateCarree())
+
+  # Adding the coasts
+  ax.coastlines()
+  plt.show()
+
+
 def calc_duty(inc, ohm, omega, alt, show=False, show_sat=False):
   """
-  Calculates the duty cycle caused by the radiation belts
-  :param inc: inclination of the orbit [deg]
-  :param ohm: longitude/ra of the ascending node of the orbit [deg]
-  :param omega: argument of periapsis of the orbit [deg]
-  :param alt: altitude of the orbit
-  :param show: If True shows the trajectory of a satellite on this orbit and the exclusion zones
+  Calculates the duty cycle of a satellite orbit, defined as the fraction of time
+  spent outside the radiation belt exclusion zones. Optionally plots the trajectory
+  and exclusion zones on a geographic map.
+  :param inc: float, inclination of the orbit [deg]
+  :param ohm: float, longitude/ra of the ascending node of the orbit [deg]
+  :param omega: float, argument of periapsis of the orbit [deg]
+  :param alt: float, altitude of the orbit [km]
+  :param show: bool, if True plots the satellite trajectory and exclusion zones on a map, default=False
+  :param show_sat: bool, if True overlays the accepted and rejected satellite positions on the map
+      (only used when show=True), default=False
+  :returns: float, duty cycle as a fraction in [0, 1]
   """
   plt.rcParams.update({'font.size': 15})
   orbit_period = orbital_period_calc(alt)
@@ -496,6 +646,11 @@ def calc_duty(inc, ohm, omega, alt, show=False, show_sat=False):
 
 
 def duty_variation_plot(alt=500):
+  """
+  Plots the duty cycle as a function of orbit inclination for a given altitude,
+  sweeping inclinations from 0° to 98° in 0.25° steps.
+  :param alt: float, altitude of the orbit [km], default=500
+  """
   mpl.use("Qt5Agg")
 
   inclinations = np.linspace(0, 98, 401)
@@ -509,7 +664,10 @@ def duty_variation_plot(alt=500):
 
 def show_non_op_area(alt, zonetype="all"):
   """
-
+  Plots a geographic map of the radiation belt exclusion zones at a given altitude,
+  showing all positions where satellite operations are not allowed.
+  :param alt: float, altitude of the verification [km]
+  :param zonetype: str, type of radiation belt to display - "all", "electron" or "proton", default="all"
   """
   mpl.use("Qt5Agg")
   fig, ax = plt.subplots(subplot_kw={'projection': ccrs.PlateCarree(central_longitude=0)})
@@ -537,8 +695,17 @@ def show_non_op_area(alt, zonetype="all"):
 
 def fov_const(parfile, museffdata, num_val=500, erg_cut=(10, 1000), show=True, save=False):
   """
-  Plots a map of the sensibility over the sky for number of sat in sight, single events and compton events
-  :param num_val: number of value to
+  Plots maps of the sky coverage and effective area sensitivity for a satellite constellation.
+  Produces three maps: number of satellites in sight, Compton effective area, and single
+  event effective area, as well as printing the mean values of each quantity weighted
+  by the solid angle of each sky cell.
+  :param parfile: str, path to the constellation parameter file
+  :param museffdata: object, mu100 and effective area data container
+  :param num_val: int, number of angular grid points along each axis, default=500
+  :param erg_cut: tuple, energy window (Emin, Emax) [keV], default=(10, 1000)
+  :param show: bool, if True displays the figures interactively, default=True
+  :param save: bool, if True saves the figures to disk instead of displaying, default=False
+  :raises ValueError: if chosen_proj is not "carre" or "mollweide"
   """
   plt.rcParams.update({'font.size': 15})
   xlab = "Right ascention (°)"
@@ -693,8 +860,13 @@ def fov_const(parfile, museffdata, num_val=500, erg_cut=(10, 1000), show=True, s
 
 def get_mean_seff_values(parfile, museffdata, num_val=100, erg_cut=(10, 1000)):
   """
-  Plots a map of the sensibility over the sky for number of sat in sight, single events and compton events
-  :param num_val: number of value to
+  Computes and prints the time-averaged sky-mean effective area and sky coverage for a
+  satellite constellation over a full orbital period. The averages are weighted by solid
+  angle to account for the non-uniform density of grid points on the sphere.
+  :param parfile: str, path to the constellation parameter file
+  :param museffdata: object, mu100 and effective area data container
+  :param num_val: int, number of angular grid points along each axis, default=100
+  :param erg_cut: tuple, energy window (Emin, Emax) [keV], default=(10, 1000)
   """
   sat_info = read_grbpar(parfile)[-1]
   n_sat = len(sat_info)
@@ -737,141 +909,4 @@ def get_mean_seff_values(parfile, museffdata, num_val=100, erg_cut=(10, 1000)):
   print(f"The mean number of satellites in sight is :       {np.mean(mean_coverage):.4f} satellites")
   print(f"The mean effective area for Compton events is :  {np.mean(mean_seff_compton):.4f} cm²")
   print(f"The mean effective area for single events is :   {np.mean(mean_seff_single):.4f} cm²")
-
-
-
-# def fov_const(parfile, mu100par, num_val=500, erg_cut=(10, 1000), armcut=180, show=True, save=False, bigfont=True, language="en"):
-#   """
-#   Plots a map of the sensibility over the sky for number of sat in sight, single events and compton events
-#   :param num_val: number of value to
-#   """
-#   if bigfont:
-#     plt.rcParams.update({'font.size': 15})
-#   else:
-#     plt.rcParams.update({'font.size': 10})
-#   if language == "en":
-#     xlab = "Right ascention (°)"
-#     ylab = "Declination (°)"
-#     title1 = "Constellation sky coverage map"
-#     title2 = "Constellation sky sensitivity map for Compton events"
-#     title3 = "Constellation sky sensitivity map for single events"
-#     bar1 = "Number of satellites covering the area"
-#     bar2 = "Effective area for Compton events (cm²)"
-#     bar3 = "Effective area for single events (cm²)"
-#   elif language == "fr":
-#     xlab = "Ascension droite (°)"
-#     ylab = "Déclinaison (°)"
-#     title1 = "Carte de couverture du ciel"
-#     title2 = "Carte de sensibilité aux évènements Compton"
-#     title3 = "Carte de sensibilité aux évènements simple"
-#     bar1 = "Nombre de satellite couvrant la zone"
-#     bar2 = "Surface efficace pour les évènements Compton (cm²)"
-#     bar3 = "Surface efficace pour les évènements simple (cm²)"
-#   else:
-#     raise ValueError("Wrong value given for the language : only en (english) and fr (french) set")
-#   chosen_proj, proj_name = "mollweide", "mollweide"
-#   # chosen_proj, proj_name = "carre", "carre"
-#
-#   sat_info = read_grbpar(parfile)[-1]
-#   n_sat = len(sat_info)
-#   result_prefix = parfile.split("/polGBM.par")[0].split("/")[-1]
-#   museffdata = MuSeffContainer(mu100par, erg_cut, armcut)
-#   phi_world = np.linspace(0, 360, num_val, endpoint=False)
-#   # theta will be converted in sat coord with grb_decra_worldf2satf, which takes dec in world coord with 0 being north pole and 180 the south pole !
-#   theta_world = np.linspace(0, 180, num_val)
-#   detection = np.zeros((n_sat, num_val, num_val))
-#   detection_compton = np.zeros((n_sat, num_val, num_val))
-#   detection_single = np.zeros((n_sat, num_val, num_val))
-#
-#   nite = num_val**2 * n_sat
-#   ncount = 0
-#   for ite, info_sat in enumerate(sat_info):
-#     for ite_theta, theta in enumerate(theta_world):
-#       for ite_phi, phi in enumerate(phi_world):
-#         ncount += 1
-#         detection_compton[ite][ite_theta][ite_phi], detection_single[ite][ite_theta][ite_phi], detection[ite][ite_theta][ite_phi] = eff_area_func(theta, phi, info_sat, museffdata)
-#         print(f"Calculation : {int(ncount/nite*100)}%", end="\r")
-#   print("Calculation over")
-#   detec_sum = np.sum(detection, axis=0)
-#   detec_sum_compton = np.sum(detection_compton, axis=0)
-#   detec_sum_single = np.sum(detection_single, axis=0)
-#
-#   phi_plot, theta_plot = np.meshgrid(np.deg2rad(phi_world) - np.pi, np.pi/2 - np.deg2rad(theta_world))
-#   detec_min = int(np.min(detec_sum))
-#   detec_max = int(np.max(detec_sum))
-#   detec_min_compton = int(np.min(detec_sum_compton))
-#   detec_max_compton = int(np.max(detec_sum_compton))
-#   detec_min_single = int(np.min(detec_sum_single))
-#   detec_max_single = int(np.max(detec_sum_single))
-#   cmap_det = mpl.cm.Blues_r
-#   cmap_compton = mpl.cm.Greens_r
-#   cmap_single = mpl.cm.Oranges_r
-#
-#   ##################################################################################################################
-#   # Map for number of satellites in sight
-#   ##################################################################################################################
-#   levels = range(detec_min, detec_max + 1, max(1, int((detec_max + 1 - detec_min) / 15)))
-#
-#   fig1, ax1 = plt.subplots(subplot_kw={'projection': chosen_proj}, figsize=(15, 8))
-#   # ax1.set_global()
-#   # ax1.coastlines()
-#   h1 = ax1.pcolormesh(phi_plot, theta_plot, detec_sum, cmap=cmap_det)
-#   # ax1.axis('scaled')
-#   ax1.set(xlabel=xlab, ylabel=ylab, title=title1)
-#   cbar = fig1.colorbar(h1, ticks=levels)
-#   cbar.set_label(bar1, rotation=270, labelpad=20)
-#   if save:
-#     fig1.savefig(f"{result_prefix}_n_sight_{proj_name}")
-#   if show:
-#     plt.show()
-#
-#   ##################################################################################################################
-#   # Map of constellation's compton effective area
-#   ##################################################################################################################
-#   levels_compton = range(detec_min_compton, detec_max_compton + 1, max(1, int((detec_max_compton + 1 - detec_min_compton) / 15)))
-#
-#   # fig2, ax2 = plt.subplots(1, 1, figsize=(10, 6))
-#   fig2, ax2 = plt.subplots(subplot_kw={'projection': chosen_proj}, figsize=(15, 8))
-#   # ax2.set_global()
-#   # ax2.coastlines()
-#   h3 = ax2.pcolormesh(phi_plot, theta_plot, detec_sum_compton, cmap=cmap_compton)
-#   # ax2.axis('scaled')
-#   ax2.set(xlabel=xlab, ylabel=ylab, title=title2)
-#   cbar = fig2.colorbar(h3, ticks=levels_compton)
-#   cbar.set_label(bar2, rotation=270, labelpad=20)
-#   if save:
-#     fig2.savefig(f"{result_prefix}_compton_seff_{proj_name}")
-#   if show:
-#     plt.show()
-#
-#   ##################################################################################################################
-#   # Map of constellation's single effective area
-#   ##################################################################################################################
-#   levels_single = range(detec_min_single, detec_max_single + 1, max(1, int((detec_max_single + 1 - detec_min_single) / 15)))
-#
-#   fig3, ax3 = plt.subplots(subplot_kw={'projection': chosen_proj}, figsize=(15, 8))
-#   # ax3.set_global()
-#   # ax3.coastlines()
-#   h5 = ax3.pcolormesh(phi_plot, theta_plot, detec_sum_single, cmap=cmap_single)
-#   # ax3.axis('scaled')
-#   ax3.set(xlabel=xlab, ylabel=ylab, title=title3)
-#   cbar = fig3.colorbar(h5, ticks=levels_single)
-#   cbar.set_label(bar3, rotation=270, labelpad=20)
-#   if save:
-#     fig3.savefig(f"{result_prefix}_single_seff_{proj_name}")
-#   if show:
-#     plt.show()
-#
-#   correction_values = (1 + np.sin(np.deg2rad(theta_world)) * (num_val - 1)) / num_val
-#   print(f"The mean number of satellites in sight is :       {np.average(np.mean(detec_sum, axis=1), weights=correction_values):.4f} satellites")
-#   print(f"The mean effective area for Compton events is :  {np.average(np.mean(detec_sum_compton, axis=1), weights=correction_values):.4f} cm²")
-#   print(f"The mean effective area for single events is :   {np.average(np.mean(detec_sum_single, axis=1), weights=correction_values):.4f} cm²")
-#
-#   # print(f"The mean number of satellites in sight is :       {np.mean(np.mean(detec_sum, axis=1) * np.sin(np.deg2rad(theta_world))):.4f} satellites")
-#   # print(f"The mean effective area for Compton events is :  {np.mean(np.mean(detec_sum_compton, axis=1) * np.sin(np.deg2rad(theta_world))):.4f} cm²")
-#   # print(f"The mean effective area for single events is :   {np.mean(np.mean(detec_sum_single, axis=1) * np.sin(np.deg2rad(theta_world))):.4f} cm²")
-#   #
-#   # print(f"NOT SIN CORRECTED - The mean number of satellites in sight is :       {np.mean(detec_sum):.4f} satellites")
-#   # print(f"NOT SIN CORRECTED - The mean effective area for Compton events is :  {np.mean(detec_sum_compton):.4f} cm²")
-#   # print(f"NOT SIN CORRECTED - The mean effective area for single events is :   {np.mean(detec_sum_single):.4f} cm²")
 

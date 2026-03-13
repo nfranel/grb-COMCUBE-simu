@@ -1,3 +1,11 @@
+# ================================================================
+# Author      : Nathan Franel
+# Version     : 1.0
+# Created     : 2023-12-01
+# Description  :  lightcurve_maker.py
+# Contains a main and various functions to create the light curves of GBM GRBs using the Fermi gbm data tool
+# ================================================================
+
 from decimal import DivisionByZero
 
 from gbm.data import TTE, Cspec
@@ -15,12 +23,15 @@ from src.Catalogs.catalog import Catalog
 
 def bin_selector(lc, tstart, tstop, minedges, maxedges):
   """
-  Select the bins between tstart and tend (both included)
-  :param lc: GBM lightcurve like data
-  :param tstart: begining of the time selection
-  :param tstop: ending of the time selection
-  :param minedges: low edges of the bins
-  :param maxedges: high edges of the bins
+  Extracts the count rate values for the bins whose time range falls between tstart and tstop (both inclusive).
+  :param lc: gbm.data.primitives.TimeBins or gbm.background.background.BackgroundRates
+      or np.ndarray, light curve or background data from which rates are extracted
+  :param tstart: float, start time of the selection window [s]
+  :param tstop: float, stop time of the selection window [s]
+  :param minedges: np.ndarray, lower edges of all time bins [s]
+  :param maxedges: np.ndarray, upper edges of all time bins [s]
+  :returns: np.ndarray, count rates for the selected bins
+  :raises TypeError: if lc is not one of the expected data types
   """
   if type(lc) is gbm.data.primitives.TimeBins or type(lc) is gbm.background.background.BackgroundRates:
     rates = lc.rates
@@ -42,9 +53,10 @@ def bin_selector(lc, tstart, tstop, minedges, maxedges):
 
 def substract_bkg(lc_rates, bkg_rates):
   """
-  returns the count rates for the light curve with substracted background
-  :param lc_rates: GBM lightcurve count rates
-  :param bkg_rates: Background count rates
+  Subtracts background count rates from light curve count rates and clips the result to zero to avoid negative values.
+  :param lc_rates: np.ndarray, raw count rates from the light curve [count/s]
+  :param bkg_rates: np.ndarray or float, background count rates to subtract [count/s]
+  :returns: np.ndarray, background-subtracted count rates, clipped to >= 0
   """
   rates = np.array(lc_rates - bkg_rates)
   return np.where(rates >= 0, rates, 0)
@@ -52,9 +64,9 @@ def substract_bkg(lc_rates, bkg_rates):
 
 def rm_files(tte_list, directory):
   """
-  Removes a downloaded tte file
-  :param tte_list: list of the tte file names
-  :param directory: path to where the tte files were downloaded
+  Removes a list of downloaded TTE or CSPEC files from disk.
+  :param tte_list: list, list of str filenames (not full paths) to remove
+  :param directory: str, path to the directory containing the files to remove
   """
   if not directory.endswith("/"):
     directory += "/"
@@ -64,10 +76,13 @@ def rm_files(tte_list, directory):
 
 def save_LC(rates, centroids, fullname):
   """
-  Writes the light curve in a .dat file
-  :param rates: Count rates for each bin of the curve
-  :param centroids: Centroids of the different bins
-  :param fullname: path + name of the file to save the light curves
+  Writes a background-subtracted light curve to a cosima-compatible .dat file
+  in LinLin interpolation format, with time in seconds and count rate per bin.
+  :param rates: np.ndarray, background-subtracted count rates for each bin [count/s]
+  :param centroids: np.ndarray, centroid times of the bins [s]
+  :param fullname: str, full path (directory + filename) of the output file
+  :raises TypeError: if rates or centroids are not numpy arrays
+  :raises ValueError: if centroids are not in strictly increasing order, or if any rate value is negative
   """
   # Checking the types are the ones expected
   if type(rates) is not np.ndarray or type(centroids) is not np.ndarray:
@@ -90,7 +105,24 @@ def save_LC(rates, centroids, fullname):
 
 def make_tte_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_mask, p_to_m_flux, bin_size=0.1, ener_range=(10, 1000), show=False, directory="../Data/sources/", saving=True):
   """
-
+  Downloads TTE (Time-Tagged Event) data for a GRB from the Fermi GBM archive,
+  bins it in time, fits and subtracts the background, optionally corrects the
+  peak-to-mean flux ratio, and saves the resulting light curve. Falls back to
+  make_cspec_lc() if TTE files are unavailable or the time range is insufficient.
+  :param name: str, GRB name in the format "GRByymmddxxx" (e.g. "GRB080916009")
+  :param start_t90: float, start time of the T90 interval relative to trigger [s]
+  :param end_t90: float, end time of the T90 interval relative to trigger [s]
+  :param time_range: tuple, (t_start, t_stop) full time range for background fitting [s]
+  :param bkg_range: list of two tuples, [(t_low_start, t_low_stop), (t_high_start, t_high_stop)]
+      defining the pre- and post-burst background windows [s]
+  :param lc_detector_mask: str, binary mask string of length equal to the number of NaI detectors; "1" marks detectors to include
+  :param p_to_m_flux: float, target peak-to-mean flux ratio used for light curve correction; np.nan to skip correction, 1 to produce a flat light curve
+  :param bin_size: float, time bin size [s], default=0.1
+  :param ener_range: tuple, (E_min, E_max) energy range for the light curve extraction [keV], default=(10, 1000)
+  :param show: bool, if True display diagnostic plots during processing, default=False
+  :param directory: str, path to the directory where TTE files are downloaded and light curve files are saved, default="../Data/sources/"
+  :param saving: bool, if True save the light curve plot and .dat file to disk, default=True
+  :returns: int or str, 0 on success, or the GRB name string if no data files were found
   """
   #####################################################################################################################
   # Loading tte files and extracting some information
@@ -243,7 +275,24 @@ def make_tte_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_mas
 
 def make_cspec_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_mask, p_to_m_flux, ener_range=(10, 1000), show=False, directory="../Data/sources/", saving=True):
   """
-
+  Downloads CSPEC (Continuous Spectroscopy) data for a GRB from the Fermi GBM
+  archive, combines all active detectors, fits and subtracts the background,
+  optionally corrects the peak-to-mean flux ratio, and saves the resulting
+  light curve. Used as a fallback when TTE data are unavailable or cover an
+  insufficient time range.
+  :param name: str, GRB name in the format "GRByymmddxxx" (e.g. "GRB080916009")
+  :param start_t90: float, start time of the T90 interval relative to trigger [s]
+  :param end_t90: float, end time of the T90 interval relative to trigger [s]
+  :param time_range: tuple, (t_start, t_stop) full time range for background fitting [s]
+  :param bkg_range: list of two tuples, [(t_low_start, t_low_stop), (t_high_start, t_high_stop)]
+      defining the pre- and post-burst background windows [s]
+  :param lc_detector_mask: str, binary mask string of length equal to the number of NaI detectors; "1" marks detectors to include
+  :param p_to_m_flux: float, target peak-to-mean flux ratio used for light curve correction; np.nan to skip correction, 1 to produce a flat light curve
+  :param ener_range: tuple, (E_min, E_max) energy range for the light curve extraction [keV], default=(10, 1000)
+  :param show: bool, if True display diagnostic plots during processing, default=False
+  :param directory: str, path to the directory where CSPEC files are downloaded and light curve files are saved, default="../Data/sources/"
+  :param saving: bool, if True save the light curve plot and .dat file to disk, default=True
+  :returns: int, 0 on success
   """
   #####################################################################################################################
   # Loading tte files and extracting some information
@@ -267,14 +316,6 @@ def make_cspec_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_m
   lc_list = [cspec.to_lightcurve(time_range=time_range, energy_range=ener_range) for cspec in cspecs]
 
   lc_select_list = [lc.slice(start_t90, end_t90) for lc in lc_list]
-
-  # # for lc in lc_select_list:
-  #   # print(lc.centroids[0], lc.centroids[-1], start_t90, end_t90)
-  #   # lc.centroids = np.linspace(start_t90, end_t90, len(lc.centroids))
-  # print(lc_select_list[0].centroids[1:] - lc_select_list[0].centroids[:-1])
-  # print(lc_select_list[0].centroids)
-  # print(np.linspace(lc_select_list[0].centroids[0], lc_select_list[0].centroids[-1], len(lc_select_list[0].centroids)) - lc_select_list[0].centroids)
-  # # print(type(lc.centroids))
 
   source_rates = np.sum(np.vstack(np.array([lc.rates for lc in lc_list])), axis=0)
   source_rates_select_list = np.array([lc.rates for lc in lc_select_list])
@@ -400,7 +441,17 @@ def make_cspec_lc(name, start_t90, end_t90, time_range, bkg_range, lc_detector_m
 
 def create_lc(cat, ite_grb, bin_size="auto", ener_range=(10, 1000), show=False, directory="../Data/sources/", saving=True):
   """
-
+  Orchestrates the creation of a light curve for a single GRB entry in a Catalog
+  by extracting all required metadata from the catalog DataFrame and delegating
+  to make_tte_lc(). The bin size can be set automatically based on the GRB duration.
+  :param cat: Catalog, catalog object whose DataFrame contains the GRB metadata
+  :param ite_grb: int, index of the GRB in cat.df to process
+  :param bin_size: float or str, time bin size [s], or "auto" to compute it from the T90 duration using a log-linear scaling, default="auto"
+  :param ener_range: tuple, (E_min, E_max) energy range for the light curve extraction [keV], default=(10, 1000)
+  :param show: bool, if True display diagnostic plots during processing, default=False
+  :param directory: str, path to the directory where data files are downloaded and light curve files are saved, default="../Data/sources/"
+  :param saving: bool, if True save the light curve plot and .dat file to disk, default=True
+  :returns: int or str, 0 on success, or the GRB name string if no data files were found (propagated from make_tte_lc)
   """
   GRBname = cat.df.name.values[ite_grb]
   t90 = float(cat.df.t90.values[ite_grb])
@@ -420,15 +471,11 @@ def create_lc(cat, ite_grb, bin_size="auto", ener_range=(10, 1000), show=False, 
   #       bk_time_low_stop, bk_time_high_start, bk_time_high_stop, lc_detector_mask, spec_detector_mask, flu_integ_start_time, flu_integ_stop_time)
   p_to_m_flux = cat.df.mean_flux.values[ite_grb] / cat.df.peak_flux.values[ite_grb]
   if bin_size == "auto":
-    # a and b in 10**(a * log(T90) + b) obtained by fitting these values with lx the T90 and ly the desired bins
-    # lx = [0.02, 0.04, 0.1, 0.2, 0.4, 1, 10, 100]
-    # ly = [4, 6, 10, 20, 30, 50, 100, 300]
     bin_number = round(10**(0.5*np.log10(t90) + 1.5), 0)
     bin_size = t90 / bin_number
     if bin_size < 0.01:
       # Keeps only 1 significative figure
       bin_size = float("%.1g" % bin_size)
-    # elif bin_size < 1:
     else:
       # Keeps only 2 significative figures
       bin_size = float("%.2g" % bin_size)
@@ -448,15 +495,15 @@ if not os.path.exists("../Data/sources/LC_plots_GBM"):
 
 gbm_cat = Catalog("../Data/CatData/allGBM.txt", [4, '\n', 5, '|', 4000], "../Data/CatData/rest_frame_properties.txt")
 
-# # for grb_ite in [17, 890, 1057, 1350]:
-# # for grb_ite in [17]:
-# for grb_ite in range(len(gbm_cat)):
-#   create_lc(gbm_cat, grb_ite, bin_size="auto", ener_range=(10, 1000), show=False, directory="../Data/sources/", saving=True)
-# for grb_ite in [200]:#, 17, 41, 890, 1057, 1350]:
-#   create_lc(gbm_cat, grb_ite, bin_size="auto", ener_range=(10, 1000), show=True, directory="../Data/sources/", saving=True)
 
-# import matplotlib as mpl
-# mpl.use("Qt5Agg")
-# for grb_ite in [960, 972, 589, 949]:
-#   create_lc(gbm_cat, grb_ite, bin_size="auto", ener_range=(10, 1000), show=True, directory="../Data/sources/", saving=True)
-create_lc(gbm_cat, 972, bin_size="auto", ener_range=(10, 1000), show=True, directory="../Data/sources/", saving=False)
+# MAIN to create the lightcurves
+if __name__ == "__main__":
+  import matplotlib as mpl
+  mpl.use("Qt5Agg")
+
+  # Saving both light curve plots and light curve files
+  tosave = True
+  # Showing the plots or not
+  toshow = False
+  for grb_ite in range(len(gbm_cat)):
+    create_lc(gbm_cat, grb_ite, bin_size="auto", ener_range=(10, 1000), show=toshow, directory="../Data/sources/", saving=tosave)

@@ -1,13 +1,15 @@
-# Autor Nathan Franel
-# Date 01/12/2023
-# Version 2 :
-# Separating the code in different modules
+# ================================================================
+# Author      : Nathan Franel
+# Version     : 1.0
+# Created     : 2023-12-01
+# Description  :  MBkgContainer.py
+# Class to contain background simulation data
+# ================================================================
 
 # Package imports
 import numpy as np
 from time import time
 import os
-
 import pandas as pd
 
 # Developped modules imports
@@ -17,19 +19,21 @@ from src.Launchers.launch_bkg_sim import read_bkgpar
 
 class BkgContainer:
   """
-  Class containing the information for 1 background file
+  Class containing the information of background files
   """
   def __init__(self, bkgparfile, ergcut, special_name=None, special_folder=None):
     """
-    :param bkgparfile: background parameter file
-    :param save_time: True if the interaction times are to be saved
-    :param ergcut: energy cut to apply
+    :param bkgparfile: Background parameter file
+    :param ergcut: Energy cut to apply to the background raw data
+    :param special_name: Name to be given to the saving files after transformation of raw data
+    :param special_folder: Folder path to be given to the saving files after transformation of raw data
     """
+    self.bkgdf = None
     self.array_dtype = np.float32
     geom, revanf, mimrecf, source_base, spectra, simtime, latitudes, altitudes = read_bkgpar(bkgparfile)
-    self.geometry = geom       # TODO compare with data/mu100 and make sure everything works with the same softs
-    self.revanfile = revanf    # compare with data/mu100 and make sure everything works with the same softs
-    self.mimrecfile = mimrecf  # compare with data/mu100 and make sure everything works with the same softs
+    self.geometry = geom
+    self.revanfile = revanf
+    self.mimrecfile = mimrecf
     self.sim_time = simtime
     self.lat_range = latitudes
     self.alt_range = altitudes
@@ -42,6 +46,7 @@ class BkgContainer:
     else:
       self.fold_path = special_folder
 
+    # Extraction of raw data and save of the transformed data in HDFS format
     saving = f"bkgsaved_{self.fold_name}_{np.min(self.lat_range):.0f}-{np.max(self.lat_range):.0f}-{len(self.lat_range):.0f}_{np.min(self.alt_range):.0f}-{np.max(self.alt_range):.0f}-{len(self.alt_range):.0f}.h5"
     cond_saving = f"cond_bkg-saved_{self.fold_name}_{np.min(self.lat_range):.0f}-{np.max(self.lat_range):.0f}-{len(self.lat_range):.0f}_{np.min(self.alt_range):.0f}-{np.max(self.alt_range):.0f}-{len(self.alt_range):.0f}_ergcut-{ergcut[0]}-{ergcut[1]}.h5"
     if cond_saving not in os.listdir(f"{self.fold_path}bkg/sim_{self.fold_name}"):
@@ -69,13 +74,8 @@ class BkgContainer:
     print("###########################################################################")
     print(" Extraction of bkg data ")
     print("###########################################################################")
-    # # Saving the data with a full format
-    # list.__init__(self, self.read_data(f"{self.fold_path}bkg/sim_{self.fold_name}/{saving}", save_time, ergcut, data_type="full"))
-    # Saving the data with a condensed format
-    self.bkgdf = self.read_data(f"{self.fold_path}bkg/sim_{self.fold_name}/{cond_saving}")
-    # print(self.bkgdf.index)
-    self.bkgdf.sort_values(by=["bkg_alt", "bkg_dec"], ascending=[True, True], inplace=True)
-    # print(self.bkgdf.index)
+    # Extracting the useful background data from the HDFS file
+    self.read_data(f"{self.fold_path}bkg/sim_{self.fold_name}/{cond_saving}")
 
     print("=======================================")
     print(" Extraction of bkg data finished in : ", time() - init_time, "seconds")
@@ -83,19 +83,22 @@ class BkgContainer:
 
   def save_fulldata(self, file, condensed_file, ergcut):
     """
-    Function used to save the bkg data into a txt file
-    :param file: path of the file containing saved data
-    :param condensed_file: path of the file containing condensed saved data
-    :param ergcut: energy cut used for making the condensed data file
+    Saves background and condensed background data into HDFS files after transformation
+    :param file: Path of the file containing saved data
+    :param condensed_file: Path of the file containing condensed saved data
+    :param ergcut: Energy cut used for making the condensed data file
     """
+    # Reads and saves extensive information about background
     with pd.HDFStore(file, mode="w") as f:
       bkg_tab = []
       for ite_alt, alt in enumerate(self.alt_range):
         for ite_lat, lat in enumerate(self.lat_range):
+          # Extraction and transformation
           decbkg, altbkg, compton_second, compton_ener, compton_time, single_ener, single_time, compton_first_detector, compton_sec_detector, single_detector = analyze_bkg_event(f"{self.fold_path}bkg/sim_{self.fold_name}/sim/bkg_{alt:.1f}_{lat:.1f}_{self.sim_time:.0f}s.inc1.id1.extracted.tra", lat, alt, self.geometry, self.array_dtype)
 
+          # Saving
           df_compton = pd.DataFrame({"compton_ener": compton_ener, "compton_second": compton_second, "compton_time": compton_time,
-             "compton_first_detector": compton_first_detector, "compton_sec_detector": compton_sec_detector})
+                                     "compton_first_detector": compton_first_detector, "compton_sec_detector": compton_sec_detector})
           df_single = pd.DataFrame({"single_ener": single_ener, "single_time": single_time, "single_detector": single_detector})
           key = f"itealt{ite_alt}_itelat{ite_lat}"
           # Saving Compton event related quantities
@@ -107,18 +110,19 @@ class BkgContainer:
           f.get_storer(f"{key}/compton").attrs.decbkg = decbkg
           f.get_storer(f"{key}/compton").attrs.altbkg = altbkg
 
+          # Filtering and condensing data
           df_compton = df_compton[(df_compton.compton_ener >= ergcut[0]) & (df_compton.compton_ener <= ergcut[1])]
           df_single = df_single[(df_single.single_ener >= ergcut[0]) & (df_single.single_ener <= ergcut[1])]
           det_stat_compton = det_counter(np.concatenate((df_compton.compton_first_detector.values, df_compton.compton_sec_detector.values))).flatten()
           det_stat_single = det_counter(df_single.single_detector.values).flatten()
-          # Writing the condensed file
+
           bkg_tab.append([altbkg, decbkg, len(df_compton) / self.sim_time, len(df_single) / self.sim_time, det_stat_compton, det_stat_single])
       f.get_storer(f"{key}/compton").attrs.description = f"# File containing background data for : \n# Geometry : {self.geometry}\n# Revan file : {self.revanfile}\n# Mimrec file : {self.mimrecfile}\n# Simulation time : {self.sim_time}\n# Altitude list : {self.alt_range}"
       f.get_storer(f"{key}/compton").attrs.structure = "Keys : bkgalt-bkgdec/compton or single dataframes"
 
+    # Saves condensed information about background after applying energy cut
     columns = ["bkg_alt", "bkg_dec", "compton_cr", "single_cr", "com_det_stats", "sin_det_stats"]
     cond_df = pd.DataFrame(data=bkg_tab, columns=columns)
-
     with pd.HDFStore(condensed_file, mode="w") as fcond:
       fcond.put(f"bkg_df", cond_df)
       fcond.get_storer("bkg_df").attrs.description = f"# File containing CONDENSED background data for : \n# Geometry : {self.geometry}\n# Revan file : {self.revanfile}\n# Mimrec file : {self.mimrecfile}\n# Simulation time : {self.sim_time}\n# Altitude list : {self.alt_range}\n"
@@ -127,11 +131,12 @@ class BkgContainer:
 
   def save_condensed_data(self, file, condensed_file, ergcut):
     """
-    Function used to save the condensed bkg data into a txt file after extracting uncondensed data
+    Saves condensed background data into HDFS files from extensive HDFS background file
     :param file: path for the full data file
     :param condensed_file: path for the condensed data file
     :param ergcut: energy window that should be applied on the data
     """
+    # Reads information about background from extensive background information already saved in HDFS format
     bkg_tab = []
     with pd.HDFStore(file, mode="r") as f:
       for key in set(k.split("/")[1] for k in f.keys()):
@@ -147,9 +152,9 @@ class BkgContainer:
         # Writing the condensed file
         bkg_tab.append([altbkg, decbkg, len(df_compton) / self.sim_time, len(df_single) / self.sim_time, det_stat_compton, det_stat_single])
 
+    # Saves condensed information about background after applying energy cut
     columns = ["bkg_alt", "bkg_dec", "compton_cr", "single_cr", "com_det_stats", "sin_det_stats"]
     cond_df = pd.DataFrame(data=bkg_tab, columns=columns)
-
     with pd.HDFStore(condensed_file, mode="w") as fcond:
       fcond.put(f"bkg_df", cond_df)
       fcond.get_storer("bkg_df").attrs.description = f"# File containing CONDENSED background data for : \n# Geometry : {self.geometry}\n# Revan file : {self.revanfile}\n# Mimrec file : {self.mimrecfile}\n# Simulation time : {self.sim_time}\n# Altitude list : {self.alt_range}\n"
@@ -158,8 +163,9 @@ class BkgContainer:
 
   def read_data(self, condensed_file):
     """
-    Function used to read the bkg txt file
-    :param condensed_file: path of the condensed file containing the saved data (either full or condensed one)
+    Method used to read the HDFS condensed background file
+    :param condensed_file: path of the file containing the condensed saved data
     """
     with pd.HDFStore(condensed_file, mode="r") as fcond:
-      return fcond["bkg_df"]
+      self.bkgdf = fcond["bkg_df"]
+    self.bkgdf.sort_values(by=["bkg_alt", "bkg_dec"], ascending=[True, True], inplace=True)

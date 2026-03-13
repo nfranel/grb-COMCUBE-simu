@@ -1,132 +1,255 @@
-# grb-COMCUBE-simu
+# grb-COMCUBE-simu for the COMCUBE-S project
 
-# TODO add information on visualitation.py and 
+This repository was developed in the context of an ESA project. It aims at estimating the polarimetric and detection capabilities of the European COMCUBE-S satellite constellation. It uses Monte Carlo simulations and runs in a Python environment.
 
-Python requirements :
-  - numpy, matplotlib, scipy, pandas, pytables, argparse, multiprocessing, subprocess, time, os, gzip, inspect, itertools, pyqt, pyside2
-  - Special requirements :
-    - astropy, cartopy
-  - optional requirements : seaborn
-  - To install modules that are not default : 
-      - conda install numpy matplotlib scipy pandas astropy cartopy pyqt pyside2 apexpy
-      - pip install numpy matplotlib scipy pandas astropy cartopy pyqt pyside2 apexpy
-    
-Other requirements :
-  - make
-  - megalib installed and **sourced**
-  - pip, intall apexpy (pip install apexpy)
-  - GBM data tools (for light curve making) - It is advised to create a separate environment for using the GBM data tools !
-    - Download the GBM data tools installation package https://fermi.gsfc.nasa.gov/ssc/data/analysis/gbm/
-    - pip3 install <path_to_tar>/gbm_data_tools-1.1.1.tar.gz
-      - Sometimes the archive has been decompressed while downloaded but the .gz is not remove, to correct the issue just remove the .gz
+---
 
-############################################################################
+## Table of contents
 
-This git contains :
+1. [Overview](#overview)
+2. [Project structure](#project-structure)
+3. [Requirements](#requirements)
+4. [Installation](#installation)
+5. [Usage](#usage)
+6. [References](#references)
+7. [Authors](#authors)
 
-- the codes and routines to analyze the data :
-  - MAllSourceData.py contains the main class for analysis. Used with python, it reads and analyzes the simulation files
-    - stores the simulation results for each source in a list
-    - stores mu100 and effective area for different DEC and RA (in satellite frame)
-    - stores bkg data for different latitudes at which a GRB may be detected (depends on the observing satellite)
-    - several useful information on the simulation
-  - MAllSimData.py contains a class to contain source results for all simulations
-    - stores the results of simulation for one source/GRB for all simulations
-    - stores several useful information on the source
-  - MAllSatData.py contains a class to contain results for 1 source and 1 simulation of this source for all satellites
-    - stores the results of simulation for each sat and possibly for a constellation
-    - stores several information relative to 1 simulation of 1 source 
-  - MGRBFullData.py contains the data from the simulation files
-    - stores the data from the simulation files for a specified energy cut and ARM cut
-    - stores some results obtained from the data 
-  - MLogData.py contains a class to create a logfile while running the simulations
-    - Information on simulations (GRB position, run or not (due to exclusion zones or below the horizon), etc)
-  - MBkgContainer.py contains classes to treat bkg data, save it for a quicker use and to store results for analysis
-  - MmuSeffContainer.py contains classes to treat mu100 and effective area for different positions of detection
-    - These variables need statistics to be consistent and are considered to vary over detection position but not much over different GRBs  
-  - MFit.py contains a class to proceed to polarigram fits
-  - funcmod.py contains many functions used in the codes
-  - catalog.py is used to read and extract the GBM data
-  - fovconst.py is a code to obtain the field of view of a constellation (May need some updates)
-  - trajectories.py is used to obtain the trajectory of a constellation, test exclusion files and obtain duty cycles
-  - maintest.py is a file to test the data analysis, contains an example of how to make an analysis 
-  - Launchers :
-    - launch_bkg_sim.py    simulate the background for different latitudes, altitudes and for a specific satellite geometry 
-    - launch_mu100_sim.py  simulate the mu100 and effective area for different declination and right ascension of detection for a specific satellite geometry
-    - launch_sim_time.py   simulate the GRB simulations
-  - find_detector.cxx and Makefile are the c++ program used to obtain the detector of interaction for an event, and its associated makefile. This uses megalib classes and has been done using the standalone example given by megalib.
-    - The makefile compiles this program everytime the analysis is launched using the command "make -f Makefile PRG=find_detector". The executable is created in $(MEGALIB)/bin and is usable using "find_detector" in a terminal if megalib is sourced.
-    - This program uses megalib classes then it is necessary to have megalib sourced while using this analysis tool
+---
 
-- the folder bkg 
-  - contains information about the background 
-    - codes to simulate the background spectra and the data it uses in a folder
-    - folder where the spectra are saved
-    - parameter and source file to run the background simulations
-    - folder with files containing the exclusion area where the satellite is switch off
-    - folder containing the simulations (Empty if not simulations were made) for a specific geometry and different latitudes
-      - contains a file with condensed data for saving and a quicker use in the analysis 
-- the folder cfgs 
-  - contains the configuration files for revan and mimrec 
-- the folder GBM 
-  - contains the GBM data for short and long bursts
-- the folder geom 
-  - contains the geometries 
-- the folder mu100 will be 
-  - parameter and source files
-  - containing simulations for mu100 at different position in the detector FoV (Empty if not simulations were made) for a specific geometry
-    - contains a file with condensed data for saving and a quicker use in the analysis
-- the folder sources is made to 
-  - contain the spectra of the sources simulated (best fit spectra obtained from GBM data)
-  - contain the spectrum for a typical GRB (band spectrum)
-  - Light curves for GBM bursts
-- the folder example that contains some example files (parameter file, source file)
+## Overview
 
-############################################################################
+This repository serves several purposes:
+- Computes the polarisation properties according to different astrophysical models (SO, SR, CD, PJ, see Toma et al. 2009 and Pearce et al. 2019)
+- Creates GBM light curves
+- Creates a synthetic GRB population catalogue
+- Runs, transforms and analyses MEGALib Monte Carlo simulations for GRBs and background
 
-Necessary to run the simulation
+---
 
-- Geometry
-- Background condensed file for specific geometry
-- Mu100/Seff condensed file for specific geometry
-- cfg files (for both revan and mimrec)
-- A folder to contain the simulation with :
-  - source file
-  - parameter file
-  - a folder named sim
-  - a folder named rawsim
+## Project structure
 
-IMPORTANT : 
-- mu100 and background simulation files have to be made for every satellite model.
-- Some condensed files for background and mu100 are already done on the git. With the files the analysis can be done even if there are no raw simulation data
-- Condensed files are also specific to an energy cut so if the energy cut is not the same as the one used for creating these files results may be wrong
-  - Format for names of background saved files :
-    - regular one : [prefix]_[model]_[decmin]-[decmax]-[number of dec]_[altmin]-[altmax]-[number of alts].txt
-    - condensed one : [prefix]_[model]_[decmin]-[decmax]-[number of dec]_[altmin]-[altmax]-[number of alts]_ergcut-[low energy cut]-[high energy cut].txt
-  - Format for names of mu100 saved files :
-    - regular one : [prefix]_[model]_[decmin]-[decmax]-[number of dec]_[ramin]-[ramax]-[number of ra at equator].txt
-    - condensed one : [prefix]_[model]_[decmin]-[decmax]-[number of dec]_[ramin]-[ramax]-[number of ra at equator]_ergcut-[low energy cut]-[high energy cut].txt
-      
+```
+grb-COMCUBE-simu/  ← project's repository 
+├── src/
+│   ├── Analysis/
+│   │   ├── MAllSourceData.py                    # Container for a full set of GRB simulations and analysis methods
+│   │   ├── MAllSimData.py                       # Container for all simulations of a given source and analysis methods
+│   │   ├── MAllSatData.py                       # Container for one simulation of a given source (for all satellites) and analysis methods
+│   │   ├── MGRBFullData.py                      # Data container for data at the satellite level
+│   │   ├── MConstData.py                        # Data container for data at the constellation level
+│   │   ├── MLogData.py                          # Reads and stores information from simulation log files 
+│   │   ├── MBkgContainer.py                     # Container for background data
+│   │   ├── MmuSeffContainer.py                  # Container for mu100 and effective area data 
+│   │   ├── MFit.py                              # Container for fits
+│   │   ├── find_detector.cxx                    # MEGAlib standalone to retrieve the detector where interactions occurred
+│   │   └── Makefile                             # Makefile for find_detector.cxx
+│   ├── Background/
+│   │   ├── AlbedoPhotonBeam.dat                 # MEGAlib file to describe angular dependence of albedo photons
+│   │   ├── BackgroundPlotter_All.py             # Plots all the different components.
+│   │   ├── CreateBackgroundSpectrumMEGAlib.py   # Creates a file describing the spectrum of different components to be used with MEGAlib to define a source.
+│   │   ├── LATBackground.py                     # Creates the file Data/LATBackground.dat from the Fermi fits file.
+│   │   └── LEOBackgroundGenerator.py            # Contains the definition of the class describing all the background components.
+│   ├── Catalogs/
+│   │   ├── catalog.py                           # Contains functions and classes to read and contain data from GRB catalogues
+│   │   ├── catalogMC.py                         # Synthetic GRB catalog generator (MCCatalog)
+│   │   └── lightcurve_maker.py                  # GBM light curve downloader and builder
+│   ├── Display/
+│   │   └── visualisation.py                     # Contains various functions to visualise and calculate quantities independent of GRB simulations
+│   ├── General/
+│   │   └── funcmod.py                           # Contains core utility functions used in the project
+│   ├── Launchers/
+│   │   ├── launch_bkg_sim.py                    # Background simulation runner
+│   │   ├── launch_mu100_sim.py                  # mu100 and effective area simulation runner
+│   │   └── launch_sim_time.py                   # GRB simulation runner
+│   ├── Polarization/
+│   │   ├── models.py                            # Polarization fraction models (SO, SR, CD, PJ)
+│   │   └── polarization_class.py                # PolVSAngleRatio runner
+├── README.md
+└── requirements.txt
 
-############################################################################
+Data/ ← External folder, to be downloaded separately
+```
+> **Note:** The Data/ folder is not part of the repository and must be downloaded separately (see the [Data](#data) section). It should be placed at the same level as the cloned repository, as the code expects relative paths of the form ../Data/.
 
-To run the simulations :
-- Make sure the necessary files and folders are created
-- use python specific_launcher -f specific_parameter_file
+---
 
+## Data
 
-- For background simulations : 
-  - launch_bkg_sim with param file in bkg folder
+Most of the code requires the `Data/` folder to function. Its structure is as follows:
 
-- For mu100 simulations : 
-  - launch_mu100_sim with param file in mu100 folder
+```
+Data/
+├── bkg/        # Background simulations and information
+├── cfgs/       # MEGAlib configuration files
+├── catData/    # GRB catalogues 
+├── geom/       # Instrument mass model (geometry files)
+├── mu100/      # mu100/effective area simulations
+├── sources/    # Source light curves and spectra
+└── example/    # Example files
+```
 
-- For GRB simulations : 
-  - launch_sim_time with param file in the folder to contain simulation
+The `Data/` folder is not included in this repository due to its size.
+It can be downloaded at: **https://zenodo.org/records/18998501**
 
-IMPORTANT : in these files there is a possibility to keep the raw simulation files and the revan analyzed files. By default we remove this file to save memory.
+### Condensed file naming conventions
 
-############################################################################
+Condensed files aggregate simulation results and are required for analysis without raw simulation data. They are specific to the energy cut applied during their creation — using a different energy cut will produce incorrect results.
 
-To analyze results :
-- The maintest.py file gives an example of how to load data
+| Type | Regular filename | Condensed filename |
+|------|------------------|--------------------|
+| Background | `[prefix]_[model]_[decmin]-[decmax]-[ndec]_[altmin]-[altmax]-[nalt].txt` | `..._ergcut-[emin]-[emax].txt` |
+| mu100 / Seff | `[prefix]_[model]_[decmin]-[decmax]-[ndec]_[ramin]-[ramax]-[nra].txt` | `..._ergcut-[emin]-[emax].txt` |
+
+Some pre-computed condensed files for background and mu100 are already included in `Data/`. They allow analysis to be performed even without raw simulation data, provided the energy cut matches.
+
+---
+
+## Requirements
+
+### Python environment
+
+Install all Python dependencies with:
+
+```bash
+pip install -r requirements.txt
+```
+
+or using conda (recommended for `cartopy` and `pyside2`):
+
+```bash
+conda install numpy matplotlib scipy pandas astropy cartopy pyqt pyside2
+pip install apexpy
+```
+
+See `requirements.txt` for the full list of dependencies.
+
+### GBM Data Tools (separate environment)
+
+The GBM Data Tools package has dependency conflicts with the main environment. **It must be installed in a dedicated virtual or conda environment.**
+
+1. Download the installation package from: https://fermi.gsfc.nasa.gov/ssc/data/analysis/gbm/
+2. Install with pip (conda is not supported):
+   ```bash
+   pip install <path_to_tar>/gbm_data_tools-1.1.1.tar.gz
+   ```
+   > If the archive was auto-decompressed during download but still has a `.gz` extension, remove the `.gz` suffix before running the command.
+   
+### Other dependencies
+
+- `make` (for compiling `find_detector.cxx`)
+- MEGAlib — must be installed **and sourced** before running any simulation
+
+---
+
+## Installation
+```bash
+git clone https://github.com/nfranel/grb-COMCUBE-simu
+cd grb-COMCUBE-simu
+```
+And create your Python environment using the commands given previously in [Python environment](#python-environment)
+
+---
+
+## Usage
+
+### Before running simulations
+
+Make sure the following are in place for each satellite geometry:
+
+- Geometry / mass model file (`.geo.setup`)
+- MEGAlib configuration files for revan and mimrec (`.cfg`)
+- A condensed background file for the target geometry and energy cut
+- A condensed mu100 / Seff file for the target geometry and energy cut
+- For each GRB source, a simulation folder containing:
+  - a source file (`.source`)
+  - a parameter file
+  - a `sim/` subfolder
+  - a `rawsim/` subfolder
+
+> **Note:** By default, simulation runners delete raw and revan-analysed files after processing to save disk space; this behaviour can be changed inside the launcher scripts.
+
+---
+
+### Simulation runners
+
+#### GRB simulations
+```bash
+python launch_sim_time.py -f grb_param_file
+```
+
+#### Background simulations
+```bash
+python launch_bkg_sim.py -f bkg_param_file
+```
+
+#### mu100 / Seff simulations
+```bash
+python launch_mu100_sim.py -f mu100_param_file
+```
+
+---
+
+### Download and build GBM light curves
+
+Run in the dedicated GBM Data Tools environment:
+
+```bash
+python lightcurve_maker.py
+```
+
+---
+
+### Generate a synthetic GRB catalogue
+
+```python
+from src.Catalogs.catalogMC import MCCatalog
+
+testcat = MCCatalog(mode="catalog")      # Generate one or more accepted catalogues
+testcat = MCCatalog(mode="mc")           # Explore the parameter space (Monte Carlo)
+testcat = MCCatalog(mode="parametrized") # Run with a fixed parameter set
+```
+
+---
+
+### Compute polarization fractions
+
+```python
+from src.Polarization.polarization_class import PolVSAngleRatio
+
+model = "SO"  # or "SR", "CD", "PJ"
+distribution = PolVSAngleRatio(model=model)
+distribution.pf_calculation()
+```
+
+---
+
+## References
+
+- Thesis about this work
+  - Nathan Franel 2025, https://theses.hal.science/tel-05401994 
+    *See this thesis for available arXiv links and further information*
+- MEGAlib software
+  - A. Zoglauer, R. Andritschke, and F. Schopper, https://doi.org/10.1016/j.newar.2006.06.049
+- Polarisation models
+  - K. Toma et al. 2009, https://doi.org/10.1088/0004-637X/698/2/1042
+  - M. Pearce et al. 2019, https://doi.org/10.1016/j.astropartphys.2018.08.007
+- Fermi GBM GRB catalogue
+  - S. Poolakkil et al. 2021, https://doi.org/10.3847/1538-4357/abf24d
+- Synthetic catalog creation
+  - D. Band et al. 1993, https://doi.org/10.1086/172995
+  - G. Ghirlanda et al. 2015, https://doi.org/10.1016/j.jheap.2015.04.002
+  - G. Ghirlanda et al. 2016, https://doi.org/10.1051/0004-6361/201628993
+  - G. Ghirlanda and R. Salvaterra 2022, https://doi.org/10.48550/arXiv.2206.06390
+  - A. Lien et al. 2014, https://doi.org/10.1088/0004-637X/783/1/24
+  - J. Palmerio et al. 2021, https://doi.org/10.1051/0004-6361/202039929
+  - D. Wanderman & T. Piran 2010, https://doi.org/10.1111/j.1365-2966.2010.16787.x
+  - D. Yonetoku et al. 2004, https://doi.org/10.1086/421285
+- Background sources
+  - P. Cumani et al. 2019, https://doi.org/10.1007/s10686-019-09624-0
+
+---
+
+## Authors
+
+- Nathan Franel
+- Adrien Laviron

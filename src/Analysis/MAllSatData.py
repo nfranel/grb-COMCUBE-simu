@@ -1,15 +1,16 @@
-# Autor Nathan Franel
-# Date 01/12/2023
-# Version 2 :
-# Separating the code in different modules
+# ================================================================
+# Author      : Nathan Franel
+# Version     : 1.0
+# Created     : 2023-12-01
+# Description  :  MAllSatData.py
+# Class to contain GRB satellite and constellation data for a given source and simulation
+# ================================================================
 
 # Package imports
-# import subprocess
 import numpy as np
 import pandas as pd
 
 # Developped modules imports
-# from src.General.funcmod import
 from src.Analysis.MGRBFullData import GRBFullData
 from src.Analysis.MConstData import ConstData
 
@@ -20,15 +21,22 @@ class AllSatData(list):
   """
   def __init__(self, all_sat_data, sat_info, sim_duration, info_source, bkgdata, mudata, options):
     """
-    :param source_prefix: prefix used for simulations + source name
-    :param num_sim: number of the simulation
-    :param sat_info: orbital information on the satellites
-    :param sim_duration: duration of the simulation
-    :param bkg_data: list containing the background data
-    :param mu_data: list containing the mu100 data
-    :param options: options for the analysis, defined in AllSourceData
+    :param all_sat_data: 1D list containing simulation filenames
+    :param sat_info: Orbital information on the satellites
+    :param sim_duration: Duration of the simulation
+    :param info_source: list containing [source_duration, source_fluence]
+        source_duration: Duration of the source
+        source_fluence: Fluence of the source
+    :param bkgdata: Background data container
+    :param mudata: mu100/Seff data container
+    :param options: list containing [erg_cut, armcut, geometry, init_correction, polarigram_bins]
+    options gives information about the following options, required for data analysis
+        ergcut: Energy cut to use
+        armcut: ARM (Angular Resolution Measurement) cut to use
+        geometry: geometry of the mass model used for the simulation
+        init_correction: True if the polarigrams should be corrected (useful when adding them together for the constellation)
+        polarigram_bins: Bins for the polarigram
     """
-    temp_list = []
     # Attributes relative to the simulations without any analysis
     self.n_sat_receiving = 0
     self.n_sat = len(sat_info)
@@ -46,16 +54,16 @@ class AllSatData(list):
     self.const_data = None
 
   def read_grb_siminfo(self, filelist):
+    """
+    Method to read the DEC, RA and time of the simulated GRB in the world frame
+    Simulations for the different satellites all share the same DEC, RA and burst time so the information is taken from the first file read
+    """
     for filename in filelist:
       if filename is not None:
         with pd.HDFStore(filename, mode="r") as f:
           self.dec_world_frame = f.get_storer("compton").attrs.dec_world_frame
           self.ra_world_frame = f.get_storer("compton").attrs.ra_world_frame
           self.grb_burst_time = f.get_storer("compton").attrs.burst_time
-        #   line = f.read().split("\n")[1].split("|")
-        # self.dec_world_frame = float(line[0])
-        # self.ra_world_frame = float(line[1])
-        # self.grb_burst_time = float(line[2])
         return
 
   def analyze(self, source_duration, source_fluence, sats_analysis=True):
@@ -78,13 +86,16 @@ class AllSatData(list):
 
   def make_const(self, num_of_down_per_const, off_sats, const=None, dysfunction_enabled=True):
     """
-    Creates a constellation of several satellites by putting together the results
-    :param source_duration: duration of the source
-    :param source_fluence: fluence of the source
-    :param off_sats: list of listed index precising the unused satellites
-    :param options: options for the analysis, defined in AllSourceData
-    :param const: array with the number of the satellite to put in the constellation
-      If None all satellites are considered
+    Creates a one or more constellations of several satellites by putting together the results
+        Used when the data container for the constellation is the same as the one for the individual satellites (not condensed)
+    :param num_of_down_per_const: List containing the number of satellite not working in the constellations (taken randomly)
+        Gives the number of constellations wanted and their number of off satellites
+        Example : if only one constellation is wanted with 2 satellites not working  num_of_down_per_const = [2]
+        Example : if 3 constellation are wanted with 0, 2 and 5 satellites not working  num_of_down_per_const = [0, 2, 5]
+    :param off_sats: list containing the indexes of satellites not working
+    :param const: array with the indexes of the satellites to put in the constellation
+        If None all satellites are considered
+    :param dysfunction_enabled: True if dysfunction of satellites is taken into account (the value of the ints in num_of_down_per_const)
     """
     if const is None:
       const = np.array(range(self.n_sat))
@@ -92,10 +103,8 @@ class AllSatData(list):
     # Required for usual constellation
     ###################################################################################################################
     in_sight_sat = np.where(np.array(self) == None, False, True)
-    # sat_const = const[in_sight_sat]
-    # const_0off_data = GRBFullData([], None, None, None, None, None, None, source_duration, source_fluence, *options)
     ###################################################################################################################
-    # Constellation with down satellites
+    # Preparing which satellite data will be combined
     ###################################################################################################################
     list_considered_sat = []
     self.const_data = []
@@ -117,6 +126,9 @@ class AllSatData(list):
           in_sight_temp[index] = False
       sat_considered_temp = const[in_sight_temp]
       list_considered_sat.append(sat_considered_temp)
+    ###################################################################################################################
+    # Combining satellite data
+    ###################################################################################################################
     for ite_const, considered_sats in enumerate(list_considered_sat):
       if len(considered_sats) == 0:
         self.const_data[ite_const] = None
@@ -155,7 +167,6 @@ class AllSatData(list):
             # All the same
             #############################################################################################################
             # Values supposed to be the same for all sat and all sims so it doesn't change and is set using 1 sat
-            # Field to be used soon : "polarigram_error"
             if item in ["bins", "array_dtype"]:
               setattr(self.const_data[ite_const], item, getattr(self[selected_sats[0]], item))
             #############################################################################################################
@@ -254,13 +265,16 @@ class AllSatData(list):
 
   def make_condensed_const(self, num_of_down_per_const, off_sats, const=None, dysfunction_enabled=True):
     """
-    Creates a constellation of several satellites by putting together the results
-    :param source_duration: duration of the source
-    :param source_fluence: fluence of the source
-    :param off_sats: list of listed index precising the unused satellites
-    :param options: options for the analysis, defined in AllSourceData
-    :param const: array with the number of the satellite to put in the constellation
-      If None all satellites are considered
+    Creates a one or more constellations of several satellites by putting together only the important results
+        Used when the data container for the constellation is condensed (essential data)
+    :param num_of_down_per_const: List containing the number of satellite not working in the constellations (taken randomly)
+        Gives the number of constellations wanted and their number of off satellites
+        Example : if only one constellation is wanted with 2 satellites not working  num_of_down_per_const = [2]
+        Example : if 3 constellation are wanted with 0, 2 and 5 satellites not working  num_of_down_per_const = [0, 2, 5]
+    :param off_sats: list containing the indexes of satellites not working
+    :param const: array with the indexes of the satellites to put in the constellation
+        If None all satellites are considered
+    :param dysfunction_enabled: True if dysfunction of satellites is taken into account (the value of the ints in num_of_down_per_const)
     """
     if const is None:
       const = np.array(range(self.n_sat))
@@ -268,10 +282,8 @@ class AllSatData(list):
     # Required for usual constellation
     ###################################################################################################################
     in_sight_sat = np.where(np.array(self) == None, False, True)
-    # sat_const = const[in_sight_sat]
-    # const_0off_data = GRBFullData([], None, None, None, None, None, None, source_duration, source_fluence, *options)
     ###################################################################################################################
-    # Constellation with down satellites
+    # Preparing which satellite data will be combined
     ###################################################################################################################
     list_considered_sat = []
     self.const_data = []
@@ -292,6 +304,9 @@ class AllSatData(list):
           in_sight_temp[index] = False
       sat_considered_temp = const[in_sight_temp]
       list_considered_sat.append(sat_considered_temp)
+    ###################################################################################################################
+    # Combining satellite data
+    ###################################################################################################################
     for ite_const, considered_sats in enumerate(list_considered_sat):
       if len(considered_sats) == 0:
         self.const_data[ite_const] = None
@@ -301,7 +316,6 @@ class AllSatData(list):
           # Not changed
           ###############################################################################################################
           # The fieldselected here stay as they are with their basic initialisation (most of the time None)
-          # Fields to be used soon : "fits", "pa", "fit_compton_cr", "pa_err", "fit_compton_cr_err", "fit_goodness",
           if item not in ["mdp", "mdp_err", "hits_snrs", "compton_snrs", "single_snrs", "hits_snrs_err", "compton_snrs_err",
                           "single_snrs_err", "num_offsat"]:
             #############################################################################################################
